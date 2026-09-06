@@ -1,43 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { isSupabaseConfigured } from './env';
-
-/**
- * Identité de la personne qui utilise l'application.
- *
- * Trois façons d'entrer, dans cet ordre de simplicité :
- *   1. Google — un bouton, rien à retenir, gratuit et illimité ;
- *   2. compte anonyme — pour rejoindre un voyage par lien sans rien créer,
- *      rattachable à Google plus tard sans perdre ses données ;
- *   3. mode local — tant qu'aucun serveur n'est configuré, pour que
- *      l'application reste explorable.
- *
- * Aucun mot de passe nulle part : c'est la principale source de friction et de
- * fuite, pour un bénéfice nul à cette échelle.
- */
-export type AuthMode = 'supabase' | 'local';
-
-export interface Identity {
-  id: string;
-  displayName: string;
-  avatarUrl?: string;
-  isAnonymous: boolean;
-  mode: AuthMode;
-}
-
-interface AuthContextValue {
-  identity: Identity | null;
-  loading: boolean;
-  /** `false` tant que VITE_SUPABASE_URL / ANON_KEY ne sont pas renseignés. */
-  backendReady: boolean;
-  signInWithGoogle: () => Promise<void>;
-  continueAsGuest: () => Promise<void>;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+import { AuthContext, type AuthContextValue, type Identity } from './auth-context';
 
 const LOCAL_KEY = 'tripora.local-identity';
 
@@ -68,18 +34,18 @@ function fromSession(session: Session | null): Identity | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [identity, setIdentity] = useState<Identity | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Sans serveur, l'identité locale est lisible immédiatement : pas d'écran de
+  // chargement inutile, et pas de setState synchrone dans un effet.
+  const [identity, setIdentity] = useState<Identity | null>(() =>
+    supabase ? null : readLocalIdentity(),
+  );
+  const [loading, setLoading] = useState(() => Boolean(supabase));
 
   useEffect(() => {
-    if (!supabase) {
-      setIdentity(readLocalIdentity());
-      setLoading(false);
-      return;
-    }
+    if (!supabase) return;
 
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       setIdentity(fromSession(data.session));
       setLoading(false);
@@ -140,10 +106,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth doit être utilisé dans un AuthProvider');
-  return context;
 }

@@ -4,7 +4,7 @@ import { LogIn, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Logo } from '@/components/Logo';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-context';
 
 export default function SignIn() {
   const { signInWithGoogle, continueAsGuest, backendReady } = useAuth();

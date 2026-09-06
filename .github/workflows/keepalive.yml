@@ -1,0 +1,40 @@
+name: Réveil Supabase
+
+# Un projet Supabase gratuit se met en pause après 7 jours sans la moindre
+# requête en base. Une vraie lecture tous les 3 jours suffit à l'en empêcher,
+# et coûte quelques secondes de temps d'exécution GitHub par mois.
+#
+# Secrets à définir dans le dépôt (Settings → Secrets → Actions) :
+#   SUPABASE_URL       — https://xxxx.supabase.co
+#   SUPABASE_ANON_KEY  — clé publique « anon » du projet
+
+on:
+  schedule:
+    - cron: '17 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Lecture d'entretien
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interroger la base
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "Secrets absents : rien à réveiller pour l'instant."
+            exit 0
+          fi
+          # Une requête qui touche réellement Postgres, pas seulement l'API.
+          code=$(curl -s -o /tmp/out.json -w '%{http_code}' \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            "$URL/rest/v1/destinations?select=id&limit=1")
+          echo "Réponse HTTP : $code"
+          # 200 = réveillé, 401/403 = joignable mais filtré : dans les deux cas
+          # la base a été sollicitée, ce qui est le but recherché.
+          case "$code" in
+            200|401|403) exit 0 ;;
+            *) echo "Projet injoignable"; cat /tmp/out.json; exit 1 ;;
+          esac

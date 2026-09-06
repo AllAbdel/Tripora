@@ -1,33 +1,43 @@
 #!/usr/bin/env bash
-# Rejoue le schéma complet sur un Postgres local et vérifie les politiques RLS.
-# Ne nécessite ni compte Supabase, ni réseau, ni quota.
+# Rejoue le schéma complet sur un Postgres et vérifie les politiques RLS.
+# Ni compte Supabase, ni réseau, ni quota consommé.
 #
 #   ./supabase/tests/run.sh
 #
+# Deux façons de se connecter :
+#   - PGHOST défini (intégration continue, conteneur) : connexion directe ;
+#   - sinon : cluster local, via l'utilisateur système postgres.
 set -euo pipefail
 
 DB="${TRIPORA_TEST_DB:-tripora_test}"
-PSQL_USER="${TRIPORA_TEST_USER:-postgres}"
-run_psql() { su "$PSQL_USER" -c "psql -v ON_ERROR_STOP=1 $*"; }
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
+if [[ -n "${PGHOST:-}" ]]; then
+  psql_run() { psql -v ON_ERROR_STOP=1 -U "${PGUSER:-postgres}" "$@"; }
+else
+  psql_run() {
+    local args=()
+    for arg in "$@"; do args+=("$(printf '%q' "$arg")"); done
+    su "${TRIPORA_TEST_USER:-postgres}" -c "psql -v ON_ERROR_STOP=1 ${args[*]}"
+  }
+fi
+
 echo "→ Base de test : $DB"
-run_psql "-q -c 'drop database if exists $DB'"
-run_psql "-q -c 'create database $DB'"
+psql_run -q -d postgres -c "drop database if exists $DB"
+psql_run -q -d postgres -c "create database $DB"
 
 echo "→ Doublure de la plateforme Supabase"
-run_psql "-q -d $DB -c 'create extension if not exists pgcrypto'"
-run_psql "-q -d $DB -f $ROOT/supabase/tests/shim_auth.sql"
+psql_run -q -d "$DB" -c 'create extension if not exists pgcrypto'
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/shim_auth.sql"
 
 echo "→ Migrations"
 for file in "$ROOT"/supabase/migrations/*.sql; do
   echo "   $(basename "$file")"
-  run_psql "-q -d $DB -f $file"
+  psql_run -q -d "$DB" -f "$file"
 done
 
 echo "→ Droits de table (équivalents Supabase)"
-run_psql "-q -d $DB -f $ROOT/supabase/tests/grants.sql"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/grants.sql"
 
 echo "→ Tests RLS"
-run_psql "-q -d $DB -f $ROOT/supabase/tests/rls_test.sql"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/rls_test.sql"

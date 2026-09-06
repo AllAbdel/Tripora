@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-context';
 import SignIn from '@/routes/SignIn';
 import Trips from '@/routes/Trips';
 import Profile from '@/routes/Profile';

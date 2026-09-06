@@ -2,7 +2,7 @@ import { LogOut, Monitor, Moon, Sun } from 'lucide-react';
 import { ScreenHeader } from '@/components/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-context';
 import { useTheme, type ThemePreference } from '@/stores/theme';
 import { cn } from '@/lib/cn';
 
