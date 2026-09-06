@@ -30,9 +30,77 @@ export interface VotingApi {
   watchVotes(tripId: string, onChange: () => void): () => void;
 }
 
-export function getVoting(): VotingApi | null {
+/**
+ * Version locale, pour le mode sans serveur.
+ *
+ * Un voyageur seul doit lui aussi pouvoir arrêter sa destination : sans cela,
+ * l'itinéraire resterait inaccessible et le mode local s'arrêterait au milieu
+ * du parcours. Les votes n'ont alors qu'un seul votant, ce qui reste
+ * parfaitement sensé — c'est la façon dont on choisit quand on part seul.
+ */
+const CLE_VOTES = 'tripora.local-votes';
+const CLE_CHOIX = 'tripora.local-locked';
+
+function lireJson<T>(cle: string, defaut: T): T {
+  try {
+    const brut = localStorage.getItem(cle);
+    return brut ? (JSON.parse(brut) as T) : defaut;
+  } catch {
+    return defaut;
+  }
+}
+
+const voteLocal: VotingApi = {
+  async listTallies(tripId) {
+    const stock = lireJson<Record<string, Record<string, VoteValue>>>(CLE_VOTES, {});
+    const pourCeVoyage = stock[tripId] ?? {};
+    return new Map(
+      Object.entries(pourCeVoyage).map(([destinationId, value]) => [
+        destinationId,
+        {
+          destinationId,
+          likes: value === 'like' ? 1 : 0,
+          dislikes: value === 'dislike' ? 1 : 0,
+          favorites: value === 'favorite' ? 1 : 0,
+          mine: value,
+        },
+      ]),
+    );
+  },
+
+  async cast(tripId, destinationId, value) {
+    const stock = lireJson<Record<string, Record<string, VoteValue>>>(CLE_VOTES, {});
+    const pourCeVoyage = { ...(stock[tripId] ?? {}) };
+    if (value === null) delete pourCeVoyage[destinationId];
+    else pourCeVoyage[destinationId] = value;
+    localStorage.setItem(CLE_VOTES, JSON.stringify({ ...stock, [tripId]: pourCeVoyage }));
+  },
+
+  async lockDestination(tripId, destinationId) {
+    const stock = lireJson<Record<string, string>>(CLE_CHOIX, {});
+    localStorage.setItem(CLE_CHOIX, JSON.stringify({ ...stock, [tripId]: destinationId }));
+  },
+
+  async unlockDestination(tripId) {
+    const stock = lireJson<Record<string, string>>(CLE_CHOIX, {});
+    delete stock[tripId];
+    localStorage.setItem(CLE_CHOIX, JSON.stringify(stock));
+  },
+
+  watchVotes() {
+    // Rien à écouter : personne d'autre ne peut modifier ce stockage.
+    return () => {};
+  },
+};
+
+/** Destination arrêtée en mode local, lue par le dépôt des voyages. */
+export function destinationLocaleRetenue(tripId: string): string | null {
+  return lireJson<Record<string, string>>(CLE_CHOIX, {})[tripId] ?? null;
+}
+
+export function getVoting(): VotingApi {
   const client = supabase;
-  if (!client) return null;
+  if (!client) return voteLocal;
 
   return {
     async listTallies(tripId, userId) {

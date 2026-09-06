@@ -13,6 +13,7 @@ import Profile from '@/routes/Profile';
 import NotFound from '@/routes/NotFound';
 import CreateTrip from '@/routes/create/CreateTrip';
 import MapTab from '@/routes/MapTab';
+import TripItinerary from '@/routes/TripItinerary';
 import { Placeholder } from '@/routes/Placeholder';
 
 // MapLibre pèse à lui seul plus que tout le reste de l'application : la carte
@@ -45,6 +46,7 @@ function TabbedRoutes() {
             </Suspense>
           }
         />
+        <Route path="/voyages/:id/itineraire" element={<TripItinerary />} />
         <Route path="/carte" element={<MapTab />} />
         <Route
           path="/budget"

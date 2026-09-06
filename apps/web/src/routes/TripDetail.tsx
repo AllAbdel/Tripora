@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Lock, LockOpen, Map as MapIcon, MapPin, UserPlus, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Loader2, Lock, LockOpen, Map as MapIcon, MapPin, UserPlus, Users, Wallet } from 'lucide-react';
 import {
   buildProposals,
   estimateTransportOptions,
@@ -41,13 +41,13 @@ export default function TripDetail() {
 
   const votes = useQuery({
     queryKey: ['votes', id],
-    queryFn: () => voting!.listTallies(id!, identity!.id),
-    enabled: Boolean(id && voting && identity),
+    queryFn: () => voting.listTallies(id!, identity!.id),
+    enabled: Boolean(id && identity),
   });
 
   const voter = useMutation({
     mutationFn: ({ destinationId, value }: { destinationId: string; value: VoteValue | null }) =>
-      voting!.cast(id!, destinationId, value),
+      voting.cast(id!, destinationId, value),
     // Le vote est un geste réflexe : on n'attend pas le serveur pour montrer
     // le résultat, et on se resynchronise juste après.
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['votes', id] }),
@@ -55,7 +55,7 @@ export default function TripDetail() {
 
   const verrouiller = useMutation({
     mutationFn: (destinationId: string | null) =>
-      destinationId ? voting!.lockDestination(id!, destinationId) : voting!.unlockDestination(id!),
+      destinationId ? voting.lockDestination(id!, destinationId) : voting.unlockDestination(id!),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trip'] }),
   });
 
@@ -155,6 +155,23 @@ export default function TripDetail() {
             </Banner>
           )}
 
+          {data.lockedDestinationId && (
+            <Link to={`/voyages/${data.summary.id}/itineraire`} className="block">
+              <Card className="border-lagoon-500 transition-transform active:scale-[0.99]">
+                <CardBody className="flex items-center gap-3 p-4">
+                  <CalendarDays className="text-lagoon-500 size-5 shrink-0" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">L’itinéraire jour par jour</span>
+                    <span className="text-muted block text-sm">
+                      La structure du séjour, à remplir de vraies adresses
+                    </span>
+                  </span>
+                  <span className="text-muted shrink-0" aria-hidden>›</span>
+                </CardBody>
+              </Card>
+            </Link>
+          )}
+
           <Link to={`/voyages/${data.summary.id}/carte`} className="block">
             <Card className="transition-transform active:scale-[0.99]">
               <CardBody className="flex items-center gap-3 p-4">
@@ -243,7 +260,7 @@ export default function TripDetail() {
                           data.constraints.participants,
                         )}
                         vote={
-                          voting && !data.lockedDestinationId ? (
+                          !data.lockedDestinationId ? (
                             <VoteBar
                               tally={votes.data?.get(score.destinationId)}
                               participants={Math.max(
@@ -263,7 +280,7 @@ export default function TripDetail() {
                 })}
               </ul>
 
-              {voting && !data.lockedDestinationId && (
+              {!data.lockedDestinationId && (
                 <Card>
                   <CardBody className="space-y-3">
                     <p className="font-semibold">Trancher</p>

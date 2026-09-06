@@ -7,6 +7,7 @@ import {
   type TripConstraints,
 } from '@tripora/core';
 import { supabase } from './supabase';
+import { destinationLocaleRetenue } from './votes';
 import type { TripDraft } from '@/stores/tripDraft';
 
 /**
@@ -114,20 +115,21 @@ const localRepository: TripRepository = {
     if (!trip) return null;
     const constraints = constraintsFromDraft(trip.draft);
     if (!constraints) return null;
+    const retenue = destinationLocaleRetenue(trip.id);
     return {
       summary: {
         id: trip.id,
         title: trip.title,
-        status: 'draft',
+        status: retenue ? 'planned' : 'draft',
         participants: trip.draft.participants,
-        destinationName: null,
+        destinationName: retenue ? (findDestination(retenue)?.name ?? retenue) : null,
         coverImageUrl: null,
         createdAt: trip.createdAt,
         localOnly: true,
       },
       constraints,
       isOwner: true,
-      lockedDestinationId: null,
+      lockedDestinationId: retenue,
       members: [
         {
           userId: 'moi',

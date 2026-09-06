@@ -21,7 +21,7 @@ export function useGroupRealtime(tripId: string | undefined): void {
   useEffect(() => {
     const collaboration = getCollaboration();
     const voting = getVoting();
-    if (!tripId || !collaboration || !voting) return;
+    if (!tripId || !collaboration) return;
 
     const arreterGroupe = collaboration.watchGroup(tripId, () => {
       void queryClient.invalidateQueries({ queryKey: ['membres', tripId] });
