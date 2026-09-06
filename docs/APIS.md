@@ -152,11 +152,27 @@ sans dramatiser.
 | **Amadeus Self-Service** | Portail décommissionné le 17 juillet 2026, clés désactivées, pas d'équivalent gratuit |
 | **Kiwi.com Tequila** | Sur invitation depuis 2024, fermé aux nouveaux développeurs |
 | **Skyscanner, Duffel** | Réservés aux partenaires commerciaux |
+| **Hotellook (Travelpayouts)** | **Retiré.** Vérifié le 6 septembre 2026 avec un jeton valide : tout l'hôte `engine.hotellook.com` répond 404, y compris sur sa racine, et `yasen.hotellook.com` aussi — alors que l'API de vols du même compte répond 200. Il n'existe donc plus de source gratuite de prix d'hébergement |
 | **Booking, Airbnb** | Pas d'API accessible à un projet personnel |
 | **Google Maps, Mapbox** | Carte bancaire obligatoire |
 | **Google Places** | Facturation à l'appel, dès le premier |
 | **OpenWeather** | Offre gratuite réduite, carte demandée pour certaines fonctions |
 | **SerpApi (Google Flights)** | Retenu, mais **en option** : 100 recherches par mois seulement, réservé au bouton « Vérifier le prix » sur la destination finale, plafonné à 3 par jour |
+
+## Ce qu'on fait à la place des prix d'hôtels
+
+Rien ne remplace une source de prix qui n'existe plus. Tripora ne prétend donc
+pas en avoir : le coût d'hébergement reste une **estimation** issue du
+catalogue, étiquetée comme telle partout où elle apparaît.
+
+Ce qu'on peut faire honnêtement, et qu'on fait : des **liens de recherche
+préremplis** — ville, dates, nombre de voyageurs — vers Booking, Airbnb et
+Hostelworld, trois logiques différentes pour un groupe (l'hôtel, le logement
+entier, le lit en dortoir). Plus un lien vers Aviasales, la source de nos
+propres prix de vol, pour que le chiffre affiché soit vérifiable d'un clic.
+
+Aucun de ces liens n'est affilié et Tripora ne touche rien dessus. Ils ne
+promettent aucun prix : ils évitent de ressaisir six fois les mêmes dates.
 
 ## Coût mensuel
 

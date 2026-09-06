@@ -15,7 +15,7 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **6** | **Itinéraire** — génération jour par jour, réorganisation, ajout de vrais lieux ✅ ; consultation hors ligne partielle — **MVP atteint** | ✅ fait |
 | **7** | **Intelligence artificielle** — compréhension du langage naturel ✅, explications rédigées ✅ ; assistant conversationnel avec outils à venir | 🔨 en cours |
 | **8** | **Budget et dépenses** — saisie, parts, « qui doit combien à qui » simplifié ✅ ; multi-devises à venir | 🔨 en cours |
-| **9** | **Transport et hébergement** — comparaison avion, train, bus, voiture ; hôtels indicatifs ; liens de réservation ; vérification ponctuelle d'un prix | ⬜ |
+| **9** | **Transport et hébergement** — comparaison avion, train, bus, voiture ✅, liens de réservation préremplis ✅ ; prix d'hôtels **impossibles** (Hotellook retiré, voir APIS.md) | 🔨 en cours |
 | **10** | **Confort** — météo et réorganisation du planning, notifications, carte hors ligne, éventuel emballage APK | ⬜ |
 
 ## Où on en est

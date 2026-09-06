@@ -20,6 +20,7 @@ import { useProposals } from '@/lib/useProposals';
 import { useGroupRealtime } from '@/lib/useGroupRealtime';
 import { useAuth } from '@/lib/auth-context';
 import { VoteBar } from '@/components/VoteBar';
+import { Reserver } from '@/components/Reserver';
 import { toFailure } from '@/lib/errors';
 
 export default function TripDetail() {
@@ -61,6 +62,10 @@ export default function TripDetail() {
   });
 
   const { proposals, prix, prixEnCours } = useProposals(data);
+
+  const villeRetenue = data?.lockedDestinationId
+    ? findDestination(data.lockedDestinationId)
+    : undefined;
 
   // Ce que les votes désignent, qui n'est pas forcément ce que le calcul
   // classe en tête — et c'est très bien : le calcul propose, le groupe dispose.
@@ -217,6 +222,10 @@ export default function TripDetail() {
                 </>
               )}
             </Banner>
+          )}
+
+          {villeRetenue && (
+            <Reserver constraints={data.constraints} destination={villeRetenue} />
           )}
 
           {proposals && proposals.scores.length > 0 && (
