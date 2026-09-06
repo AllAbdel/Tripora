@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router';
-import { Compass, Map, User, Wallet } from 'lucide-react';
+import { CloudOff, Compass, Map, User, Wallet } from 'lucide-react';
+import { useEnLigne } from '@/lib/useEnLigne';
 import { cn } from '@/lib/cn';
 
 interface Tab {
@@ -23,9 +24,26 @@ const TABS: Tab[] = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const enLigne = useEnLigne();
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
+      {/*
+        Un bandeau plutôt qu'un écran d'erreur : hors réseau, Tripora affiche
+        ce qu'il sait déjà du voyage, et c'est utilisable. Ce qui manque, c'est
+        la fraîcheur — il faut le dire, pas bloquer.
+      */}
+      {!enLigne && (
+        <p
+          role="status"
+          className="bg-gold-500/15 text-gold-800 dark:text-gold-200 flex items-center
+                     justify-center gap-2 px-4 py-2 text-xs font-medium"
+        >
+          <CloudOff className="size-3.5 shrink-0" aria-hidden />
+          Hors réseau — vous voyez la dernière version connue de vos voyages.
+        </p>
+      )}
+
       <main className="flex-1 pb-24">{children}</main>
 
       <nav

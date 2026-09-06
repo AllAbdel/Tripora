@@ -173,6 +173,24 @@ points dorés autour de la destination. Avant le verrouillage, ils ne doivent
 volontaire — OpenStreetMap en connaît des milliers par ville sans note ni prix
 fiables, et les proposer reviendrait à recommander au hasard.
 
+## 8 ter. Couper le réseau
+
+24. Charge le voyage normalement, puis **active le mode avion** et recharge la
+    page.
+
+→ Un bandeau doré doit apparaître en haut : « Hors réseau — vous voyez la
+dernière version connue de vos voyages. »
+
+→ **L'écran doit s'afficher tout de suite**, pas après six secondes de rond
+qui tourne : le voyage, l'itinéraire, la carte et les dépenses viennent du
+cache gardé sur l'appareil.
+
+→ Rallume le réseau : le bandeau disparaît et les données se rafraîchissent
+sans que tu aies à recharger.
+
+C'est le scénario du vrai voyage : dans l'avion, dans le métro, à l'étranger
+sans forfait.
+
 ## 9. Installer l'application
 
 31. Sur téléphone : Safari → Partager → **Sur l'écran d'accueil**, ou Chrome →
