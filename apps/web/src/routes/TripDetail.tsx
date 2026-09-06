@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Lock, LockOpen, MapPin, UserPlus, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, Loader2, Lock, LockOpen, Map as MapIcon, MapPin, UserPlus, Users, Wallet } from 'lucide-react';
 import {
   buildProposals,
   estimateTransportOptions,
@@ -154,6 +154,23 @@ export default function TripDetail() {
               et très peu de budget, il ne reste parfois rien d’honnête à proposer.
             </Banner>
           )}
+
+          <Link to={`/voyages/${data.summary.id}/carte`} className="block">
+            <Card className="transition-transform active:scale-[0.99]">
+              <CardBody className="flex items-center gap-3 p-4">
+                <MapIcon className="text-brand-500 size-5 shrink-0" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">Voir sur la carte</span>
+                  <span className="text-muted block text-sm">
+                    {data.lockedDestinationId
+                      ? 'Le trajet depuis ' + data.constraints.origin.name
+                      : 'Où sont les destinations en lice'}
+                  </span>
+                </span>
+                <span className="text-muted shrink-0" aria-hidden>›</span>
+              </CardBody>
+            </Card>
+          </Link>
 
           {data.lockedDestinationId && (
             <Banner tone="info" title="Destination retenue">

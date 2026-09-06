@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Link2, Loader2, QrCode as QrIcon, Share2, UserPlus } from 'lucide-react';
@@ -6,7 +6,9 @@ import { AXIS_LABELS_FR, formatCents } from '@tripora/core';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
-import { QrCode } from '@/components/QrCode';
+
+// Chargé seulement quand quelqu'un demande le QR code.
+const QrCode = lazy(() => import('@/components/QrCode'));
 import { getCollaboration, type TripMember } from '@/lib/collaboration';
 import { useAuth } from '@/lib/auth-context';
 import { toFailure } from '@/lib/errors';
@@ -167,7 +169,16 @@ export default function TripMembers() {
 
               {showQr && (
                 <div className="animate-rise flex flex-col items-center gap-2 pt-1">
-                  <QrCode value={invite.url} />
+                  <Suspense
+                    fallback={
+                      <div
+                        className="size-[200px] animate-pulse rounded-2xl bg-[color:var(--border-subtle)]"
+                        aria-hidden
+                      />
+                    }
+                  >
+                    <QrCode value={invite.url} />
+                  </Suspense>
                   <p className="text-muted text-xs">À scanner avec l’appareil photo.</p>
                 </div>
               )}

@@ -66,6 +66,29 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        /**
+         * Les dépendances changent rarement, le code de Tripora souvent.
+         * Les séparer permet au navigateur — et au Service Worker — de garder
+         * React et le client Supabase en cache d'un déploiement à l'autre,
+         * au lieu de retélécharger 200 Ko à chaque correction de texte.
+         */
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('@supabase')) return 'supabase';
+          if (id.includes('react-dom') || id.includes('/react/') || id.includes('react-router')) {
+            return 'react';
+          }
+          return undefined;
+        },
+      },
+    },
+    // MapLibre dépasse à lui seul le seuil, et c'est assumé : il est chargé
+    // à la demande par la seule route qui en a besoin.
+    chunkSizeWarningLimit: 1100,
+  },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

@@ -20,16 +20,17 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 
 ## Où on en est
 
-Les phases 0, 1, 2 et 4 sont terminées, et la partie calcul de la phase 3
-fonctionne déjà. Un groupe peut créer un voyage, s'inviter par lien ou par QR
+Les phases 0, 1, 2 et 4 sont terminées, la 3 et la 5 le sont pour leur partie
+qui ne dépend d'aucune clé d'API. Un groupe peut créer un voyage, s'inviter par lien ou par QR
 code, exprimer ses envies chacun de son côté, et voir des destinations notées,
 expliquées et chiffrées se recalculer en direct — **sans aucune clé d'API**.
 Tous les prix sont alors des estimations, et l'application le dit à chaque
 écran.
 
-Le vote est en place : le groupe peut trancher, et l'organisateur arrête la
-destination. Il reste donc la carte et l'itinéraire pour boucler le MVP, puis
-les prix réels, qui ne demandent qu'un jeton Travelpayouts gratuit.
+Le vote est en place, et la carte montre la géographie du voyage : d'où l'on
+part, les destinations en lice, et le trajet vers celle qu'on regarde. Il reste
+l'itinéraire jour par jour pour boucler le MVP, puis les points d'intérêt et
+les prix réels.
 
 ## Pourquoi cet ordre
 

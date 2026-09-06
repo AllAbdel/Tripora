@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
@@ -11,7 +12,12 @@ import JoinTrip from '@/routes/JoinTrip';
 import Profile from '@/routes/Profile';
 import NotFound from '@/routes/NotFound';
 import CreateTrip from '@/routes/create/CreateTrip';
+import MapTab from '@/routes/MapTab';
 import { Placeholder } from '@/routes/Placeholder';
+
+// MapLibre pèse à lui seul plus que tout le reste de l'application : la carte
+// n'est téléchargée que par les personnes qui l'ouvrent vraiment.
+const TripMapScreen = lazy(() => import('@/routes/TripMapScreen'));
 
 function FullScreenLoader() {
   return (
@@ -32,15 +38,14 @@ function TabbedRoutes() {
         <Route path="/voyages/:id" element={<TripDetail />} />
         <Route path="/voyages/:id/participants" element={<TripMembers />} />
         <Route
-          path="/carte"
+          path="/voyages/:id/carte"
           element={
-            <Placeholder
-              title="Carte"
-              phase="Bientôt disponible"
-              description="La carte affichera la destination, l’hébergement, les activités et le trajet de chaque journée. Elle arrive une fois la destination choisie par le groupe."
-            />
+            <Suspense fallback={<FullScreenLoader />}>
+              <TripMapScreen />
+            </Suspense>
           }
         />
+        <Route path="/carte" element={<MapTab />} />
         <Route
           path="/budget"
           element={

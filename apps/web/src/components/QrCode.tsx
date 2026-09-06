@@ -7,8 +7,12 @@ import QRCode from 'qrcode';
  * Généré localement : aucun service extérieur n'apprend qui invite qui, et le
  * code s'affiche même sans réseau. Le SVG reste net à toutes les tailles, ce
  * qui compte quand on scanne l'écran d'un téléphone avec un autre téléphone.
+ *
+ * Export par défaut et chargement à la demande : la bibliothèque embarque un
+ * encodeur PNG dont on ne se sert pas, et pesait 200 Ko dans le paquet
+ * principal pour un carré affiché derrière un bouton.
  */
-export function QrCode({ value, size = 200 }: { value: string; size?: number }) {
+export default function QrCode({ value, size = 200 }: { value: string; size?: number }) {
   const [svg, setSvg] = useState<string | null>(null);
 
   useEffect(() => {
