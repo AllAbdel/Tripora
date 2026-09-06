@@ -14,7 +14,8 @@ import NotFound from '@/routes/NotFound';
 import CreateTrip from '@/routes/create/CreateTrip';
 import MapTab from '@/routes/MapTab';
 import TripItinerary from '@/routes/TripItinerary';
-import { Placeholder } from '@/routes/Placeholder';
+import TripBudget from '@/routes/TripBudget';
+import BudgetTab from '@/routes/BudgetTab';
 
 // MapLibre pèse à lui seul plus que tout le reste de l'application : la carte
 // n'est téléchargée que par les personnes qui l'ouvrent vraiment.
@@ -48,16 +49,8 @@ function TabbedRoutes() {
         />
         <Route path="/voyages/:id/itineraire" element={<TripItinerary />} />
         <Route path="/carte" element={<MapTab />} />
-        <Route
-          path="/budget"
-          element={
-            <Placeholder
-              title="Budget"
-              phase="Bientôt disponible"
-              description="Le budget comparera l’estimation du voyage aux dépenses réelles, et calculera qui doit combien à qui, en simplifiant les remboursements."
-            />
-          }
-        />
+        <Route path="/voyages/:id/budget" element={<TripBudget />} />
+        <Route path="/budget" element={<BudgetTab />} />
         <Route path="/profil" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

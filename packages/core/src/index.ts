@@ -17,3 +17,4 @@ export * from './catalog/origins.js';
 export * from './transport.js';
 export * from './proposals.js';
 export * from './itinerary.js';
+export * from './settle.js';

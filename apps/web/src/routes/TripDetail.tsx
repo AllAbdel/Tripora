@@ -164,6 +164,21 @@ export default function TripDetail() {
             </Link>
           )}
 
+          <Link to={`/voyages/${data.summary.id}/budget`} className="block">
+            <Card className="transition-transform active:scale-[0.99]">
+              <CardBody className="flex items-center gap-3 p-4">
+                <Wallet className="text-brand-500 size-5 shrink-0" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">Dépenses</span>
+                  <span className="text-muted block text-sm">
+                    Qui a avancé quoi, et qui doit combien à qui
+                  </span>
+                </span>
+                <span className="text-muted shrink-0" aria-hidden>›</span>
+              </CardBody>
+            </Card>
+          </Link>
+
           <Link to={`/voyages/${data.summary.id}/carte`} className="block">
             <Card className="transition-transform active:scale-[0.99]">
               <CardBody className="flex items-center gap-3 p-4">

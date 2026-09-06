@@ -11,6 +11,7 @@ import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Field, TextInput } from '@/components/ui/Field';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { getTripRepository } from '@/lib/trips';
 import {
   getItinerary, positionPourHeure, type ItineraryDayView, type ItineraryItem,
@@ -376,14 +377,7 @@ function Journee({
                 />
               </Field>
               <Field label="Combien ?">
-                <TextInput
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  placeholder="15"
-                  value={cout}
-                  onChange={(event) => setCout(event.target.value)}
-                />
+                <MoneyInput label="Coût" placeholder="15" value={cout} onChange={setCout} />
               </Field>
             </div>
             <Button

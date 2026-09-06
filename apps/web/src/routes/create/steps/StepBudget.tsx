@@ -2,7 +2,8 @@ import { BedDouble, Coins, PiggyBank, Sparkle } from 'lucide-react';
 import { formatCents, parseAmountToCents, type BudgetMode, type ComfortLevel } from '@tripora/core';
 import { OptionCard } from '@/components/ui/OptionCard';
 import { Chip } from '@/components/ui/Chip';
-import { Field, TextInput } from '@/components/ui/Field';
+import { Field } from '@/components/ui/Field';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { useTripDraft } from '@/stores/tripDraft';
 
 const MODES: { value: BudgetMode; label: string; description: string; icon: typeof Coins }[] = [
@@ -73,17 +74,14 @@ export function StepBudget() {
                 : 'Transport, hébergement, nourriture et activités compris.'
             }
           >
-            <TextInput
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={10}
+            <MoneyInput
+              label="Budget par personne"
               placeholder="400"
+              entier
               value={budgetPerPersonCents === null ? '' : String(budgetPerPersonCents / 100)}
-              onChange={(event) =>
+              onChange={(valeur) =>
                 patch({
-                  budgetPerPersonCents:
-                    event.target.value === '' ? null : parseAmountToCents(event.target.value),
+                  budgetPerPersonCents: valeur === '' ? null : parseAmountToCents(valeur),
                 })
               }
             />

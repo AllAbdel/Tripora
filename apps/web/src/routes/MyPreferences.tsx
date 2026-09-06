@@ -11,7 +11,8 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Chip } from '@/components/ui/Chip';
-import { Field, TextInput } from '@/components/ui/Field';
+import { Field } from '@/components/ui/Field';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { PreferenceEditor } from '@/components/PreferenceEditor';
 import { getCollaboration } from '@/lib/collaboration';
 import { toFailure } from '@/lib/errors';
@@ -115,18 +116,13 @@ export default function MyPreferences() {
             label="Votre budget maximum, tout compris"
             hint="Tripora retient toujours le budget le plus serré du groupe. Personne ne doit se retrouver embarqué dans un voyage qu’il ne peut pas payer."
           >
-            <TextInput
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={10}
+            <MoneyInput
+              label="Budget maximum"
               placeholder="400"
+              entier
               value={budget === null ? '' : String(budget / 100)}
-              onChange={(event) =>
-                modifier({
-                  budget:
-                    event.target.value === '' ? null : parseAmountToCents(event.target.value),
-                })
+              onChange={(valeur) =>
+                modifier({ budget: valeur === '' ? null : parseAmountToCents(valeur) })
               }
             />
           </Field>
