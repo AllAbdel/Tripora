@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft, ChevronDown, ChevronUp, Loader2, Plus, RotateCcw, Trash2, X,
+  ArrowLeft, ArrowLeftRight, ChevronDown, ChevronUp, Loader2, Plus, RotateCcw, Trash2, X,
 } from 'lucide-react';
 import {
   AXIS_EMOJI, buildItinerary, dayVerdict, describeDay, findDestination, formatCents,
-  parseAmountToCents, weatherEmoji,
+  parseAmountToCents, suggestWeatherSwaps, weatherEmoji,
   type DailyWeather, type Destination, type MemberPreference, type Poi,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
@@ -180,6 +180,17 @@ export default function TripItinerary() {
 
   const enregistre = jours.data;
 
+  // Le programme d'une journée se lit dans les envies qu'elle sert : c'est ce
+  // qui dit si la pluie la gâche ou pas.
+  const echanges = suggestWeatherSwaps(
+    (enregistre ?? []).map((jour) => ({
+      dayIndex: jour.dayIndex,
+      date: jour.date ?? undefined,
+      axes: jour.items.flatMap((item) => (item.axis ? [item.axis] : [])),
+    })),
+    meteo.data?.statut === 'ok' ? meteo.data.jours : [],
+  );
+
   return (
     <div className="space-y-4 px-5 pt-6">
       <Retour id={id} />
@@ -219,6 +230,30 @@ export default function TripItinerary() {
             </CardBody>
           </Card>
         </>
+      )}
+
+      {echanges.length > 0 && (
+        <Card className="border-gold-400/50 border-dashed">
+          <CardBody className="space-y-2">
+            <div className="flex items-center gap-2">
+              <ArrowLeftRight className="text-gold-600 dark:text-gold-400 size-4 shrink-0" aria-hidden />
+              <h2 className="text-sm font-bold">La météo contrarie le programme</h2>
+            </div>
+            <ul className="space-y-1.5">
+              {echanges.map((echange) => (
+                <li key={`${echange.from}-${echange.to}`} className="text-sm leading-relaxed">
+                  {echange.reason}
+                </li>
+              ))}
+            </ul>
+            {/* Tripora ne déplace rien tout seul : un itinéraire qui se
+                réorganiserait pendant la nuit serait impossible à suivre. */}
+            <p className="text-muted text-xs">
+              À vous de voir — Tripora ne change rien sans vous. Les journées se réorganisent
+              en déplaçant les activités avec les flèches.
+            </p>
+          </CardBody>
+        </Card>
       )}
 
       {enregistre && enregistre.length > 0 && (

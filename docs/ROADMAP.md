@@ -16,7 +16,7 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **7** | **Intelligence artificielle** — compréhension du langage naturel, explications rédigées, assistant qui répond aux questions du groupe sans jamais rien décider ni rien modifier | ✅ fait |
 | **8** | **Budget et dépenses** — saisie, parts, « qui doit combien à qui » simplifié, dépenses en devise locale converties aux taux de la BCE | ✅ fait |
 | **9** | **Transport et hébergement** — comparaison avion, train, bus, voiture ✅, liens de réservation préremplis ✅ ; prix d'hôtels **impossibles** (Hotellook retiré, voir APIS.md) | 🔨 en cours |
-| **10** | **Confort** — météo du séjour sur la fiche et sur chaque journée ✅ ; notifications, carte hors ligne et éventuel emballage APK à venir | 🔨 en cours |
+| **10** | **Confort** — météo du séjour, sur la fiche et sur chaque journée, avec proposition d'échanger deux journées quand la pluie tombe sur le programme en extérieur ✅ ; notifications, carte hors ligne et éventuel emballage APK à venir | 🔨 en cours |
 
 ## Où on en est
 
@@ -55,6 +55,11 @@ voyage montre les jours du séjour, et chaque journée de l'itinéraire porte sa
 prévision — « pluie, 18 ° — plutôt à l'abri ». Au-delà de seize jours la
 prévision n'existe pas, et les normales reprennent la main, sans que personne
 ait à choisir.
+
+Et quand la randonnée tombe le jour de pluie pendant que le musée prend le
+grand soleil, Tripora le remarque et propose d'échanger les deux journées.
+**Il ne le fait pas** : un itinéraire qui se réorganiserait tout seul serait
+impossible à suivre. Il le dit, le groupe décide.
 
 La suite : les notifications et la carte hors ligne.
 La marche à suivre pour tout essayer soi-même est dans [TESTER.md](TESTER.md).
