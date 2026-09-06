@@ -7,6 +7,7 @@ import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
 import { TripMap, type MapMarker } from '@/components/TripMap';
 import { buildTripMarkers } from '@/lib/mapMarkers';
+import { chargerLieux } from '@/lib/places';
 import { getTripRepository } from '@/lib/trips';
 import { useGroupRealtime } from '@/lib/useGroupRealtime';
 import { useProposals } from '@/lib/useProposals';
@@ -33,6 +34,16 @@ export default function TripMapScreen() {
   const { proposals } = useProposals(data);
 
   const retenue = data?.lockedDestinationId ?? null;
+  const villeRetenue = retenue ? findDestination(retenue) : undefined;
+
+  // Les lieux ne sont demandés qu'une fois la destination arrêtée : avant, ils
+  // n'auraient aucun sens, et ce serait un appel par ville comparée.
+  const lieux = useQuery({
+    queryKey: ['lieux', villeRetenue?.id],
+    queryFn: () => chargerLieux(villeRetenue!),
+    enabled: Boolean(villeRetenue),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
 
   const markers = useMemo<MapMarker[]>(() => {
     if (!data || !proposals) return [];
@@ -40,9 +51,10 @@ export default function TripMapScreen() {
       origin: data.constraints.origin,
       scores: proposals.scores,
       lockedDestinationId: retenue,
+      places: lieux.data?.liste ?? [],
       onSelect: setSelection,
     });
-  }, [data, proposals, retenue]);
+  }, [data, proposals, retenue, lieux.data]);
 
   const trajet = useMemo(() => {
     if (!data) return null;

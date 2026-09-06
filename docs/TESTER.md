@@ -143,6 +143,36 @@ distance.
 29. Monte-le, descends-le, supprime-le.
 30. Depuis la fenêtre de l'ami : la même journée doit refléter tes ajouts.
 
+## 8 bis. Les vrais lieux
+
+Une fois la destination verrouillée :
+
+22. Onglet **Itinéraire** → **Ajouter un lieu à cette journée**.
+
+→ Au-dessus du champ de saisie, une liste de vrais lieux de la ville doit
+apparaître, avec pour certains une photo et deux phrases de description. Ils
+viennent d'OpenStreetMap et de Wikipédia — **rien n'est inventé**.
+
+→ L'ordre suit les envies du groupe : si vous avez mis Culture sur *Essentiel*,
+les musées doivent être devant les centres commerciaux.
+
+→ Tape `belv` dans la recherche : les belvédères doivent remonter, accents
+ignorés.
+
+→ Clique sur un lieu : son nom remplit le champ « Quoi ? ». Tu peux encore le
+corriger, et le champ reste libre — aucun catalogue ne connaît la crêperie que
+ton cousin a recommandée.
+
+23. Onglet **Carte**.
+
+→ La carte doit maintenant zoomer sur la ville et montrer les lieux en petits
+points dorés autour de la destination. Avant le verrouillage, ils ne doivent
+**pas** apparaître : on compare des villes, pas des musées.
+
+⚠️ Ce que tu ne dois **pas** voir : des restaurants ou des bars. C'est
+volontaire — OpenStreetMap en connaît des milliers par ville sans note ni prix
+fiables, et les proposer reviendrait à recommander au hasard.
+
 ## 9. Installer l'application
 
 31. Sur téléphone : Safari → Partager → **Sur l'écran d'accueil**, ou Chrome →
@@ -160,7 +190,6 @@ distance.
 |---|---|
 | Assistant conversationnel (poser une question, faire modifier l'itinéraire) | Phase suivante |
 | Hôtels et comparaison de transports | Phase suivante |
-| Points d'intérêt réels sur la carte | Phase suivante |
 | Dépenses en plusieurs devises | Phase suivante |
 | Liens de réservation affiliés | Attend `TRAVELPAYOUTS_MARKER`, entièrement facultatif |
 

@@ -42,7 +42,7 @@ export interface MapMarker {
   label: string;
   /** Texte court affiché dans la pastille : un rang, une initiale. */
   badge?: string;
-  kind: 'origin' | 'destination' | 'chosen';
+  kind: 'origin' | 'destination' | 'chosen' | 'place';
   onSelect?: () => void;
 }
 
@@ -162,7 +162,11 @@ export function TripMap({
 
     const bornes = new LngLatBounds();
     for (const marker of markers) bornes.extend([marker.point.lng, marker.point.lat]);
-    instance.fitBounds(bornes, { padding: 64, maxZoom: 9, duration: 600 });
+    // Deux échelles, et une seule règle : montrer ce qu'il y a à voir. Tant
+    // qu'on compare des villes, on reste au niveau du continent ; dès qu'on
+    // pose des lieux, on descend dans la rue.
+    const rues = markers.some((marker) => marker.kind === 'place');
+    instance.fitBounds(bornes, { padding: 64, maxZoom: rues ? 14 : 9, duration: 600 });
 
     return () => {
       for (const pose of poses) pose.remove();
@@ -243,6 +247,10 @@ function classePourRepere(kind: MapMarker['kind']): string {
       return `${base} bg-ink-700`;
     case 'chosen':
       return `${base} bg-lagoon-500 size-10 text-sm`;
+    case 'place':
+      // Plus petits que les villes : ils sont nombreux et secondaires. La
+      // carte doit rester lisible même avec cent points posés dessus.
+      return `${base} bg-gold-500 size-6 text-[10px]`;
     default:
       return `${base} bg-brand-500`;
   }

@@ -1,4 +1,4 @@
-import { findDestination, type DestinationScore, type Place } from '@tripora/core';
+import { findDestination, type DestinationScore, type Place, type Poi } from '@tripora/core';
 import type { MapMarker } from '@/components/TripMap';
 
 /**
@@ -8,16 +8,23 @@ import type { MapMarker } from '@/components/TripMap';
  * c'est là que se joue la seule vraie règle d'affichage — une fois la
  * destination arrêtée, la carte ne montre plus qu'elle. Continuer à afficher
  * les recalées brouillerait le message : le débat est clos.
+ *
+ * C'est aussi à ce moment-là que les lieux apparaissent. Avant la décision ils
+ * n'auraient aucun sens — on compare des villes, pas des musées ; après, ils
+ * sont tout ce qui compte.
  */
 export function buildTripMarkers({
   origin,
   scores,
   lockedDestinationId,
+  places = [],
   onSelect,
 }: {
   origin: Place;
   scores: readonly DestinationScore[];
   lockedDestinationId: string | null;
+  /** Lieux de la destination retenue. Ignorés tant que rien n'est tranché. */
+  places?: readonly Poi[];
   onSelect?: (destinationId: string) => void;
 }): MapMarker[] {
   const markers: MapMarker[] = [
@@ -45,6 +52,17 @@ export function buildTripMarkers({
       kind: lockedDestinationId === destination.id ? 'chosen' : 'destination',
       ...(onSelect ? { onSelect: () => onSelect(destination.id) } : {}),
     });
+  }
+
+  if (lockedDestinationId) {
+    for (const lieu of places) {
+      markers.push({
+        id: lieu.id,
+        point: lieu,
+        label: `${lieu.name} — ${lieu.label}`,
+        kind: 'place',
+      });
+    }
   }
 
   return markers;

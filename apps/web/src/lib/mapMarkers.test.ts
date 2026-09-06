@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DestinationScore } from '@tripora/core';
 import { buildTripMarkers } from './mapMarkers';
+import type { Poi } from '@tripora/core';
+
+const MUSEE: Poi = {
+  id: 'osm:way/1',
+  name: 'Musée Calouste-Gulbenkian',
+  lat: 38.737,
+  lng: -9.153,
+  category: 'musee',
+  axis: 'culture',
+  label: 'Musée',
+};
 
 const PARIS = { name: 'Paris', lat: 48.8566, lng: 2.3522 };
 
@@ -91,5 +102,40 @@ describe('repères de la carte', () => {
     });
     markers[2]?.onSelect?.();
     expect(onSelect).toHaveBeenCalledWith('budapest');
+  });
+
+  it('ne pose les lieux qu’une fois la destination arrêtée', () => {
+    // Avant la décision, un musée de Lisbonne au milieu de six villes
+    // candidates ne veut rien dire : on compare des villes, pas des musées.
+    const avant = buildTripMarkers({
+      origin: PARIS,
+      scores: TROIS,
+      lockedDestinationId: null,
+      places: [MUSEE],
+    });
+    expect(avant.some((repere) => repere.kind === 'place')).toBe(false);
+
+    const apres = buildTripMarkers({
+      origin: PARIS,
+      scores: TROIS,
+      lockedDestinationId: 'lisbonne',
+      places: [MUSEE],
+    });
+    const lieu = apres.find((repere) => repere.kind === 'place');
+    expect(lieu?.label).toBe('Musée Calouste-Gulbenkian — Musée');
+    expect(lieu?.point).toMatchObject({ lat: 38.737, lng: -9.153 });
+  });
+
+  it('reste identique quand aucun lieu n’est fourni', () => {
+    expect(
+      buildTripMarkers({ origin: PARIS, scores: TROIS, lockedDestinationId: 'lisbonne' }),
+    ).toEqual(
+      buildTripMarkers({
+        origin: PARIS,
+        scores: TROIS,
+        lockedDestinationId: 'lisbonne',
+        places: [],
+      }),
+    );
   });
 });

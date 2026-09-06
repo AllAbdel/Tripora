@@ -11,7 +11,7 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **2** | **Collaboration** — invitation par lien, code et QR, liste des membres, préférences et budget de chacun, mises à jour en direct | ✅ fait |
 | **3** | **Propositions** — moteur de scoring, coût total, explications, prix des vols relevés chez Aviasales, climat mesuré sur trois ans | ✅ fait |
 | **4** | **Vote et décision** — j'aime, je n'aime pas, favori, agrégation, verrouillage de la destination | ✅ fait |
-| **5** | **Carte et lieux** — MapLibre, destinations en lice, tracé du trajet ✅ ; points d'intérêt et photos restent à faire | 🔨 en cours |
+| **5** | **Carte et lieux** — MapLibre, destinations en lice, tracé du trajet, lieux réels d'OpenStreetMap avec descriptions Wikipédia | ✅ fait |
 | **6** | **Itinéraire** — génération jour par jour, réorganisation, ajout de vrais lieux ✅ ; consultation hors ligne partielle — **MVP atteint** | ✅ fait |
 | **7** | **Intelligence artificielle** — compréhension du langage naturel ✅, explications rédigées ✅ ; assistant conversationnel avec outils à venir | 🔨 en cours |
 | **8** | **Budget et dépenses** — saisie, parts, « qui doit combien à qui » simplifié ✅ ; multi-devises à venir | 🔨 en cours |
@@ -29,6 +29,8 @@ qu'il complète de vraies adresses, et se répartir les dépenses.
 Ce qui repose sur des faits mesurés plutôt que sur des estimations :
 
 - **les prix des vols**, relevés chez Aviasales et étiquetés de leur date ;
+- **les lieux**, tirés d'OpenStreetMap et décrits par Wikipédia : l'itinéraire
+  propose des visites qui existent, il n'en invente aucune ;
 - **le climat**, normales mensuelles calculées sur les archives 2023-2025 pour
   les 55 destinations, embarquées dans le code : aucun appel, aucun quota,
   fonctionne hors ligne.
@@ -36,9 +38,8 @@ Ce qui repose sur des faits mesurés plutôt que sur des estimations :
 Sans aucune clé d'API, tout continue de fonctionner : les prix redeviennent des
 estimations, l'IA disparaît de l'écran, et rien d'autre ne bouge.
 
-La suite : les points d'intérêt sur la carte, l'assistant conversationnel, les
-transports et les hébergements. La marche à suivre pour tout essayer soi-même
-est dans [TESTER.md](TESTER.md).
+La suite : l'assistant conversationnel, les transports et les hébergements.
+La marche à suivre pour tout essayer soi-même est dans [TESTER.md](TESTER.md).
 
 ## Pourquoi cet ordre
 

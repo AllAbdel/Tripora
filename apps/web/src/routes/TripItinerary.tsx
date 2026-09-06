@@ -6,11 +6,13 @@ import {
 } from 'lucide-react';
 import {
   AXIS_EMOJI, buildItinerary, findDestination, formatCents, parseAmountToCents,
+  type Destination, type MemberPreference, type Poi,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Field, TextInput } from '@/components/ui/Field';
+import { LieuxSuggeres } from '@/components/LieuxSuggeres';
 import { MoneyInput } from '@/components/ui/MoneyInput';
 import { getTripRepository } from '@/lib/trips';
 import {
@@ -223,6 +225,8 @@ export default function TripItinerary() {
               <Journee
                 key={jour.id}
                 jour={jour}
+                destination={destination}
+                members={voyage.data?.members ?? []}
                 enAjout={ajoutSur === jour.id}
                 onOuvrirAjout={() => setAjoutSur(ajoutSur === jour.id ? null : jour.id)}
                 onAjouter={(valeurs) =>
@@ -255,6 +259,8 @@ export default function TripItinerary() {
 
 function Journee({
   jour,
+  destination,
+  members,
   enAjout,
   onOuvrirAjout,
   onAjouter,
@@ -263,6 +269,9 @@ function Journee({
   onDeplacer,
 }: {
   jour: ItineraryDayView;
+  /** Absente tant que le groupe n'a pas tranché : pas de lieux à proposer. */
+  destination: Destination | undefined;
+  members: readonly MemberPreference[];
   enAjout: boolean;
   onOuvrirAjout: () => void;
   onAjouter: (valeurs: { title: string; startTime: string; cost: string }) => void;
@@ -360,7 +369,22 @@ function Journee({
                 <X className="size-4" aria-hidden />
               </BoutonIcone>
             </div>
-            <Field label="Quoi ?" hint="Le nom du vrai lieu, celui que vous avez trouvé.">
+            {destination && (
+              <LieuxSuggeres
+                destination={destination}
+                members={members}
+                onChoisir={(lieu: Poi) => setTitre(lieu.name)}
+              />
+            )}
+
+            <Field
+              label="Quoi ?"
+              hint={
+                destination
+                  ? 'Choisissez ci-dessus, ou écrivez ce que vous voulez.'
+                  : 'Le nom du vrai lieu, celui que vous avez trouvé.'
+              }
+            >
               <TextInput
                 value={titre}
                 onChange={(event) => setTitre(event.target.value)}
