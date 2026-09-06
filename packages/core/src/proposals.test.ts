@@ -7,6 +7,8 @@ import {
 } from './transport.js';
 import { normalizeWeights } from './preferences.js';
 import { findDestination } from './catalog/destinations.js';
+import { climateFor } from './catalog/climate.js';
+import { scoreDestination, type ScoreContext } from './scoring.js';
 import type { MemberPreference, TripConstraints } from './types.js';
 
 const PARIS = { name: 'Paris', lat: 48.8566, lng: 2.3522 };
@@ -145,6 +147,55 @@ describe('construction des propositions', () => {
       // 41 °C de moyenne : la note climat doit s'effondrer, sans que
       // l'absence de pluie ne vienne la racheter.
       expect(score.factors.find((f) => f.key === 'climate')!.score).toBe(0);
+    }
+  });
+
+  it('note le climat sur les normales embarquées, sans source injectée', () => {
+    const result = buildProposals(constraints({ month: 7 }), groupe, { keep: 6 });
+    for (const score of result.scores) {
+      const climat = score.factors.find((f) => f.key === 'climate')!;
+      // Sans normales, on retomberait sur `bestMonths` et ses phrases toutes
+      // faites. Avec elles, la raison affiche des degrés et des jours de pluie.
+      expect(climat.reason, score.destinationId).toMatch(/°C en journée, -?\d+ °C la nuit, \d+ jours? de pluie/);
+    }
+  });
+
+  it('préfère Séville en mai qu’en juillet, parce qu’il y fait 37 °C', () => {
+    const noteEn = (mois: number): number => {
+      const context: ScoreContext = {
+        constraints: constraints({ month: mois }),
+        members: groupe,
+        transport: { cents: 12_000, source: 'estimated' },
+        climate: climateFor('seville', mois)!,
+      };
+      return scoreDestination(findDestination('seville')!, context).factors.find(
+        (f) => f.key === 'climate',
+      )!.score;
+    };
+    expect(noteEn(5)).toBeGreaterThan(70);
+    expect(noteEn(7)).toBeLessThan(30);
+  });
+
+  it('laisse le climat de côté quand la période n’est pas fixée', () => {
+    const result = buildProposals(
+      { ...constraints(), month: undefined, dateMode: 'window' as const },
+      groupe,
+      { keep: 3 },
+    );
+    for (const score of result.scores) {
+      expect(score.factors.find((f) => f.key === 'climate')!.reason).toContain(
+        'Période non fixée',
+      );
+    }
+  });
+
+  it('laisse une source injectée passer devant les normales embarquées', () => {
+    const result = buildProposals(constraints({ month: 7 }), groupe, {
+      sources: { climate: () => ({ month: 7, avgHighC: 21, avgLowC: 21, rainyDays: 0 }) },
+      keep: 3,
+    });
+    for (const score of result.scores) {
+      expect(score.factors.find((f) => f.key === 'climate')!.score).toBe(100);
     }
   });
 

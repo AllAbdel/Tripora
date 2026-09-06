@@ -1,4 +1,6 @@
 import { selectCandidates, type CandidateOptions } from './catalog/candidates.js';
+import { climateFor } from './catalog/climate.js';
+import { targetMonth } from './dates.js';
 import { cheapestTransport } from './transport.js';
 import { estimateTripCost } from './cost.js';
 import { rankDestinations, type ScoreContext } from './scoring.js';
@@ -30,7 +32,12 @@ import type {
 export interface ProposalSources {
   /** Prix de transport aller-retour relevé, si une source en connaît un. */
   transportPrice?: (destination: Destination) => PricedValue | undefined;
-  /** Normales climatiques du mois visé, si disponibles. */
+  /**
+   * Normales climatiques du mois visé. Facultatif : à défaut, Tripora utilise
+   * ses propres normales embarquées (voir `catalog/climate.ts`). Ne fournir une
+   * source ici que pour des données plus fines — une prévision à seize jours,
+   * par exemple, quand le départ est proche.
+   */
   climate?: (destination: Destination) => MonthlyClimate | undefined;
   /** Prix d'hébergement relevé par nuit et par personne, si disponible. */
   accommodationPrice?: (destination: Destination) => PricedValue | undefined;
@@ -86,9 +93,16 @@ export function buildProposals(
 
   const byId = new Map(priced.map((entry) => [entry.destination.id, entry]));
 
+  // Sans mois ni date, le climat ne départage rien : on ne le réclame pas.
+  const month = targetMonth(constraints);
+
   const contextFor = (destination: Destination): ScoreContext => {
     const entry = byId.get(destination.id)!;
-    const climate = sources.climate?.(destination);
+    // Une source injectée prime — elle est plus récente ou plus précise. Sinon
+    // on note sur des normales mesurées, jamais sur une saison devinée.
+    const climate =
+      sources.climate?.(destination) ??
+      (month === undefined ? undefined : climateFor(destination.id, month));
     return {
       constraints,
       members,

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { ChevronDown, Crown, Lock, Plane, Train, Bus, Car, Ship } from 'lucide-react';
+import { ChevronDown, CloudRain, Crown, Lock, Plane, Train, Bus, Car, Ship, Thermometer } from 'lucide-react';
 import {
+  climateFor,
   costLines,
   formatCents,
   freshnessLabel,
@@ -10,6 +11,7 @@ import {
   type TransportEstimate,
 } from '@tripora/core';
 import { Card, CardBody } from '@/components/ui/Card';
+import { ClimateStrip } from '@/components/ClimateStrip';
 import { ScoreRing } from '@/components/ScoreRing';
 import { cn } from '@/lib/cn';
 
@@ -26,6 +28,7 @@ export function ProposalCard({
   destination,
   score,
   transport,
+  month,
   vote,
   choixDuGroupe = false,
   verrouillee = false,
@@ -34,6 +37,8 @@ export function ProposalCard({
   destination: Destination;
   score: DestinationScore;
   transport: TransportEstimate[];
+  /** Mois visé, quand le groupe en a fixé un : sert à situer le climat. */
+  month?: number | undefined;
   /** Barre de vote, absente quand on voyage seul. */
   vote?: ReactNode;
   /** Celle que les votes désignent, distincte de celle que le calcul classe en tête. */
@@ -41,6 +46,7 @@ export function ProposalCard({
   verrouillee?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const climat = month === undefined ? undefined : climateFor(destination.id, month);
   const label = freshnessLabel({
     cents: score.cost.transportCents,
     source: score.cost.transportSource,
@@ -92,11 +98,26 @@ export function ProposalCard({
           <ScoreRing score={score.total} />
         </div>
 
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5">
           <p className="text-2xl font-bold tabular-nums">
             {formatCents(score.cost.totalCents, 'EUR', { hideCentimes: true })}
             <span className="text-muted ml-1.5 text-sm font-medium">par personne</span>
           </p>
+          {climat && (
+            <p className="text-muted flex items-center gap-2.5 text-xs font-medium">
+              <span className="flex items-center gap-1">
+                <Thermometer className="size-3.5" aria-hidden />
+                <span className="tabular-nums">{Math.round(climat.avgHighC)} °C</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <CloudRain className="size-3.5" aria-hidden />
+                <span className="tabular-nums">{climat.rainyDays} j</span>
+              </span>
+              <span className="sr-only">
+                en journée et jours de pluie sur le mois, en moyenne
+              </span>
+            </p>
+          )}
         </div>
 
         <p className="text-muted text-sm leading-relaxed">{score.summary}</p>
@@ -160,6 +181,11 @@ export function ProposalCard({
                   </li>
                 ))}
               </ul>
+            </section>
+
+            <section className="space-y-1.5">
+              <h4 className="text-sm font-semibold">Quand y aller</h4>
+              <ClimateStrip destinationId={destination.id} month={month} />
             </section>
 
             {transport.length > 0 && (

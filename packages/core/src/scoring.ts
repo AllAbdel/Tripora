@@ -1,4 +1,5 @@
 import { estimateTripCost, type CostInput } from './cost.js';
+import { targetMonth } from './dates.js';
 import { estimateTravelMinutes, haversineKm } from './geo.js';
 import { PREFERENCE_AXES, AXIS_LABELS_FR, type PreferenceWeights } from './preferences.js';
 import type { PricedValue } from './freshness.js';
@@ -122,15 +123,40 @@ function priceFactor(
   return { score: 0, reason: 'Hors budget pour au moins une personne du groupe' };
 }
 
+/**
+ * Fourchette de température de journée dans laquelle on visite une ville sans
+ * y penser. En dessous, on se couvre ; au-dessus, on cherche l'ombre.
+ */
+const CONFORT_MIN_C = 17;
+const CONFORT_MAX_C = 27;
+
 function climateFactor(
   destination: Destination,
   month: number | undefined,
   climate: MonthlyClimate | undefined,
 ): { score: number; reason: string } {
   if (climate) {
-    const temp = (climate.avgHighC + climate.avgLowC) / 2;
-    // Confort maximal autour de 21 °C, décroissance douce de part et d'autre.
-    const tempScore = clamp(100 - Math.abs(temp - 21) * 5.5);
+    // On note le maximum de la journée, pas la moyenne jour/nuit : c'est en
+    // plein après-midi qu'on marche dans la ville. Séville en juillet affiche
+    // 29 °C de moyenne, ce qui paraît idéal, et 37 °C à 16 h, ce qui ne l'est
+    // pas du tout.
+    const jour = climate.avgHighC;
+    let tempScore = 100;
+    if (jour < CONFORT_MIN_C) {
+      // Frais, on met un manteau et la ville reste visitable ; froid, les
+      // journées dehors se raccourcissent d'elles-mêmes.
+      const manque = CONFORT_MIN_C - jour;
+      tempScore -= Math.min(manque, 7) * 4 + Math.max(0, manque - 7) * 5.5;
+    } else if (jour > CONFORT_MAX_C) {
+      // La chaleur, non : passé 33 °C, l'après-midi est perdu, et la pente
+      // s'accentue.
+      const exces = jour - CONFORT_MAX_C;
+      tempScore -= Math.min(exces, 6) * 6 + Math.max(0, exces - 6) * 9;
+    }
+    // Nuits gelées : plus de terrasses, plus de soirées dehors.
+    if (climate.avgLowC < 0) tempScore -= Math.min(10, -climate.avgLowC * 1.5);
+    tempScore = clamp(tempScore);
+
     const rainScore = clamp(100 - climate.rainyDays * 6);
     // La pluie module la température, elle ne la rachète pas : aucun grand
     // soleil ne rend 41 °C agréables, alors qu'un mois pluvieux gâche un mois
@@ -138,7 +164,7 @@ function climateFactor(
     const score = Math.round(tempScore * (0.7 + 0.3 * (rainScore / 100)));
     return {
       score,
-      reason: `Environ ${Math.round(temp)} °C et ${climate.rainyDays} jours de pluie sur le mois`,
+      reason: `${Math.round(jour)} °C en journée, ${Math.round(climate.avgLowC)} °C la nuit, ${climate.rainyDays} jour${climate.rainyDays > 1 ? 's' : ''} de pluie dans le mois`,
     };
   }
 
@@ -248,9 +274,7 @@ export function scoreDestination(
   const distanceKm = haversineKm(constraints.origin, destination);
   const travelMinutes = estimateTravelMinutes(distanceKm);
 
-  const month =
-    constraints.month ??
-    (constraints.startDate ? new Date(constraints.startDate).getUTCMonth() + 1 : undefined);
+  const month = targetMonth(constraints);
 
   const price = priceFactor(
     cost.totalCents,

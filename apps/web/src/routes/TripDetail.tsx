@@ -7,6 +7,7 @@ import {
   findDestination,
   formatCents,
   MONTHS_FR,
+  targetMonth,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -280,6 +281,7 @@ export default function TripDetail() {
                           destination,
                           data.constraints.participants,
                         )}
+                        month={targetMonth(data.constraints)}
                         vote={
                           !data.lockedDestinationId ? (
                             <VoteBar

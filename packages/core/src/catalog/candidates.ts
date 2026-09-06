@@ -1,3 +1,4 @@
+import { targetMonth } from '../dates.js';
 import { haversineKm } from '../geo.js';
 import { estimateTripCost } from '../cost.js';
 import { DESTINATIONS } from './destinations.js';
@@ -50,9 +51,7 @@ export function selectCandidates(
   const limit = options.limit ?? 20;
   const maxDistance = options.maxDistanceKm ?? reasonableDistanceKm(constraints.durationDays);
   const excluded = new Set(options.exclude ?? []);
-  const month =
-    constraints.month ??
-    (constraints.startDate ? new Date(constraints.startDate).getUTCMonth() + 1 : undefined);
+  const month = targetMonth(constraints);
 
   const scored = catalog
     .filter((destination) => {

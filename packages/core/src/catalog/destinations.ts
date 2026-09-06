@@ -90,9 +90,10 @@ export const DESTINATIONS: readonly Destination[] = [
   make('majorque', 'Palma de Majorque', 'Espagne', 'ES', 39.5696, 2.6502, ['PMI'],
     { culture: 0.5, nature: 0.85, food: 0.7, nightlife: 0.7, relax: 0.95, adventure: 0.7, shopping: 0.5, offbeat: 0.4 },
     0.95, 0.75, [5, 6, 9, 10], 'Europe/Madrid'),
-  make('tenerife', 'Tenerife', 'Espagne', 'ES', 28.2916, -16.6291, ['TCI', 'TFS', 'TFN'],
+  make('tenerife', 'Tenerife', 'Espagne', 'ES', 28.0916, -16.7247, ['TCI', 'TFS', 'TFN'],
     { culture: 0.3, nature: 0.95, food: 0.65, nightlife: 0.7, relax: 0.95, adventure: 0.9, shopping: 0.4, offbeat: 0.5 },
-    0.8, 0.7, [1, 2, 3, 4, 10, 11, 12], 'Atlantic/Canary'),
+    // Les Canaries se visitent toute l'année : 22 °C en janvier, 30 en août.
+    0.8, 0.7, [1, 2, 3, 4, 5, 6, 9, 10, 11, 12], 'Atlantic/Canary'),
 
   // ------------------------------------------------------------------------- Italie
   make('rome', 'Rome', 'Italie', 'IT', 41.9028, 12.4964, ['ROM', 'FCO', 'CIA'],

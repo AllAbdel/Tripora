@@ -18,3 +18,5 @@ export * from './transport.js';
 export * from './proposals.js';
 export * from './itinerary.js';
 export * from './settle.js';
+export * from './catalog/climate.js';
+export * from './dates.js';
