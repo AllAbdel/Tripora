@@ -19,6 +19,9 @@ import type { Destination } from '../types.js';
  * - `poiRichness` — de quoi tenir combien de jours sans tourner en rond.
  * - `bestMonths` — mois où le climat et l'affluence sont les plus agréables.
  *   Sert de repli quand les normales climatiques ne sont pas disponibles.
+ * - `iata` — le **code de ville** en premier quand il diffère de celui des
+ *   aéroports (Paris = PAR, Rome = ROM…). Les bases de prix aériens indexent
+ *   par ville : chercher « FCO » manquerait la moitié des tarifs pour Rome.
  *
  * Ces notes se corrigent : c'est un fichier, pas un modèle. Toute correction
  * profite immédiatement à tous les voyages.
@@ -87,12 +90,12 @@ export const DESTINATIONS: readonly Destination[] = [
   make('majorque', 'Palma de Majorque', 'Espagne', 'ES', 39.5696, 2.6502, ['PMI'],
     { culture: 0.5, nature: 0.85, food: 0.7, nightlife: 0.7, relax: 0.95, adventure: 0.7, shopping: 0.5, offbeat: 0.4 },
     0.95, 0.75, [5, 6, 9, 10], 'Europe/Madrid'),
-  make('tenerife', 'Tenerife', 'Espagne', 'ES', 28.2916, -16.6291, ['TFS', 'TFN'],
+  make('tenerife', 'Tenerife', 'Espagne', 'ES', 28.2916, -16.6291, ['TCI', 'TFS', 'TFN'],
     { culture: 0.3, nature: 0.95, food: 0.65, nightlife: 0.7, relax: 0.95, adventure: 0.9, shopping: 0.4, offbeat: 0.5 },
     0.8, 0.7, [1, 2, 3, 4, 10, 11, 12], 'Atlantic/Canary'),
 
   // ------------------------------------------------------------------------- Italie
-  make('rome', 'Rome', 'Italie', 'IT', 41.9028, 12.4964, ['FCO', 'CIA'],
+  make('rome', 'Rome', 'Italie', 'IT', 41.9028, 12.4964, ['ROM', 'FCO', 'CIA'],
     { culture: 1, nature: 0.3, food: 0.95, nightlife: 0.7, relax: 0.4, adventure: 0.3, shopping: 0.7, offbeat: 0.5 },
     1.0, 1.0, [4, 5, 9, 10], 'Europe/Rome'),
   make('naples', 'Naples', 'Italie', 'IT', 40.8518, 14.2681, ['NAP'],
@@ -104,7 +107,7 @@ export const DESTINATIONS: readonly Destination[] = [
   make('venise', 'Venise', 'Italie', 'IT', 45.4408, 12.3155, ['VCE', 'TSF'],
     { culture: 0.95, nature: 0.4, food: 0.8, nightlife: 0.4, relax: 0.6, adventure: 0.2, shopping: 0.6, offbeat: 0.6 },
     1.15, 0.8, [4, 5, 9, 10], 'Europe/Rome'),
-  make('milan', 'Milan', 'Italie', 'IT', 45.4642, 9.19, ['MXP', 'LIN', 'BGY'],
+  make('milan', 'Milan', 'Italie', 'IT', 45.4642, 9.19, ['MIL', 'MXP', 'LIN', 'BGY'],
     { culture: 0.75, nature: 0.3, food: 0.85, nightlife: 0.8, relax: 0.3, adventure: 0.2, shopping: 0.95, offbeat: 0.4 },
     1.1, 0.8, [4, 5, 6, 9, 10], 'Europe/Rome'),
   make('palerme', 'Palerme', 'Italie', 'IT', 38.1157, 13.3615, ['PMO'],
@@ -176,7 +179,7 @@ export const DESTINATIONS: readonly Destination[] = [
   make('copenhague', 'Copenhague', 'Danemark', 'DK', 55.6761, 12.5683, ['CPH'],
     { culture: 0.8, nature: 0.5, food: 0.95, nightlife: 0.8, relax: 0.6, adventure: 0.4, shopping: 0.7, offbeat: 0.7 },
     1.45, 0.8, [5, 6, 7, 8], 'Europe/Copenhagen'),
-  make('stockholm', 'Stockholm', 'Suède', 'SE', 59.3293, 18.0686, ['ARN', 'NYO'],
+  make('stockholm', 'Stockholm', 'Suède', 'SE', 59.3293, 18.0686, ['STO', 'ARN', 'NYO'],
     { culture: 0.8, nature: 0.8, food: 0.85, nightlife: 0.75, relax: 0.6, adventure: 0.6, shopping: 0.7, offbeat: 0.6 },
     1.35, 0.8, [6, 7, 8], 'Europe/Stockholm'),
   make('oslo', 'Oslo', 'Norvège', 'NO', 59.9139, 10.7522, ['OSL', 'TRF'],
@@ -196,7 +199,7 @@ export const DESTINATIONS: readonly Destination[] = [
     0.55, 0.65, [5, 6, 7, 8], 'Europe/Vilnius'),
 
   // ------------------------------------------------------------- Îles Britanniques
-  make('londres', 'Londres', 'Royaume-Uni', 'GB', 51.5074, -0.1278, ['LHR', 'LGW', 'STN', 'LTN'],
+  make('londres', 'Londres', 'Royaume-Uni', 'GB', 51.5074, -0.1278, ['LON', 'LHR', 'LGW', 'STN', 'LTN'],
     { culture: 1, nature: 0.3, food: 0.9, nightlife: 0.95, relax: 0.3, adventure: 0.3, shopping: 1, offbeat: 0.8 },
     1.35, 1.0, [5, 6, 7, 8, 9], 'Europe/London'),
   make('edimbourg', 'Édimbourg', 'Royaume-Uni', 'GB', 55.9533, -3.1883, ['EDI'],
@@ -207,7 +210,7 @@ export const DESTINATIONS: readonly Destination[] = [
     1.2, 0.75, [5, 6, 7, 8, 9], 'Europe/Dublin'),
 
   // -------------------------------------------------------------------- France
-  make('paris', 'Paris', 'France', 'FR', 48.8566, 2.3522, ['CDG', 'ORY', 'BVA'],
+  make('paris', 'Paris', 'France', 'FR', 48.8566, 2.3522, ['PAR', 'CDG', 'ORY', 'BVA'],
     { culture: 1, nature: 0.3, food: 0.95, nightlife: 0.8, relax: 0.4, adventure: 0.2, shopping: 0.95, offbeat: 0.6 },
     1.25, 1.0, [4, 5, 6, 9, 10], 'Europe/Paris'),
   make('marseille', 'Marseille', 'France', 'FR', 43.2965, 5.3698, ['MRS'],

@@ -8,11 +8,28 @@ describe('fraîcheur des prix', () => {
   it('garde un prix relevé récent', () => {
     const value = { cents: 9500, source: 'observed' as const, fetchedAt: hoursAgo(5) };
     expect(assessFreshness(value, NOW).source).toBe('observed');
-    expect(freshnessLabel(value, NOW)).toMatch(/^Prix vu le /);
+    expect(freshnessLabel(value, NOW)).toBe('Prix vu aujourd’hui');
+  });
+
+  it('dit depuis quand en clair, pas en date à décoder', () => {
+    expect(freshnessLabel({ cents: 100, source: 'observed', fetchedAt: hoursAgo(30) }, NOW))
+      .toBe('Prix vu hier');
+    expect(freshnessLabel({ cents: 100, source: 'observed', fetchedAt: hoursAgo(24 * 4) }, NOW))
+      .toBe('Prix vu il y a 4 jours');
+    // Au-delà d'une semaine, le décompte cesse d'être parlant.
+    expect(freshnessLabel({ cents: 100, source: 'observed', fetchedAt: hoursAgo(24 * 10) }, NOW))
+      .toMatch(/^Prix vu le /);
+  });
+
+  it('garde le statut « relevé » sur toute la fenêtre utile du cache', () => {
+    // Le cache Aviasales remonte des relevés de plusieurs jours : les classer
+    // « indicatifs » les confondrait avec nos propres estimations.
+    const value = { cents: 9500, source: 'observed' as const, fetchedAt: hoursAgo(24 * 5) };
+    expect(assessFreshness(value, NOW).source).toBe('observed');
   });
 
   it('déclasse un prix relevé trop vieux en simple estimation', () => {
-    const value = { cents: 9500, source: 'observed' as const, fetchedAt: hoursAgo(100) };
+    const value = { cents: 9500, source: 'observed' as const, fetchedAt: hoursAgo(24 * 20) };
     expect(assessFreshness(value, NOW).source).toBe('estimated');
     expect(freshnessLabel(value, NOW)).toBe('Prix indicatif');
   });
@@ -30,7 +47,7 @@ describe('fraîcheur des prix', () => {
       { cents: 9500, source: 'observed', fetchedAt: hoursAgo(2), provider: 'Aviasales' },
       NOW,
     );
-    expect(label).toContain('Aviasales');
+    expect(label).toBe('Prix vu aujourd’hui (Aviasales)');
   });
 
   it('un total vaut son poste le moins fiable', () => {

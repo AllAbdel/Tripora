@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, CalendarDays, Loader2, Lock, LockOpen, Map as MapIcon, MapPin, UserPlus, Users, Wallet } from 'lucide-react';
 import {
-  buildProposals,
   estimateTransportOptions,
   findDestination,
   formatCents,
@@ -16,6 +15,7 @@ import { ProposalCard } from '@/components/ProposalCard';
 import { getTripRepository } from '@/lib/trips';
 import { getCollaboration } from '@/lib/collaboration';
 import { getVoting, groupChoice, type VoteValue } from '@/lib/votes';
+import { useProposals } from '@/lib/useProposals';
 import { useGroupRealtime } from '@/lib/useGroupRealtime';
 import { useAuth } from '@/lib/auth-context';
 import { VoteBar } from '@/components/VoteBar';
@@ -59,15 +59,7 @@ export default function TripDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trip'] }),
   });
 
-  /**
-   * Les propositions sont recalculées depuis les contraintes enregistrées.
-   * Le calcul est déterministe et tient en quelques millisecondes : rien à
-   * mettre en cache, rien à synchroniser, et surtout aucun quota consommé.
-   */
-  const proposals = useMemo(() => {
-    if (!data) return null;
-    return buildProposals(data.constraints, data.members, { keep: 6 });
-  }, [data]);
+  const { proposals, prix, prixEnCours } = useProposals(data);
 
   // Ce que les votes désignent, qui n'est pas forcément ce que le calcul
   // classe en tête — et c'est très bien : le calcul propose, le groupe dispose.
@@ -234,11 +226,25 @@ export default function TripDetail() {
                 </CardBody>
               </Card>
 
-              {proposals.allEstimated && (
+              {prixEnCours && (
+                <Banner tone="info" title="Prix en cours de relevé">
+                  Le classement s’affiche avec les estimations, et se corrigera dès que les
+                  prix réels seront arrivés.
+                </Banner>
+              )}
+
+              {prix?.quotaExceeded && (
+                <Banner tone="warning" title="Limite gratuite atteinte pour aujourd’hui">
+                  Les prix relevés reviendront demain. Tout le reste de Tripora fonctionne,
+                  et les montants affichés restent des estimations honnêtes.
+                </Banner>
+              )}
+
+              {!prixEnCours && proposals.allEstimated && (
                 <Banner tone="info" title="Prix indicatifs">
-                  Aucune source de tarifs n’est reliée pour l’instant : les montants sont des
-                  estimations, jamais des prix constatés. Les vrais prix apparaîtront avec
-                  leur date dès qu’un jeton Travelpayouts sera renseigné.
+                  {prix?.configured
+                    ? 'Aucun tarif relevé pour ce départ et cette période : les montants sont des estimations, jamais des prix constatés.'
+                    : 'Aucune source de tarifs n’est reliée : les montants sont des estimations. Les vrais prix apparaîtront avec leur date dès qu’un jeton Travelpayouts sera renseigné côté serveur.'}
                 </Banner>
               )}
 

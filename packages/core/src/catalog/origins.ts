@@ -11,7 +11,7 @@ import type { Place } from '../types.js';
  * est complétée automatiquement par toutes les villes du catalogue.
  */
 const FRANCE: Place[] = [
-  { name: 'Paris', country: 'France', lat: 48.8566, lng: 2.3522, iata: ['CDG', 'ORY', 'BVA'] },
+  { name: 'Paris', country: 'France', lat: 48.8566, lng: 2.3522, iata: ['PAR', 'CDG', 'ORY', 'BVA'] },
   { name: 'Marseille', country: 'France', lat: 43.2965, lng: 5.3698, iata: ['MRS'] },
   { name: 'Lyon', country: 'France', lat: 45.764, lng: 4.8357, iata: ['LYS'] },
   { name: 'Toulouse', country: 'France', lat: 43.6047, lng: 1.4442, iata: ['TLS'] },

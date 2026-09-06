@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, MapPin } from 'lucide-react';
-import { buildProposals, findDestination, formatCents } from '@tripora/core';
+import { findDestination, formatCents } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
 import { TripMap, type MapMarker } from '@/components/TripMap';
 import { buildTripMarkers } from '@/lib/mapMarkers';
 import { getTripRepository } from '@/lib/trips';
 import { useGroupRealtime } from '@/lib/useGroupRealtime';
+import { useProposals } from '@/lib/useProposals';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
 
@@ -29,10 +30,7 @@ export default function TripMapScreen() {
   });
   useGroupRealtime(id);
 
-  const proposals = useMemo(() => {
-    if (!data) return null;
-    return buildProposals(data.constraints, data.members, { keep: 6 });
-  }, [data]);
+  const { proposals } = useProposals(data);
 
   const retenue = data?.lockedDestinationId ?? null;
 
