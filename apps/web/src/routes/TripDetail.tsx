@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, MapPin, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, UserPlus, Users, Wallet } from 'lucide-react';
 import {
   buildProposals,
   estimateTransportOptions,
@@ -14,6 +14,8 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProposalCard } from '@/components/ProposalCard';
 import { getTripRepository } from '@/lib/trips';
+import { getCollaboration } from '@/lib/collaboration';
+import { useGroupRealtime } from '@/lib/useGroupRealtime';
 import { toFailure } from '@/lib/errors';
 
 export default function TripDetail() {
@@ -25,6 +27,10 @@ export default function TripDetail() {
     queryFn: () => repository.get(id!),
     enabled: Boolean(id),
   });
+
+  // Les propositions se recalculent toutes seules dès qu'un participant
+  // rejoint ou renseigne ses envies.
+  useGroupRealtime(id);
 
   /**
    * Les propositions sont recalculées depuis les contraintes enregistrées.
@@ -73,7 +79,7 @@ export default function TripDetail() {
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Users className="size-3.5" aria-hidden />
-                {data.constraints.participants}
+                {data.members.length} / {data.constraints.participants}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Wallet className="size-3.5" aria-hidden />
@@ -86,6 +92,27 @@ export default function TripDetail() {
               <p className="text-muted text-sm">{describePeriod(data.constraints)}</p>
             )}
           </header>
+
+          {getCollaboration() && (
+            <Link to={`/voyages/${data.summary.id}/participants`} className="block">
+              <Card className="transition-transform active:scale-[0.99]">
+                <CardBody className="flex items-center gap-3 p-4">
+                  <UserPlus className="text-brand-500 size-5 shrink-0" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">
+                      {data.members.length < data.constraints.participants
+                        ? 'Inviter le reste du groupe'
+                        : 'Participants et envies'}
+                    </span>
+                    <span className="text-muted block text-sm">
+                      {decrireAttente(data.members.length, data.constraints.participants)}
+                    </span>
+                  </span>
+                  <span className="text-muted shrink-0" aria-hidden>›</span>
+                </CardBody>
+              </Card>
+            </Link>
+          )}
 
           {proposals && proposals.scores.length === 0 && (
             <Banner tone="warning" title="Aucune destination ne colle">
@@ -106,6 +133,14 @@ export default function TripDetail() {
                     de chacun, pas seulement sur le prix du billet. Chaque note est détaillée :
                     aucune n’est décidée par une intelligence artificielle.
                   </p>
+                  {data.members.length < data.constraints.participants && (
+                    <p className="text-muted text-sm leading-relaxed">
+                      Pour l’instant, seules les envies de {data.members.length} personne
+                      {data.members.length > 1 ? 's' : ''} sur {data.constraints.participants}{' '}
+                      sont prises en compte. Le classement changera quand les autres auront
+                      répondu.
+                    </p>
+                  )}
                 </CardBody>
               </Card>
 
@@ -142,10 +177,8 @@ export default function TripDetail() {
                 <CardBody className="space-y-2">
                   <p className="font-semibold">Et ensuite ?</p>
                   <p className="text-muted text-sm leading-relaxed">
-                    Les prochaines étapes : inviter vos amis pour que chacun donne son budget
-                    et ses envies, voter sur ces destinations, puis obtenir l’itinéraire et
-                    la carte. Pour l’instant, ces propositions ne tiennent compte que de vos
-                    réponses à vous.
+                    Les prochaines étapes : voter sur ces destinations pour trancher, puis
+                    obtenir l’itinéraire et la carte de celle qui l’emporte.
                   </p>
                   <Link to="/voyages">
                     <Button variant="secondary" block>
@@ -183,4 +216,13 @@ function describePeriod(constraints: {
     return `${duree} entre le ${from} et le ${to}`;
   }
   return `${duree}, dates souples`;
+}
+
+/** Phrase d'état du groupe, affichée sous le raccourci vers les participants. */
+function decrireAttente(presents: number, attendus: number): string {
+  if (presents >= attendus) {
+    return `${presents} participant${presents > 1 ? 's' : ''} · tout le monde est là`;
+  }
+  const manquants = attendus - presents;
+  return `${presents} sur ${attendus} · il manque ${manquants} personne${manquants > 1 ? 's' : ''}`;
 }

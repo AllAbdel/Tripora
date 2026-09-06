@@ -16,8 +16,14 @@ export default function SignIn() {
     setError(null);
     setBusy(kind);
     try {
-      if (kind === 'google') await signInWithGoogle();
-      else {
+      if (kind === 'google') {
+        await signInWithGoogle();
+      } else if (backendReady) {
+        // Avec un serveur, « j'ai un code » mène à l'écran qui sait quoi en
+        // faire ; c'est lui qui ouvrira la session invité une fois le code
+        // saisi, pour ne pas créer de compte vide si la personne abandonne.
+        navigate('/rejoindre');
+      } else {
         await continueAsGuest();
         navigate('/voyages');
       }

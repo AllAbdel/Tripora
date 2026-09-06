@@ -28,6 +28,39 @@ describe('traduction des pannes', () => {
     expect(failure.hint).toMatch(/continue de fonctionner/i);
   });
 
+  it('traduit un échec réseau plutôt que d’afficher « Failed to fetch »', () => {
+    vi.stubGlobal('navigator', { onLine: true });
+    const failure = toFailure(new TypeError('Failed to fetch'));
+    expect(failure.kind).toBe('unreachable');
+    expect(failure.message).not.toMatch(/fetch/i);
+    expect(failure.message).toMatch(/serveur ne répond pas/i);
+    expect(failure.retryable).toBe(true);
+  });
+
+  it('reconnaît la panne réseau même déguisée par supabase-js', () => {
+    vi.stubGlobal('navigator', { onLine: true });
+    // Forme réellement renvoyée : un objet nu, pas une instance d'Error.
+    const failure = toFailure({
+      message: 'TypeError: Failed to fetch',
+      details: 'Request failed',
+      hint: '',
+      code: '',
+    });
+    expect(failure.kind).toBe('unreachable');
+  });
+
+  it('ne confond pas une erreur métier qui parle de réseau', () => {
+    vi.stubGlobal('navigator', { onLine: true });
+    expect(toFailure({ message: 'Le réseau de transport local est inconnu' }).kind).toBe(
+      'unknown',
+    );
+  });
+
+  it('distingue « pas de réseau » de « serveur muet »', () => {
+    vi.stubGlobal('navigator', { onLine: false });
+    expect(toFailure(new TypeError('Failed to fetch')).kind).toBe('offline');
+  });
+
   it('reste compréhensible face à une erreur inconnue', () => {
     vi.stubGlobal('navigator', { onLine: true });
     const failure = toFailure(new Error('bizarre'));

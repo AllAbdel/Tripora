@@ -1,0 +1,10 @@
+# Tripora est une application à page unique : c'est le navigateur qui décide
+# quel écran afficher selon l'URL. Sans cette règle, ouvrir directement une
+# adresse profonde renverrait une 404 de l'hébergeur, puisqu'aucun fichier ne
+# porte ce nom sur le disque.
+#
+# C'est précisément le cas des liens d'invitation, qui sont tout l'intérêt du
+# partage : /rejoindre/ABCD2345 doit ouvrir l'application, pas une page
+# d'erreur. Cette ligne indique à Cloudflare Pages de servir index.html avec
+# un vrai code 200 pour toute adresse qui ne correspond pas à un fichier.
+/*  /index.html  200

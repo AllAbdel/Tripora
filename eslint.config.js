@@ -53,6 +53,12 @@ export default tseslint.config(
 
   {
     files: ['**/*.test.ts', '**/*.test.tsx', 'apps/web/scripts/**'],
-    rules: { 'no-console': 'off' },
+    rules: {
+      'no-console': 'off',
+      // `importOriginal<typeof import('…')>()` est la forme imposée par
+      // Vitest pour typer un module partiellement simulé. La règle vise le
+      // style du code source, pas cette contrainte d'API.
+      '@typescript-eslint/consistent-type-imports': 'off',
+    },
   },
 );

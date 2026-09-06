@@ -5,6 +5,9 @@ import { useAuth } from '@/lib/auth-context';
 import SignIn from '@/routes/SignIn';
 import Trips from '@/routes/Trips';
 import TripDetail from '@/routes/TripDetail';
+import TripMembers from '@/routes/TripMembers';
+import MyPreferences from '@/routes/MyPreferences';
+import JoinTrip from '@/routes/JoinTrip';
 import Profile from '@/routes/Profile';
 import NotFound from '@/routes/NotFound';
 import CreateTrip from '@/routes/create/CreateTrip';
@@ -18,9 +21,8 @@ function FullScreenLoader() {
   );
 }
 
-/** Écrans à onglets. La création de voyage en sort volontairement : c'est un
- *  parcours qui demande de l'attention, la navigation du bas y serait une porte
- *  de sortie accidentelle. */
+/** Écrans à onglets. Les parcours qui demandent de l'attention en sortent :
+ *  la navigation du bas y serait une porte de sortie accidentelle. */
 function TabbedRoutes() {
   return (
     <AppShell>
@@ -28,6 +30,7 @@ function TabbedRoutes() {
         <Route path="/" element={<Navigate to="/voyages" replace />} />
         <Route path="/voyages" element={<Trips />} />
         <Route path="/voyages/:id" element={<TripDetail />} />
+        <Route path="/voyages/:id/participants" element={<TripMembers />} />
         <Route
           path="/carte"
           element={
@@ -59,18 +62,23 @@ export default function App() {
   const { identity, loading } = useAuth();
 
   if (loading) return <FullScreenLoader />;
-  if (!identity) {
-    return (
-      <Routes>
-        <Route path="*" element={<SignIn />} />
-      </Routes>
-    );
-  }
 
   return (
     <Routes>
-      <Route path="/voyages/nouveau" element={<CreateTrip />} />
-      <Route path="*" element={<TabbedRoutes />} />
+      {/* Public : un lien d'invitation doit marcher pour quelqu'un qui n'a
+          jamais ouvert Tripora. L'écran ouvre lui-même une session invité. */}
+      <Route path="/rejoindre" element={<JoinTrip />} />
+      <Route path="/rejoindre/:code" element={<JoinTrip />} />
+
+      {identity ? (
+        <>
+          <Route path="/voyages/nouveau" element={<CreateTrip />} />
+          <Route path="/voyages/:id/mes-envies" element={<MyPreferences />} />
+          <Route path="*" element={<TabbedRoutes />} />
+        </>
+      ) : (
+        <Route path="*" element={<SignIn />} />
+      )}
     </Routes>
   );
 }

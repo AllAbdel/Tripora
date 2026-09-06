@@ -283,4 +283,143 @@ end $$;
 reset role;
 reset request.jwt.claims;
 
+-- ===========================================================================
+-- Scénario complet de collaboration, en rejouant exactement les requêtes que
+-- fait l'application. Le schéma local est identique à celui du projet en
+-- ligne (mêmes migrations), donc ce qui passe ici passe là-bas.
+-- ===========================================================================
+
+-- L'application affiche les participants avec leur profil en une requête
+-- imbriquée. PostgREST ne sait le faire que s'il existe une clé étrangère
+-- entre les deux tables : on vérifie qu'elle est bien là.
+do $$
+declare n int;
+begin
+  select count(*) into n
+  from pg_constraint c
+  join pg_class src on src.oid = c.conrelid
+  join pg_class dst on dst.oid = c.confrelid
+  where c.contype = 'f' and src.relname = 'trip_members' and dst.relname = 'profiles';
+  assert n = 1,
+    'Sans clé étrangère trip_members → profiles, la requête imbriquée de l''écran Participants échouerait';
+end $$;
+
+-- Abdel crée un second voyage et son invitation, comme le fait l'application.
+set role authenticated;
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+insert into public.trips (id, owner_id, title, origin_name, origin_lat, origin_lng, participants, target_month, duration_days, budget_per_person_cents)
+values ('aaaaaaaa-0000-0000-0000-000000000002', auth.uid(), 'Escapade', 'Toulouse', 43.6047, 1.4442, 3, 10, 4, 40000);
+
+insert into public.trip_invites (trip_id, code, created_by)
+values ('aaaaaaaa-0000-0000-0000-000000000002', 'ESCAP123', auth.uid());
+
+-- Abdel dépose ses envies (upsert, comme l'écran « mes envies »).
+insert into public.member_preferences (trip_id, user_id, weights, budget_max_cents, avoid, submitted)
+values ('aaaaaaaa-0000-0000-0000-000000000002', auth.uid(),
+        '{"food":1,"nightlife":0.66}'::jsonb, 40000, '{}', true)
+on conflict (trip_id, user_id) do update
+  set weights = excluded.weights, budget_max_cents = excluded.budget_max_cents, submitted = true;
+
+reset role;
+reset request.jwt.claims;
+
+-- Thomas ouvre le lien reçu et rejoint.
+set role authenticated;
+set request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+
+do $$
+declare cible uuid;
+begin
+  select trip_id into cible from public.join_trip_with_code('escap123'); -- minuscules acceptées
+  assert cible = 'aaaaaaaa-0000-0000-0000-000000000002',
+    'La fonction devrait renvoyer l''identifiant du voyage rejoint';
+end $$;
+
+-- Il renseigne des envies très différentes, et un budget plus serré.
+insert into public.member_preferences (trip_id, user_id, weights, budget_max_cents, avoid, submitted)
+values ('aaaaaaaa-0000-0000-0000-000000000002', auth.uid(),
+        '{"culture":1,"nature":0.66}'::jsonb, 25000, '{}', true)
+on conflict (trip_id, user_id) do update
+  set weights = excluded.weights, budget_max_cents = excluded.budget_max_cents, submitted = true;
+
+-- Il peut se retirer du voyage, mais pas en exclure un autre.
+do $$
+begin
+  begin
+    delete from public.trip_members
+    where trip_id = 'aaaaaaaa-0000-0000-0000-000000000002'
+      and user_id = '11111111-1111-1111-1111-111111111111';
+    if found then
+      raise exception 'FUITE : un membre a pu exclure le créateur du voyage';
+    end if;
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+-- Ce que voit l'écran Participants côté Abdel : les deux requêtes réelles.
+set role authenticated;
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+do $$
+declare membres int; envies int; budget_contraignant int; invite_visible int;
+begin
+  select count(*) into membres
+  from public.trip_members m
+  join public.profiles p on p.id = m.user_id
+  where m.trip_id = 'aaaaaaaa-0000-0000-0000-000000000002';
+  assert membres = 2, format('2 participants attendus, %s', membres);
+
+  select count(*), min(budget_max_cents) into envies, budget_contraignant
+  from public.member_preferences
+  where trip_id = 'aaaaaaaa-0000-0000-0000-000000000002';
+  assert envies = 2, format('2 jeux d''envies attendus, %s', envies);
+
+  -- La promesse produit : c'est le budget le plus serré qui contraint,
+  -- pas celui du créateur.
+  assert budget_contraignant = 25000,
+    format('Le budget contraignant devrait être 250 €, obtenu %s', budget_contraignant);
+
+  -- L'invitation reste consultable et son compteur d'usage a bougé.
+  select uses into invite_visible from public.trip_invites where code = 'ESCAP123';
+  assert invite_visible = 1, format('Le lien devrait compter 1 usage, %s', invite_visible);
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+-- Un intrus ne voit toujours rien de ce second voyage.
+set role authenticated;
+set request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
+
+do $$
+declare n int;
+begin
+  select count(*) into n from public.member_preferences;
+  assert n = 0, format('FUITE : un non-membre voit %s préférence(s)', n);
+  select count(*) into n from public.trips;
+  assert n = 0, format('FUITE : un non-membre voit %s voyage(s)', n);
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+-- Les tables diffusées en temps réel doivent l'être vraiment, sinon la
+-- collaboration ne se met à jour qu'au rechargement.
+do $$
+declare manquante text;
+begin
+  foreach manquante in array array['trips','trip_members','member_preferences','trip_proposals','votes'] loop
+    assert exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = manquante
+    ), format('La table %s n''est pas diffusée en temps réel', manquante);
+    assert (select relreplident from pg_class where oid = format('public.%I', manquante)::regclass) = 'f',
+      format('La table %s devrait être en replica identity full pour que la RLS filtre la diffusion', manquante);
+  end loop;
+end $$;
+
 select '✅ Tous les tests RLS sont passés' as resultat;
