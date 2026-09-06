@@ -240,7 +240,25 @@ sont douces (`deleted_at`).
 
 - **Aucune clé secrète dans l'application.** Tout ce qui commence par `VITE_`
   est public par construction. Mistral, Travelpayouts et Geoapify vivent
-  uniquement dans les secrets Supabase.
+  uniquement dans les secrets Supabase. L'URL du projet et la clé « anon »,
+  elles, sont versionnées dans `apps/web/.env` en connaissance de cause :
+  elles partent de toute façon dans le bundle du navigateur, et la sécurité
+  repose sur la RLS, pas sur leur secret.
+- **PostgREST expose en RPC toute fonction du schéma `public`.** C'est le piège
+  qui nous a coûté une vraie faille : `bump_api_quota` était appelable par
+  n'importe qui, ce qui permettait de faire croire que le quota gratuit du jour
+  était épuisé et de couper l'IA et les prix pour tout le groupe. Les droits
+  d'exécution sont désormais accordés au cas par cas, selon l'usage réel de
+  chaque fonction.
+- **Une alerte assumée reste ouverte.** Cinq fonctions d'accès
+  (`is_trip_member`, `is_trip_owner`, `can_access_*`) demeurent exécutables par
+  les personnes connectées, parce que les politiques RLS les évaluent avec les
+  droits de la personne qui interroge : les en priver refuserait l'accès à
+  tout le monde. Les déplacer dans un schéma privé les retirerait de l'API,
+  au prix de la réécriture d'une vingtaine de politiques. Ce n'est pas fait :
+  ces fonctions ne révèlent que vos propres droits d'accès, sur un identifiant
+  que vous devez déjà connaître. `join_trip_with_code` reste exposée
+  volontairement — c'est le point d'entrée des invitations.
 - **RLS sur toutes les tables**, y compris les tables techniques qui, sans
   aucune politique, sont inaccessibles aux clients. Testé : un intrus ne voit
   ni le voyage, ni les membres, ni les invitations, ni les profils.

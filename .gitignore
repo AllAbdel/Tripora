@@ -12,9 +12,14 @@ build/
 *.tsbuildinfo
 
 # Environnement / secrets — ne JAMAIS committer
-.env
-.env.*
-!.env.example
+# Exception assumée : apps/web/.env ne contient que l'URL et la clé « anon »
+# du projet, publiques par conception puisqu'elles partent dans le bundle du
+# navigateur. Les versionner évite toute configuration sur l'hébergeur.
+# Tout ce qui est réellement secret reste dans les secrets Supabase.
+.env.local
+.env.*.local
+.env.production
+.env.development
 
 # Supabase local
 supabase/.branches/
