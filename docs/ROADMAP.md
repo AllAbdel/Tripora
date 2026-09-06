@@ -10,7 +10,7 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **1** | **Création de voyage** — assistant en six étapes (avec qui, départ, destination ou « surprends-nous », dates ou durée, budget, envies), catalogue de 55 destinations | ✅ fait |
 | **2** | **Collaboration** — invitation par lien, code et QR, liste des membres, préférences et budget de chacun, mises à jour en direct | ✅ fait |
 | **3** | **Propositions** — moteur de scoring branché, coût total, explications ✅ ; prix des vols en cache et climat réel restent à brancher | 🔨 en cours |
-| **4** | **Vote et décision** — j'aime, je n'aime pas, favori, agrégation, verrouillage de la destination | ⬜ |
+| **4** | **Vote et décision** — j'aime, je n'aime pas, favori, agrégation, verrouillage de la destination | ✅ fait |
 | **5** | **Carte et lieux** — MapLibre, points d'intérêt, photos, fiches, favoris | ⬜ |
 | **6** | **Itinéraire et hors ligne** — génération jour par jour cohérente géographiquement, réorganisation, consultation sans réseau — **fin du MVP** | ⬜ |
 | **7** | **Intelligence artificielle** — compréhension du langage naturel, explications rédigées, assistant conversationnel avec outils | ⬜ |
@@ -20,16 +20,16 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 
 ## Où on en est
 
-Les phases 0, 1 et 2 sont terminées, et la partie calcul de la phase 3
+Les phases 0, 1, 2 et 4 sont terminées, et la partie calcul de la phase 3
 fonctionne déjà. Un groupe peut créer un voyage, s'inviter par lien ou par QR
 code, exprimer ses envies chacun de son côté, et voir des destinations notées,
 expliquées et chiffrées se recalculer en direct — **sans aucune clé d'API**.
 Tous les prix sont alors des estimations, et l'application le dit à chaque
 écran.
 
-La suite utile est le vote (phase 4), qui transforme ces propositions en
-décision, puis les prix réels, qui ne demandent qu'un jeton Travelpayouts
-gratuit.
+Le vote est en place : le groupe peut trancher, et l'organisateur arrête la
+destination. Il reste donc la carte et l'itinéraire pour boucler le MVP, puis
+les prix réels, qui ne demandent qu'un jeton Travelpayouts gratuit.
 
 ## Pourquoi cet ordre
 
