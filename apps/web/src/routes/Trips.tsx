@@ -1,47 +1,123 @@
-import { Plus, Sparkles } from 'lucide-react';
+import { Link } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, MapPin, Plus, Users } from 'lucide-react';
 import { ScreenHeader } from '@/components/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
+import { Card, CardBody } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/lib/auth-context';
+import { getTripRepository, type TripSummary } from '@/lib/trips';
+import { toFailure } from '@/lib/errors';
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Brouillon',
+  proposing: 'Recherche de destinations',
+  voting: 'Vote en cours',
+  planned: 'Destination choisie',
+  ongoing: 'En cours',
+  done: 'Terminé',
+};
 
 export default function Trips() {
   const { identity, backendReady } = useAuth();
+  const repository = getTripRepository();
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['trips', repository.kind],
+    queryFn: () => repository.list(),
+  });
 
   return (
     <>
       <ScreenHeader
         title="Mes voyages"
         subtitle={identity ? `Bonjour ${identity.displayName}` : undefined}
+        action={
+          <Link to="/voyages/nouveau" aria-label="Créer un voyage">
+            <Button size="sm" icon={<Plus className="size-4" aria-hidden />}>
+              Nouveau
+            </Button>
+          </Link>
+        }
       />
 
       <div className="space-y-4 px-5">
         {!backendReady && (
           <Banner tone="warning" title="Mode local">
-            Les voyages créés ici ne sont pas encore partagés avec vos amis.
-            Reliez un projet Supabase pour activer la collaboration.
+            Les voyages créés ici restent sur cet appareil et ne sont pas partagés.
+            Reliez un projet Supabase pour inviter vos amis.
           </Banner>
         )}
 
-        <EmptyState
-          illustration={<Logo className="size-16 opacity-90" />}
-          title="Aucun voyage pour l’instant"
-          description="Créez un voyage, invitez vos amis, et laissez chacun dire son budget et ses envies. Tripora s’occupe de proposer des destinations et d’en expliquer le prix."
-          action={
-            <Button size="lg" icon={<Plus className="size-5" aria-hidden />} disabled>
-              Créer un voyage
-            </Button>
-          }
-        />
+        {error && (
+          <Banner tone="warning" title="Chargement impossible">
+            {toFailure(error).message}
+          </Banner>
+        )}
 
-        <Banner tone="info" title="Prochaine étape du développement">
-          <span className="inline-flex items-center gap-1.5">
-            <Sparkles className="size-3.5" aria-hidden />
-            L’assistant de création de voyage arrive à l’étape suivante.
-          </span>
-        </Banner>
+        {isLoading && (
+          <div className="grid place-items-center py-16">
+            <Loader2 className="text-brand-500 size-6 animate-spin" aria-label="Chargement" />
+          </div>
+        )}
+
+        {data && data.length === 0 && (
+          <EmptyState
+            illustration={<Logo className="size-16 opacity-90" />}
+            title="Aucun voyage pour l’instant"
+            description="Créez un voyage, invitez vos amis, et laissez chacun dire son budget et ses envies. Tripora compare les destinations et explique ses prix."
+            action={
+              <Link to="/voyages/nouveau">
+                <Button size="lg" icon={<Plus className="size-5" aria-hidden />}>
+                  Créer un voyage
+                </Button>
+              </Link>
+            }
+          />
+        )}
+
+        {data && data.length > 0 && (
+          <ul className="space-y-3">
+            {data.map((trip) => (
+              <li key={trip.id}>
+                <TripCard trip={trip} />
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </>
+  );
+}
+
+function TripCard({ trip }: { trip: TripSummary }) {
+  return (
+    <Link to={`/voyages/${trip.id}`} className="block">
+      <Card className="animate-rise transition-transform active:scale-[0.99]">
+        <CardBody className="space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="min-w-0 flex-1 truncate text-lg font-semibold">{trip.title}</h2>
+            <span className="text-brand-700 dark:text-brand-200 bg-brand-50 dark:bg-brand-900/50 shrink-0 rounded-full px-2.5 py-1 text-xs font-medium">
+              {STATUS_LABELS[trip.status] ?? trip.status}
+            </span>
+          </div>
+          <p className="text-muted flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <span className="inline-flex items-center gap-1.5">
+              <Users className="size-3.5" aria-hidden />
+              {trip.participants} {trip.participants > 1 ? 'participants' : 'participant'}
+            </span>
+            {trip.destinationName && (
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="size-3.5" aria-hidden />
+                {trip.destinationName}
+              </span>
+            )}
+            {trip.localOnly && <span className="text-xs">· sur cet appareil</span>}
+          </p>
+        </CardBody>
+      </Card>
+    </Link>
   );
 }

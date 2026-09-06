@@ -26,7 +26,7 @@ export const PREFERENCE_LEVELS = [
   { value: 0, label: 'Non merci' },
   { value: 1 / 3, label: 'Un peu' },
   { value: 2 / 3, label: 'Beaucoup' },
-  { value: 1, label: 'Indispensable' },
+  { value: 1, label: 'Essentiel' },
 ] as const;
 
 export const AXIS_LABELS_FR: Record<PreferenceAxis, string> = {

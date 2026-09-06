@@ -4,8 +4,10 @@ import { AppShell } from '@/components/AppShell';
 import { useAuth } from '@/lib/auth-context';
 import SignIn from '@/routes/SignIn';
 import Trips from '@/routes/Trips';
+import TripDetail from '@/routes/TripDetail';
 import Profile from '@/routes/Profile';
 import NotFound from '@/routes/NotFound';
+import CreateTrip from '@/routes/create/CreateTrip';
 import { Placeholder } from '@/routes/Placeholder';
 
 function FullScreenLoader() {
@@ -16,23 +18,16 @@ function FullScreenLoader() {
   );
 }
 
-export default function App() {
-  const { identity, loading } = useAuth();
-
-  if (loading) return <FullScreenLoader />;
-  if (!identity) {
-    return (
-      <Routes>
-        <Route path="*" element={<SignIn />} />
-      </Routes>
-    );
-  }
-
+/** Écrans à onglets. La création de voyage en sort volontairement : c'est un
+ *  parcours qui demande de l'attention, la navigation du bas y serait une porte
+ *  de sortie accidentelle. */
+function TabbedRoutes() {
   return (
     <AppShell>
       <Routes>
         <Route path="/" element={<Navigate to="/voyages" replace />} />
         <Route path="/voyages" element={<Trips />} />
+        <Route path="/voyages/:id" element={<TripDetail />} />
         <Route
           path="/carte"
           element={
@@ -57,5 +52,25 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppShell>
+  );
+}
+
+export default function App() {
+  const { identity, loading } = useAuth();
+
+  if (loading) return <FullScreenLoader />;
+  if (!identity) {
+    return (
+      <Routes>
+        <Route path="*" element={<SignIn />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/voyages/nouveau" element={<CreateTrip />} />
+      <Route path="*" element={<TabbedRoutes />} />
+    </Routes>
   );
 }
