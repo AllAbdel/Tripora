@@ -96,6 +96,31 @@ export async function rediger(faits: string): Promise<EtatIA> {
     : { statut: 'ok', texte: reponse.text, fournisseur: reponse.provider };
 }
 
+/**
+ * Une question du groupe sur son propre voyage.
+ *
+ * Le dossier de faits et la consigne viennent du moteur, où ils sont testés :
+ * l'écran n'a pas à décider ce que le modèle a le droit de savoir. Rien de ce
+ * qui revient ne modifie quoi que ce soit — l'assistant lit et répond, il
+ * n'agit pas.
+ */
+export async function demander(question: string, briefing: string, systeme: string): Promise<EtatIA> {
+  const reponse = await appeler('ask', { question, briefing, systeme });
+  if (!reponse) return { statut: 'indisponible' };
+  if (reponse.configured === false) return { statut: 'non-configure' };
+  if (reponse.quotaExceeded) {
+    return reponse.limit === undefined
+      ? { statut: 'quota' }
+      : { statut: 'quota', limite: reponse.limit };
+  }
+  if (typeof reponse.text !== 'string' || reponse.text.length === 0) {
+    return { statut: 'indisponible' };
+  }
+  return reponse.provider === undefined
+    ? { statut: 'ok', texte: reponse.text }
+    : { statut: 'ok', texte: reponse.text, fournisseur: reponse.provider };
+}
+
 /** Message court et non culpabilisant, à afficher tel quel. */
 export function messageIA(etat: EtatIA): string {
   switch (etat.statut) {

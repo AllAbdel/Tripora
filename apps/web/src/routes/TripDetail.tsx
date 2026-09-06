@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/auth-context';
 import { VoteBar } from '@/components/VoteBar';
 import { Reserver } from '@/components/Reserver';
 import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
+import { Assistant } from '@/components/Assistant';
 import { toFailure } from '@/lib/errors';
 
 export default function TripDetail() {
@@ -237,6 +238,15 @@ export default function TripDetail() {
 
           {villeRetenue && (
             <Reserver constraints={data.constraints} destination={villeRetenue} />
+          )}
+
+          {proposals && proposals.scores.length > 0 && (
+            <Assistant
+              constraints={data.constraints}
+              members={data.members}
+              scores={proposals.scores}
+              {...(villeRetenue ? { lockedName: villeRetenue.name } : {})}
+            />
           )}
 
           {proposals && proposals.scores.length > 0 && (

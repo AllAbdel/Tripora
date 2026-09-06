@@ -10,8 +10,7 @@ import {
 /**
  * Le point d'entrée unique de l'IA.
  *
- * Deux tâches aujourd'hui, toutes deux en bordure du produit et jamais en son
- * centre :
+ * Trois tâches, toutes en bordure du produit et jamais en son centre :
  *
  *   `parse`    une phrase libre — « on est 5, depuis Lyon, une semaine en
  *              octobre, 400 € max, plutôt fête et bouffe » — devient un
@@ -23,9 +22,13 @@ import {
  *              que de les recopier. Il ne classe pas, il ne compare pas, il
  *              n'invente pas de prix.
  *
+ *   `ask`      une question du groupe reçoit une réponse tirée du dossier de
+ *              faits que le moteur a calculé. Le modèle n'a aucun outil, ne
+ *              voit aucun prénom, et ne peut rien modifier : il lit et rédige.
+ *
  * Ce qui ne passe jamais par ici : le classement des destinations, les prix,
  * les distances, la répartition des dépenses. Tout cela est du code testé, et
- * le reste. Si les trois fournisseurs sont muets, l'application perd deux
+ * le reste. Si les trois fournisseurs sont muets, l'application perd trois
  * commodités et garde toutes ses fonctions.
  *
  * Aucune donnée personnelle n'est transmise : les offres gratuites autorisent
@@ -82,6 +85,8 @@ Deno.serve(async (request) => {
         return await parser(client, demande.input);
       case 'explain':
         return await expliquer(client, demande.input);
+      case 'ask':
+        return await repondre(client, demande.input);
       default:
         return json({ error: 'Tâche inconnue' }, 400);
     }
@@ -222,6 +227,62 @@ async function expliquer(
   });
 
   await ecrireCacheIA(client, cle, 'explain', fournisseur, valeur);
+  return json({ configured: true, text: valeur.text, provider: fournisseur });
+}
+
+// ---------------------------------------------------------------- tâche ask
+
+/**
+ * Une question du groupe, répondue à partir du dossier de faits.
+ *
+ * La consigne vit dans `packages/core/src/ai/briefing.ts` avec le dossier :
+ * les deux doivent changer ensemble, et elle y est testée. Elle arrive donc
+ * dans la requête plutôt que d'être figée ici — c'est la seule tâche où le
+ * client fournit sa consigne, et elle est bornée en longueur comme le reste.
+ *
+ * Le modèle ne dispose d'aucun outil et ne peut rien modifier. Il lit des faits
+ * et rédige. Tout ce qui change quelque chose dans Tripora passe par un geste
+ * explicite de quelqu'un.
+ */
+async function repondre(
+  client: ReturnType<typeof serviceClient>,
+  entree: unknown,
+): Promise<Response> {
+  if (typeof entree !== 'object' || entree === null) {
+    return json({ error: 'Question absente' }, 400);
+  }
+  const { question, briefing, systeme } = entree as Record<string, unknown>;
+  if (typeof question !== 'string' || question.trim().length < 3 || question.length > 400) {
+    return json({ error: 'Question absente ou trop longue' }, 400);
+  }
+  if (typeof briefing !== 'string' || briefing.length < 20 || briefing.length > 6000) {
+    return json({ error: 'Dossier absent ou trop long' }, 400);
+  }
+  if (typeof systeme !== 'string' || systeme.length < 50 || systeme.length > 3000) {
+    return json({ error: 'Consigne absente ou trop longue' }, 400);
+  }
+
+  const message = `${briefing}\n\n## La question\n${question.trim()}`;
+
+  const cle = await empreinte('ask', message);
+  const enCache = await lireCacheIA<{ text: string }>(client, cle);
+  if (enCache) return json({ configured: true, text: enCache.text, cached: true });
+
+  const { valeur, fournisseur } = await demanderIA({
+    tache: 'ask',
+    systeme,
+    message,
+    // Une question sur un compromis mérite le modèle qui raisonne le mieux.
+    soigne: true,
+    maxTokens: 300,
+    valider: (brut) => {
+      const texte = brut.replace(/[*_#`]/g, '').trim();
+      if (texte.length < 15 || texte.length > 900) return null;
+      return { text: texte };
+    },
+  });
+
+  await ecrireCacheIA(client, cle, 'ask', fournisseur, valeur);
   return json({ configured: true, text: valeur.text, provider: fournisseur });
 }
 
