@@ -21,6 +21,7 @@ import { useGroupRealtime } from '@/lib/useGroupRealtime';
 import { useAuth } from '@/lib/auth-context';
 import { VoteBar } from '@/components/VoteBar';
 import { Reserver } from '@/components/Reserver';
+import { MeteoPrevue } from '@/components/MeteoPrevue';
 import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
 import { Assistant } from '@/components/Assistant';
 import { toFailure } from '@/lib/errors';
@@ -234,6 +235,10 @@ export default function TripDetail() {
                 </>
               )}
             </Banner>
+          )}
+
+          {villeRetenue && (
+            <MeteoPrevue constraints={data.constraints} destination={villeRetenue} />
           )}
 
           {villeRetenue && (

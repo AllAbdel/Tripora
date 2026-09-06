@@ -30,7 +30,7 @@ déclenchent un seul appel.
 | Prix des hôtels | 24 h | Idem |
 | Géocodage | illimitée | Une ville ne bouge pas |
 | Points d'intérêt | 30 jours | Un musée non plus |
-| Prévisions météo | 6 h | Au-delà, la prévision a changé |
+| Prévisions météo | 6 h | Les modèles tournent quelques fois par jour |
 | Normales climatiques | illimitée | Moyennes sur trente ans |
 | Taux de change | 24 h | La BCE publie une fois par jour |
 | Réponses de l'IA | 7 jours | Clé = empreinte des entrées |
@@ -65,10 +65,23 @@ avec des liens vers SNCF Connect, Trainline, Omio, FlixBus et BlaBlaCar.
 
 ### Météo — Open-Meteo
 
-Sans clé, 10 000 requêtes par jour, usage non commercial. Prévisions à 16 jours
-et normales climatiques mensuelles. Ce sont ces dernières qui servent au score
-d'une destination : personne ne connaît la météo de juin prochain, mais on sait
-qu'il fait en moyenne 27 °C à Séville en juin.
+Sans clé, 10 000 requêtes par jour, usage non commercial. Deux usages, deux
+questions différentes :
+
+- **les normales climatiques** répondent à « quel mois partir ». Elles sont
+  calculées sur les archives 2023-2025, **embarquées dans le code** pour les 55
+  destinations, et servent au score : personne ne connaît la météo de juin
+  prochain, mais on sait qu'il fait en moyenne 27 °C à Séville en juin. Aucun
+  appel, aucun quota, fonctionne hors ligne ;
+- **la prévision à 16 jours** répond à « qu'est-ce qu'on fait mercredi ». Elle
+  n'apparaît qu'à l'approche du départ, sur la fiche du voyage et sur chaque
+  journée de l'itinéraire.
+
+Un détail relevé sur l'API le 6 septembre 2026 : la réponse contient bien seize
+jours, mais **le seizième arrive entièrement à `null`** — il n'est pas encore
+calculé. `parseForecast` l'écarte, et un test le vérifie sur la vraie réponse ;
+sans cela l'écran afficherait « NaN ° » le jour où le séjour tombe pile au bord
+de la fenêtre.
 
 ### Cartes — OpenFreeMap + MapLibre
 

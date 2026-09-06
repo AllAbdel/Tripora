@@ -5,8 +5,9 @@ import {
   ArrowLeft, ChevronDown, ChevronUp, Loader2, Plus, RotateCcw, Trash2, X,
 } from 'lucide-react';
 import {
-  AXIS_EMOJI, buildItinerary, findDestination, formatCents, parseAmountToCents,
-  type Destination, type MemberPreference, type Poi,
+  AXIS_EMOJI, buildItinerary, dayVerdict, describeDay, findDestination, formatCents,
+  parseAmountToCents, weatherEmoji,
+  type DailyWeather, type Destination, type MemberPreference, type Poi,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +19,7 @@ import { getTripRepository } from '@/lib/trips';
 import {
   getItinerary, positionPourHeure, type ItineraryDayView, type ItineraryItem,
 } from '@/lib/itinerary';
+import { chargerMeteo, cleMeteo } from '@/lib/weather';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
 
@@ -43,6 +45,8 @@ export default function TripItinerary() {
     enabled: Boolean(id),
   });
 
+
+
   const jours = useQuery({
     queryKey: ['itineraire', id],
     queryFn: () => itineraire.load(id!),
@@ -52,6 +56,25 @@ export default function TripItinerary() {
   const destination = voyage.data?.lockedDestinationId
     ? findDestination(voyage.data.lockedDestinationId)
     : null;
+
+  // La même prévision que sur la fiche du voyage, servie par le même cache :
+  // ouvrir l'itinéraire ne déclenche pas un second appel.
+  const meteo = useQuery({
+    queryKey: cleMeteo(destination?.lat ?? 0, destination?.lng ?? 0),
+    queryFn: () => chargerMeteo(destination!.lat, destination!.lng),
+    staleTime: 6 * 60 * 60 * 1000,
+    gcTime: 7 * 24 * 60 * 60 * 1000,
+    enabled: Boolean(destination),
+  });
+
+  /** La prévision indexée par date, pour que chaque jour trouve la sienne. */
+  const meteoParJour = useMemo(() => {
+    const table = new Map<string, DailyWeather>();
+    if (meteo.data?.statut === 'ok') {
+      for (const jour of meteo.data.jours) table.set(jour.date, jour);
+    }
+    return table;
+  }, [meteo.data]);
 
   /** Le plan que produirait le moteur, tant que rien n'est enregistré. */
   const planPropose = useMemo(() => {
@@ -226,6 +249,7 @@ export default function TripItinerary() {
                 key={jour.id}
                 jour={jour}
                 destination={destination}
+                meteo={jour.date ? meteoParJour.get(jour.date) : undefined}
                 members={voyage.data?.members ?? []}
                 enAjout={ajoutSur === jour.id}
                 onOuvrirAjout={() => setAjoutSur(ajoutSur === jour.id ? null : jour.id)}
@@ -260,6 +284,7 @@ export default function TripItinerary() {
 function Journee({
   jour,
   destination,
+  meteo,
   members,
   enAjout,
   onOuvrirAjout,
@@ -271,6 +296,8 @@ function Journee({
   jour: ItineraryDayView;
   /** Absente tant que le groupe n'a pas tranché : pas de lieux à proposer. */
   destination: Destination | undefined;
+  /** La prévision de ce jour-là, si le départ est assez proche. */
+  meteo: DailyWeather | undefined;
   members: readonly MemberPreference[];
   enAjout: boolean;
   onOuvrirAjout: () => void;
@@ -291,12 +318,28 @@ function Journee({
         <div className="min-w-0">
           <h2 className="truncate font-semibold">{jour.summary}</h2>
           {jour.date && (
-            <p className="text-muted text-sm">
-              {new Date(`${jour.date}T00:00:00`).toLocaleDateString('fr-FR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}
+            <p className="text-muted flex flex-wrap items-center gap-x-2 text-sm">
+              <span>
+                {new Date(`${jour.date}T00:00:00`).toLocaleDateString('fr-FR', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })}
+              </span>
+              {meteo && (
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                    dayVerdict(meteo) === 'dedans'
+                      ? 'bg-gold-500/15 text-gold-700 dark:text-gold-300'
+                      : 'bg-[color:var(--surface-muted)]',
+                  )}
+                >
+                  <span aria-hidden>{weatherEmoji(meteo.code)}</span>
+                  {describeDay(meteo)}
+                  {dayVerdict(meteo) === 'dedans' && ' — plutôt à l’abri'}
+                </span>
+              )}
             </p>
           )}
         </div>

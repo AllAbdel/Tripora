@@ -16,7 +16,7 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **7** | **Intelligence artificielle** — compréhension du langage naturel, explications rédigées, assistant qui répond aux questions du groupe sans jamais rien décider ni rien modifier | ✅ fait |
 | **8** | **Budget et dépenses** — saisie, parts, « qui doit combien à qui » simplifié, dépenses en devise locale converties aux taux de la BCE | ✅ fait |
 | **9** | **Transport et hébergement** — comparaison avion, train, bus, voiture ✅, liens de réservation préremplis ✅ ; prix d'hôtels **impossibles** (Hotellook retiré, voir APIS.md) | 🔨 en cours |
-| **10** | **Confort** — météo et réorganisation du planning, notifications, carte hors ligne, éventuel emballage APK | ⬜ |
+| **10** | **Confort** — météo du séjour sur la fiche et sur chaque journée ✅ ; notifications, carte hors ligne et éventuel emballage APK à venir | 🔨 en cours |
 
 ## Où on en est
 
@@ -50,7 +50,13 @@ le zloty, la couronne, la livre. La conversion utilise les taux de référence d
 la Banque centrale européenne, avec leur date de publication affichée, et le
 taux est figé dans la dépense pour que les comptes ne bougent plus.
 
-La suite : la météo à l'approche du départ, et les notifications.
+À l'approche du départ, **la vraie météo remplace les moyennes** : la fiche du
+voyage montre les jours du séjour, et chaque journée de l'itinéraire porte sa
+prévision — « pluie, 18 ° — plutôt à l'abri ». Au-delà de seize jours la
+prévision n'existe pas, et les normales reprennent la main, sans que personne
+ait à choisir.
+
+La suite : les notifications et la carte hors ligne.
 La marche à suivre pour tout essayer soi-même est dans [TESTER.md](TESTER.md).
 
 ## Pourquoi cet ordre

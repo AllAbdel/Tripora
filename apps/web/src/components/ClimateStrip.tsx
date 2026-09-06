@@ -1,4 +1,4 @@
-import { climateYear, type MonthlyClimate } from '@tripora/core';
+import { climateYear, monthNameFr, type MonthlyClimate } from '@tripora/core';
 import { cn } from '@/lib/cn';
 
 const INITIALES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
@@ -82,20 +82,5 @@ function decrire(mois: MonthlyClimate): string {
     mois.rainyDays === 0
       ? 'aucun jour de pluie'
       : `${mois.rainyDays} jour${mois.rainyDays > 1 ? 's' : ''} de pluie`;
-  return `${NOMS[mois.month - 1]} : ${Math.round(mois.avgHighC)} °C en journée, ${Math.round(mois.avgLowC)} °C la nuit, ${pluie}`;
+  return `${monthNameFr(mois.month)} : ${Math.round(mois.avgHighC)} °C en journée, ${Math.round(mois.avgLowC)} °C la nuit, ${pluie}`;
 }
-
-const NOMS = [
-  'Janvier',
-  'Février',
-  'Mars',
-  'Avril',
-  'Mai',
-  'Juin',
-  'Juillet',
-  'Août',
-  'Septembre',
-  'Octobre',
-  'Novembre',
-  'Décembre',
-];
