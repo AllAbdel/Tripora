@@ -204,6 +204,67 @@ sans que tu aies à recharger.
 C'est le scénario du vrai voyage : dans l'avion, dans le métro, à l'étranger
 sans forfait.
 
+## 8 quater. Les dépenses, et la monnaie du pays
+
+25. Ouvre l'onglet **Budget** du voyage, puis « Ajouter une dépense ».
+26. Si le groupe est parti sur une destination hors zone euro — Cracovie,
+    Londres, Reykjavik, Istanbul —, un **sélecteur de devise** apparaît à côté
+    du montant, déjà réglé sur la monnaie locale.
+27. Tape un montant.
+
+→ Sous le champ : « ≈ 23,18 € · 1 € = 4,315 zł · taux BCE du 4 septembre ».
+
+→ **Vérifie la date.** Ce n'est pas forcément aujourd'hui : la Banque centrale
+européenne ne publie ni le week-end ni les jours fériés. Un dimanche, le taux
+affiché est celui de vendredi, et c'est écrit.
+
+→ La dépense apparaît dans la liste avec **les deux montants** : l'euro en
+gras, la somme réellement payée en dessous. Les comptes — « qui doit combien à
+qui » — se font en euros.
+
+→ Le taux est **figé** au moment de la saisie : une dépense d'hier ne changera
+jamais de valeur parce que le zloty a bougé.
+
+Trois destinations font exception : **Marrakech, Belgrade et Tirana**. La BCE
+ne publie pas de taux pour le dirham, le dinar serbe ni le lek. Tripora le dit
+au lieu de convertir avec un taux inventé — note ces dépenses en euros.
+
+## 8 quinquies. La météo, à moins de deux semaines du départ
+
+28. Il faut un voyage avec des **dates exactes** (pas seulement un mois) et une
+    destination verrouillée, dont le départ est dans les seize jours.
+
+→ Un bloc « La météo sur place » apparaît sur la fiche du voyage : un jour par
+carte, avec l'icône, le maximum et le minimum. Les journées à rester à l'abri
+sont encadrées en doré.
+
+→ Dans **l'itinéraire**, chaque journée porte sa prévision à côté de la date :
+« 🌧️ pluie, 18 ° — plutôt à l'abri ».
+
+→ Au-delà de seize jours, ce bloc n'existe pas, et c'est normal : personne ne
+connaît la météo du mois prochain. La bande des douze mois, elle, est toujours
+là — elle vient de moyennes mesurées, embarquées dans l'application, et
+fonctionne même hors ligne.
+
+## 8 sexies. Poser une question sur le voyage
+
+29. Sur la fiche du voyage, sous les propositions : « Une question sur ce
+    voyage ? ». Trois exemples sont proposés, ou écris la tienne.
+
+→ La réponse tient en trois phrases et ne s'appuie **que** sur les chiffres
+déjà affichés à l'écran.
+
+→ **Ce qu'il faut essayer de casser** : demande-lui un prix qu'il n'a pas
+(« combien coûte l'hôtel ? »), une recommandation (« quel restaurant ? »), ou
+de trancher à ta place (« on va où ? »). Il doit refuser et dire ce qui lui
+manque, pas inventer.
+
+→ Aucun prénom ne lui est transmis : dans son dossier, vous êtes « Participant
+A, B, C ». Si un nom passait quand même, l'envoi serait annulé et un message
+te le dirait — signale-le, ce serait un bug.
+
+Le bloc n'apparaît pas si aucun fournisseur d'IA n'est branché sur le serveur.
+
 ## 9. Installer l'application
 
 31. Sur téléphone : Safari → Partager → **Sur l'écran d'accueil**, ou Chrome →
@@ -219,9 +280,10 @@ sans forfait.
 
 | Fonction | Pourquoi |
 |---|---|
-| Assistant conversationnel (poser une question, faire modifier l'itinéraire) | Phase suivante |
-| Hôtels et comparaison de transports | Phase suivante |
-| Dépenses en plusieurs devises | Phase suivante |
+| Faire **modifier** l'itinéraire par l'assistant | Il lit et explique, il n'agit pas. C'est volontaire pour l'instant |
+| Prix des hôtels | Aucune source gratuite ne les donne plus — voir APIS.md. Tripora renvoie vers Booking, Airbnb et Hostelworld avec la recherche préremplie |
+| Notifications | Phase suivante |
+| Télécharger la carte pour l'hors-ligne | Phase suivante |
 | Liens de réservation affiliés | Attend `TRAVELPAYOUTS_MARKER`, entièrement facultatif |
 
 ## Ce qu'il faut me signaler

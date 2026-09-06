@@ -112,6 +112,21 @@ try {
   verifier('les normales sont datées', detail.includes('Normales mesurées'));
   verifier('la note est ventilée par facteur', detail.includes('Comment la note est calculée'));
 
+  console.log('\nDépenses');
+  const voyageUrl = page.url().replace(/#.*$/u, '');
+  await page.goto(`${voyageUrl}/budget`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /ajouter une dépense/i }).click();
+  await page.getByRole('textbox', { name: /intitulé/i }).fill('Dîner au marché');
+  await page.getByRole('textbox', { name: /^montant$/i }).fill('48,50');
+  await page.getByRole('button', { name: /enregistrer/i }).click();
+  await page.waitForTimeout(600);
+  const comptes = await texte();
+  // Le montant doit revenir au centime : c'est le chemin où `amountCents` est
+  // devenu le montant converti, et une erreur d'un centime se voit ici.
+  verifier('la dépense est enregistrée au centime', comptes.includes('48,50'));
+  verifier('le total suit', /Total dépensé/.test(comptes));
+  await page.goto(voyageUrl, { waitUntil: 'networkidle' });
+
   console.log('\nHors réseau');
   await page.context().setOffline(true);
   await page.reload({ waitUntil: 'domcontentloaded' });
