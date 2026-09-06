@@ -97,23 +97,51 @@ recherche ne consomme donc aucun quota.
 
 ### Intelligence artificielle
 
-| Rang | Fournisseur | Quota gratuit | Rôle |
+Trois fournisseurs, interrogés dans cet ordre jusqu'à ce que l'un réponde.
+L'ordre n'est pas une préférence de principe : il vient de ce que chacun a
+réellement répondu, le 6 septembre 2026, à la même phrase de test.
+
+| Rang | Fournisseur | Modèles retenus | Mesuré ce jour-là |
 |---|---|---|---|
-| 1 | Mistral (offre Experiment) | ~1 milliard de jetons/mois, ~1 req/s | Analyse du langage, explications, itinéraire |
-| 2 | Gemini Flash | ~10 req/min, ~1 000–1 500 req/jour | Secours, très fiable sur le JSON |
-| 3 | Groq (Llama 3.3 70B) | 30 req/min, 1 000 req/jour | Secours rapide |
+| 1 | Gemini | `gemini-flash-lite-latest`, `gemini-flash-latest` | extraction complète et correcte, ~700 ms, mode JSON strict accepté |
+| 2 | Groq | `qwen/qwen3.8-27b`, `openai/gpt-oss-120b` | extraction complète, ~250 ms, **mode JSON strict refusé** |
+| 3 | Mistral | `mistral-small-latest`, `mistral-medium-latest` | 429 en 90 ms sur ce compte ; `ministral-8b` répondait, lui |
 
 Tous exposent une interface compatible OpenAI : un seul client dans le code.
 
-**Sur les offres gratuites de Mistral et de Gemini, les échanges peuvent servir
-à l'entraînement.** D'où une règle non négociable : les participants sont
+Trois leçons de cette vérification, qui expliquent des choix du code :
+
+- **les identifiants de modèles vieillissent vite.** `gemini-2.0-flash` et
+  `llama-3.3-70b-versatile` avaient déjà disparu. On utilise partout les alias
+  « latest » quand le fournisseur en propose : ils suivent les remplacements
+  tout seuls ;
+- **Groq refuse `response_format: json_object`.** Ses modèles raisonnent dans
+  un canal séparé et la validation stricte échoue à vide. Le mode JSON est donc
+  désactivé pour lui seul, et l'objet est extrait du texte ;
+- **un modèle ne suit pas forcément l'échelle demandée.** L'un a répondu
+  « food: 8, nightlife: 9 » là où la consigne disait 0 à 1. `sanitizeDraft`
+  en déduit l'échelle et divise, plutôt que d'écraser les deux à 1.
+
+Si Mistral continue de répondre 429 immédiatement, c'est côté compte : l'offre
+gratuite demande une validation par numéro de téléphone sur
+console.mistral.ai. Rien à changer dans Tripora — les deux autres suffisent.
+
+**Sur les offres gratuites, les échanges peuvent servir à l'entraînement.** D'où une règle non négociable : les participants sont
 anonymisés en « Participant A, B, C », et aucun nom, adresse électronique ou
 position ne part vers un modèle. Seuls circulent des préférences chiffrées, des
 contraintes et des faits déjà publics.
 
+Deux garde-fous se cumulent : le compteur par fournisseur, qui protège le
+quota gratuit, et un plafond de **40 demandes par personne et par jour**, qui
+protège le groupe de l'un de ses membres — une page laissée ouverte qui
+relancerait l'assistant en boucle épuiserait sinon le quota commun avant midi.
+Les réponses sont mises en cache une semaine, indexées par l'empreinte de la
+question : la même phrase posée par cinq personnes ne coûte qu'un appel.
+
 Si les trois fournisseurs sont saturés, Tripora continue de fonctionner : le
 scoring, les votes, l'itinéraire de base et les dépenses sont déterministes.
-Seules les explications rédigées et l'assistant se mettent en pause.
+Seules les deux commodités rédigées se mettent en pause, et l'écran le dit
+sans dramatiser.
 
 ---
 

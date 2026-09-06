@@ -91,10 +91,21 @@ et vers `/rejoindre/CODE` quand on arrive par une invitation.
 
 | Nom | Où la trouver | Si absente |
 |---|---|---|
-| `MISTRAL_API_KEY` | console.mistral.ai | Pas d'assistant ni d'explications rédigées |
-| `GEMINI_API_KEY` | aistudio.google.com | Pas de secours quand Mistral sature |
-| `GROQ_API_KEY` | console.groq.com | Pas de second secours |
+| `GEMINI_API_KEY` | aistudio.google.com | Premier fournisseur d'IA : Groq prend le relais |
+| `GROQ_API_KEY` | console.groq.com | Secours immédiat |
 | `GEOAPIFY_API_KEY` | geoapify.com | Repli sur Nominatim et Overpass |
+| `MISTRAL_API_KEY` | console.mistral.ai | Troisième secours seulement |
+
+Les trois clés d'IA sont posées et vérifiées. Une remarque sur Mistral :
+sur ce compte, `mistral-small` répond **429 « Rate limit exceeded » en 90 ms**,
+c'est-à-dire un refus immédiat et non une saturation passagère. L'offre
+gratuite de Mistral demande une validation par numéro de téléphone sur
+console.mistral.ai ; tant qu'elle n'est pas faite, Gemini et Groq assurent le
+service et Mistral est simplement sauté. Il n'y a rien à corriger dans le code.
+
+Si aucune des trois n'est renseignée, la saisie en langage naturel et le
+résumé rédigé **disparaissent de l'écran** au lieu d'afficher un bouton qui
+échoue. Tout le reste de Tripora fonctionne à l'identique.
 
 Ces clés ne doivent **jamais** aller dans `apps/web` : tout ce qui commence par
 `VITE_` est public.
@@ -124,9 +135,26 @@ endroits :
 - **Profil → onglet « API token »** de votre compte Travelpayouts ;
 - ou directement <https://www.travelpayouts.com/programs/100/tools/api>.
 
-Ensuite, dans les secrets Supabase : `TRAVELPAYOUTS_TOKEN` et
-`TRAVELPAYOUTS_MARKER`. Sans eux, Tripora fonctionne : tous les prix sont
-simplement étiquetés « indicatif », ce qu'il annonce à chaque écran.
+Ensuite, dans les secrets Supabase : `TRAVELPAYOUTS_TOKEN`. C'est fait, et
+les prix relevés arrivent bien.
+
+#### Et le « marker », alors ?
+
+**Vous n'en avez pas besoin, et c'est pour ça que vous ne le trouvez pas sous
+ce nom.** Le marker n'est pas une seconde clé à générer : c'est simplement
+votre **identifiant de partenaire**, un nombre à six chiffres affiché en bas à
+gauche du tableau de bord Travelpayouts, souvent écrit « ID » ou « Partner ID »
+plutôt que « marker ». Certains comptes l'affichent aussi dans l'URL du
+tableau de bord.
+
+À quoi il sert : uniquement à **toucher une commission** si quelqu'un réserve
+en passant par un lien Tripora. Il s'ajoute aux liens de réservation, pas aux
+requêtes de prix. L'API de données, elle, n'a besoin que du jeton.
+
+Autrement dit : Tripora affiche déjà les vrais prix sans marker, et continuera
+très bien sans. Le jour où vous voudrez que les liens « Réserver » soient
+affiliés, ajoutez le secret `TRAVELPAYOUTS_MARKER` avec ce nombre — rien
+d'autre à changer.
 
 ⚠️ Régénérer le jeton invalide l'ancien immédiatement.
 

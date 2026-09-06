@@ -28,6 +28,25 @@ Adresse du site : **https://tripora-3rg.pages.dev**
 ## 2. Créer un voyage
 
 3. **Nouveau** → six écrans : avec qui, d'où, où, quand, budget, envies.
+
+   **Avant de remplir quoi que ce soit**, essaie l'encadré en pointillés tout
+   en haut, « Ou dites-le en une phrase ». Colle exactement :
+
+   > On part à 5 depuis Lyon, une semaine en octobre, 400 € max, plutôt fête
+   > et bonne bouffe
+
+   → Une liste de pastilles doit apparaître : *5 personnes · départ de Lyon ·
+   7 jours · en octobre · 400 € max · entre amis · Gastronomie · Fête*.
+   Rien n'est appliqué tant que tu n'as pas cliqué **Reprendre** — et
+   **Ignorer** doit tout annuler sans rien changer au formulaire.
+
+   → Clique **Reprendre**, puis parcours les six écrans : ils doivent déjà
+   être remplis, et tout doit rester modifiable.
+
+   Si l'encadré n'apparaît pas du tout, c'est que les clés d'IA ne répondent
+   plus : le reste fonctionne à l'identique, signale-le simplement.
+
+   Puis, pour la suite du test, repars des valeurs ci-dessous.
 4. Prends **Entre amis**, mets 4 participants.
 5. Départ : cherche ta ville. → La recherche doit tolérer les accents (tape `nimes`, tu dois voir Nîmes).
 6. Destination : laisse **Surprends-nous**.
@@ -43,9 +62,20 @@ personne et une phrase qui explique la note. Déplie « Voir le détail » : la
 ventilation du prix, les six facteurs avec leur poids, et les options de
 transport comparées.
 
-→ Un bandeau doit dire que **les prix sont indicatifs**. C'est normal tant que
-Travelpayouts n'est pas branché — et c'est exactement ce qu'on veut : jamais un
-prix estimé présenté comme un prix constaté.
+→ Les prix des vols doivent porter une étiquette du type **« Prix vu il y a
+N jours (Aviasales) »**. Le reste du coût — logement, nourriture, sur place —
+reste estimé, et c'est écrit. Jamais un prix estimé présenté comme constaté.
+
+→ À côté du prix, un thermomètre et un nuage : la température de journée et
+le nombre de jours de pluie du mois visé, mesurés sur trois ans d'archives.
+Dans le détail, la bande **« Quand y aller »** montre les douze mois d'un coup
+d'œil, le mois choisi encadré. Vérifie que ça a du sens : Marrakech doit être
+rouge en juillet et confortable en janvier.
+
+→ Toujours dans le détail, **« Résumer cette note en une phrase »** fait
+rédiger un paragraphe. Il ne doit contenir **aucun chiffre absent de la
+ventilation juste au-dessus**. Si tu en vois un inventé, c'est un vrai bug :
+signale-le.
 
 ## 3. Inviter quelqu'un
 
@@ -128,11 +158,11 @@ distance.
 
 | Fonction | Pourquoi |
 |---|---|
-| Prix réels des vols | Attend `TRAVELPAYOUTS_TOKEN` dans les secrets Supabase |
-| Assistant conversationnel | Phase suivante |
-| Dépenses et « qui doit quoi » | Phase suivante |
+| Assistant conversationnel (poser une question, faire modifier l'itinéraire) | Phase suivante |
 | Hôtels et comparaison de transports | Phase suivante |
 | Points d'intérêt réels sur la carte | Phase suivante |
+| Dépenses en plusieurs devises | Phase suivante |
+| Liens de réservation affiliés | Attend `TRAVELPAYOUTS_MARKER`, entièrement facultatif |
 
 ## Ce qu'il faut me signaler
 
@@ -143,5 +173,8 @@ Dans l'ordre d'utilité :
    être en français et dire quoi faire.
 3. **Un prix affiché sans étiquette** de fraîcheur.
 4. Le classement qui ne bouge pas quand quelqu'un renseigne ses envies.
-5. Tout ce qui te fait hésiter plus de deux secondes sur « je fais quoi
+5. **Un chiffre inventé** dans un texte rédigé par l'IA — un prix, une durée,
+   une température qui n'apparaît nulle part ailleurs à l'écran. C'est la règle
+   la plus importante du projet : l'IA explique, elle ne mesure pas.
+6. Tout ce qui te fait hésiter plus de deux secondes sur « je fais quoi
    maintenant ? ».

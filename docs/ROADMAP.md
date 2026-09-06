@@ -9,32 +9,36 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **0** | **Fondations** — monorepo, PWA installable, thèmes, identité visuelle, schéma Postgres avec RLS, comptes Google et invité, intégration continue | ✅ fait |
 | **1** | **Création de voyage** — assistant en six étapes (avec qui, départ, destination ou « surprends-nous », dates ou durée, budget, envies), catalogue de 55 destinations | ✅ fait |
 | **2** | **Collaboration** — invitation par lien, code et QR, liste des membres, préférences et budget de chacun, mises à jour en direct | ✅ fait |
-| **3** | **Propositions** — moteur de scoring branché, coût total, explications ✅ ; prix des vols en cache et climat réel restent à brancher | 🔨 en cours |
+| **3** | **Propositions** — moteur de scoring, coût total, explications, prix des vols relevés chez Aviasales, climat mesuré sur trois ans | ✅ fait |
 | **4** | **Vote et décision** — j'aime, je n'aime pas, favori, agrégation, verrouillage de la destination | ✅ fait |
-| **5** | **Carte et lieux** — MapLibre, points d'intérêt, photos, fiches, favoris | ⬜ |
+| **5** | **Carte et lieux** — MapLibre, destinations en lice, tracé du trajet ✅ ; points d'intérêt et photos restent à faire | 🔨 en cours |
 | **6** | **Itinéraire** — génération jour par jour, réorganisation, ajout de vrais lieux ✅ ; consultation hors ligne partielle — **MVP atteint** | ✅ fait |
-| **7** | **Intelligence artificielle** — compréhension du langage naturel, explications rédigées, assistant conversationnel avec outils | ⬜ |
-| **8** | **Budget et dépenses** — saisie multi-devises, parts, « qui doit combien à qui » simplifié | ⬜ |
+| **7** | **Intelligence artificielle** — compréhension du langage naturel ✅, explications rédigées ✅ ; assistant conversationnel avec outils à venir | 🔨 en cours |
+| **8** | **Budget et dépenses** — saisie, parts, « qui doit combien à qui » simplifié ✅ ; multi-devises à venir | 🔨 en cours |
 | **9** | **Transport et hébergement** — comparaison avion, train, bus, voiture ; hôtels indicatifs ; liens de réservation ; vérification ponctuelle d'un prix | ⬜ |
 | **10** | **Confort** — météo et réorganisation du planning, notifications, carte hors ligne, éventuel emballage APK | ⬜ |
 
 ## Où on en est
 
-Les phases 0, 1, 2, 4 et 6 sont terminées ; la 3 et la 5 le sont pour leur
-partie qui ne dépend d'aucune clé d'API. Un groupe peut créer un voyage, s'inviter par lien ou par QR
-code, exprimer ses envies chacun de son côté, et voir des destinations notées,
-expliquées et chiffrées se recalculer en direct — **sans aucune clé d'API**.
-Tous les prix sont alors des estimations, et l'application le dit à chaque
-écran.
+**Le MVP est atteint, et dépassé.** Un groupe peut créer un voyage — au
+formulaire ou en une phrase —, s'inviter par lien ou par QR code, exprimer ses
+envies chacun de son côté, comparer des destinations notées, chiffrées et
+expliquées, voter, trancher, voir la carte, obtenir un itinéraire jour par jour
+qu'il complète de vraies adresses, et se répartir les dépenses.
 
-**Le MVP est atteint.** Un groupe peut créer un voyage, s'inviter, exprimer ses
-envies chacun de son côté, comparer des destinations chiffrées et expliquées,
-voter, trancher, voir la carte et obtenir un itinéraire jour par jour qu'il
-complète de vraies adresses — le tout sans aucune clé d'API.
+Ce qui repose sur des faits mesurés plutôt que sur des estimations :
 
-La suite : les prix réels (un jeton Travelpayouts gratuit), les dépenses, puis
-l'assistant conversationnel. La marche à suivre pour tout essayer soi-même est
-dans [TESTER.md](TESTER.md).
+- **les prix des vols**, relevés chez Aviasales et étiquetés de leur date ;
+- **le climat**, normales mensuelles calculées sur les archives 2023-2025 pour
+  les 55 destinations, embarquées dans le code : aucun appel, aucun quota,
+  fonctionne hors ligne.
+
+Sans aucune clé d'API, tout continue de fonctionner : les prix redeviennent des
+estimations, l'IA disparaît de l'écran, et rien d'autre ne bouge.
+
+La suite : les points d'intérêt sur la carte, l'assistant conversationnel, les
+transports et les hébergements. La marche à suivre pour tout essayer soi-même
+est dans [TESTER.md](TESTER.md).
 
 ## Pourquoi cet ordre
 
