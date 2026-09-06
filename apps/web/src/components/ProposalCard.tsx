@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronDown, Plane, Train, Bus, Car, Ship } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { ChevronDown, Crown, Lock, Plane, Train, Bus, Car, Ship } from 'lucide-react';
 import {
   costLines,
   formatCents,
@@ -26,11 +26,19 @@ export function ProposalCard({
   destination,
   score,
   transport,
+  vote,
+  choixDuGroupe = false,
+  verrouillee = false,
 }: {
   rank: number;
   destination: Destination;
   score: DestinationScore;
   transport: TransportEstimate[];
+  /** Barre de vote, absente quand on voyage seul. */
+  vote?: ReactNode;
+  /** Celle que les votes désignent, distincte de celle que le calcul classe en tête. */
+  choixDuGroupe?: boolean;
+  verrouillee?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const label = freshnessLabel({
@@ -41,8 +49,35 @@ export function ProposalCard({
   });
 
   return (
-    <Card className="animate-rise overflow-hidden">
+    <Card
+      className={cn(
+        'animate-rise overflow-hidden',
+        verrouillee && 'border-lagoon-500 ring-1 ring-lagoon-500',
+        choixDuGroupe && !verrouillee && 'border-gold-500',
+      )}
+    >
       <CardBody className="space-y-3">
+        {(verrouillee || choixDuGroupe) && (
+          <p
+            className={cn(
+              'flex items-center gap-1.5 text-xs font-bold tracking-wide uppercase',
+              verrouillee ? 'text-lagoon-700 dark:text-lagoon-300' : 'text-gold-700 dark:text-gold-300',
+            )}
+          >
+            {verrouillee ? (
+              <>
+                <Lock className="size-3.5" aria-hidden />
+                Destination retenue
+              </>
+            ) : (
+              <>
+                <Crown className="size-3.5" aria-hidden />
+                Le groupe préfère celle-ci
+              </>
+            )}
+          </p>
+        )}
+
         <div className="flex items-start gap-3">
           <span
             aria-hidden
@@ -65,6 +100,8 @@ export function ProposalCard({
         </div>
 
         <p className="text-muted text-sm leading-relaxed">{score.summary}</p>
+
+        {vote}
 
         <button
           type="button"

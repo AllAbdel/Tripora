@@ -422,4 +422,103 @@ begin
   end loop;
 end $$;
 
+-- ===========================================================================
+-- Le vote, et le droit de trancher.
+-- ===========================================================================
+
+-- Chacun vote pour soi.
+set role authenticated;
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+insert into public.votes (trip_id, subject_type, subject_id, user_id, value)
+values ('aaaaaaaa-0000-0000-0000-000000000002', 'proposal', 'barcelone', auth.uid(), 'favorite');
+
+-- Recliquer sur son choix le remplace, il ne s'empile pas.
+insert into public.votes (trip_id, subject_type, subject_id, user_id, value)
+values ('aaaaaaaa-0000-0000-0000-000000000002', 'proposal', 'barcelone', auth.uid(), 'like')
+on conflict (trip_id, subject_type, subject_id, user_id) do update set value = excluded.value;
+
+do $$
+declare n int; v public.vote_value;
+begin
+  select count(*), max(value) into n, v
+  from public.votes
+  where trip_id = 'aaaaaaaa-0000-0000-0000-000000000002' and subject_id = 'barcelone';
+  assert n = 1, format('Un seul vote par personne et par destination attendu, %s trouvé(s)', n);
+  assert v = 'like', 'Le second vote devrait avoir remplacé le premier';
+end $$;
+
+-- Mais pas à la place d'un autre.
+do $$
+begin
+  begin
+    insert into public.votes (trip_id, subject_type, subject_id, user_id, value)
+    values ('aaaaaaaa-0000-0000-0000-000000000002', 'proposal', 'rome',
+            '22222222-2222-2222-2222-222222222222', 'like');
+    raise exception 'FUITE : quelqu''un a pu voter à la place d''un autre';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+-- Thomas vote de son côté, puis tente de trancher : l'interface ne lui
+-- propose pas, la base doit le refuser aussi.
+set role authenticated;
+set request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+
+insert into public.votes (trip_id, subject_type, subject_id, user_id, value)
+values ('aaaaaaaa-0000-0000-0000-000000000002', 'proposal', 'barcelone', auth.uid(), 'like');
+
+do $$
+begin
+  begin
+    update public.trips
+      set destination_locked_id = 'rome', status = 'planned'
+      where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+    raise exception 'FUITE : un membre a pu arrêter la destination à la place de l''organisateur';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Il peut en revanche corriger un détail d'organisation.
+update public.trips set title = 'Escapade entre potes'
+  where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+
+do $$
+declare t text;
+begin
+  select title into t from public.trips where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+  assert t = 'Escapade entre potes', 'Un membre doit pouvoir renommer le voyage';
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+-- L'organisateur, lui, tranche.
+set role authenticated;
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+update public.trips
+  set destination_locked_id = 'barcelone', status = 'planned'
+  where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+
+do $$
+declare d text; pour int;
+begin
+  select destination_locked_id into d
+  from public.trips where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+  assert d = 'barcelone', format('Destination attendue barcelone, obtenue %s', d);
+
+  select count(*) into pour
+  from public.votes
+  where trip_id = 'aaaaaaaa-0000-0000-0000-000000000002'
+    and subject_id = 'barcelone' and value in ('like', 'favorite');
+  assert pour = 2, format('2 voix pour attendues, %s', pour);
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
 select '✅ Tous les tests RLS sont passés' as resultat;

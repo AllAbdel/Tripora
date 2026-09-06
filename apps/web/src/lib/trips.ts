@@ -1,4 +1,5 @@
 import {
+  findDestination,
   normalizeWeights,
   type MemberPreference,
   type PreferenceAxis,
@@ -34,6 +35,10 @@ export interface TripDetails {
   summary: TripSummary;
   constraints: TripConstraints;
   members: MemberPreference[];
+  /** Seul l'organisateur peut verrouiller la destination du groupe. */
+  isOwner: boolean;
+  /** Destination tranchée par le groupe, si le vote a abouti. */
+  lockedDestinationId: string | null;
 }
 
 export interface TripRepository {
@@ -121,6 +126,8 @@ const localRepository: TripRepository = {
         localOnly: true,
       },
       constraints,
+      isOwner: true,
+      lockedDestinationId: null,
       members: [
         {
           userId: 'moi',
@@ -161,16 +168,20 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
         .order('created_at', { ascending: false });
       if (error) throw error;
 
-      return (data ?? []).map((row) => ({
+      return (data ?? []).map((row) => {
+        const lockedId = (row.destination_locked_id as string | null) ?? null;
+        return {
         id: row.id as string,
         title: row.title as string,
         status: row.status as string,
         participants: row.participants as number,
-        destinationName: (row.destination_locked_id as string | null) ?? null,
+        // La colonne stocke un identifiant technique : on affiche le nom.
+        destinationName: lockedId ? (findDestination(lockedId)?.name ?? lockedId) : null,
         coverImageUrl: (row.cover_image_url as string | null) ?? null,
         createdAt: row.created_at as string,
         localOnly: false,
-      }));
+        };
+      });
     },
 
     async get(id) {
@@ -187,6 +198,9 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
       const originLng = data.origin_lng as number | null;
       if (originLat === null || originLng === null) return null;
 
+      const { data: session } = await client.auth.getUser();
+      const lockedId = (data.destination_locked_id as string | null) ?? null;
+
       const preferences = (data.member_preferences ?? []) as {
         user_id: string;
         weights: Record<string, number>;
@@ -195,12 +209,14 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
       }[];
 
       return {
+        isOwner: data.owner_id === session.user?.id,
+        lockedDestinationId: lockedId,
         summary: {
           id: data.id as string,
           title: data.title as string,
           status: data.status as string,
           participants: data.participants as number,
-          destinationName: (data.destination_locked_id as string | null) ?? null,
+          destinationName: lockedId ? (findDestination(lockedId)?.name ?? lockedId) : null,
           coverImageUrl: (data.cover_image_url as string | null) ?? null,
           createdAt: data.created_at as string,
           localOnly: false,

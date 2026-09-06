@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, MapPin, UserPlus, Users, Wallet } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Loader2, Lock, LockOpen, MapPin, UserPlus, Users, Wallet } from 'lucide-react';
 import {
   buildProposals,
   estimateTransportOptions,
@@ -15,12 +15,18 @@ import { Button } from '@/components/ui/Button';
 import { ProposalCard } from '@/components/ProposalCard';
 import { getTripRepository } from '@/lib/trips';
 import { getCollaboration } from '@/lib/collaboration';
+import { getVoting, groupChoice, type VoteValue } from '@/lib/votes';
 import { useGroupRealtime } from '@/lib/useGroupRealtime';
+import { useAuth } from '@/lib/auth-context';
+import { VoteBar } from '@/components/VoteBar';
 import { toFailure } from '@/lib/errors';
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
   const repository = getTripRepository();
+  const voting = getVoting();
+  const { identity } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['trip', repository.kind, id],
@@ -29,8 +35,29 @@ export default function TripDetail() {
   });
 
   // Les propositions se recalculent toutes seules dès qu'un participant
-  // rejoint ou renseigne ses envies.
+  // rejoint ou renseigne ses envies, et les votes des autres apparaissent
+  // sans rechargement.
   useGroupRealtime(id);
+
+  const votes = useQuery({
+    queryKey: ['votes', id],
+    queryFn: () => voting!.listTallies(id!, identity!.id),
+    enabled: Boolean(id && voting && identity),
+  });
+
+  const voter = useMutation({
+    mutationFn: ({ destinationId, value }: { destinationId: string; value: VoteValue | null }) =>
+      voting!.cast(id!, destinationId, value),
+    // Le vote est un geste réflexe : on n'attend pas le serveur pour montrer
+    // le résultat, et on se resynchronise juste après.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['votes', id] }),
+  });
+
+  const verrouiller = useMutation({
+    mutationFn: (destinationId: string | null) =>
+      destinationId ? voting!.lockDestination(id!, destinationId) : voting!.unlockDestination(id!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trip'] }),
+  });
 
   /**
    * Les propositions sont recalculées depuis les contraintes enregistrées.
@@ -41,6 +68,13 @@ export default function TripDetail() {
     if (!data) return null;
     return buildProposals(data.constraints, data.members, { keep: 6 });
   }, [data]);
+
+  // Ce que les votes désignent, qui n'est pas forcément ce que le calcul
+  // classe en tête — et c'est très bien : le calcul propose, le groupe dispose.
+  const choix = useMemo(() => {
+    if (!proposals || !votes.data) return null;
+    return groupChoice(votes.data, proposals.scores.map((score) => score.destinationId));
+  }, [proposals, votes.data]);
 
   if (isLoading) {
     return (
@@ -121,6 +155,28 @@ export default function TripDetail() {
             </Banner>
           )}
 
+          {data.lockedDestinationId && (
+            <Banner tone="info" title="Destination retenue">
+              Le groupe part à{' '}
+              <strong>
+                {findDestination(data.lockedDestinationId)?.name ?? data.lockedDestinationId}
+              </strong>
+              . L’itinéraire et la carte se construiront autour d’elle.
+              {data.isOwner && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    onClick={() => verrouiller.mutate(null)}
+                    className="underline"
+                  >
+                    Rouvrir le vote
+                  </button>
+                </>
+              )}
+            </Banner>
+          )}
+
           {proposals && proposals.scores.length > 0 && (
             <>
               <Card>
@@ -162,23 +218,86 @@ export default function TripDetail() {
                         rank={index + 1}
                         destination={destination}
                         score={score}
+                        verrouillee={data.lockedDestinationId === score.destinationId}
+                        choixDuGroupe={choix?.destinationId === score.destinationId}
                         transport={estimateTransportOptions(
                           data.constraints.origin,
                           destination,
                           data.constraints.participants,
                         )}
+                        vote={
+                          voting && !data.lockedDestinationId ? (
+                            <VoteBar
+                              tally={votes.data?.get(score.destinationId)}
+                              participants={Math.max(
+                                data.members.length,
+                                data.constraints.participants,
+                              )}
+                              disabled={voter.isPending}
+                              onVote={(value) =>
+                                voter.mutate({ destinationId: score.destinationId, value })
+                              }
+                            />
+                          ) : undefined
+                        }
                       />
                     </li>
                   );
                 })}
               </ul>
 
+              {voting && !data.lockedDestinationId && (
+                <Card>
+                  <CardBody className="space-y-3">
+                    <p className="font-semibold">Trancher</p>
+                    {choix ? (
+                      <p className="text-muted text-sm leading-relaxed">
+                        Les votes désignent{' '}
+                        <strong>{findDestination(choix.destinationId)?.name}</strong>, avec{' '}
+                        {choix.supporters} personne{choix.supporters > 1 ? 's' : ''} pour.
+                        {choix.destinationId !== proposals.scores[0]?.destinationId && (
+                          <>
+                            {' '}Le calcul, lui, plaçait{' '}
+                            {findDestination(proposals.scores[0]!.destinationId)?.name} en tête :
+                            c’est le groupe qui décide.
+                          </>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-muted text-sm leading-relaxed">
+                        Personne n’a encore voté. Chacun peut aimer, mettre en préféré ou
+                        écarter une destination — recliquer sur son choix le retire.
+                      </p>
+                    )}
+
+                    {data.isOwner ? (
+                      <Button
+                        block
+                        disabled={!choix}
+                        loading={verrouiller.isPending}
+                        icon={<Lock className="size-4" aria-hidden />}
+                        onClick={() => choix && verrouiller.mutate(choix.destinationId)}
+                      >
+                        {choix
+                          ? `Partir à ${findDestination(choix.destinationId)?.name}`
+                          : 'En attente des votes'}
+                      </Button>
+                    ) : (
+                      <p className="text-muted flex items-center gap-1.5 text-xs">
+                        <LockOpen className="size-3.5" aria-hidden />
+                        Seul l’organisateur peut arrêter la destination.
+                      </p>
+                    )}
+                  </CardBody>
+                </Card>
+              )}
+
               <Card>
                 <CardBody className="space-y-2">
                   <p className="font-semibold">Et ensuite ?</p>
                   <p className="text-muted text-sm leading-relaxed">
-                    Les prochaines étapes : voter sur ces destinations pour trancher, puis
-                    obtenir l’itinéraire et la carte de celle qui l’emporte.
+                    Les prochaines étapes : l’itinéraire jour par jour de la destination
+                    retenue, la carte, puis les dépenses pendant le voyage.
                   </p>
                   <Link to="/voyages">
                     <Button variant="secondary" block>

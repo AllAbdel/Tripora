@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getCollaboration } from './collaboration';
+import { getVoting } from './votes';
 
 /**
- * Garde l'écran à jour quand le groupe bouge.
+ * Garde l'écran à jour quand le groupe bouge : arrivées, envies et votes.
  *
  * Sans cela, Abdel devrait recharger la page pour voir que Thomas a rejoint et
  * rempli ses envies — et surtout, les propositions resteraient calculées pour
@@ -19,11 +20,20 @@ export function useGroupRealtime(tripId: string | undefined): void {
 
   useEffect(() => {
     const collaboration = getCollaboration();
-    if (!tripId || !collaboration) return;
+    const voting = getVoting();
+    if (!tripId || !collaboration || !voting) return;
 
-    return collaboration.watchGroup(tripId, () => {
+    const arreterGroupe = collaboration.watchGroup(tripId, () => {
       void queryClient.invalidateQueries({ queryKey: ['membres', tripId] });
       void queryClient.invalidateQueries({ queryKey: ['trip'] });
     });
+    const arreterVotes = voting.watchVotes(tripId, () => {
+      void queryClient.invalidateQueries({ queryKey: ['votes', tripId] });
+    });
+
+    return () => {
+      arreterGroupe();
+      arreterVotes();
+    };
   }, [tripId, queryClient]);
 }
