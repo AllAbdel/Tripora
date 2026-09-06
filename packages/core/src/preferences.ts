@@ -92,6 +92,29 @@ export function topAxes(weights: PreferenceWeights, count = 3, threshold = 0.3):
     .slice(0, count);
 }
 
+/**
+ * Les envies du groupe : la moyenne, axe par axe.
+ *
+ * Sert partout où il faut classer quelque chose selon ce que le groupe aime —
+ * les lieux proposés, le remplissage de l'itinéraire. C'est bien une moyenne
+ * et pas un minimum : ici on ordonne une liste, on ne décide rien. L'équité
+ * (le minimum des satisfactions) intervient là où ça compte, dans le score
+ * d'une destination.
+ */
+export function groupWeights(
+  members: readonly { weights: PreferenceWeights }[],
+): Partial<Record<PreferenceAxis, number>> {
+  if (members.length === 0) return {};
+  const total: Partial<Record<PreferenceAxis, number>> = {};
+  for (const membre of members) {
+    for (const axe of PREFERENCE_AXES) {
+      total[axe] = (total[axe] ?? 0) + (membre.weights[axe] ?? 0);
+    }
+  }
+  for (const axe of PREFERENCE_AXES) total[axe] = total[axe]! / members.length;
+  return total;
+}
+
 /** Noms des mois en français, partagés par l'interface et les explications. */
 export const MONTHS_FR = [
   'janvier', 'février', 'mars', 'avril', 'mai', 'juin',

@@ -4,6 +4,7 @@ import { Loader2, MapPin, Search } from 'lucide-react';
 import {
   AXIS_LABELS_FR,
   foldedIncludes,
+  groupWeights,
   rankPois,
   type Destination,
   type MemberPreference,
@@ -49,7 +50,7 @@ export function LieuxSuggeres({
     staleTime: 24 * 60 * 60 * 1000,
   });
 
-  const envies = useMemo(() => moyenneDesEnvies(members), [members]);
+  const envies = useMemo(() => groupWeights(members), [members]);
 
   const proposes = useMemo(() => {
     const tous = lieux.data?.liste ?? [];
@@ -153,14 +154,3 @@ export function LieuxSuggeres({
  * liste n'impose rien à personne, chacun pioche ce qu'il veut. C'est au moment
  * de décider où l'on part que l'équité doit mordre.
  */
-function moyenneDesEnvies(members: readonly MemberPreference[]): Record<string, number> {
-  if (members.length === 0) return {};
-  const total: Record<string, number> = {};
-  for (const membre of members) {
-    for (const [axe, valeur] of Object.entries(membre.weights)) {
-      total[axe] = (total[axe] ?? 0) + valeur;
-    }
-  }
-  for (const axe of Object.keys(total)) total[axe] = total[axe]! / members.length;
-  return total;
-}

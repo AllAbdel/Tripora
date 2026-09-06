@@ -12,7 +12,7 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **3** | **Propositions** — moteur de scoring, coût total, explications, prix des vols relevés chez Aviasales, climat mesuré sur trois ans | ✅ fait |
 | **4** | **Vote et décision** — j'aime, je n'aime pas, favori, agrégation, verrouillage de la destination | ✅ fait |
 | **5** | **Carte et lieux** — MapLibre, destinations en lice, tracé du trajet, lieux réels d'OpenStreetMap avec descriptions Wikipédia | ✅ fait |
-| **6** | **Itinéraire** — génération jour par jour, réorganisation, ajout de vrais lieux ✅ ; consultation hors ligne partielle — **MVP atteint** | ✅ fait |
+| **6** | **Itinéraire** — génération jour par jour, réorganisation, remplissage automatique avec de vrais lieux regroupés par quartier, consultation hors ligne — **MVP atteint** | ✅ fait |
 | **7** | **Intelligence artificielle** — compréhension du langage naturel, explications rédigées, assistant qui répond aux questions du groupe sans jamais rien décider ni rien modifier | ✅ fait |
 | **8** | **Budget et dépenses** — saisie, parts, « qui doit combien à qui » simplifié, dépenses en devise locale converties aux taux de la BCE | ✅ fait |
 | **9** | **Transport et hébergement** — comparaison avion, train, bus, voiture ✅, liens de réservation préremplis ✅ ; prix d'hôtels **impossibles** (Hotellook retiré, voir APIS.md) | 🔨 en cours |
@@ -30,7 +30,10 @@ Ce qui repose sur des faits mesurés plutôt que sur des estimations :
 
 - **les prix des vols**, relevés chez Aviasales et étiquetés de leur date ;
 - **les lieux**, tirés d'OpenStreetMap et décrits par Wikipédia : l'itinéraire
-  propose des visites qui existent, il n'en invente aucune ;
+  propose des visites qui existent, il n'en invente aucune. Un bouton pose ces
+  endroits sur les créneaux encore génériques, en respectant l'envie de chacun
+  et en regroupant la journée par quartier — sans jamais écraser ce que
+  quelqu'un a écrit ;
 - **le climat**, normales mensuelles calculées sur les archives 2023-2025 pour
   les 55 destinations, embarquées dans le code : aucun appel, aucun quota,
   fonctionne hors ligne.

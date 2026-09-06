@@ -25,6 +25,7 @@ export * from './settle.js';
 export * from './catalog/climate.js';
 export * from './weather.js';
 export * from './replan.js';
+export * from './fill.js';
 export * from './dates.js';
 export * from './text.js';
 export * from './ai/draft.js';

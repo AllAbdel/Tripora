@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft, ArrowLeftRight, ChevronDown, ChevronUp, Loader2, Plus, RotateCcw, Trash2, X,
+  ArrowLeft, ArrowLeftRight, ChevronDown, ChevronUp, Loader2, MapPinned, Plus, RotateCcw,
+  Trash2, X,
 } from 'lucide-react';
 import {
-  AXIS_EMOJI, buildItinerary, dayVerdict, describeDay, findDestination, formatCents,
-  parseAmountToCents, suggestWeatherSwaps, weatherEmoji,
+  awaitsPlace, AXIS_EMOJI, buildItinerary, dayVerdict, describeDay, fillItinerary,
+  findDestination, formatCents, groupWeights, parseAmountToCents, suggestWeatherSwaps,
+  weatherEmoji,
   type DailyWeather, type Destination, type MemberPreference, type Poi,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
@@ -19,6 +21,7 @@ import { getTripRepository } from '@/lib/trips';
 import {
   getItinerary, positionPourHeure, type ItineraryDayView, type ItineraryItem,
 } from '@/lib/itinerary';
+import { chargerLieux } from '@/lib/places';
 import { chargerMeteo, cleMeteo } from '@/lib/weather';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
@@ -67,6 +70,54 @@ export default function TripItinerary() {
     enabled: Boolean(destination),
   });
 
+  // Les mêmes lieux que le sélecteur « ajouter un vrai lieu » : une seule
+  // requête, un seul cache, trente jours côté serveur.
+  const lieux = useQuery({
+    queryKey: ['lieux', destination?.id],
+    queryFn: () => chargerLieux(destination!),
+    staleTime: 24 * 60 * 60 * 1000,
+    enabled: Boolean(destination),
+  });
+
+  /**
+   * Les créneaux encore neutres, et le vrai lieu qui leur irait.
+   *
+   * On ne touche qu'à ce que personne n'a renseigné : `awaitsPlace` compare au
+   * titre neutre, donc un nom écrit par quelqu'un du groupe est intouchable.
+   */
+  const aCompleter = useMemo(() => {
+    const disponibles = lieux.data?.liste ?? [];
+    const journees = jours.data;
+    if (!journees || disponibles.length === 0) return [];
+
+    const libres = journees.flatMap((jour) =>
+      jour.items
+        .filter((item) => item.axis !== null && awaitsPlace(item.title, item.axis))
+        .map((item) => ({ item, dayIndex: jour.dayIndex })),
+    );
+    if (libres.length === 0) return [];
+
+    const remplis = fillItinerary({
+      slots: libres.map(({ item, dayIndex }) => ({
+        dayIndex,
+        position: item.position,
+        axis: item.axis!,
+      })),
+      places: disponibles,
+      weights: groupWeights(voyage.data?.members ?? []),
+    });
+
+    return remplis.flatMap((rempli) => {
+      const cible = libres.find(
+        ({ item, dayIndex }) => dayIndex === rempli.dayIndex && item.position === rempli.position,
+      );
+      return cible
+        ? [{ itemId: cible.item.id, title: rempli.poi.name, notes: rempli.reason }]
+        : [];
+    });
+  }, [jours.data, lieux.data, voyage.data?.members]);
+
+
   /** La prévision indexée par date, pour que chaque jour trouve la sienne. */
   const meteoParJour = useMemo(() => {
     const table = new Map<string, DailyWeather>();
@@ -106,6 +157,20 @@ export default function TripItinerary() {
 
   const supprimer = useMutation({
     mutationFn: (itemId: string) => itineraire.removeItem(itemId),
+    onSuccess: rafraichir,
+  });
+
+  const completer = useMutation({
+    mutationFn: async (choix: { itemId: string; title: string; notes: string }[]) => {
+      // Une ligne à la fois : si la connexion lâche au milieu, ce qui est
+      // passé reste, et un second clic finira le travail.
+      for (const entree of choix) {
+        await itineraire.updateItem(entree.itemId, {
+          title: entree.title,
+          notes: entree.notes,
+        });
+      }
+    },
     onSuccess: rafraichir,
   });
 
@@ -230,6 +295,37 @@ export default function TripItinerary() {
             </CardBody>
           </Card>
         </>
+      )}
+
+      {aCompleter.length > 0 && (
+        <Card className="border-brand-200 dark:border-brand-800 border-dashed">
+          <CardBody className="space-y-2">
+            <div className="flex items-center gap-2">
+              <MapPinned className="text-brand-500 size-4 shrink-0" aria-hidden />
+              <h2 className="text-sm font-bold">Des vrais lieux pour ces créneaux</h2>
+            </div>
+            <p className="text-muted text-sm leading-relaxed">
+              {aCompleter.length} moment{aCompleter.length > 1 ? 's' : ''} du séjour
+              {aCompleter.length > 1 ? ' portent' : ' porte'} encore un titre générique.
+              Tripora peut y poser des endroits qui existent, relevés sur OpenStreetMap et
+              regroupés par quartier pour ne pas traverser la ville quatre fois.
+            </p>
+            <Button
+              block
+              variant="secondary"
+              loading={completer.isPending}
+              onClick={() => completer.mutate(aCompleter)}
+            >
+              Compléter avec de vrais lieux
+            </Button>
+            {/* Ce que ça remplace était neutre ; ce que quelqu'un a écrit ne
+                bouge pas. Et chaque ligne reste modifiable après coup. */}
+            <p className="text-muted text-xs">
+              Rien de ce que vous avez écrit ne sera touché, et chaque lieu reste
+              modifiable ensuite.
+            </p>
+          </CardBody>
+        </Card>
       )}
 
       {echanges.length > 0 && (

@@ -50,8 +50,14 @@ export interface Itinerary {
   axes: PreferenceAxis[];
 }
 
-/** Intitulés neutres : ils décrivent un type de moment, pas un lieu précis. */
-const TITRES: Record<PreferenceAxis, string> = {
+/**
+ * Intitulés neutres : ils décrivent un type de moment, pas un lieu précis.
+ *
+ * Exportés parce qu'ils servent de marqueur : un créneau qui porte encore son
+ * titre neutre n'a pas été renseigné, et peut donc recevoir un vrai lieu sans
+ * écraser le choix de quelqu'un.
+ */
+export const SLOT_TITLES: Record<PreferenceAxis, string> = {
   culture: 'Musées et monuments',
   nature: 'Nature et grand air',
   food: 'Découverte culinaire',
@@ -310,7 +316,7 @@ function construireJournee({
     ajouter({
       kind: 'activity',
       axis: activite.axis,
-      title: TITRES[activite.axis],
+      title: SLOT_TITLES[activite.axis],
       startTime: horaires[rang] ?? '15:00',
       ...(fins[rang] ? { endTime: fins[rang] } : {}),
       budgetCents: budgetParActivite,
