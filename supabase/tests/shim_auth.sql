@@ -52,6 +52,17 @@ grant execute on function auth.jwt() to anon, authenticated, service_role;
 grant execute on function auth.role() to anon, authenticated, service_role;
 grant select on auth.users to service_role;
 
+-- Supabase crée cette publication à l'initialisation du projet ; les migrations
+-- ne font qu'y ajouter des tables.
+do $$ begin
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    create publication supabase_realtime;
+  end if;
+end $$;
+
+-- Les droits par défaut reproduisent ceux d'un projet Supabase : tout objet créé
+-- ensuite par les migrations est automatiquement ouvert aux rôles clients, et
+-- c'est bien la RLS — puis nos REVOKE explicites — qui referment.
 grant usage on schema public to anon, authenticated, service_role;
 alter default privileges in schema public
   grant all on tables to anon, authenticated, service_role;

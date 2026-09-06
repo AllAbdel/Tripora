@@ -161,9 +161,30 @@ reset request.jwt.claims;
 set role authenticated;
 set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
 
--- Écrire dans une table technique doit être refusé net.
+-- Depuis le durcissement, ces tables ne sont plus seulement filtrées par RLS :
+-- les droits de table eux-mêmes ont été retirés. La lecture comme l'écriture
+-- doivent être refusées franchement, pas renvoyer zéro ligne.
 do $$
+declare n int;
 begin
+  begin
+    select count(*) into n from public.api_cache;
+    raise exception 'FUITE : le cache technique est lisible par un client';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    select count(*) into n from public.api_quota;
+    raise exception 'FUITE : les quotas sont lisibles par un client';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    select count(*) into n from public.ai_cache;
+    raise exception 'FUITE : le cache IA est lisible par un client';
+  exception when insufficient_privilege then null;
+  end;
+
   begin
     insert into public.api_cache (key, provider, payload, expires_at)
     values ('x', 'test', '{}'::jsonb, now());
@@ -172,15 +193,15 @@ begin
   end;
 end $$;
 
+-- La faille corrigée par la migration de durcissement : un connecté ne doit
+-- plus pouvoir gonfler le compteur de quota et couper l'IA de tout le groupe.
 do $$
-declare n int;
 begin
-  select count(*) into n from public.api_cache;
-  assert n = 0, format('FUITE : le cache technique est lisible par un client (%s ligne(s))', n);
-  select count(*) into n from public.api_quota;
-  assert n = 0, format('FUITE : les quotas sont lisibles par un client (%s ligne(s))', n);
-  select count(*) into n from public.ai_cache;
-  assert n = 0, format('FUITE : le cache IA est lisible par un client (%s ligne(s))', n);
+  begin
+    perform public.bump_api_quota('mistral', 80, 100);
+    raise exception 'FAILLE : un connecté peut encore épuiser le garde-quota';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
 
 reset role;
@@ -198,6 +219,32 @@ begin
   assert r.used = 2, format('Deuxième appel attendu à 2, obtenu %s', r.used);
   assert r.hard = 100, 'La limite dure devrait être conservée';
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Un visiteur non connecté ne doit atteindre aucune fonction interne.
+-- ---------------------------------------------------------------------------
+set role anon;
+reset request.jwt.claims;
+
+do $$
+declare interdit text;
+begin
+  foreach interdit in array array[
+    'select public.bump_api_quota(''x'', 1, 2)',
+    'select public.is_trip_member(''aaaaaaaa-0000-0000-0000-000000000001''::uuid)',
+    'select public.join_trip_with_code(''TRIP2026'')',
+    'select public.handle_new_user()',
+    'select public.touch_updated_at()'
+  ] loop
+    begin
+      execute interdit;
+      raise exception 'FUITE : un visiteur anonyme peut exécuter « % »', interdit;
+    exception when insufficient_privilege then null;
+    end;
+  end loop;
+end $$;
+
+reset role;
 
 -- ---------------------------------------------------------------------------
 -- Le catalogue est un bien commun : lisible par tous les connectés,

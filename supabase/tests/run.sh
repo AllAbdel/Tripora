@@ -36,8 +36,5 @@ for file in "$ROOT"/supabase/migrations/*.sql; do
   psql_run -q -d "$DB" -f "$file"
 done
 
-echo "→ Droits de table (équivalents Supabase)"
-psql_run -q -d "$DB" -f "$ROOT/supabase/tests/grants.sql"
-
 echo "→ Tests RLS"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/rls_test.sql"

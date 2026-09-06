@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { DESTINATIONS } from '../src/catalog/destinations.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const TARGET = resolve(HERE, '../../../supabase/migrations/0003_seed_destinations.sql');
+const TARGET = resolve(HERE, '../../../supabase/migrations/20260906070002_seed_destinations.sql');
 
 /** Échappement SQL par doublement de l'apostrophe. Aucune valeur ne vient d'un utilisateur. */
 const quote = (value: string): string => `'${value.replace(/'/g, "''")}'`;
