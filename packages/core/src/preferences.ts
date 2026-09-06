@@ -91,3 +91,9 @@ export function topAxes(weights: PreferenceWeights, count = 3, threshold = 0.3):
     .sort((a, b) => weights[b] - weights[a])
     .slice(0, count);
 }
+
+/** Noms des mois en français, partagés par l'interface et les explications. */
+export const MONTHS_FR = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+] as const;

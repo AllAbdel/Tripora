@@ -273,3 +273,16 @@ describe('notation complète', () => {
     expect(prix.score).toBeLessThan(100);
   });
 });
+
+describe('lisibilité des explications', () => {
+  it('écrit les durées avec une virgule, pas un point', () => {
+    const loin = destination({ id: 'loin', lat: 41.3874, lng: 2.1686 });
+    const reason = scoreDestination(loin, {
+      constraints: constraints(),
+      members: [member('a', { culture: 1 })],
+      transport: observed(9_000),
+    }).factors.find((f) => f.key === 'travel')!.reason;
+    expect(reason).not.toMatch(/\d\.\d/);
+    expect(reason).toMatch(/h de trajet/);
+  });
+});

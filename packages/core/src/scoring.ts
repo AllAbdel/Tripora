@@ -169,7 +169,9 @@ function travelFactor(minutes: number): { score: number; reason: string } {
   const readable =
     hours < 1.5
       ? `${Math.round(minutes)} min de trajet`
-      : `environ ${hours.toFixed(hours < 10 ? 1 : 0)} h de trajet porte à porte`;
+      : `environ ${hours.toLocaleString('fr-FR', {
+          maximumFractionDigits: hours < 10 ? 1 : 0,
+        })} h de trajet porte à porte`;
   return { score, reason: readable.charAt(0).toUpperCase() + readable.slice(1) };
 }
 

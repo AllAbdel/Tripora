@@ -7,9 +7,9 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | Phase | Contenu | État |
 |---|---|---|
 | **0** | **Fondations** — monorepo, PWA installable, thèmes, identité visuelle, schéma Postgres avec RLS, comptes Google et invité, intégration continue | ✅ fait |
-| **1** | **Création de voyage** — assistant en six étapes (avec qui, départ, destination ou « surprends-nous », dates ou durée, budget, envies), catalogue de destinations | ⬜ |
+| **1** | **Création de voyage** — assistant en six étapes (avec qui, départ, destination ou « surprends-nous », dates ou durée, budget, envies), catalogue de 55 destinations | ✅ fait |
 | **2** | **Collaboration** — invitation par lien, code et QR, liste des membres, préférences et budget de chacun, mises à jour en direct | ⬜ |
-| **3** | **Propositions** — moteur de scoring branché, prix des vols en cache, climat du mois, coût total, explications | ⬜ |
+| **3** | **Propositions** — moteur de scoring branché, coût total, explications ✅ ; prix des vols en cache et climat réel restent à brancher | 🔨 en cours |
 | **4** | **Vote et décision** — j'aime, je n'aime pas, favori, agrégation, verrouillage de la destination | ⬜ |
 | **5** | **Carte et lieux** — MapLibre, points d'intérêt, photos, fiches, favoris | ⬜ |
 | **6** | **Itinéraire et hors ligne** — génération jour par jour cohérente géographiquement, réorganisation, consultation sans réseau — **fin du MVP** | ⬜ |
@@ -17,6 +17,17 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **8** | **Budget et dépenses** — saisie multi-devises, parts, « qui doit combien à qui » simplifié | ⬜ |
 | **9** | **Transport et hébergement** — comparaison avion, train, bus, voiture ; hôtels indicatifs ; liens de réservation ; vérification ponctuelle d'un prix | ⬜ |
 | **10** | **Confort** — météo et réorganisation du planning, notifications, carte hors ligne, éventuel emballage APK | ⬜ |
+
+## Où on en est
+
+Les phases 0 et 1 sont terminées, et la partie calcul de la phase 3 fonctionne
+déjà : créer un voyage donne des destinations notées, expliquées et chiffrées,
+**sans aucune clé d'API**. Tous les prix affichés sont alors des estimations, et
+l'application le dit à chaque écran.
+
+La phase 2 (collaboration) attend la création du projet Supabase : elle ne peut
+pas être développée à l'aveugle. En attendant, la suite utile est de brancher
+les prix réels, qui ne demandent qu'un jeton Travelpayouts gratuit.
 
 ## Pourquoi cet ordre
 

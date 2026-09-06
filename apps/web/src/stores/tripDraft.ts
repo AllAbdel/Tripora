@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
+  MONTHS_FR,
   normalizeWeights,
   type BudgetMode,
   type ComfortLevel,
@@ -158,11 +159,9 @@ export function toMemberPreference(draft: TripDraft, userId: string): MemberPref
 export function suggestTitle(draft: TripDraft, destinationName?: string): string {
   if (draft.title.trim()) return draft.title.trim();
   if (destinationName) return `${destinationName} à ${draft.participants}`;
-  const quand = draft.month ? ` en ${MONTHS[draft.month - 1]}` : '';
+  const quand = draft.month ? ` en ${MONTHS_FR[draft.month - 1]}` : '';
   return `${draft.durationDays} jours${quand}`;
 }
 
-export const MONTHS = [
-  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
-] as const;
+/** Réexport pour l'interface : la liste vit dans le moteur, qui s'en sert aussi. */
+export { MONTHS_FR as MONTHS } from '@tripora/core';

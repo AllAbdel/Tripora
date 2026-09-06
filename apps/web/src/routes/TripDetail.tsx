@@ -1,27 +1,48 @@
+import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, MapPin, Users, Wallet } from 'lucide-react';
+import {
+  buildProposals,
+  estimateTransportOptions,
+  findDestination,
+  formatCents,
+  MONTHS_FR,
+} from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ProposalCard } from '@/components/ProposalCard';
 import { getTripRepository } from '@/lib/trips';
 import { toFailure } from '@/lib/errors';
 
-/**
- * Écran d'un voyage. Pour l'instant il confirme la création et annonce la
- * suite ; les propositions, le vote, l'itinéraire et la carte viennent
- * s'y greffer aux étapes suivantes.
- */
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
   const repository = getTripRepository();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['trips', repository.kind],
-    queryFn: () => repository.list(),
+    queryKey: ['trip', repository.kind, id],
+    queryFn: () => repository.get(id!),
+    enabled: Boolean(id),
   });
 
-  const trip = data?.find((entry) => entry.id === id);
+  /**
+   * Les propositions sont recalculées depuis les contraintes enregistrées.
+   * Le calcul est déterministe et tient en quelques millisecondes : rien à
+   * mettre en cache, rien à synchroniser, et surtout aucun quota consommé.
+   */
+  const proposals = useMemo(() => {
+    if (!data) return null;
+    return buildProposals(data.constraints, data.members, { keep: 6 });
+  }, [data]);
+
+  if (isLoading) {
+    return (
+      <div className="grid min-h-[60vh] place-items-center">
+        <Loader2 className="text-brand-500 size-6 animate-spin" aria-label="Chargement" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 px-5 pt-6">
@@ -33,41 +54,133 @@ export default function TripDetail() {
         Mes voyages
       </Link>
 
-      {isLoading && (
-        <div className="grid place-items-center py-16">
-          <Loader2 className="text-brand-500 size-6 animate-spin" aria-label="Chargement" />
-        </div>
-      )}
-
       {error && <Banner tone="warning">{toFailure(error).message}</Banner>}
 
-      {data && !trip && (
+      {!error && !data && (
         <Banner tone="warning" title="Voyage introuvable">
           Ce voyage n’existe plus, ou vous n’y avez pas accès.
         </Banner>
       )}
 
-      {trip && (
+      {data && (
         <>
-          <h1 className="text-2xl font-bold tracking-tight">{trip.title}</h1>
+          <header className="space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight">{data.summary.title}</h1>
+            <p className="text-muted flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="size-3.5" aria-hidden />
+                Départ de {data.constraints.origin.name}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Users className="size-3.5" aria-hidden />
+                {data.constraints.participants}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Wallet className="size-3.5" aria-hidden />
+                {data.constraints.budgetPerPersonCents
+                  ? `${formatCents(data.constraints.budgetPerPersonCents, 'EUR', { hideCentimes: true })} max`
+                  : 'le moins cher possible'}
+              </span>
+            </p>
+            {describePeriod(data.constraints) !== data.summary.title && (
+              <p className="text-muted text-sm">{describePeriod(data.constraints)}</p>
+            )}
+          </header>
 
-          <Card>
-            <CardBody className="space-y-3">
-              <p className="font-semibold">Voyage créé.</p>
-              <p className="text-muted text-sm leading-relaxed">
-                Les prochaines étapes du développement viendront se brancher ici :
-                inviter vos amis et recueillir leurs envies, comparer des destinations
-                chiffrées, voter, puis obtenir l’itinéraire et la carte.
-              </p>
-              <Link to="/voyages">
-                <Button variant="secondary" block>
-                  Revenir à mes voyages
-                </Button>
-              </Link>
-            </CardBody>
-          </Card>
+          {proposals && proposals.scores.length === 0 && (
+            <Banner tone="warning" title="Aucune destination ne colle">
+              Essayez d’élargir le budget, la période ou la durée. Avec très peu de temps
+              et très peu de budget, il ne reste parfois rien d’honnête à proposer.
+            </Banner>
+          )}
+
+          {proposals && proposals.scores.length > 0 && (
+            <>
+              <Card>
+                <CardBody className="space-y-1.5">
+                  <p className="font-semibold">
+                    {proposals.scores.length} destinations pour votre groupe
+                  </p>
+                  <p className="text-muted text-sm leading-relaxed">
+                    Classées sur le coût <strong>total</strong> du voyage et sur les envies
+                    de chacun, pas seulement sur le prix du billet. Chaque note est détaillée :
+                    aucune n’est décidée par une intelligence artificielle.
+                  </p>
+                </CardBody>
+              </Card>
+
+              {proposals.allEstimated && (
+                <Banner tone="info" title="Prix indicatifs">
+                  Aucune source de tarifs n’est reliée pour l’instant : les montants sont des
+                  estimations, jamais des prix constatés. Les vrais prix apparaîtront avec
+                  leur date dès qu’un jeton Travelpayouts sera renseigné.
+                </Banner>
+              )}
+
+              <ul className="space-y-3">
+                {proposals.scores.map((score, index) => {
+                  const destination = findDestination(score.destinationId);
+                  if (!destination) return null;
+                  return (
+                    <li key={score.destinationId}>
+                      <ProposalCard
+                        rank={index + 1}
+                        destination={destination}
+                        score={score}
+                        transport={estimateTransportOptions(
+                          data.constraints.origin,
+                          destination,
+                          data.constraints.participants,
+                        )}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <Card>
+                <CardBody className="space-y-2">
+                  <p className="font-semibold">Et ensuite ?</p>
+                  <p className="text-muted text-sm leading-relaxed">
+                    Les prochaines étapes : inviter vos amis pour que chacun donne son budget
+                    et ses envies, voter sur ces destinations, puis obtenir l’itinéraire et
+                    la carte. Pour l’instant, ces propositions ne tiennent compte que de vos
+                    réponses à vous.
+                  </p>
+                  <Link to="/voyages">
+                    <Button variant="secondary" block>
+                      Revenir à mes voyages
+                    </Button>
+                  </Link>
+                </CardBody>
+              </Card>
+            </>
+          )}
         </>
       )}
     </div>
   );
+}
+
+function describePeriod(constraints: {
+  dateMode: string;
+  month?: number;
+  startDate?: string;
+  windowStart?: string;
+  windowEnd?: string;
+  durationDays: number;
+}): string {
+  const duree = `${constraints.durationDays} jour${constraints.durationDays > 1 ? 's' : ''}`;
+  if (constraints.dateMode === 'month' && constraints.month) {
+    return `${duree} en ${MONTHS_FR[constraints.month - 1]}`;
+  }
+  if (constraints.dateMode === 'exact' && constraints.startDate) {
+    return `${duree} à partir du ${new Date(constraints.startDate).toLocaleDateString('fr-FR')}`;
+  }
+  if (constraints.dateMode === 'window' && constraints.windowStart && constraints.windowEnd) {
+    const from = new Date(constraints.windowStart).toLocaleDateString('fr-FR');
+    const to = new Date(constraints.windowEnd).toLocaleDateString('fr-FR');
+    return `${duree} entre le ${from} et le ${to}`;
+  }
+  return `${duree}, dates souples`;
 }

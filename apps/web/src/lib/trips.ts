@@ -1,4 +1,10 @@
-import type { PreferenceWeights } from '@tripora/core';
+import {
+  normalizeWeights,
+  type MemberPreference,
+  type PreferenceAxis,
+  type PreferenceWeights,
+  type TripConstraints,
+} from '@tripora/core';
 import { supabase } from './supabase';
 import type { TripDraft } from '@/stores/tripDraft';
 
@@ -23,11 +29,39 @@ export interface TripSummary {
   localOnly: boolean;
 }
 
+/** Un voyage complet : de quoi recalculer des propositions sans rien inventer. */
+export interface TripDetails {
+  summary: TripSummary;
+  constraints: TripConstraints;
+  members: MemberPreference[];
+}
+
 export interface TripRepository {
   readonly kind: 'supabase' | 'local';
   list(): Promise<TripSummary[]>;
+  get(id: string): Promise<TripDetails | null>;
   create(draft: TripDraft, title: string): Promise<string>;
   remove(id: string): Promise<void>;
+}
+
+/** Reconstitue les contraintes du moteur depuis un brouillon enregistré. */
+function constraintsFromDraft(draft: TripDraft): TripConstraints | null {
+  if (!draft.origin) return null;
+  return {
+    participants: draft.participants,
+    origin: draft.origin,
+    durationDays: draft.durationDays,
+    dateMode: draft.dateMode,
+    ...(draft.startDate ? { startDate: draft.startDate } : {}),
+    ...(draft.endDate ? { endDate: draft.endDate } : {}),
+    ...(draft.windowStart ? { windowStart: draft.windowStart } : {}),
+    ...(draft.windowEnd ? { windowEnd: draft.windowEnd } : {}),
+    ...(draft.month !== null ? { month: draft.month } : {}),
+    budgetMode: draft.budgetMode,
+    budgetPerPersonCents: draft.budgetPerPersonCents,
+    comfortLevel: draft.comfortLevel,
+    groupType: draft.groupType,
+  };
 }
 
 const LOCAL_KEY = 'tripora.local-trips';
@@ -70,6 +104,35 @@ const localRepository: TripRepository = {
       }));
   },
 
+  async get(id) {
+    const trip = readLocal().find((entry) => entry.id === id);
+    if (!trip) return null;
+    const constraints = constraintsFromDraft(trip.draft);
+    if (!constraints) return null;
+    return {
+      summary: {
+        id: trip.id,
+        title: trip.title,
+        status: 'draft',
+        participants: trip.draft.participants,
+        destinationName: null,
+        coverImageUrl: null,
+        createdAt: trip.createdAt,
+        localOnly: true,
+      },
+      constraints,
+      members: [
+        {
+          userId: 'moi',
+          displayName: 'Vous',
+          weights: normalizeWeights(trip.draft.weights),
+          budgetMaxCents: trip.draft.budgetPerPersonCents,
+          avoid: trip.draft.avoid,
+        },
+      ],
+    };
+  },
+
   async create(draft, title) {
     const trip: LocalTrip = {
       id: crypto.randomUUID(),
@@ -108,6 +171,67 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
         createdAt: row.created_at as string,
         localOnly: false,
       }));
+    },
+
+    async get(id) {
+      const { data, error } = await client
+        .from('trips')
+        .select('*, member_preferences(*)')
+        .eq('id', id)
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+
+      const originLat = data.origin_lat as number | null;
+      const originLng = data.origin_lng as number | null;
+      if (originLat === null || originLng === null) return null;
+
+      const preferences = (data.member_preferences ?? []) as {
+        user_id: string;
+        weights: Record<string, number>;
+        budget_max_cents: number | null;
+        avoid: string[] | null;
+      }[];
+
+      return {
+        summary: {
+          id: data.id as string,
+          title: data.title as string,
+          status: data.status as string,
+          participants: data.participants as number,
+          destinationName: (data.destination_locked_id as string | null) ?? null,
+          coverImageUrl: (data.cover_image_url as string | null) ?? null,
+          createdAt: data.created_at as string,
+          localOnly: false,
+        },
+        constraints: {
+          participants: data.participants as number,
+          origin: {
+            name: (data.origin_name as string) ?? 'Départ',
+            lat: originLat,
+            lng: originLng,
+            ...(data.origin_iata ? { iata: data.origin_iata as string[] } : {}),
+          },
+          durationDays: data.duration_days as number,
+          dateMode: data.date_mode as TripConstraints['dateMode'],
+          ...(data.start_date ? { startDate: data.start_date as string } : {}),
+          ...(data.end_date ? { endDate: data.end_date as string } : {}),
+          ...(data.window_start ? { windowStart: data.window_start as string } : {}),
+          ...(data.window_end ? { windowEnd: data.window_end as string } : {}),
+          ...(data.target_month ? { month: data.target_month as number } : {}),
+          budgetMode: data.budget_mode as TripConstraints['budgetMode'],
+          budgetPerPersonCents: data.budget_per_person_cents as number | null,
+          comfortLevel: data.comfort_level as TripConstraints['comfortLevel'],
+          groupType: data.group_type as TripConstraints['groupType'],
+        },
+        members: preferences.map((row) => ({
+          userId: row.user_id,
+          weights: normalizeWeights(row.weights),
+          budgetMaxCents: row.budget_max_cents,
+          avoid: (row.avoid ?? []) as PreferenceAxis[],
+        })),
+      };
     },
 
     async create(draft, title) {
