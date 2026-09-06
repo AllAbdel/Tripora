@@ -21,6 +21,7 @@ import { useGroupRealtime } from '@/lib/useGroupRealtime';
 import { useAuth } from '@/lib/auth-context';
 import { VoteBar } from '@/components/VoteBar';
 import { Reserver } from '@/components/Reserver';
+import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
 import { toFailure } from '@/lib/errors';
 
 export default function TripDetail() {
@@ -71,7 +72,10 @@ export default function TripDetail() {
   // classe en tête — et c'est très bien : le calcul propose, le groupe dispose.
   const choix = useMemo(() => {
     if (!proposals || !votes.data) return null;
-    return groupChoice(votes.data, proposals.scores.map((score) => score.destinationId));
+    return groupChoice(
+      votes.data.tallies,
+      proposals.scores.map((score) => score.destinationId),
+    );
   }, [proposals, votes.data]);
 
   if (isLoading) {
@@ -124,6 +128,13 @@ export default function TripDetail() {
               <p className="text-muted text-sm">{describePeriod(data.constraints)}</p>
             )}
           </header>
+
+          <OuEnEstLeGroupe
+            constraints={data.constraints}
+            members={data.members}
+            votes={votes.data?.voters ?? 0}
+            locked={Boolean(data.lockedDestinationId)}
+          />
 
           {getCollaboration() && (
             <Link to={`/voyages/${data.summary.id}/participants`} className="block">
@@ -295,7 +306,7 @@ export default function TripDetail() {
                         vote={
                           !data.lockedDestinationId ? (
                             <VoteBar
-                              tally={votes.data?.get(score.destinationId)}
+                              tally={votes.data?.tallies.get(score.destinationId)}
                               participants={Math.max(
                                 data.members.length,
                                 data.constraints.participants,

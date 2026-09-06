@@ -77,6 +77,19 @@ rédiger un paragraphe. Il ne doit contenir **aucun chiffre absent de la
 ventilation juste au-dessus**. Si tu en vois un inventé, c'est un vrai bug :
 signale-le.
 
+### Au passage : « Où on en est »
+
+En haut du voyage, un bloc doit lister ce qui bloque : « 3 personnes n'ont pas
+encore rejoint », « Personne n'a encore voté »… avec, sous chaque ligne, **ce
+que ça empêche**. Les vrais blocages portent une icône dorée et passent en
+premier.
+
+→ Vérifie qu'**aucun prénom n'apparaît**. C'est volontaire : on compte, on
+n'accuse personne.
+
+→ Le bloc doit disparaître complètement une fois la destination arrêtée et
+tout le monde ayant répondu. Un écran qui félicite prend de la place pour rien.
+
 ## 3. Inviter quelqu'un
 
 11. **Participants → Créer un lien d'invitation**.

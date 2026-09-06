@@ -22,8 +22,22 @@ export interface VoteTally {
   mine: VoteValue | null;
 }
 
+/**
+ * Ce que le dépouillement rend : le compte par destination, et **combien de
+ * personnes distinctes** se sont exprimées.
+ *
+ * Le second ne se déduit pas du premier — quelqu'un qui vote sur cinq villes
+ * compte cinq fois dans les totaux, et une fois ici. C'est pourtant lui qui
+ * répond à la question qui compte pour un groupe : est-ce qu'on a attendu tout
+ * le monde ?
+ */
+export interface VoteResults {
+  tallies: Map<string, VoteTally>;
+  voters: number;
+}
+
 export interface VotingApi {
-  listTallies(tripId: string, userId: string): Promise<Map<string, VoteTally>>;
+  listTallies(tripId: string, userId: string): Promise<VoteResults>;
   cast(tripId: string, destinationId: string, value: VoteValue | null): Promise<void>;
   lockDestination(tripId: string, destinationId: string): Promise<void>;
   unlockDestination(tripId: string): Promise<void>;
@@ -54,7 +68,7 @@ const voteLocal: VotingApi = {
   async listTallies(tripId) {
     const stock = lireJson<Record<string, Record<string, VoteValue>>>(CLE_VOTES, {});
     const pourCeVoyage = stock[tripId] ?? {};
-    return new Map(
+    const tallies = new Map(
       Object.entries(pourCeVoyage).map(([destinationId, value]) => [
         destinationId,
         {
@@ -66,6 +80,9 @@ const voteLocal: VotingApi = {
         },
       ]),
     );
+    // Un seul votant en mode local, et seulement s'il s'est exprimé : c'est la
+    // façon dont on choisit quand on part seul.
+    return { tallies, voters: tallies.size > 0 ? 1 : 0 };
   },
 
   async cast(tripId, destinationId, value) {
@@ -112,7 +129,9 @@ export function getVoting(): VotingApi {
       if (error) throw error;
 
       const tallies = new Map<string, VoteTally>();
+      const votants = new Set<string>();
       for (const row of data ?? []) {
+        votants.add(row.user_id as string);
         const id = row.subject_id as string;
         const tally = tallies.get(id) ?? {
           destinationId: id,
@@ -128,7 +147,7 @@ export function getVoting(): VotingApi {
         if (row.user_id === userId) tally.mine = value;
         tallies.set(id, tally);
       }
-      return tallies;
+      return { tallies, voters: votants.size };
     },
 
     async cast(tripId, destinationId, value) {
