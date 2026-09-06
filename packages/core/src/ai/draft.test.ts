@@ -53,10 +53,14 @@ describe('brouillon issu d’une phrase', () => {
     expect(sanitizeDraft({ participants: Infinity })).toEqual({});
   });
 
-  it('n’accepte que les niveaux et types de groupe connus', () => {
+  it('n’accepte que les niveaux et types de groupe du domaine', () => {
     expect(sanitizeDraft({ comfortLevel: 'luxe' })).toEqual({});
     expect(sanitizeDraft({ groupType: 'collègues' })).toEqual({});
-    expect(sanitizeDraft({ comfortLevel: 'comfort' })).toEqual({ comfortLevel: 'comfort' });
+    // « standard » est le mot naturel, « mid » celui du domaine : seul le
+    // second doit passer, sinon l'app stocke un niveau qu'elle ne sait pas lire.
+    expect(sanitizeDraft({ comfortLevel: 'standard' })).toEqual({});
+    expect(sanitizeDraft({ comfortLevel: 'mid' })).toEqual({ comfortLevel: 'mid' });
+    expect(sanitizeDraft({ groupType: 'friends' })).toEqual({ groupType: 'friends' });
   });
 
   it('borne les poids et ignore les axes inventés', () => {

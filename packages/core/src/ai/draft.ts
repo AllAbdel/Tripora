@@ -27,8 +27,14 @@ export interface TripDraft {
   weights?: Partial<Record<PreferenceAxis, number>>;
 }
 
-const COMFORT: readonly string[] = ['budget', 'standard', 'comfort'];
-const GROUPS: readonly string[] = ['friends', 'couple', 'family', 'solo'];
+/**
+ * Les valeurs acceptées, typées par les unions du domaine plutôt que par des
+ * chaînes libres : si `ComfortLevel` change, ces listes cessent de compiler.
+ * La première version disait « standard » là où le domaine dit « mid » ; le
+ * modèle aurait renvoyé un niveau que l'application n'aurait jamais reconnu.
+ */
+const COMFORT: readonly ComfortLevel[] = ['budget', 'mid', 'comfort'];
+const GROUPS: readonly GroupType[] = ['solo', 'couple', 'friends', 'family', 'custom'];
 
 /** Bornes volontairement larges : on écarte l'absurde, pas l'inhabituel. */
 const BORNES = {
@@ -50,12 +56,10 @@ export function sanitizeDraft(brut: unknown): TripDraft {
     if (valeur !== undefined) propre[champ] = valeur;
   }
 
-  if (typeof source.comfortLevel === 'string' && COMFORT.includes(source.comfortLevel)) {
-    propre.comfortLevel = source.comfortLevel as ComfortLevel;
-  }
-  if (typeof source.groupType === 'string' && GROUPS.includes(source.groupType)) {
-    propre.groupType = source.groupType as GroupType;
-  }
+  const confort = COMFORT.find((niveau) => niveau === source.comfortLevel);
+  if (confort) propre.comfortLevel = confort;
+  const groupe = GROUPS.find((type) => type === source.groupType);
+  if (groupe) propre.groupType = groupe;
 
   const destination = nomDeVille(source.destination);
   if (destination) propre.destination = destination;

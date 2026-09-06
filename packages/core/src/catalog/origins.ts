@@ -1,4 +1,5 @@
 import { DESTINATIONS } from './destinations.js';
+import { fold } from '../text.js';
 import type { Place } from '../types.js';
 
 /**
@@ -85,10 +86,3 @@ export function searchOrigins(query: string, limit = 8): Place[] {
     .slice(0, limit);
 }
 
-function fold(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-}

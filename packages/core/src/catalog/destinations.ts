@@ -1,4 +1,5 @@
 import { normalizeWeights, type PreferenceAxis } from '../preferences.js';
+import { fold } from '../text.js';
 import type { Destination } from '../types.js';
 
 /**
@@ -246,6 +247,29 @@ export const DESTINATIONS: readonly Destination[] = [
 export const DESTINATIONS_BY_ID: ReadonlyMap<string, Destination> = new Map(
   DESTINATIONS.map((destination) => [destination.id, destination]),
 );
+
+/**
+ * Recherche par nom ou par pays, accents et casse ignorés.
+ *
+ * Les villes dont le nom commence par la saisie passent devant : taper « ro »
+ * doit proposer Rome avant Barcelone, qui ne la contient qu'au milieu.
+ */
+export function searchDestinations(query: string, limit = 30): Destination[] {
+  const needle = fold(query);
+  const pool =
+    needle.length === 0
+      ? [...DESTINATIONS]
+      : DESTINATIONS.filter((destination) =>
+          fold(`${destination.name} ${destination.country}`).includes(needle),
+        );
+  return pool
+    .sort((a, b) => {
+      const aStarts = fold(a.name).startsWith(needle) ? 0 : 1;
+      const bStarts = fold(b.name).startsWith(needle) ? 0 : 1;
+      return aStarts - bStarts || a.name.localeCompare(b.name, 'fr');
+    })
+    .slice(0, limit);
+}
 
 export function findDestination(id: string): Destination | undefined {
   return DESTINATIONS_BY_ID.get(id);

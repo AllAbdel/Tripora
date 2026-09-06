@@ -2,6 +2,7 @@ import { Heart, User, Users, UsersRound } from 'lucide-react';
 import type { GroupType } from '@tripora/core';
 import { OptionCard } from '@/components/ui/OptionCard';
 import { NumberStepper } from '@/components/ui/NumberStepper';
+import { PhraseLibre } from '@/components/PhraseLibre';
 import { useTripDraft } from '@/stores/tripDraft';
 
 const GROUPS: { value: GroupType; label: string; description: string; icon: typeof User; participants: number }[] = [
@@ -16,6 +17,8 @@ export function StepGroup() {
 
   return (
     <div className="space-y-5">
+      <PhraseLibre />
+
       <div className="space-y-2.5" role="radiogroup" aria-label="Avec qui partez-vous ?">
         {GROUPS.map(({ value, label, description, icon: Icon, participants: suggested }) => (
           <OptionCard

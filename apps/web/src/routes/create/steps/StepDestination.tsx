@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Search, Sparkles, Target } from 'lucide-react';
-import { DESTINATIONS } from '@tripora/core';
+import { searchDestinations } from '@tripora/core';
 import { OptionCard } from '@/components/ui/OptionCard';
 import { Chip } from '@/components/ui/Chip';
 import { TextInput } from '@/components/ui/Field';
@@ -11,21 +11,7 @@ export function StepDestination() {
   const [query, setQuery] = useState('');
 
   const results = useMemo(() => {
-    const needle = query
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
-    const pool = needle
-      ? DESTINATIONS.filter((destination) =>
-          `${destination.name} ${destination.country}`
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase()
-            .includes(needle),
-        )
-      : DESTINATIONS;
-    return [...pool].sort((a, b) => a.name.localeCompare(b.name, 'fr')).slice(0, 30);
+    return searchDestinations(query, 30);
   }, [query]);
 
   return (

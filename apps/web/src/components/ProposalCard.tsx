@@ -1,5 +1,18 @@
 import { useState, type ReactNode } from 'react';
-import { ChevronDown, CloudRain, Crown, Lock, Plane, Train, Bus, Car, Ship, Thermometer } from 'lucide-react';
+import {
+  ChevronDown,
+  CloudRain,
+  Crown,
+  Loader2,
+  Lock,
+  Plane,
+  Train,
+  Bus,
+  Car,
+  Ship,
+  Sparkles,
+  Thermometer,
+} from 'lucide-react';
 import {
   climateFor,
   costLines,
@@ -13,6 +26,8 @@ import {
 import { Card, CardBody } from '@/components/ui/Card';
 import { ClimateStrip } from '@/components/ClimateStrip';
 import { ScoreRing } from '@/components/ScoreRing';
+import { messageIA, rediger } from '@/lib/ai';
+import { faitsPourExplication } from '@/lib/explication';
 import { cn } from '@/lib/cn';
 
 const TRANSPORT_ICONS = {
@@ -29,6 +44,7 @@ export function ProposalCard({
   score,
   transport,
   month,
+  participants,
   vote,
   choixDuGroupe = false,
   verrouillee = false,
@@ -39,6 +55,8 @@ export function ProposalCard({
   transport: TransportEstimate[];
   /** Mois visé, quand le groupe en a fixé un : sert à situer le climat. */
   month?: number | undefined;
+  /** Taille du groupe, transmise à l'explication rédigée. Aucun nom ne l'est. */
+  participants: number;
   /** Barre de vote, absente quand on voyage seul. */
   vote?: ReactNode;
   /** Celle que les votes désignent, distincte de celle que le calcul classe en tête. */
@@ -47,6 +65,26 @@ export function ProposalCard({
 }) {
   const [open, setOpen] = useState(false);
   const climat = month === undefined ? undefined : climateFor(destination.id, month);
+  const [texte, setTexte] = useState<string | null>(null);
+  const [redaction, setRedaction] = useState(false);
+
+  /**
+   * Explication rédigée, à la demande seulement.
+   *
+   * Jamais automatique : chaque carte qui se rédigerait toute seule brûlerait
+   * six appels d'IA pour un écran que personne n'a demandé à lire. Et la note
+   * est déjà expliquée facteur par facteur juste au-dessus — c'est le calcul
+   * qui explique, l'IA ne fait que le mettre en phrases.
+   */
+  async function demanderTexte() {
+    if (redaction) return;
+    setRedaction(true);
+    const etat = await rediger(
+      faitsPourExplication(destination, score, month, participants),
+    );
+    setRedaction(false);
+    setTexte(etat.statut === 'ok' && 'texte' in etat ? etat.texte : messageIA(etat));
+  }
   const label = freshnessLabel({
     cents: score.cost.transportCents,
     source: score.cost.transportSource,
@@ -181,6 +219,27 @@ export function ProposalCard({
                   </li>
                 ))}
               </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold">En une phrase</h4>
+              {texte ? (
+                <p className="text-muted text-sm leading-relaxed">{texte}</p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void demanderTexte()}
+                  disabled={redaction}
+                  className="text-brand-600 dark:text-brand-300 flex min-h-11 items-center gap-2 text-sm font-semibold disabled:opacity-60"
+                >
+                  {redaction ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Sparkles className="size-4" aria-hidden />
+                  )}
+                  {redaction ? 'Rédaction…' : 'Résumer cette note en une phrase'}
+                </button>
+              )}
             </section>
 
             <section className="space-y-1.5">

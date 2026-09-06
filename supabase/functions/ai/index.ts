@@ -113,8 +113,8 @@ Réponds UNIQUEMENT par un objet JSON, sans texte autour, avec ces clés (toutes
 - durationDays : entier, nombre de jours
 - month : entier 1-12, mois visé
 - budgetPerPersonCents : entier, budget maximum par personne EN CENTIMES (450 € = 45000)
-- comfortLevel : "budget" | "standard" | "comfort"
-- groupType : "friends" | "couple" | "family" | "solo"
+- comfortLevel : "budget" | "mid" | "comfort"
+- groupType : "solo" | "couple" | "friends" | "family" | "custom"
 - destination : nom de ville si une ville précise est nommée
 - origin : nom de la ville de départ si elle est nommée
 - weights : objet dont les clés sont culture, nature, food, nightlife, relax, adventure, shopping, offbeat et les valeurs des nombres DÉCIMAUX entre 0 et 1 (0.8, jamais 8)
@@ -122,7 +122,7 @@ Réponds UNIQUEMENT par un objet JSON, sans texte autour, avec ces clés (toutes
 Règles strictes :
 - N'invente rien. Ce qui n'est pas dit n'apparaît pas dans le JSON.
 - "un week-end" = 3 jours. "une semaine" = 7 jours. "quinze jours" = 14 jours.
-- "pas cher", "petit budget" = comfortLevel "budget". "confort", "sans se priver" = "comfort".
+- "pas cher", "petit budget" = comfortLevel "budget". Ni l'un ni l'autre = "mid". "confort", "sans se priver" = "comfort".
 - Ne déduis un budget que d'un montant explicitement cité.
 - Ne mets dans weights que les envies évoquées. Une envie non citée est absente, pas à zéro.`;
 
