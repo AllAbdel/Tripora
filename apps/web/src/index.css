@@ -1,0 +1,136 @@
+@import 'tailwindcss';
+
+/* Le thème sombre suit le système, mais reste forçable par une classe :
+   l'utilisateur doit pouvoir choisir, pas seulement subir son OS. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Palette Tripora, dérivée de l'icône de l'application :
+   bleu du fond, turquoise de l'anneau, marine des silhouettes, or des étoiles.
+   --------------------------------------------------------------------------- */
+@theme {
+  --color-brand-50: #eaf5ff;
+  --color-brand-100: #d3ebff;
+  --color-brand-200: #a8d7ff;
+  --color-brand-300: #6ec0ff;
+  --color-brand-400: #1e9bff;
+  --color-brand-500: #0a84ff;
+  --color-brand-600: #0066d6;
+  --color-brand-700: #004fa8;
+  --color-brand-800: #003a7d;
+  --color-brand-900: #002a5c;
+
+  --color-lagoon-300: #5fc4d2;
+  --color-lagoon-500: #1c8c9b;
+  --color-lagoon-700: #0f5d68;
+
+  --color-ink-500: #35548c;
+  --color-ink-700: #1f3a6e;
+  --color-ink-900: #0b1220;
+
+  --color-gold-300: #ffd668;
+  --color-gold-500: #f5b301;
+  --color-gold-700: #b98600;
+
+  --font-sans:
+    'Inter var', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-sheet: 1.75rem;
+
+  --shadow-card: 0 1px 2px rgb(11 18 32 / 0.06), 0 8px 24px -12px rgb(11 18 32 / 0.18);
+  --shadow-float: 0 8px 32px -8px rgb(10 132 255 / 0.45);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Jetons sémantiques : les composants ne citent jamais une couleur brute. */
+:root {
+  --surface: #ffffff;
+  --surface-muted: #f4f7fb;
+  --surface-raised: #ffffff;
+  --border-subtle: #e3e9f2;
+  --text-strong: #0b1220;
+  --text-muted: #5a6b86;
+  --accent: var(--color-brand-500);
+  --accent-contrast: #ffffff;
+}
+
+.dark {
+  --surface: #0b1220;
+  --surface-muted: #121b2d;
+  --surface-raised: #162034;
+  --border-subtle: #223050;
+  --text-strong: #eef3fb;
+  --text-muted: #93a3bf;
+  --accent: var(--color-brand-400);
+  --accent-contrast: #04101f;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--surface-muted);
+    color: var(--text-strong);
+    font-family: var(--font-sans);
+    /* Encoches et barres système : l'app est plein écran une fois installée. */
+    padding-top: env(safe-area-inset-top);
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Un focus visible et net : la navigation au clavier n'est pas une option. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Respect strict de la préférence système : pas d'animation imposée. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .surface {
+    background-color: var(--surface);
+  }
+  .surface-raised {
+    background-color: var(--surface-raised);
+  }
+  .text-muted {
+    color: var(--text-muted);
+  }
+  .border-subtle {
+    border-color: var(--border-subtle);
+  }
+  /* Zone atteignable au pouce : les actions principales vivent en bas. */
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  }
+  .animate-rise {
+    animation: rise 0.35s var(--ease-out-soft) both;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
