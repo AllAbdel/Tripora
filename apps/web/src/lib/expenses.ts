@@ -8,6 +8,13 @@ import { supabase } from './supabase';
  * Tout est enregistré en centimes entiers, et la part de chacun est calculée
  * au moment de la saisie plutôt que recalculée à l'affichage : si quelqu'un
  * quitte le voyage plus tard, les comptes passés ne doivent pas bouger.
+ *
+ * Une dépense peut être payée dans n'importe quelle devise publiée par la BCE.
+ * Deux montants sont alors conservés : celui qu'on a réellement payé, dans sa
+ * devise, et sa conversion en euros. **Les comptes se font toujours sur
+ * l'euro** — c'est `amountCents` — et le taux employé est figé dans la ligne,
+ * pour qu'une dépense de la semaine dernière ne change pas de valeur parce que
+ * le zloty a bougé depuis.
  */
 
 export type ExpenseCategory =
@@ -17,12 +24,21 @@ export interface ExpenseEntry extends Expense {
   label: string;
   category: ExpenseCategory;
   spentOn: string;
+  /** Devise de la saisie. `amountCents`, lui, est toujours en euros. */
   currency: string;
+  /** Ce qui a été payé, dans sa devise. Identique à `amountCents` en euros. */
+  originalCents: number;
 }
 
 export interface NouvelleDepense {
   label: string;
+  /** Montant payé, dans `currency`. */
+  originalCents: number;
+  /** Le même montant en euros : c'est lui qui entre dans les comptes. */
   amountCents: number;
+  currency: string;
+  /** Combien d'euros vaut une unité de `currency`, figé au jour de la saisie. */
+  fxRate: number;
   paidBy: string;
   category: ExpenseCategory;
   spentOn: string;
@@ -73,7 +89,8 @@ const depensesLocales: ExpensesApi = {
       label: depense.label,
       category: depense.category,
       spentOn: depense.spentOn,
-      currency: 'EUR',
+      currency: depense.currency,
+      originalCents: depense.originalCents,
     };
     localStorage.setItem(
       CLE_LOCALE,
@@ -97,7 +114,9 @@ function depensesSupabase(client: NonNullable<typeof supabase>): ExpensesApi {
     async list(tripId) {
       const { data, error } = await client
         .from('expenses')
-        .select('id, paid_by, amount_cents, currency, category, label, spent_on, expense_shares(user_id, share_cents)')
+        .select(
+          'id, paid_by, amount_cents, amount_home_cents, currency, category, label, spent_on, expense_shares(user_id, share_cents)',
+        )
         .eq('trip_id', tripId)
         .order('spent_on', { ascending: false })
         .order('created_at', { ascending: false });
@@ -106,7 +125,10 @@ function depensesSupabase(client: NonNullable<typeof supabase>): ExpensesApi {
       return (data ?? []).map((row) => ({
         id: row.id as string,
         paidBy: row.paid_by as string,
-        amountCents: row.amount_cents as number,
+        // Les comptes se font en euros ; le montant d'origine ne sert qu'à
+        // l'affichage, pour qu'on reconnaisse la somme qu'on a payée.
+        amountCents: row.amount_home_cents as number,
+        originalCents: row.amount_cents as number,
         currency: (row.currency as string) ?? 'EUR',
         label: row.label as string,
         category: row.category as ExpenseCategory,
@@ -127,11 +149,9 @@ function depensesSupabase(client: NonNullable<typeof supabase>): ExpensesApi {
         .insert({
           trip_id: tripId,
           paid_by: depense.paidBy,
-          amount_cents: depense.amountCents,
-          currency: 'EUR',
-          // Une seule devise pour l'instant : le taux est donc neutre, mais la
-          // colonne existe pour figer le change le jour où on l'ajoutera.
-          fx_rate: 1,
+          amount_cents: depense.originalCents,
+          currency: depense.currency,
+          fx_rate: depense.fxRate,
           amount_home_cents: depense.amountCents,
           category: depense.category,
           label: depense.label,

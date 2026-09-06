@@ -5,6 +5,7 @@
  */
 export * from './preferences.js';
 export * from './money.js';
+export * from './currency.js';
 export * from './freshness.js';
 export * from './geo.js';
 export * from './types.js';

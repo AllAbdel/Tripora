@@ -89,6 +89,24 @@ Sans clé, sans quota, taux officiels de la Banque centrale européenne. Le taux
 est **figé sur chaque dépense au moment de la saisie** : une dépense passée ne
 doit jamais changer de montant parce que l'euro a bougé.
 
+Deux limites relevées sur l'API le 6 septembre 2026, toutes deux visibles dans
+l'application plutôt que masquées :
+
+- **la BCE ne publie que trente devises.** Trois de nos destinations en sont
+  absentes : Marrakech (dirham), Belgrade (dinar), Tirana (lek). Pour
+  celles-là Tripora dit qu'il ne sait pas convertir, au lieu d'aller chercher
+  un taux ailleurs. Le lev bulgare a quitté la liste le 1er janvier 2026, quand
+  la Bulgarie est passée à l'euro — l'absence de `BGN` dans la réponse en est
+  la preuve directe ;
+- **elle ne publie ni le week-end ni les jours fériés.** Un dimanche, la
+  réponse est datée du vendredi. L'écran affiche cette date-là, pas
+  « aujourd'hui » : un taux daté se vérifie, un taux « du jour » qui date de
+  trois jours ne se vérifie pas.
+
+Les taux sont aussi archivés jour par jour dans `fx_rates`. Si quelqu'un
+conteste une conversion, on compare le taux figé dans la ligne de dépense au
+taux publié ce jour-là.
+
 ### Données statiques
 
 REST Countries, OpenFlights (codes IATA), GeoNames : elles alimentent un

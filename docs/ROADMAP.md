@@ -13,8 +13,8 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **4** | **Vote et décision** — j'aime, je n'aime pas, favori, agrégation, verrouillage de la destination | ✅ fait |
 | **5** | **Carte et lieux** — MapLibre, destinations en lice, tracé du trajet, lieux réels d'OpenStreetMap avec descriptions Wikipédia | ✅ fait |
 | **6** | **Itinéraire** — génération jour par jour, réorganisation, ajout de vrais lieux ✅ ; consultation hors ligne partielle — **MVP atteint** | ✅ fait |
-| **7** | **Intelligence artificielle** — compréhension du langage naturel ✅, explications rédigées ✅ ; assistant conversationnel avec outils à venir | 🔨 en cours |
-| **8** | **Budget et dépenses** — saisie, parts, « qui doit combien à qui » simplifié ✅ ; multi-devises à venir | 🔨 en cours |
+| **7** | **Intelligence artificielle** — compréhension du langage naturel, explications rédigées, assistant qui répond aux questions du groupe sans jamais rien décider ni rien modifier | ✅ fait |
+| **8** | **Budget et dépenses** — saisie, parts, « qui doit combien à qui » simplifié, dépenses en devise locale converties aux taux de la BCE | ✅ fait |
 | **9** | **Transport et hébergement** — comparaison avion, train, bus, voiture ✅, liens de réservation préremplis ✅ ; prix d'hôtels **impossibles** (Hotellook retiré, voir APIS.md) | 🔨 en cours |
 | **10** | **Confort** — météo et réorganisation du planning, notifications, carte hors ligne, éventuel emballage APK | ⬜ |
 
@@ -38,7 +38,19 @@ Ce qui repose sur des faits mesurés plutôt que sur des estimations :
 Sans aucune clé d'API, tout continue de fonctionner : les prix redeviennent des
 estimations, l'IA disparaît de l'écran, et rien d'autre ne bouge.
 
-La suite : l'assistant conversationnel, les transports et les hébergements.
+Le groupe peut aussi **poser une question sur son propre voyage** — « pourquoi
+la première est devant la deuxième ? », « qu'est-ce qui nous empêche de
+trancher ? ». L'assistant lit le dossier de faits calculé par le moteur et
+répond en trois phrases. Il n'a aucun outil, ne peut rien modifier, et aucun
+prénom ne lui est transmis : les participants sont « Participant A, B, C », et
+un contrôle vérifie avant chaque envoi qu'aucun nom n'a glissé.
+
+Et pendant le voyage, **une dépense se note dans la monnaie qu'on a payée** :
+le zloty, la couronne, la livre. La conversion utilise les taux de référence de
+la Banque centrale européenne, avec leur date de publication affichée, et le
+taux est figé dans la dépense pour que les comptes ne bougent plus.
+
+La suite : la météo à l'approche du départ, et les notifications.
 La marche à suivre pour tout essayer soi-même est dans [TESTER.md](TESTER.md).
 
 ## Pourquoi cet ordre

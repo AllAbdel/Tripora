@@ -3,7 +3,9 @@ import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Loader2, Plus, Trash2, X } from 'lucide-react';
 import {
-  computeBalances, formatCents, parseAmountToCents, simplifyDebts, totalSpent,
+  computeBalances, currencyForCountry, currencyName, describeRate, DESTINATIONS,
+  formatCents, isConvertible, parseAmountToCents, referenceRate, simplifyDebts,
+  toReferenceCents, totalSpent, type FxRates,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +16,7 @@ import { MoneyInput } from '@/components/ui/MoneyInput';
 import { getTripRepository } from '@/lib/trips';
 import { getCollaboration } from '@/lib/collaboration';
 import { getExpenses, CATEGORIES, type ExpenseCategory } from '@/lib/expenses';
+import { chargerTaux, CLE_TAUX, devisesProposees } from '@/lib/fx';
 import { useAuth } from '@/lib/auth-context';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
@@ -45,6 +48,16 @@ export default function TripBudget() {
     enabled: Boolean(id),
   });
 
+  // Les taux sont les mêmes pour tout le monde et changent une fois par jour
+  // ouvré : une seule requête, partagée entre les écrans et gardée par le
+  // cache persistant, donc encore là au retour d'une zone sans réseau.
+  const taux = useQuery({
+    queryKey: CLE_TAUX,
+    queryFn: chargerTaux,
+    staleTime: 6 * 60 * 60 * 1000,
+    gcTime: 7 * 24 * 60 * 60 * 1000,
+  });
+
   /** Noms affichables, avec repli sur le mode local où il n'y a qu'une personne. */
   const noms = useMemo(() => {
     const table = new Map<string, string>();
@@ -54,6 +67,14 @@ export default function TripBudget() {
   }, [membres.data, identity]);
 
   const participants = useMemo(() => [...noms.keys()], [noms]);
+
+  /** La devise du pays où l'on va : c'est celle qu'on proposera par défaut. */
+  const deviseLocale = useMemo(() => {
+    const destination = DESTINATIONS.find(
+      (lieu) => lieu.id === voyage.data?.lockedDestinationId,
+    );
+    return destination ? currencyForCountry(destination.countryCode) : undefined;
+  }, [voyage.data?.lockedDestinationId]);
 
   const comptes = useMemo(() => {
     const entrees = liste.data ?? [];
@@ -199,6 +220,8 @@ export default function TripBudget() {
           participants={participants}
           noms={noms}
           moi={identity?.id ?? participants[0] ?? 'moi'}
+          taux={taux.data?.statut === 'ok' ? taux.data.taux : null}
+          deviseLocale={deviseLocale}
           enCours={ajouter.isPending}
           onAnnuler={() => setEnSaisie(false)}
           onValider={(valeurs) => ajouter.mutate(valeurs)}
@@ -241,8 +264,15 @@ export default function TripBudget() {
                         {entree.shares.length > 1 && ` · partagé à ${entree.shares.length}`}
                       </p>
                     </div>
-                    <span className="shrink-0 font-bold tabular-nums">
+                    <span className="shrink-0 text-right font-bold tabular-nums">
                       {formatCents(entree.amountCents)}
+                      {/* Payé dans une autre monnaie : on montre la somme
+                          reconnaissable, celle qui est sur le ticket. */}
+                      {entree.currency !== 'EUR' && (
+                        <span className="text-muted block text-xs font-medium">
+                          {formatCents(entree.originalCents, entree.currency)}
+                        </span>
+                      )}
                     </span>
                     <button
                       type="button"
@@ -267,6 +297,8 @@ function Formulaire({
   participants,
   noms,
   moi,
+  taux,
+  deviseLocale,
   enCours,
   onAnnuler,
   onValider,
@@ -274,11 +306,16 @@ function Formulaire({
   participants: string[];
   noms: Map<string, string>;
   moi: string;
+  taux: FxRates | null;
+  deviseLocale: string | undefined;
   enCours: boolean;
   onAnnuler: () => void;
   onValider: (valeurs: {
     label: string;
+    originalCents: number;
     amountCents: number;
+    currency: string;
+    fxRate: number;
     paidBy: string;
     category: ExpenseCategory;
     spentOn: string;
@@ -292,7 +329,22 @@ function Formulaire({
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [partage, setPartage] = useState<string[]>(participants);
 
-  const valide = label.trim().length > 0 && parseAmountToCents(montant || '0') > 0 && partage.length > 0;
+  // Sur place, on paie en monnaie locale : c'est elle qu'on présente d'abord,
+  // à condition que la BCE la publie et qu'on ait les taux du jour.
+  const devisesOffertes = useMemo(() => devisesProposees(taux, deviseLocale), [taux, deviseLocale]);
+
+  // Tant que personne n'a choisi, on suit la liste : si les taux arrivent
+  // après l'ouverture du formulaire, la monnaie locale prend la tête toute
+  // seule. Dès qu'on choisit, le choix tient.
+  const [choix, setChoix] = useState<string | null>(null);
+  const devise = choix ?? devisesOffertes[0]?.code ?? 'EUR';
+
+  const parEuro = devise === 'EUR' ? 1 : (taux?.rates[devise] ?? null);
+  const saisi = parseAmountToCents(montant || '0');
+  const enEuros = parEuro === null ? null : toReferenceCents(saisi, parEuro);
+
+  const valide =
+    label.trim().length > 0 && saisi > 0 && partage.length > 0 && enEuros !== null && enEuros > 0;
 
   return (
     <Card>
@@ -320,7 +372,30 @@ function Formulaire({
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Combien ?">
-            <MoneyInput label="Montant" placeholder="48,50" value={montant} onChange={setMontant} />
+            <div className="flex gap-2">
+              <div className="min-w-0 flex-1">
+                <MoneyInput
+                  label="Montant"
+                  placeholder="48,50"
+                  value={montant}
+                  onChange={setMontant}
+                />
+              </div>
+              {devisesOffertes.length > 1 && (
+                <select
+                  value={devise}
+                  onChange={(event) => setChoix(event.target.value)}
+                  aria-label="Devise"
+                  className="focus:border-brand-500 min-h-11 shrink-0 rounded-xl border border-[color:var(--border-subtle)] bg-[color:var(--surface)] px-2 text-sm font-semibold outline-none"
+                >
+                  {devisesOffertes.map((entree) => (
+                    <option key={entree.code} value={entree.code}>
+                      {entree.code}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </Field>
           <Field label="Quand ?">
             <TextInput
@@ -331,6 +406,14 @@ function Formulaire({
             />
           </Field>
         </div>
+
+        <Conversion
+          devise={devise}
+          parEuro={parEuro}
+          enEuros={saisi > 0 ? enEuros : null}
+          date={taux?.date}
+          deviseLocale={deviseLocale}
+        />
 
         <div className="space-y-1.5">
           <p className="text-sm font-semibold">Catégorie</p>
@@ -395,7 +478,10 @@ function Formulaire({
           onClick={() =>
             onValider({
               label: label.trim(),
-              amountCents: parseAmountToCents(montant),
+              originalCents: saisi,
+              amountCents: enEuros ?? saisi,
+              currency: devise,
+              fxRate: parEuro === null ? 1 : referenceRate(parEuro),
               paidBy,
               category: categorie,
               spentOn: date,
@@ -407,6 +493,57 @@ function Formulaire({
         </Button>
       </CardBody>
     </Card>
+  );
+}
+
+/**
+ * Ce que la conversion donne, et d'où vient le taux.
+ *
+ * La date affichée est celle de la publication, pas celle du jour : la BCE ne
+ * publie ni le week-end ni les jours fériés, et un taux daté est un taux
+ * qu'on peut aller vérifier.
+ */
+function Conversion({
+  devise,
+  parEuro,
+  enEuros,
+  date,
+  deviseLocale,
+}: {
+  devise: string;
+  parEuro: number | null;
+  enEuros: number | null;
+  date: string | undefined;
+  deviseLocale: string | undefined;
+}) {
+  // Une devise que la BCE ne publie pas — dirham, dinar serbe, lek. On le dit
+  // plutôt que de laisser croire que l'euro était la seule option possible.
+  if (deviseLocale && deviseLocale !== 'EUR' && !isConvertible(deviseLocale)) {
+    return (
+      <p className="text-muted text-xs leading-relaxed">
+        La Banque centrale européenne ne publie pas de taux pour le{' '}
+        {currencyName(deviseLocale)} : notez vos dépenses converties en euros. Tripora ne
+        peut pas le faire à votre place sans inventer un taux.
+      </p>
+    );
+  }
+
+  if (devise === 'EUR' || parEuro === null || !date) return null;
+
+  return (
+    <p className="text-muted text-xs leading-relaxed">
+      {enEuros !== null && (
+        <span className="text-ink-800 dark:text-ink-100 font-semibold">
+          ≈ {formatCents(enEuros)}
+        </span>
+      )}
+      {enEuros !== null && ' · '}
+      {describeRate(devise, parEuro)} · taux BCE du{' '}
+      {new Date(`${date}T00:00:00`).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+      })}
+    </p>
   );
 }
 
