@@ -1,0 +1,46 @@
+# Configuration du projet Supabase Tripora.
+# Les valeurs sensibles ne sont jamais ici : elles vivent dans les secrets du
+# projet (Dashboard → Edge Functions → Secrets) et dans .env.local en dev.
+
+project_id = "tripora"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 16
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173", "https://tripora.pages.dev"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+# Pas de mot de passe : Google d'un côté, invitation anonyme de l'autre.
+enable_signup = true
+enable_anonymous_sign_ins = true
+
+[auth.email]
+enable_signup = false
+enable_confirmations = false
+
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+
+[realtime]
+enabled = true
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
