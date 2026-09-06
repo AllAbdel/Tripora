@@ -32,7 +32,15 @@ export interface VoteTally {
  * le monde ?
  */
 export interface VoteResults {
-  tallies: Map<string, VoteTally>;
+  /**
+   * Indexé par destination, en objet simple et **pas en `Map`**.
+   *
+   * Le cache de requêtes est persisté en JSON pour survivre à la fermeture de
+   * l'onglet : une `Map` en ressort comme `{}`, et le premier `.get()` fait
+   * planter l'écran au rechargement. Le bug a été trouvé par le parcours
+   * automatisé, hors réseau, là où précisément on relit le cache.
+   */
+  tallies: Record<string, VoteTally>;
   voters: number;
 }
 
@@ -68,21 +76,19 @@ const voteLocal: VotingApi = {
   async listTallies(tripId) {
     const stock = lireJson<Record<string, Record<string, VoteValue>>>(CLE_VOTES, {});
     const pourCeVoyage = stock[tripId] ?? {};
-    const tallies = new Map(
-      Object.entries(pourCeVoyage).map(([destinationId, value]) => [
+    const tallies: Record<string, VoteTally> = {};
+    for (const [destinationId, value] of Object.entries(pourCeVoyage)) {
+      tallies[destinationId] = {
         destinationId,
-        {
-          destinationId,
-          likes: value === 'like' ? 1 : 0,
-          dislikes: value === 'dislike' ? 1 : 0,
-          favorites: value === 'favorite' ? 1 : 0,
-          mine: value,
-        },
-      ]),
-    );
+        likes: value === 'like' ? 1 : 0,
+        dislikes: value === 'dislike' ? 1 : 0,
+        favorites: value === 'favorite' ? 1 : 0,
+        mine: value,
+      };
+    }
     // Un seul votant en mode local, et seulement s'il s'est exprimé : c'est la
     // façon dont on choisit quand on part seul.
-    return { tallies, voters: tallies.size > 0 ? 1 : 0 };
+    return { tallies, voters: Object.keys(tallies).length > 0 ? 1 : 0 };
   },
 
   async cast(tripId, destinationId, value) {
@@ -128,12 +134,12 @@ export function getVoting(): VotingApi {
         .eq('subject_type', 'proposal');
       if (error) throw error;
 
-      const tallies = new Map<string, VoteTally>();
+      const tallies: Record<string, VoteTally> = {};
       const votants = new Set<string>();
       for (const row of data ?? []) {
         votants.add(row.user_id as string);
         const id = row.subject_id as string;
-        const tally = tallies.get(id) ?? {
+        const tally = tallies[id] ?? {
           destinationId: id,
           likes: 0,
           dislikes: 0,
@@ -145,7 +151,7 @@ export function getVoting(): VotingApi {
         else if (value === 'dislike') tally.dislikes += 1;
         else tally.favorites += 1;
         if (row.user_id === userId) tally.mine = value;
-        tallies.set(id, tally);
+        tallies[id] = tally;
       }
       return { tallies, voters: votants.size };
     },
@@ -234,12 +240,12 @@ export interface GroupChoice {
 
 /** La destination qui recueille le plus d'adhésion, s'il y en a une. */
 export function groupChoice(
-  tallies: ReadonlyMap<string, VoteTally>,
+  tallies: Readonly<Record<string, VoteTally>>,
   candidates: readonly string[],
 ): GroupChoice | null {
   let best: GroupChoice | null = null;
   for (const destinationId of candidates) {
-    const tally = tallies.get(destinationId);
+    const tally = tallies[destinationId];
     const score = preferenceScore(tally);
     if (score <= 0) continue;
     const supporters = (tally?.likes ?? 0) + (tally?.favorites ?? 0);

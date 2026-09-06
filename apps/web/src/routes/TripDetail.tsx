@@ -306,7 +306,7 @@ export default function TripDetail() {
                         vote={
                           !data.lockedDestinationId ? (
                             <VoteBar
-                              tally={votes.data?.tallies.get(score.destinationId)}
+                              tally={votes.data?.tallies[score.destinationId]}
                               participants={Math.max(
                                 data.members.length,
                                 data.constraints.participants,

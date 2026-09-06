@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { groupChoice, preferenceScore, type VoteTally } from './votes';
 
+/**
+ * Les dépouillements sont des objets simples et non des `Map` : le cache de
+ * requêtes est persisté en JSON, et une `Map` en ressortirait vide.
+ */
+function depouillement(
+  entrees: readonly (readonly [string, VoteTally])[],
+): Record<string, VoteTally> {
+  return Object.fromEntries(entrees);
+}
+
 function tally(overrides: Partial<VoteTally> & { destinationId: string }): VoteTally {
   return { likes: 0, dislikes: 0, favorites: 0, mine: null, ...overrides };
 }
@@ -24,7 +34,7 @@ describe('choix du groupe', () => {
   const classement = ['barcelone', 'rome', 'budapest'];
 
   it('désigne la destination la plus soutenue', () => {
-    const votes = new Map([
+    const votes = depouillement([
       ['barcelone', tally({ destinationId: 'barcelone', likes: 1 })],
       ['rome', tally({ destinationId: 'rome', likes: 3 })],
     ]);
@@ -32,21 +42,21 @@ describe('choix du groupe', () => {
   });
 
   it('peut contredire le classement calculé — c’est le but', () => {
-    const votes = new Map([['budapest', tally({ destinationId: 'budapest', favorites: 2 })]]);
+    const votes = depouillement([['budapest', tally({ destinationId: 'budapest', favorites: 2 })]]);
     const choix = groupChoice(votes, classement);
     expect(choix?.destinationId).toBe('budapest');
     expect(choix?.destinationId).not.toBe(classement[0]);
   });
 
   it('ignore une destination qui déplaît plus qu’elle ne plaît', () => {
-    const votes = new Map([
+    const votes = depouillement([
       ['barcelone', tally({ destinationId: 'barcelone', likes: 1, dislikes: 3 })],
     ]);
     expect(groupChoice(votes, classement)).toBeNull();
   });
 
   it('départage une égalité par le classement calculé, pas au hasard', () => {
-    const votes = new Map([
+    const votes = depouillement([
       ['rome', tally({ destinationId: 'rome', likes: 2 })],
       ['budapest', tally({ destinationId: 'budapest', likes: 2 })],
     ]);
@@ -55,11 +65,11 @@ describe('choix du groupe', () => {
   });
 
   it('ne désigne personne tant que personne n’a voté', () => {
-    expect(groupChoice(new Map(), classement)).toBeNull();
+    expect(groupChoice(depouillement([]), classement)).toBeNull();
   });
 
   it('compte les soutiens, favoris compris', () => {
-    const votes = new Map([
+    const votes = depouillement([
       ['rome', tally({ destinationId: 'rome', likes: 2, favorites: 1, dislikes: 1 })],
     ]);
     expect(groupChoice(votes, classement)?.supporters).toBe(3);

@@ -162,6 +162,24 @@ d'autre à changer.
 
 ## Vérifier que tout marche
 
+### Le parcours automatisé
+
+```bash
+pnpm --filter @tripora/web build     # en mode local, sans clés
+pnpm --filter @tripora/web smoke
+```
+
+Il ouvre un vrai navigateur sur le bundle de production, crée un voyage en six
+étapes, vérifie les propositions, le climat, le détail d'une note, puis coupe
+le réseau et s'assure que l'écran reste lisible. Seize vérifications.
+
+C'est le seul filet qui attrape ce que ni TypeScript ni les tests unitaires ne
+voient — il a déjà trouvé un plantage au rechargement hors réseau.
+
+Dans un conteneur qui fournit son propre Chromium :
+`SMOKE_CHROMIUM=/chemin/vers/chrome pnpm --filter @tripora/web smoke`.
+
+
 1. Ouvrez le site, connectez-vous avec Google.
 2. Créez un voyage : vous devez obtenir des destinations notées et chiffrées.
 3. **Participants → Créer un lien d'invitation**.
