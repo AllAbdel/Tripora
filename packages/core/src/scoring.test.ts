@@ -186,6 +186,37 @@ describe('raisonnement sur le coût total, pas sur le billet', () => {
   });
 });
 
+describe('note climatique', () => {
+  const base = destination({ id: 'base' });
+  const members = [member('a', { culture: 1 })];
+  const noteFor = (avgHighC: number, avgLowC: number, rainyDays: number) =>
+    scoreDestination(base, {
+      constraints: constraints(),
+      members,
+      transport: observed(9_000),
+      climate: { month: 9, avgHighC, avgLowC, rainyDays },
+    }).factors.find((f) => f.key === 'climate')!.score;
+
+  it('récompense un mois doux et sec', () => {
+    expect(noteFor(25, 17, 3)).toBeGreaterThan(80);
+  });
+
+  it('pénalise la pluie sans l’exagérer', () => {
+    const sec = noteFor(22, 16, 2);
+    const pluvieux = noteFor(22, 16, 16);
+    expect(pluvieux).toBeLessThan(sec);
+    expect(pluvieux).toBeGreaterThan(sec * 0.6);
+  });
+
+  it('ne laisse pas le soleil racheter une chaleur invivable', () => {
+    expect(noteFor(45, 38, 0)).toBe(0);
+  });
+
+  it('pénalise aussi le froid', () => {
+    expect(noteFor(2, -4, 5)).toBeLessThan(30);
+  });
+});
+
 describe('notation complète', () => {
   const base = destination({ id: 'base', tags: normalizeWeights({ culture: 0.8, food: 0.8 }) });
   const members = [member('a', { culture: 1, food: 1 }, 50_000)];

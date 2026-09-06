@@ -132,7 +132,10 @@ function climateFactor(
     // Confort maximal autour de 21 °C, décroissance douce de part et d'autre.
     const tempScore = clamp(100 - Math.abs(temp - 21) * 5.5);
     const rainScore = clamp(100 - climate.rainyDays * 6);
-    const score = Math.round(tempScore * 0.65 + rainScore * 0.35);
+    // La pluie module la température, elle ne la rachète pas : aucun grand
+    // soleil ne rend 41 °C agréables, alors qu'un mois pluvieux gâche un mois
+    // par ailleurs parfait.
+    const score = Math.round(tempScore * (0.7 + 0.3 * (rainScore / 100)));
     return {
       score,
       reason: `Environ ${Math.round(temp)} °C et ${climate.rainyDays} jours de pluie sur le mois`,

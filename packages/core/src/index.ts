@@ -14,3 +14,5 @@ export * from './schemas.js';
 export * from './catalog/destinations.js';
 export * from './catalog/candidates.js';
 export * from './catalog/origins.js';
+export * from './transport.js';
+export * from './proposals.js';
