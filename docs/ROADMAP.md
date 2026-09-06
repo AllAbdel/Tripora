@@ -12,7 +12,7 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **3** | **Propositions** — moteur de scoring branché, coût total, explications ✅ ; prix des vols en cache et climat réel restent à brancher | 🔨 en cours |
 | **4** | **Vote et décision** — j'aime, je n'aime pas, favori, agrégation, verrouillage de la destination | ✅ fait |
 | **5** | **Carte et lieux** — MapLibre, points d'intérêt, photos, fiches, favoris | ⬜ |
-| **6** | **Itinéraire et hors ligne** — génération jour par jour cohérente géographiquement, réorganisation, consultation sans réseau — **fin du MVP** | ⬜ |
+| **6** | **Itinéraire** — génération jour par jour, réorganisation, ajout de vrais lieux ✅ ; consultation hors ligne partielle — **MVP atteint** | ✅ fait |
 | **7** | **Intelligence artificielle** — compréhension du langage naturel, explications rédigées, assistant conversationnel avec outils | ⬜ |
 | **8** | **Budget et dépenses** — saisie multi-devises, parts, « qui doit combien à qui » simplifié | ⬜ |
 | **9** | **Transport et hébergement** — comparaison avion, train, bus, voiture ; hôtels indicatifs ; liens de réservation ; vérification ponctuelle d'un prix | ⬜ |
@@ -20,17 +20,21 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 
 ## Où on en est
 
-Les phases 0, 1, 2 et 4 sont terminées, la 3 et la 5 le sont pour leur partie
-qui ne dépend d'aucune clé d'API. Un groupe peut créer un voyage, s'inviter par lien ou par QR
+Les phases 0, 1, 2, 4 et 6 sont terminées ; la 3 et la 5 le sont pour leur
+partie qui ne dépend d'aucune clé d'API. Un groupe peut créer un voyage, s'inviter par lien ou par QR
 code, exprimer ses envies chacun de son côté, et voir des destinations notées,
 expliquées et chiffrées se recalculer en direct — **sans aucune clé d'API**.
 Tous les prix sont alors des estimations, et l'application le dit à chaque
 écran.
 
-Le vote est en place, et la carte montre la géographie du voyage : d'où l'on
-part, les destinations en lice, et le trajet vers celle qu'on regarde. Il reste
-l'itinéraire jour par jour pour boucler le MVP, puis les points d'intérêt et
-les prix réels.
+**Le MVP est atteint.** Un groupe peut créer un voyage, s'inviter, exprimer ses
+envies chacun de son côté, comparer des destinations chiffrées et expliquées,
+voter, trancher, voir la carte et obtenir un itinéraire jour par jour qu'il
+complète de vraies adresses — le tout sans aucune clé d'API.
+
+La suite : les prix réels (un jeton Travelpayouts gratuit), les dépenses, puis
+l'assistant conversationnel. La marche à suivre pour tout essayer soi-même est
+dans [TESTER.md](TESTER.md).
 
 ## Pourquoi cet ordre
 

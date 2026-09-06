@@ -97,6 +97,7 @@ serveur : le calcul affiché est exactement celui qui est enregistré.
 
 ## Documentation
 
+- [Tester l'application pas à pas](docs/TESTER.md)
 - [Architecture et décisions techniques](docs/ARCHITECTURE.md)
 - [Sources de données et quotas gratuits](docs/APIS.md)
 - [Mise en place, comptes et clés](docs/SETUP.md)
