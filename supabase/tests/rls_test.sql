@@ -199,4 +199,41 @@ begin
   assert r.hard = 100, 'La limite dure devrait être conservée';
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Le catalogue est un bien commun : lisible par tous les connectés,
+-- modifiable par personne depuis le client.
+-- ---------------------------------------------------------------------------
+set role authenticated;
+set request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
+
+do $$
+declare n int; touched int; avant numeric; apres numeric;
+begin
+  select count(*) into n from public.destinations;
+  assert n >= 40, format('Le catalogue devrait être rempli par la migration de seed (%s)', n);
+
+  -- Une écriture sans politique ne lève pas d'erreur en UPDATE : la ligne est
+  -- simplement invisible pour la modification. On vérifie donc l'effet réel,
+  -- pas l'exception.
+  select cost_index into avant from public.destinations where id = 'budapest';
+  update public.destinations set cost_index = 0.1 where id = 'budapest';
+  get diagnostics touched = row_count;
+  select cost_index into apres from public.destinations where id = 'budapest';
+
+  assert touched = 0, format('FUITE : %s ligne(s) du catalogue modifiée(s) par un client', touched);
+  assert apres = avant, 'FUITE : le catalogue a changé de valeur';
+
+  -- En INSERT, en revanche, l'absence de politique doit refuser franchement.
+  begin
+    insert into public.destinations
+      (id, name, country, country_code, lat, lng, tags, cost_index, poi_richness)
+    values ('pirate', 'Pirate', 'Nulle part', 'XX', 0, 0, '{}'::jsonb, 1, 0.5);
+    raise exception 'FUITE : un client a pu ajouter une destination';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
 select '✅ Tous les tests RLS sont passés' as resultat;
