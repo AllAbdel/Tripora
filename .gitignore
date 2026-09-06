@@ -1,0 +1,38 @@
+# Memory bank locale (non versionnée, sur demande explicite)
+memory-bank/
+
+# Dépendances
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+.output/
+*.tsbuildinfo
+
+# Environnement / secrets — ne JAMAIS committer
+.env
+.env.*
+!.env.example
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Outils
+.vite/
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
