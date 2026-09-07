@@ -4,6 +4,7 @@ import { targetMonth } from './dates.js';
 import { cheapestTransport } from './transport.js';
 import { estimateTripCost } from './cost.js';
 import { rankDestinations, type ScoreContext } from './scoring.js';
+import { distinguishScores } from './distinction.js';
 import type { PricedValue } from './freshness.js';
 import type {
   Destination,
@@ -113,7 +114,15 @@ export function buildProposals(
     };
   };
 
-  const scores = rankDestinations(candidates, contextFor).slice(0, options.keep ?? 6);
+  const classement = rankDestinations(candidates, contextFor).slice(0, options.keep ?? 6);
+
+  // Ce qui distingue chaque destination ne se voit qu'une fois le lot connu :
+  // c'est donc ici, et pas dans le calcul d'une note isolée.
+  const distinctions = distinguishScores(classement);
+  const scores = classement.map((score) => {
+    const edge = distinctions.get(score.destinationId);
+    return edge === undefined ? score : { ...score, edge };
+  });
 
   return {
     scores,

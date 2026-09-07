@@ -9,7 +9,7 @@ un itinéraire et le consulter hors ligne. Tout le reste vient ensuite.
 | **0** | **Fondations** — monorepo, PWA installable, thèmes, identité visuelle, schéma Postgres avec RLS, comptes Google et invité, intégration continue | ✅ fait |
 | **1** | **Création de voyage** — assistant en six étapes (avec qui, départ, destination ou « surprends-nous », dates ou durée, budget, envies), catalogue de 55 destinations | ✅ fait |
 | **2** | **Collaboration** — invitation par lien, code et QR, liste des membres, préférences et budget de chacun, mises à jour en direct | ✅ fait |
-| **3** | **Propositions** — moteur de scoring, coût total, explications, prix des vols relevés chez Aviasales, climat mesuré sur trois ans | ✅ fait |
+| **3** | **Propositions** — moteur de scoring, coût total, explications comparatives (ce qui distingue chaque destination des autres), prix des vols relevés chez Aviasales, climat mesuré sur trois ans | ✅ fait |
 | **4** | **Vote et décision** — j'aime, je n'aime pas, favori, agrégation, verrouillage de la destination | ✅ fait |
 | **5** | **Carte et lieux** — MapLibre, destinations en lice, tracé du trajet, lieux réels d'OpenStreetMap avec descriptions Wikipédia | ✅ fait |
 | **6** | **Itinéraire** — génération jour par jour, réorganisation, remplissage automatique avec de vrais lieux regroupés par quartier, consultation hors ligne — **MVP atteint** | ✅ fait |
@@ -25,6 +25,12 @@ formulaire ou en une phrase —, s'inviter par lien ou par QR code, exprimer ses
 envies chacun de son côté, comparer des destinations notées, chiffrées et
 expliquées, voter, trancher, voir la carte, obtenir un itinéraire jour par jour
 qu'il complète de vraies adresses, et se répartir les dépenses.
+
+Chaque proposition dit **ce qui la distingue des autres** — la moins chère, la
+plus rapide à rejoindre, celle qui devance le lot sur les envies du groupe —
+plutôt que ce qu'elle partage avec les cinq suivantes. Six cartes qui disent
+« tient dans le budget, forte en gastronomie » ne donnent rien à décider, et un
+classement 92/91/91/91/90 ressemble alors à du bruit.
 
 Ce qui repose sur des faits mesurés plutôt que sur des estimations :
 

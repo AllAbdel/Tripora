@@ -120,4 +120,12 @@ export interface DestinationScore {
   memberSatisfaction: { userId: string; value: number }[];
   /** Résumé factuel généré par le code. L'IA peut le reformuler, jamais le contredire. */
   summary: string;
+  /**
+   * Ce qui la distingue des autres propositions du même classement.
+   *
+   * Absent quand il n'y a rien à comparer — une proposition seule n'a personne
+   * à devancer. Rempli par `buildProposals`, qui voit le lot entier ; le calcul
+   * d'une destination isolée ne peut pas le connaître.
+   */
+  edge?: string;
 }

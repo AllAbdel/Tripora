@@ -158,7 +158,10 @@ export function ProposalCard({
           )}
         </div>
 
-        <p className="text-muted text-sm leading-relaxed">{score.summary}</p>
+        {/* Ce qui la distingue plutôt que ce qu'elle partage : six cartes qui
+            disent « tient dans le budget, forte en gastronomie » ne donnent
+            rien à décider. Le détail des facteurs est juste en dessous. */}
+        <p className="text-sm leading-relaxed">{score.edge ?? score.summary}</p>
 
         {vote}
 
