@@ -1,16 +1,25 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { LogIn, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/lib/auth-context';
+import { diagnosticConnexion, RETOUR_OAUTH } from '@/lib/oauthReturn';
 
 export default function SignIn() {
   const { signInWithGoogle, continueAsGuest, backendReady } = useAuth();
   const [busy, setBusy] = useState<'google' | 'guest' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Revenir de Google sans session est la seule panne totalement muette de
+  // Tripora : l'écran de connexion réapparaît, identique. On dit ce qui s'est
+  // passé, et surtout quoi faire — sans ça, personne ne peut le deviner.
+  const diagnostic = useMemo(
+    () => diagnosticConnexion(RETOUR_OAUTH, window.location.origin),
+    [],
+  );
 
   async function run(kind: 'google' | 'guest') {
     setError(null);
@@ -52,6 +61,17 @@ export default function SignIn() {
           <Banner tone="warning" title="Mode local">
             Aucun serveur n’est encore configuré. Vous pouvez découvrir l’interface,
             mais les voyages resteront sur cet appareil.
+          </Banner>
+        )}
+
+        {!error && diagnostic && (
+          <Banner tone="warning" title={diagnostic.titre}>
+            {diagnostic.message}
+            {diagnostic.aFaire && (
+              <span className="mt-2 block break-all font-mono text-xs">
+                {diagnostic.aFaire}
+              </span>
+            )}
           </Banner>
         )}
 

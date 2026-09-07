@@ -1,5 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { env, isSupabaseConfigured } from './env';
+// Importé pour son effet de bord, et pour l'ordre : ce module lit l'URL du
+// retour OAuth avant que le client ci-dessous ne la consomme et l'efface.
+import './oauthReturn';
 
 /**
  * Client unique. Vaut `null` tant que le projet Supabase n'est pas renseigné,
