@@ -7,31 +7,11 @@ ne s'ouvre pas chez quelqu'un, l'autre marche.
 | Hébergeur | Adresse | Rôle |
 |---|---|---|
 | Cloudflare Pages | `https://tripora-3rg.pages.dev` | Premier déploiement |
-| Vercel | `https://tripora-git-claude-tripora-travel-pla-21567e-allabdels-projects.vercel.app` | Second déploiement, même code |
+| Vercel | `https://tripora.vercel.app` | Second déploiement, même code |
 
 Les deux construisent la branche `claude/tripora-travel-planning-app-r3pv5t` à
 chaque push, sans carte bancaire et sans quota qu'un groupe d'amis puisse
 atteindre.
-
-## L'adresse Vercel est longue, et pourquoi
-
-Vercel donne à chaque branche une adresse stable, mais réserve l'adresse
-courte — `tripora.vercel.app` — à la **branche de production**, réglée sur
-`main` à la création du projet. Or `main` ne contient qu'un README : l'adresse
-courte servirait donc une page vide, ce qui est pire qu'une adresse longue qui
-marche.
-
-Deux façons de récupérer l'adresse courte, au choix :
-
-1. **dans le tableau de bord Vercel** — Settings → Git → Production Branch →
-   `claude/tripora-travel-planning-app-r3pv5t`, puis redéployer. Dix secondes,
-   rien à changer dans le dépôt ;
-2. **en amenant le travail sur `main`**, qui redevient alors la branche de
-   référence du dépôt. C'est un choix de dépôt plus qu'un choix
-   d'hébergement — il change ce que voit quelqu'un qui arrive sur GitHub.
-
-En attendant, l'adresse longue est parfaitement fonctionnelle et se met à jour
-à chaque push, exactement comme le ferait la courte.
 
 ## Pourquoi deux
 
@@ -58,7 +38,18 @@ Depuis n'importe quel appareil :
 
 ## Configuration Vercel
 
-Tout est dans `vercel.json`, à la racine du dépôt :
+**La branche de production doit être `claude/tripora-travel-planning-app-r3pv5t`**
+(Settings → Git). Vercel propose `main` par défaut, et `main` ne contient qu'un
+README : laissé tel quel, `tripora.vercel.app` sert une page vide pendant que
+la branche réelle n'est qu'une préversion à l'adresse longue.
+
+La version de Node vient de `engines.node` dans le `package.json` de la racine,
+épinglée sur `22.x` — la même que l'intégration continue et que le poste de
+développement. Sans épinglage, Vercel prend la dernière version disponible, et
+un serveur de construction qui n'exécute pas la même chose que les tests est
+une source de surprises pour rien.
+
+Le reste est dans `vercel.json`, à la racine du dépôt :
 
 - `buildCommand` construit **uniquement** l'application web ; le moteur
   `@tripora/core` est un paquet du monorepo pnpm, résolu par le lien de
@@ -85,7 +76,7 @@ Une seule chose, et elle n'est pas automatisable : **Supabase → Authentication
 → URL Configuration → Redirect URLs**, ajouter
 
 ```
-https://tripora-git-claude-tripora-travel-pla-21567e-allabdels-projects.vercel.app/**
+https://tripora.vercel.app/**
 ```
 
 L'application demande à Google de la renvoyer sur `window.location.origin`,

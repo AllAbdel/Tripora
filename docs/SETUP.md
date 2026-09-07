@@ -84,7 +84,7 @@ donc d'abord créer le client OAuth chez Google.
      ```
      http://localhost:5173/**
      https://tripora-3rg.pages.dev/**
-     https://tripora-git-claude-tripora-travel-pla-21567e-allabdels-projects.vercel.app/**
+     https://tripora.vercel.app/**
      ```
 
 Le motif `/**` compte : l'application redirige vers `/voyages` après connexion,
