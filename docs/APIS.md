@@ -89,6 +89,36 @@ Tuiles vectorielles, sans clé, sans limite annoncée, attribution automatique.
 Repli possible sur Protomaps ou MapTiler. Google Maps et Mapbox exigent une
 carte bancaire : écartés d'emblée.
 
+### Villes — Photon, puis Nominatim
+
+Sans clé ni carte pour les deux. Photon d'abord : rapide, tolérant aux fautes
+de frappe, pensé pour la saisie au clavier. Nominatim en secours quand Photon
+ne répond pas ou ne trouve rien.
+
+C'est ce qui permet de chercher **n'importe quelle ville du monde** et pas
+seulement les cinquante-cinq du catalogue. Les deux populations ne servent pas
+à la même chose, et le code les sépare :
+
+| | Catalogue curé | Villes géocodées |
+|---|---|---|
+| Combien | 55 | toutes |
+| Ce qu'on en sait | notes assumées sur 8 axes, cherté, saisons | nom, pays, coordonnées |
+| « Surprends-nous » | oui : elles se comparent | non : rien à comparer |
+| « On sait déjà où aller » | oui | oui |
+| Lieux, carte, itinéraire | oui | oui, à l'identique |
+
+Une ville géocodée porte `discovered` et des notes **vides**, jamais des notes
+moyennes : « on ne sait pas » et « moyen partout » ne veulent pas dire la même
+chose, et la seconde fausserait un vote de groupe. C'est aussi pourquoi elle
+n'entre dans aucun classement — elle n'aurait rien à y défendre.
+
+Les recommandations, elles, ne demandent aucune note : la fonction `places`
+n'a besoin que d'une latitude et d'une longitude. Une ville découverte reçoit
+donc exactement les mêmes lieux réels qu'une ville du catalogue.
+
+Le nom d'une ville ne bougeant pas, le cache dure six mois et une recherche
+déjà faite par quelqu'un ne coûte rien à personne.
+
 ### Lieux — Overpass (OpenStreetMap), Wikipédia, Wikivoyage, Geoapify
 
 Sans clé pour les trois premiers, 3 000 requêtes par jour pour Geoapify.

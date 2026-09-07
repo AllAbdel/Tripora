@@ -44,6 +44,12 @@ export interface Destination {
   timezone?: string;
   imageUrl?: string;
   wikidataId?: string;
+  /**
+   * Vraie pour une ville venue du géocodage : coordonnées fiables, notes
+   * éditoriales inconnues. Elle sert à « on sait déjà où aller » et n'entre
+   * jamais dans un classement, faute de quoi comparer.
+   */
+  discovered?: boolean;
 }
 
 /** Normales climatiques d'un mois donné, issues d'Open-Meteo. Jamais de l'IA. */

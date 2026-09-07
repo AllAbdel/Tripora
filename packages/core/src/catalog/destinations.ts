@@ -1,6 +1,7 @@
 import { normalizeWeights, type PreferenceAxis } from '../preferences.js';
 import { fold } from '../text.js';
 import type { Destination } from '../types.js';
+import { findDiscovered } from './discovered.js';
 
 /**
  * Catalogue local de destinations.
@@ -272,5 +273,5 @@ export function searchDestinations(query: string, limit = 30): Destination[] {
 }
 
 export function findDestination(id: string): Destination | undefined {
-  return DESTINATIONS_BY_ID.get(id);
+  return DESTINATIONS_BY_ID.get(id) ?? findDiscovered(id);
 }

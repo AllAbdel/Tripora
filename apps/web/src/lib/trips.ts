@@ -1,6 +1,7 @@
 import {
   findDestination,
   normalizeWeights,
+  rememberDestination,
   type MemberPreference,
   type PreferenceAxis,
   type PreferenceWeights,
@@ -158,6 +159,51 @@ const localRepository: TripRepository = {
   },
 };
 
+/**
+ * Résout les villes découvertes avant d'afficher quoi que ce soit.
+ *
+ * Le catalogue curé est compilé dans l'application : il est là dès le premier
+ * rendu. Une ville venue du géocodage ne l'est pas — elle vit dans la base.
+ * Sans cette relecture, un voyage vers Kyoto rouvert le lendemain, ou ouvert
+ * par un autre membre du groupe, n'afficherait que son identifiant technique.
+ *
+ * Silencieux en cas d'échec : le voyage s'affiche sans son nom de destination,
+ * ce qui reste très au-dessus d'un écran vide.
+ */
+async function hydraterDecouvertes(
+  client: NonNullable<typeof supabase>,
+  ids: (string | null)[],
+): Promise<void> {
+  const manquantes = [...new Set(ids)].filter(
+    (id): id is string => typeof id === 'string' && id !== '' && !findDestination(id),
+  );
+  if (manquantes.length === 0) return;
+
+  const { data } = await client
+    .from('destinations')
+    .select('id, name, country, country_code, lat, lng, iata, tags, cost_index, poi_richness, best_months, timezone, image_url, discovered')
+    .in('id', manquantes);
+
+  for (const row of data ?? []) {
+    rememberDestination({
+      id: row.id as string,
+      name: row.name as string,
+      country: row.country as string,
+      countryCode: row.country_code as string,
+      lat: row.lat as number,
+      lng: row.lng as number,
+      iata: (row.iata ?? []) as string[],
+      tags: normalizeWeights((row.tags ?? {}) as Record<string, number>),
+      costIndex: Number(row.cost_index),
+      poiRichness: Number(row.poi_richness),
+      bestMonths: (row.best_months ?? []) as number[],
+      ...(row.timezone ? { timezone: row.timezone as string } : {}),
+      ...(row.image_url ? { imageUrl: row.image_url as string } : {}),
+      discovered: Boolean(row.discovered),
+    });
+  }
+}
+
 function supabaseRepository(client: NonNullable<typeof supabase>): TripRepository {
   return {
     kind: 'supabase',
@@ -169,6 +215,11 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
       if (error) throw error;
+
+      await hydraterDecouvertes(
+        client,
+        (data ?? []).map((row) => (row.destination_locked_id as string | null) ?? null),
+      );
 
       return (data ?? []).map((row) => {
         const lockedId = (row.destination_locked_id as string | null) ?? null;
@@ -202,6 +253,7 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
 
       const { data: session } = await client.auth.getUser();
       const lockedId = (data.destination_locked_id as string | null) ?? null;
+      await hydraterDecouvertes(client, [lockedId]);
 
       const preferences = (data.member_preferences ?? []) as {
         user_id: string;

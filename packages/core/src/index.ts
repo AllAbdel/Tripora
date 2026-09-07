@@ -13,6 +13,7 @@ export * from './cost.js';
 export * from './scoring.js';
 export * from './schemas.js';
 export * from './catalog/destinations.js';
+export * from './catalog/discovered.js';
 export * from './catalog/candidates.js';
 export * from './catalog/origins.js';
 export * from './transport.js';
