@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CalendarDays, Loader2, Lock, LockOpen, Map as MapIcon, MapPin, MessagesSquare, UserPlus, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Loader2, Lock, LockOpen, Map as MapIcon, MapPin, MessagesSquare, Smartphone, UserPlus, Users, Wallet } from 'lucide-react';
 import {
   estimateTransportOptions,
   findDestination,
@@ -213,6 +213,25 @@ export default function TripDetail() {
               </CardBody>
             </Card>
           </Link>
+
+          {/* Une fois la ville tranchée, l'encart d'aperçu tient déjà ce rôle,
+              et mieux : il montre les fiches au lieu d'y mener. */}
+          {!villeRetenue && (
+            <Link to={`/voyages/${data.summary.id}/applications`} className="block">
+              <Card className="transition-transform active:scale-[0.99]">
+                <CardBody className="flex items-center gap-3 p-4">
+                  <Smartphone className="text-brand-500 size-5 shrink-0" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">Applications utiles</span>
+                    <span className="text-muted block text-sm">
+                      À installer avant de partir, où que vous alliez
+                    </span>
+                  </span>
+                  <span className="text-muted shrink-0" aria-hidden>›</span>
+                </CardBody>
+              </Card>
+            </Link>
+          )}
 
           <Link to={`/voyages/${data.summary.id}/carte`} className="block">
             <Card className="transition-transform active:scale-[0.99]">
