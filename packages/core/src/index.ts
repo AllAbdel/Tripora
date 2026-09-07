@@ -33,3 +33,4 @@ export * from './text.js';
 export * from './links.js';
 export * from './ai/draft.js';
 export * from './ai/briefing.js';
+export * from './apps.js';

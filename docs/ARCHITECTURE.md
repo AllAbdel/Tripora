@@ -155,6 +155,27 @@ Trois choix de modélisation qui comptent :
 
 Le schéma complet et commenté : `supabase/migrations/0001_init.sql`.
 
+### Les applications recommandées
+
+`travel_apps` est la seule table du projet qui ne se rattache à aucun voyage :
+c'est un **catalogue partagé**, lu par tout le monde et écrit par presque
+personne. Trois portées cohabitent dans la même ligne — mondiale (les deux
+tableaux vides), par pays (`country_codes`), par ville (`destination_ids`) — et
+c'est `@tripora/core` qui les départage : le plus local d'abord, puis l'utilité
+déclarée. Le serveur ne sait pas où part le voyage, et n'a pas à le savoir.
+
+Deux règles gouvernent son contenu :
+
+- **une proposition n'est pas une publication.** N'importe quel membre peut
+  proposer une application ; elle entre en `pending`, n'est visible que de son
+  auteur, et attend qu'un administrateur (`app_admins`, désigné par adresse
+  e-mail pour pouvoir l'être avant sa première connexion) la publie ou l'écarte
+  avec une raison. Sans ce filtre, la liste se remplirait de parrainages, et
+  c'est la confiance dans ces conseils qui fait toute leur valeur ;
+- **les liens de magasin sont des recherches par nom**, jamais des
+  identifiants de fiche. Un identifiant inventé mène à une application
+  homonyme, ce qui est pire que pas de lien du tout.
+
 ## Le moteur de scoring
 
 Six facteurs, pondérés, chacun produisant une phrase en français :

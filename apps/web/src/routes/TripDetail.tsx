@@ -21,6 +21,7 @@ import { useGroupRealtime } from '@/lib/useGroupRealtime';
 import { useAuth } from '@/lib/auth-context';
 import { VoteBar } from '@/components/VoteBar';
 import { Reserver } from '@/components/Reserver';
+import { ApplicationsUtiles } from '@/components/ApplicationsUtiles';
 import { MeteoPrevue } from '@/components/MeteoPrevue';
 import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
 import { Assistant } from '@/components/Assistant';
@@ -259,6 +260,8 @@ export default function TripDetail() {
           {villeRetenue && (
             <Reserver constraints={data.constraints} destination={villeRetenue} />
           )}
+
+          {villeRetenue && id && <ApplicationsUtiles tripId={id} destination={villeRetenue} />}
 
           {proposals && proposals.scores.length > 0 && (
             <Assistant

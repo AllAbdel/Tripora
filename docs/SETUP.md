@@ -266,3 +266,23 @@ sans réseau et sans consommer de quota :
 Le script rejoue toutes les migrations sur un PostgreSQL local, avec une
 doublure du schéma `auth` de Supabase, puis vérifie qu'un intrus ne voit rien
 et que le scénario complet de collaboration se déroule correctement.
+
+## Devenir administrateur des applications recommandées
+
+Les fiches d'applications proposées par les membres attendent une relecture
+avant d'apparaître pour tout le monde. Qui peut relire est décidé par la table
+`app_admins`, qui contient déjà `abdelslam.allaouat.pro@gmail.com`.
+
+L'entrée « Modération » apparaît alors toute seule dans le profil, une fois
+connecté avec le compte Google portant cette adresse.
+
+Pour en ajouter un autre, depuis l'éditeur SQL de Supabase :
+
+```sql
+insert into public.app_admins (email) values ('quelquun@example.com');
+```
+
+La désignation se fait par **adresse e-mail** et non par identifiant de compte,
+pour qu'on puisse nommer un administrateur avant sa première connexion. La
+table n'est lisible par personne côté client : l'application demande au serveur
+« suis-je administrateur ? » et n'obtient qu'un oui ou un non, jamais la liste.

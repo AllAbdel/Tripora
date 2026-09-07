@@ -521,4 +521,97 @@ end $$;
 reset role;
 reset request.jwt.claims;
 
+-- ============================================================================
+-- Les applications recommandées : qui propose, qui publie.
+--
+-- C'est la seule table du projet dont l'écriture est ouverte à tout le monde.
+-- Elle doit donc résister à trois choses : une auto-publication, une
+-- modération par quelqu'un qui n'en a pas la charge, et la fuite de la liste
+-- des administrateurs — qui contient des adresses e-mail.
+-- ============================================================================
+
+-- Un membre ordinaire, sans charge de modération.
+set role authenticated;
+set request.jwt.claims =
+  '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","email":"chloe@example.com"}';
+
+do $$
+declare n int;
+begin
+  assert not public.is_app_admin(), 'Chloé ne modère rien';
+
+  -- Elle peut proposer, en attente et signée.
+  insert into public.travel_apps (id, name, category, tagline, why, status, submitted_by)
+  values ('essai-bitaksi', 'Essai', 'transport_local', 'Le taxi local.', 'Pas de négociation.',
+          'pending', auth.uid());
+
+  -- Publier directement doit être refusé par la politique d'insertion.
+  begin
+    insert into public.travel_apps (id, name, category, tagline, why, status, submitted_by)
+    values ('essai-triche', 'Triche', 'nourriture', 'x', 'y', 'published', auth.uid());
+    assert false, 'Un membre ne doit pas pouvoir publier directement';
+  exception when insufficient_privilege then null;
+  end;
+
+  -- Signer au nom de quelqu'un d'autre, non plus.
+  begin
+    insert into public.travel_apps (id, name, category, tagline, why, status, submitted_by)
+    values ('essai-usurpe', 'Usurpé', 'nourriture', 'x', 'y', 'pending',
+            '11111111-1111-1111-1111-111111111111');
+    assert false, 'Une proposition doit être signée de son auteur';
+  exception when insufficient_privilege then null;
+  end;
+
+  -- Modérer sans en avoir la charge ne lève rien : la ligne est simplement
+  -- hors de portée, ce qui est le comportement normal de la RLS.
+  update public.travel_apps set status = 'published' where id = 'essai-bitaksi';
+  get diagnostics n = row_count;
+  assert n = 0, format('Un membre ne modère pas (%s ligne(s) touchée(s))', n);
+
+  -- La liste des administrateurs ne fuit pas, même à un connecté.
+  select count(*) into n from public.app_admins;
+  assert n = 0, 'La liste des administrateurs ne doit pas être lisible';
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+-- Un autre membre ne voit pas une proposition encore en attente.
+set role authenticated;
+set request.jwt.claims =
+  '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated","email":"sami@example.com"}';
+
+do $$
+declare n int;
+begin
+  select count(*) into n from public.travel_apps where id = 'essai-bitaksi';
+  assert n = 0, 'Une proposition en attente ne regarde que son auteur';
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+-- L'administrateur, désigné par son adresse — la casse ne doit rien changer.
+set role authenticated;
+set request.jwt.claims =
+  '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","email":"ABDELSLAM.ALLAOUAT.PRO@GMAIL.COM"}';
+
+do $$
+declare n int; etat text;
+begin
+  assert public.is_app_admin(), 'L''adresse administratrice doit être reconnue quelle qu''en soit la casse';
+
+  select count(*) into n from public.travel_apps where id = 'essai-bitaksi';
+  assert n = 1, 'L''administrateur voit ce qui attend';
+
+  update public.travel_apps set status = 'published' where id = 'essai-bitaksi';
+  select status into etat from public.travel_apps where id = 'essai-bitaksi';
+  assert etat = 'published', format('Publication attendue, obtenu %s', etat);
+
+  delete from public.travel_apps where id = 'essai-bitaksi';
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
 select '✅ Tous les tests RLS sont passés' as resultat;
