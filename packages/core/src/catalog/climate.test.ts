@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { climateFor, climateYear, hasClimate } from './climate.js';
+import { climateFor, climateFromSeries, climateYear, hasClimate } from './climate.js';
 import { DESTINATIONS } from './destinations.js';
 
 describe('normales climatiques', () => {
@@ -72,5 +72,26 @@ describe('normales climatiques', () => {
 
     const marrakechAout = climateFor('marrakech', 8)!;
     expect(marrakechAout.avgHighC).toBeGreaterThan(36);
+  });
+  it('décode une série relevée ailleurs exactement comme les siennes', () => {
+    // Le catalogue compte cinq cents villes ; leurs normales sont relevées côté
+    // serveur et relues par l'application. Un second décodage finirait par
+    // diverger d'un mois : c'est la même fonction qui sert aux deux.
+    const serie = Array.from({ length: 36 }, (_, index) => index);
+    expect(climateFromSeries(serie, 1)).toEqual({
+      month: 1, avgHighC: 0, avgLowC: 1, rainyDays: 2,
+    });
+    expect(climateFromSeries(serie, 12)).toEqual({
+      month: 12, avgHighC: 33, avgLowC: 34, rainyDays: 35,
+    });
+  });
+
+  it('refuse une série absente, tronquée ou un mois hors calendrier', () => {
+    const serie = Array.from({ length: 36 }, () => 10);
+    expect(climateFromSeries(undefined, 6)).toBeUndefined();
+    expect(climateFromSeries(serie, 0)).toBeUndefined();
+    expect(climateFromSeries(serie, 13)).toBeUndefined();
+    // Une série trop courte décalerait les mois sans prévenir : mieux vaut rien.
+    expect(climateFromSeries([1, 2, 3], 12)).toBeUndefined();
   });
 });

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Field, TextInput } from '@/components/ui/Field';
 import { LieuxSuggeres } from '@/components/LieuxSuggeres';
+import { EpinglesDuGroupe } from '@/components/EpinglesDuGroupe';
 import { MoneyInput } from '@/components/ui/MoneyInput';
 import { getTripRepository } from '@/lib/trips';
 import {
@@ -193,6 +194,7 @@ export default function TripItinerary() {
       title: string;
       startTime: string;
       cost: string;
+      notes: string | null;
       voisins: ItineraryItem[];
     }) => {
       const heure = entree.startTime || null;
@@ -201,7 +203,9 @@ export default function TripItinerary() {
         title: entree.title.trim(),
         startTime: heure,
         costCents: entree.cost ? parseAmountToCents(entree.cost) : 0,
-        notes: null,
+        // L'adresse d'une épingle suit l'élément : c'est ce qu'on cherche une
+        // fois sur place, et la retaper serait la première chose oubliée.
+        notes: entree.notes,
         ...(position !== undefined ? { position } : {}),
       });
     },
@@ -379,6 +383,7 @@ export default function TripItinerary() {
               <Journee
                 key={jour.id}
                 jour={jour}
+                tripId={id!}
                 destination={destination}
                 meteo={jour.date ? meteoParJour.get(jour.date) : undefined}
                 members={voyage.data?.members ?? []}
@@ -414,6 +419,7 @@ export default function TripItinerary() {
 
 function Journee({
   jour,
+  tripId,
   destination,
   meteo,
   members,
@@ -425,6 +431,7 @@ function Journee({
   onDeplacer,
 }: {
   jour: ItineraryDayView;
+  tripId: string;
   /** Absente tant que le groupe n'a pas tranché : pas de lieux à proposer. */
   destination: Destination | undefined;
   /** La prévision de ce jour-là, si le départ est assez proche. */
@@ -432,7 +439,12 @@ function Journee({
   members: readonly MemberPreference[];
   enAjout: boolean;
   onOuvrirAjout: () => void;
-  onAjouter: (valeurs: { title: string; startTime: string; cost: string }) => void;
+  onAjouter: (valeurs: {
+    title: string;
+    startTime: string;
+    cost: string;
+    notes: string | null;
+  }) => void;
   ajoutEnCours: boolean;
   onSupprimer: (itemId: string) => void;
   onDeplacer: (item: ItineraryItem, sens: -1 | 1) => void;
@@ -440,6 +452,7 @@ function Journee({
   const [titre, setTitre] = useState('');
   const [heure, setHeure] = useState('');
   const [cout, setCout] = useState('');
+  const [note, setNote] = useState<string | null>(null);
 
   const total = jour.items.reduce((somme, item) => somme + item.costCents, 0);
 
@@ -543,11 +556,23 @@ function Journee({
                 <X className="size-4" aria-hidden />
               </BoutonIcone>
             </div>
+            <EpinglesDuGroupe
+              tripId={tripId}
+              dejaAuProgramme={jour.items.map((item) => item.title)}
+              onChoisir={(epingle) => {
+                setTitre(epingle.label);
+                setNote(epingle.address ?? epingle.url);
+              }}
+            />
+
             {destination && (
               <LieuxSuggeres
                 destination={destination}
                 members={members}
-                onChoisir={(lieu: Poi) => setTitre(lieu.name)}
+                onChoisir={(lieu: Poi) => {
+                  setTitre(lieu.name);
+                  setNote(null);
+                }}
               />
             )}
 
@@ -583,10 +608,11 @@ function Journee({
               disabled={titre.trim().length === 0}
               loading={ajoutEnCours}
               onClick={() => {
-                onAjouter({ title: titre, startTime: heure, cost: cout });
+                onAjouter({ title: titre, startTime: heure, cost: cout, notes: note });
                 setTitre('');
                 setHeure('');
                 setCout('');
+                setNote(null);
               }}
             >
               Ajouter

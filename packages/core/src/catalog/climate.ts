@@ -79,9 +79,19 @@ const NORMALES: Record<string, readonly number[]> = {
   zurich: [5,-1,14, 8,0,10, 12,2,15, 14,4,14, 18,9,17, 25,14,14, 25,15,18, 25,16,12, 20,12,14, 16,8,13, 8,2,14, 5,0,13],
 };
 
-/** Normales d'un mois donné (1 = janvier), ou rien si la ville est inconnue. */
-export function climateFor(destinationId: string, month: number): MonthlyClimate | undefined {
-  const serie = NORMALES[destinationId];
+/**
+ * Décode un mois dans une série compacte de trente-six nombres.
+ *
+ * Exporté parce que ces séries ne viennent plus toutes d'ici : le catalogue
+ * compte cinq cents villes, et leurs normales sont relevées côté serveur puis
+ * lues par l'application. Une seule fonction de décodage garantit que la ville
+ * embarquée et la ville relue de la base se lisent de la même façon — deux
+ * décodages finiraient par diverger d'un mois.
+ */
+export function climateFromSeries(
+  serie: readonly number[] | undefined,
+  month: number,
+): MonthlyClimate | undefined {
   if (!serie || month < 1 || month > 12) return undefined;
   const base = (month - 1) * 3;
   const avgHighC = serie[base];
@@ -89,6 +99,11 @@ export function climateFor(destinationId: string, month: number): MonthlyClimate
   const rainyDays = serie[base + 2];
   if (avgHighC === undefined || avgLowC === undefined || rainyDays === undefined) return undefined;
   return { month, avgHighC, avgLowC, rainyDays };
+}
+
+/** Normales d'un mois donné (1 = janvier), ou rien si la ville est inconnue. */
+export function climateFor(destinationId: string, month: number): MonthlyClimate | undefined {
+  return climateFromSeries(NORMALES[destinationId], month);
 }
 
 /** Les douze mois d'une destination, pour montrer quand y aller. */

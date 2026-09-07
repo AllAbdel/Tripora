@@ -1,7 +1,14 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { buildProposals, selectCandidates, type ProposalResult } from '@tripora/core';
+import {
+  buildProposals,
+  selectCandidates,
+  targetMonth,
+  type Destination,
+  type ProposalResult,
+} from '@tripora/core';
 import { chargerPrixVols, moisCible, type PrixVols } from './flightPrices';
+import { chargerNormales, sourceClimat } from './climate';
 import type { TripDetails } from './trips';
 
 /** Nombre de candidates étudiées, et nombre finalement présentées. */
@@ -45,15 +52,31 @@ export function useProposals(details: TripDetails | null | undefined): {
     staleTime: 60 * 60 * 1000,
   });
 
+  // Les normales relevées ne changent pas d'un mois à l'autre : une requête,
+  // gardée très longtemps, pour les seules candidates étudiées.
+  const normales = useQuery({
+    queryKey: ['normales', candidates.map((d) => d.id).join(',')],
+    queryFn: () => chargerNormales(candidates),
+    enabled: candidates.length > 0,
+    staleTime: 30 * 24 * 60 * 60 * 1000,
+  });
+
   const proposals = useMemo(() => {
     if (!details) return null;
     const releves = prix.data?.parDestination;
+    // `moisCible` sert les prix de vol et rend « 2026-10 » ; le climat veut le
+    // numéro du mois, que le moteur calcule déjà de son côté.
+    const climat = sourceClimat(normales.data ?? new Map(), targetMonth(details.constraints));
+    const sources = {
+      ...(releves ? { transportPrice: (d: Destination) => releves[d.id] } : {}),
+      ...(climat ? { climate: climat } : {}),
+    };
     return buildProposals(details.constraints, details.members, {
       limit: ETUDIEES,
       keep: PRESENTEES,
-      ...(releves ? { sources: { transportPrice: (d) => releves[d.id] } } : {}),
+      ...(Object.keys(sources).length > 0 ? { sources } : {}),
     });
-  }, [details, prix.data]);
+  }, [details, prix.data, normales.data]);
 
   return { proposals, prix: prix.data, prixEnCours: prix.isLoading };
 }
