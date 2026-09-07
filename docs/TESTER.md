@@ -7,7 +7,16 @@ corriger vite.
 Compte environ dix minutes. Prévois **deux fenêtres** : ton navigateur normal,
 et une fenêtre de navigation privée qui jouera le rôle d'un ami.
 
-Adresse du site : **https://tripora-3rg.pages.dev**
+Deux adresses, le même code, mises à jour à chaque push. Si l'une ne s'ouvre
+pas chez toi, essaie l'autre — c'est exactement pour ça qu'il y en a deux
+(voir [HEBERGEMENT.md](HEBERGEMENT.md)).
+
+- **Cloudflare** : https://tripora-3rg.pages.dev
+- **Vercel** : https://tripora-git-claude-tripora-travel-pla-21567e-allabdels-projects.vercel.app
+
+Si aucune des deux ne s'ouvre, ce n'est pas le serveur : essaie en navigation
+privée, puis en données mobiles plutôt qu'en Wi-Fi. Si les données mobiles
+marchent et pas le Wi-Fi, c'est le DNS de la box — passe-la sur `1.1.1.1`.
 (pas les adresses en `b0a5cccd.*`, qui sont figées sur un ancien déploiement)
 
 ---
