@@ -53,6 +53,12 @@ L'équivalent Cloudflare est `apps/web/public/_redirects`. Les deux fichiers
 disent la même chose dans deux langues différentes ; changer l'un sans l'autre
 casse les liens d'invitation sur un seul des deux hébergeurs.
 
+`installCommand` porte `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` : Playwright est
+une dépendance de développement du dépôt, et son script d'installation
+télécharge sans ça une centaine de mégaoctets de navigateurs à chaque
+construction. Le serveur de construction n'exécute aucun test de navigateur —
+c'est `pnpm smoke`, en local, qui s'en charge.
+
 Aucune variable d'environnement à saisir : `apps/web/.env` est versionné et ne
 contient que des valeurs publiques par conception — l'URL Supabase et la clé
 anonyme, qui n'ouvrent que ce que les politiques RLS autorisent. Les vrais
