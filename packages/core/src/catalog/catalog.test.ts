@@ -66,8 +66,19 @@ describe('intégrité du catalogue', () => {
   });
 
   it('propose un choix assez large pour que la comparaison ait un sens', () => {
-    expect(DESTINATIONS.length).toBeGreaterThanOrEqual(40);
-    expect(new Set(DESTINATIONS.map((d) => d.countryCode)).size).toBeGreaterThanOrEqual(15);
+    expect(DESTINATIONS.length).toBeGreaterThanOrEqual(480);
+    expect(new Set(DESTINATIONS.map((d) => d.countryCode)).size).toBeGreaterThanOrEqual(100);
+  });
+
+  it('sort de l’Europe, sinon « surprends-nous » ne surprend personne', () => {
+    // Un catalogue tout européen ramènerait toujours les mêmes vingt villes
+    // dès qu'on part plus d'une semaine. On vérifie que chaque continent
+    // habité pèse assez pour qu'un long séjour ait de quoi choisir.
+    const parZone = (test: (d: (typeof DESTINATIONS)[number]) => boolean) =>
+      DESTINATIONS.filter(test).length;
+    expect(parZone((d) => d.lat < 0), 'hémisphère sud').toBeGreaterThanOrEqual(40);
+    expect(parZone((d) => d.lng > 60), 'Asie-Océanie').toBeGreaterThanOrEqual(60);
+    expect(parZone((d) => d.lng < -30), 'Amériques').toBeGreaterThanOrEqual(50);
   });
 
   it('se retrouve par identifiant', () => {
@@ -101,7 +112,7 @@ describe('présélection des candidates', () => {
 
   it('écarte ce qui dépasse déjà le budget avant même le transport', () => {
     // Limite haute : on veut mesurer le filtre, pas le plafond de résultats.
-    const all = { limit: 100 };
+    const all = { limit: 1000 };
     const serre = selectCandidates(constraints({ budgetPerPersonCents: 25_000 }), all);
     const large = selectCandidates(constraints({ budgetPerPersonCents: 200_000 }), all);
     expect(serre.length).toBeLessThan(large.length);

@@ -25,8 +25,12 @@ describe('villes de départ', () => {
   });
 
   it('remonte d’abord les villes qui commencent par la saisie', () => {
-    // « or » est dans Bordeaux et dans Orléans : Orléans doit passer devant.
-    expect(searchOrigins('or')[0]?.name).toBe('Orléans');
+    // « or » ouvre Oran et Orléans, mais n'est qu'au milieu de Bordeaux : les
+    // deux premières doivent passer devant, quel que soit leur ordre entre
+    // elles. Nommer la gagnante rendrait le test otage du catalogue.
+    const noms = searchOrigins('or', 30).map((place) => place.name);
+    expect(noms[0]).toMatch(/^Or/);
+    expect(noms.indexOf('Orléans')).toBeLessThan(noms.indexOf('Bordeaux'));
   });
 
   it('propose quelque chose même sur une saisie vide', () => {

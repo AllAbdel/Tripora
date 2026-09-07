@@ -3,10 +3,25 @@ import { climateFor, climateYear, hasClimate } from './climate.js';
 import { DESTINATIONS } from './destinations.js';
 
 describe('normales climatiques', () => {
-  it('couvre les douze mois de chaque destination du catalogue', () => {
+  it('donne douze mois ou aucun, jamais une année à trous', () => {
+    // Une année incomplète ferait dire n'importe quoi à la note de climat : le
+    // mois manquant passerait pour « pas de données » sur une ville qui en a.
     for (const destination of DESTINATIONS) {
-      expect(hasClimate(destination.id), destination.id).toBe(true);
-      expect(climateYear(destination.id), destination.id).toHaveLength(12);
+      const annee = climateYear(destination.id);
+      expect(annee.length === 0 || annee.length === 12, destination.id).toBe(true);
+      expect(hasClimate(destination.id), destination.id).toBe(annee.length === 12);
+    }
+  });
+
+  it('garde des normales mesurées sur le noyau du catalogue', () => {
+    // Ces chiffres viennent des archives Open-Meteo, ville par ville : ils ne
+    // s'inventent pas, et le catalogue s'étend plus vite qu'on ne les relève.
+    // Une ville sans normales retombe sur `bestMonths`, un jugement humain
+    // assumé — la note de climat pèse 10 %, le reste du score est intact.
+    const mesurees = DESTINATIONS.filter((destination) => hasClimate(destination.id));
+    expect(mesurees.length).toBeGreaterThanOrEqual(55);
+    for (const ville of ['lisbonne', 'seville', 'budapest', 'istanbul', 'reykjavik']) {
+      expect(hasClimate(ville), ville).toBe(true);
     }
   });
 
@@ -31,8 +46,13 @@ describe('normales climatiques', () => {
   });
 
   it('place l’été au bon endroit de l’année dans l’hémisphère nord', () => {
-    // Tout le catalogue est au nord : juillet doit y être plus chaud que janvier.
-    for (const destination of DESTINATIONS) {
+    // Le catalogue descend sous l'équateur : la règle ne vaut qu'au nord, où
+    // l'inverser signalerait des mois décalés à la saisie.
+    const nord = DESTINATIONS.filter(
+      (destination) => destination.lat > 0 && hasClimate(destination.id),
+    );
+    expect(nord.length).toBeGreaterThan(40);
+    for (const destination of nord) {
       const janvier = climateFor(destination.id, 1)!;
       const juillet = climateFor(destination.id, 7)!;
       expect(juillet.avgHighC, destination.id).toBeGreaterThan(janvier.avgHighC);

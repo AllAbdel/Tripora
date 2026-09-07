@@ -49,7 +49,10 @@ describe('villes découvertes', () => {
     rememberDestination(makeDiscovered(KYOTO));
     // Le classement des propositions et la recherche du catalogue ne lisent que
     // les villes notées : une ville sans notes n'a rien à y défendre.
-    expect(searchDestinations('Kyoto', 30)).toEqual([]);
+    // Kyoto figure aussi au catalogue curé : ce qui compte est que l'entrée
+    // découverte, elle, n'y apparaisse jamais — sinon une ville sans notes
+    // entrerait dans un classement.
+    expect(searchDestinations('Kyoto', 30).some((v) => v.id === KYOTO.id)).toBe(false);
     const candidates = selectCandidates({
       participants: 2,
       origin: { name: 'Paris', lat: 48.8566, lng: 2.3522 },

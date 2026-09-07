@@ -6,8 +6,8 @@ import {
   estimateTransportOptions,
 } from './transport.js';
 import { normalizeWeights } from './preferences.js';
-import { findDestination } from './catalog/destinations.js';
-import { climateFor } from './catalog/climate.js';
+import { DESTINATIONS, findDestination } from './catalog/destinations.js';
+import { climateFor, hasClimate } from './catalog/climate.js';
 import { scoreDestination, type ScoreContext } from './scoring.js';
 import type { MemberPreference, TripConstraints } from './types.js';
 
@@ -112,8 +112,12 @@ describe('construction des propositions', () => {
       provider: 'Aviasales',
       fetchedAt: new Date().toISOString(),
     };
+    // Le lot est figé : ce qu'on teste est qu'un prix relevé l'emporte sur une
+    // estimation, pas que Lisbonne survive au classement d'un catalogue qui
+    // grandit.
     const result = buildProposals(constraints(), groupe, {
       sources: { transportPrice: (d) => (d.id === 'lisbonne' ? releve : undefined) },
+      catalog: ['lisbonne', 'porto', 'barcelone', 'rome'].map((id) => findDestination(id)!),
       limit: 40,
       keep: 40,
     });
@@ -151,7 +155,14 @@ describe('construction des propositions', () => {
   });
 
   it('note le climat sur les normales embarquées, sans source injectée', () => {
-    const result = buildProposals(constraints({ month: 7 }), groupe, { keep: 6 });
+    // Restreint aux villes dont les normales sont relevées : c'est d'elles que
+    // parle ce test. Le catalogue en compte d'autres, sans normales, qui
+    // retombent volontairement sur `bestMonths`.
+    const result = buildProposals(constraints({ month: 7 }), groupe, {
+      catalog: DESTINATIONS.filter((d) => hasClimate(d.id)),
+      keep: 6,
+    });
+    expect(result.scores.length).toBeGreaterThan(0);
     for (const score of result.scores) {
       const climat = score.factors.find((f) => f.key === 'climate')!;
       // Sans normales, on retomberait sur `bestMonths` et ses phrases toutes

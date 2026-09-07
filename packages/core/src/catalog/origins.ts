@@ -60,8 +60,13 @@ const VOISINS: Place[] = [
 export const ORIGINS: readonly Place[] = [
   ...FRANCE,
   ...VOISINS,
+  // Une ville peut être à la fois un départ et une destination : Toulouse se
+  // visite autant qu'on en part. La fiche écrite à la main fait foi — elle
+  // porte les codes d'aéroport utiles au départ, pas seulement à l'arrivée.
   ...DESTINATIONS.filter(
-    (destination) => !FRANCE.some((city) => city.name === destination.name),
+    (destination) =>
+      !FRANCE.some((city) => city.name === destination.name) &&
+      !VOISINS.some((city) => city.name === destination.name),
   ).map<Place>((destination) => ({
     name: destination.name,
     country: destination.country,
