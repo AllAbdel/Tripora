@@ -75,8 +75,12 @@ export default function CreateTrip() {
       navigate(`/voyages/${id}`);
     } catch (cause) {
       const failure = toFailure(cause);
+      // Un message métier explicite vaut mieux que la traduction générique ;
+      // à défaut, la piste d'action compte autant que le constat.
       setError(
-        cause instanceof Error && cause.message ? cause.message : failure.message,
+        cause instanceof Error && cause.message
+          ? cause.message
+          : [failure.message, failure.hint].filter(Boolean).join(' '),
       );
     } finally {
       setSaving(false);

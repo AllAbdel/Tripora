@@ -80,6 +80,31 @@ const MESSAGES: Record<FailureKind, Omit<Failure, 'kind'>> = {
 const NETWORK_SIGNATURE =
   /failed to fetch|fetch failed|load failed|networkerror|network request failed|err_(internet|network|connection)/i;
 
+/**
+ * Codes de Postgres et de PostgREST.
+ *
+ * supabase-js ne transporte pas de `status` : une erreur de base arrive comme
+ * un objet nu `{ message, details, hint, code }`. Sans cette table, la moindre
+ * de ces erreurs retombait sur « une erreur inattendue est survenue » — un
+ * message qui n'apprend rien, et qui a rendu muet un refus de politique RLS
+ * sur la création de voyage.
+ */
+const CODES: Record<string, FailureKind> = {
+  '42501': 'forbidden', // ligne refusée par une politique RLS
+  '23505': 'conflict', // doublon sur une contrainte d'unicité
+  '23503': 'notFound', // référence vers une ligne qui n'existe pas
+  '28000': 'unauthenticated', // connexion requise, levée par nos fonctions SQL
+  PGRST116: 'notFound', // .single() n'a trouvé aucune ligne
+  PGRST301: 'unauthenticated', // jeton absent ou expiré
+};
+
+function codeOf(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    return String((error as { code: unknown }).code);
+  }
+  return '';
+}
+
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === 'object' && error !== null && 'message' in error) {
@@ -101,6 +126,9 @@ export function toFailure(error: unknown): Failure {
   if (NETWORK_SIGNATURE.test(messageOf(error))) {
     return { kind: 'unreachable', ...MESSAGES.unreachable };
   }
+
+  const parCode = CODES[codeOf(error)];
+  if (parCode) return { kind: parCode, ...MESSAGES[parCode] };
 
   const status =
     typeof error === 'object' && error !== null && 'status' in error

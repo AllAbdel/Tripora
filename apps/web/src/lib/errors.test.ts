@@ -67,4 +67,26 @@ describe('traduction des pannes', () => {
     expect(failure.kind).toBe('unknown');
     expect(failure.message).toBeTruthy();
   });
+  it('lit le code des erreurs de base, qui n’ont pas de statut', () => {
+    vi.stubGlobal('navigator', { onLine: true });
+    // Forme réelle d'une PostgrestError : aucun `status`, seulement un `code`.
+    // Sans lui, un refus de politique RLS passait pour « erreur inattendue ».
+    const refus = toFailure({
+      message: 'new row violates row-level security policy for table "trips"',
+      code: '42501',
+      details: null,
+      hint: null,
+    });
+    expect(refus.kind).toBe('forbidden');
+    expect(refus.message).not.toMatch(/inattendue/i);
+
+    expect(toFailure({ message: '', code: '23505' }).kind).toBe('conflict');
+    expect(toFailure({ message: '', code: 'PGRST116' }).kind).toBe('notFound');
+    expect(toFailure({ message: '', code: '28000' }).kind).toBe('unauthenticated');
+  });
+
+  it('ne prend pas un code vide pour un diagnostic', () => {
+    vi.stubGlobal('navigator', { onLine: true });
+    expect(toFailure({ message: 'bizarre', code: '' }).kind).toBe('unknown');
+  });
 });
