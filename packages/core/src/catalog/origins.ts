@@ -1,6 +1,7 @@
 import { DESTINATIONS } from './destinations.js';
 import { fold } from '../text.js';
-import type { Place } from '../types.js';
+import { haversineKm } from '../geo.js';
+import type { GeoPoint, Place } from '../types.js';
 
 /**
  * Points de départ proposés.
@@ -91,3 +92,40 @@ export function searchOrigins(query: string, limit = 8): Place[] {
     .slice(0, limit);
 }
 
+
+/** Ce qui dessert un point de départ trouvé ailleurs que dans cette liste. */
+export interface AeroportsProches {
+  iata: string[];
+  /** La ville qui porte ces aéroports, pour pouvoir le dire. */
+  ville: string;
+  km: number;
+}
+
+/**
+ * Les aéroports qui desservent un point quelconque.
+ *
+ * Une ville trouvée par géocodage n'a pas de code IATA, et sans code aucun
+ * prix de vol ne peut être relevé : tout le classement retomberait sur des
+ * estimations sans que personne comprenne pourquoi. On rattache donc le point
+ * aux aéroports de la ville connue la plus proche.
+ *
+ * Ce n'est pas une approximation cachée : la ville de rattachement est
+ * renvoyée pour être affichée. « Partir de Colmar, vols au départ de Bâle » se
+ * vérifie ; « vols au départ de Colmar » serait faux.
+ *
+ * Au-delà du rayon, rien : mieux vaut pas de prix qu'un prix relevé à quatre
+ * cents kilomètres de là où l'on est.
+ */
+export function nearestAirports(point: GeoPoint, maxKm = 150): AeroportsProches | undefined {
+  let meilleure: AeroportsProches | undefined;
+
+  for (const ville of ORIGINS) {
+    if (!ville.iata || ville.iata.length === 0) continue;
+    const km = haversineKm(point, ville);
+    if (km > maxKm) continue;
+    if (!meilleure || km < meilleure.km) {
+      meilleure = { iata: [...ville.iata], ville: ville.name, km: Math.round(km) };
+    }
+  }
+  return meilleure;
+}
