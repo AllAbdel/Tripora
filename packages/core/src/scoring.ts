@@ -1,7 +1,9 @@
 import { estimateTripCost, type CostInput } from './cost.js';
 import { targetMonth } from './dates.js';
 import { estimateTravelMinutes, haversineKm } from './geo.js';
-import { PREFERENCE_AXES, AXIS_LABELS_FR, type PreferenceWeights } from './preferences.js';
+import {
+  PREFERENCE_AXES, AXIS_LABELS_FR, groupWeights, type PreferenceWeights,
+} from './preferences.js';
 import type { PricedValue } from './freshness.js';
 import type {
   Destination,
@@ -322,19 +324,16 @@ function describePreferenceMatch(
   destination: Destination,
   members: readonly MemberPreference[],
 ): string {
-  const groupWeights = PREFERENCE_AXES.map((axis) => {
-    const total = members.reduce((acc, member) => acc + member.weights[axis], 0);
-    return { axis, weight: members.length > 0 ? total / members.length : 0 };
-  })
-    .filter((entry) => entry.weight >= 0.3)
-    .sort((a, b) => b.weight - a.weight)
+  const envies = groupWeights(members);
+  const fortes = PREFERENCE_AXES.filter((axis) => (envies[axis] ?? 0) >= 0.3)
+    .sort((a, b) => envies[b]! - envies[a]!)
     .slice(0, 2);
 
-  if (groupWeights.length === 0) return 'Aucune envie précise renseignée par le groupe';
+  if (fortes.length === 0) return 'Aucune envie précise renseignée par le groupe';
 
-  const parts = groupWeights.map((entry) => {
-    const note = Math.round(destination.tags[entry.axis] * 10);
-    return `${AXIS_LABELS_FR[entry.axis].toLowerCase()} ${note}/10`;
+  const parts = fortes.map((axis) => {
+    const note = Math.round(destination.tags[axis] * 10);
+    return `${AXIS_LABELS_FR[axis].toLowerCase()} ${note}/10`;
   });
   return `Sur vos priorités : ${parts.join(', ')}`;
 }
