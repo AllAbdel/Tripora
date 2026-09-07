@@ -79,6 +79,22 @@ télécharge sans ça une centaine de mégaoctets de navigateurs à chaque
 construction. Le serveur de construction n'exécute aucun test de navigateur —
 c'est `pnpm smoke`, en local, qui s'en charge.
 
+## Ce qu'il faut faire pour chaque nouvelle adresse
+
+Une seule chose, et elle n'est pas automatisable : **Supabase → Authentication
+→ URL Configuration → Redirect URLs**, ajouter
+
+```
+https://tripora-git-claude-tripora-travel-pla-21567e-allabdels-projects.vercel.app/**
+```
+
+L'application demande à Google de la renvoyer sur `window.location.origin`,
+et Supabase refuse toute adresse absente de cette liste. Sans cette ligne, la
+connexion Google échoue silencieusement sur cette adresse-là — on revient à
+l'écran de connexion — pendant que le mode local et les codes d'invitation
+continuent de marcher. Le symptôme ressemble à un bug de l'application ; ce
+n'en est pas un.
+
 Aucune variable d'environnement à saisir : `apps/web/.env` est versionné et ne
 contient que des valeurs publiques par conception — l'URL Supabase et la clé
 anonyme, qui n'ouvrent que ce que les politiques RLS autorisent. Les vrais

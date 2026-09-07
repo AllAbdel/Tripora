@@ -78,12 +78,23 @@ donc d'abord créer le client OAuth chez Google.
    secret dans « Client Secret ». Le champ « Callback URL » y est en lecture
    seule : c'est celui que vous venez de coller chez Google.
 6. **Authentication → URL Configuration** :
-   - *Site URL* : l'URL de votre site Pages
-   - *Redirect URLs* : `http://localhost:5173/**` et
-     `https://VOTRE-SITE.pages.dev/**`
+   - *Site URL* : l'adresse principale du site
+   - *Redirect URLs* : **une ligne par adresse d'où l'on se connecte**
+
+     ```
+     http://localhost:5173/**
+     https://tripora-3rg.pages.dev/**
+     https://tripora-git-claude-tripora-travel-pla-21567e-allabdels-projects.vercel.app/**
+     ```
 
 Le motif `/**` compte : l'application redirige vers `/voyages` après connexion,
 et vers `/rejoindre/CODE` quand on arrive par une invitation.
+
+⚠️ **Une adresse absente de cette liste casse la connexion Google, et elle
+seule.** Le retour de Google est refusé par Supabase et on revient à l'écran de
+connexion sans explication. Le mode local et l'entrée par code d'invitation
+continuent de fonctionner — ce qui rend le symptôme trompeur. Chaque nouvel
+hébergeur ajoute donc une ligne ici.
 
 ### 3. Clés serveur dans Supabase (environ 2 minutes)
 
