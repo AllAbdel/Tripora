@@ -89,6 +89,39 @@ Tuiles vectorielles, sans clé, sans limite annoncée, attribution automatique.
 Repli possible sur Protomaps ou MapTiler. Google Maps et Mapbox exigent une
 carte bancaire : écartés d'emblée.
 
+### Climat — Open-Meteo, deux choses à ne pas confondre
+
+Sans clé ni carte. Deux usages distincts, souvent mélangés :
+
+| | Normales climatiques | Météo prévue |
+|---|---|---|
+| Répond à | « Il fait bon à Izmir en octobre ? » | « Il pleut jeudi ? » |
+| Portée | toute l'année, chaque ville | seize jours au plus |
+| Sert à | comparer et classer les destinations | organiser les journées de l'itinéraire |
+| Source | archives 2023-2025, moyennées | prévisions du jour |
+
+Une prévision ne peut pas départager des destinations pour un départ dans six
+mois : elle n'existe pas encore. C'est pourquoi le classement repose sur des
+**normales mesurées**, et pas sur la météo du moment.
+
+La fonction `climate-normals` relève ces normales pour les cinq cents villes —
+trois années complètes, moyennées mois par mois, un jour de pluie comptant à
+partir d'un millimètre — et les range dans `destinations.climate` au format
+compact : douze triplets [maximum, minimum, jours de pluie]. L'application les
+charge pour les seules candidates étudiées, en une requête gardée un mois.
+
+Deux refus assumés dans le relevé : une **année à trous n'est jamais écrite**
+— un mois manquant passerait pour « pas de données » sur une ville qui en a —
+et **rien n'est réécrit**, ce qui rend l'appel rejouable sans gaspiller de
+quota.
+
+Les normales de cinquante-cinq villes restent écrites dans
+`packages/core/src/catalog/climate.ts`. Elles servent de repli hors ligne :
+sans réseau, un classement se calcule encore. Le même décodeur lit les deux
+sources, sans quoi les mois finiraient par se décaler entre elles. Les valeurs
+relevées reproduisent exactement celles écrites à la main — Séville à 37 °C en
+juillet, Lisbonne à 29 — ce qui a servi de contrôle.
+
 ### Villes — Photon, puis Nominatim
 
 Sans clé ni carte pour les deux. Photon d'abord : rapide, tolérant aux fautes

@@ -64,7 +64,7 @@ export default function TripDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trip'] }),
   });
 
-  const { proposals, prix, prixEnCours } = useProposals(data);
+  const { proposals, prix, prixEnCours, normales } = useProposals(data);
 
   const villeRetenue = data?.lockedDestinationId
     ? findDestination(data.lockedDestinationId)
@@ -324,6 +324,7 @@ export default function TripDetail() {
                         rank={index + 1}
                         destination={destination}
                         score={score}
+                        normalesAnnee={normales.get(score.destinationId)}
                         verrouillee={data.lockedDestinationId === score.destinationId}
                         choixDuGroupe={choix?.destinationId === score.destinationId}
                         transport={estimateTransportOptions(

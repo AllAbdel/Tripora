@@ -1,4 +1,9 @@
-import { climateYear, monthNameFr, type MonthlyClimate } from '@tripora/core';
+import {
+  climateFromSeries,
+  climateYear,
+  monthNameFr,
+  type MonthlyClimate,
+} from '@tripora/core';
 import { cn } from '@/lib/cn';
 
 const INITIALES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
@@ -13,14 +18,25 @@ const INITIALES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
  */
 export function ClimateStrip({
   destinationId,
+  serie,
   month,
   className,
 }: {
   destinationId: string;
+  /**
+   * Normales relevées côté serveur. Sans elles on retombe sur les normales
+   * embarquées, qui ne couvrent que les cinquante-cinq premières villes : la
+   * bande resterait vide sur les quatre cent quarante-cinq autres.
+   */
+  serie?: readonly number[] | undefined;
   month?: number | undefined;
   className?: string;
 }) {
-  const annee = climateYear(destinationId);
+  const annee = serie
+    ? Array.from({ length: 12 }, (_, index) => climateFromSeries(serie, index + 1)).filter(
+        (mois): mois is MonthlyClimate => mois !== undefined,
+      )
+    : climateYear(destinationId);
   if (annee.length !== 12) return null;
 
   const maxi = Math.max(...annee.map((mois) => mois.avgHighC));

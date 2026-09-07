@@ -43,6 +43,7 @@ export function ProposalCard({
   destination,
   score,
   transport,
+  normalesAnnee,
   month,
   participants,
   vote,
@@ -53,6 +54,8 @@ export function ProposalCard({
   destination: Destination;
   score: DestinationScore;
   transport: TransportEstimate[];
+  /** Les douze mois relevés de cette ville, si le serveur les a fournis. */
+  normalesAnnee?: readonly number[] | undefined;
   /** Mois visé, quand le groupe en a fixé un : sert à situer le climat. */
   month?: number | undefined;
   /** Taille du groupe, transmise à l'explication rédigée. Aucun nom ne l'est. */
@@ -247,7 +250,7 @@ export function ProposalCard({
 
             <section className="space-y-1.5">
               <h4 className="text-sm font-semibold">Quand y aller</h4>
-              <ClimateStrip destinationId={destination.id} month={month} />
+              <ClimateStrip destinationId={destination.id} serie={normalesAnnee} month={month} />
             </section>
 
             {transport.length > 0 && (

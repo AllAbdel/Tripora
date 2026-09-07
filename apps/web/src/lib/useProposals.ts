@@ -8,7 +8,7 @@ import {
   type ProposalResult,
 } from '@tripora/core';
 import { chargerPrixVols, moisCible, type PrixVols } from './flightPrices';
-import { chargerNormales, sourceClimat } from './climate';
+import { chargerNormales, sourceClimat, type NormalesParVille } from './climate';
 import type { TripDetails } from './trips';
 
 /** Nombre de candidates étudiées, et nombre finalement présentées. */
@@ -32,6 +32,8 @@ export function useProposals(details: TripDetails | null | undefined): {
   proposals: ProposalResult | null;
   prix: PrixVols | undefined;
   prixEnCours: boolean;
+  /** Normales relevées des candidates, pour les afficher sans les redemander. */
+  normales: NormalesParVille;
 } {
   const candidates = useMemo(
     () => (details ? selectCandidates(details.constraints, { limit: ETUDIEES }) : []),
@@ -78,5 +80,10 @@ export function useProposals(details: TripDetails | null | undefined): {
     });
   }, [details, prix.data, normales.data]);
 
-  return { proposals, prix: prix.data, prixEnCours: prix.isLoading };
+  return {
+    proposals,
+    prix: prix.data,
+    prixEnCours: prix.isLoading,
+    normales: normales.data ?? new Map(),
+  };
 }
