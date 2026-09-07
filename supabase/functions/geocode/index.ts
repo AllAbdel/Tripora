@@ -5,10 +5,10 @@ import { avecCacheEtQuota, QuotaEpuise } from '../_shared/budget.ts';
 /**
  * Chercher n'importe quelle ville du monde, et la retenir.
  *
- * Le catalogue curé répond à « surprends-nous » : cinquante-cinq villes dont on
- * assume les notes, comparables entre elles, classables. Il ne répond pas à
- * « on part à Kyoto » — et il ne le devrait pas : identifier un lieu ne demande
- * aucun jugement, seulement des coordonnées justes.
+ * Le catalogue curé répond à « surprends-nous » : cinq cents villes dont on
+ * assume les notes, comparables entre elles, classables. Il ne répondra jamais
+ * à « on part à Bagnères-de-Luchon » — et il ne le devrait pas : identifier un
+ * lieu ne demande aucun jugement, seulement des coordonnées justes.
  *
  * Cette fonction sépare les deux. Elle géocode librement, puis retient la ville
  * choisie dans `destinations` avec `discovered = true`. Les recommandations
@@ -57,6 +57,14 @@ interface VilleTrouvee {
   lng: number;
 }
 
+/** Un point précis à épingler : un nom court, une adresse lisible, un point. */
+interface AdresseTrouvee {
+  label: string;
+  address: string;
+  lat: number;
+  lng: number;
+}
+
 /**
  * Une ville retenue porte toujours ce préfixe. C'est ce qui garantit qu'aucune
  * requête ne peut écraser une entrée curée — `retain: { id: 'barcelone' }`
@@ -68,7 +76,7 @@ Deno.serve(async (request) => {
   const options = preflight(request);
   if (options) return options;
 
-  let corps: { q?: unknown; retain?: unknown };
+  let corps: { q?: unknown; retain?: unknown; adresse?: unknown };
   try {
     corps = await request.json();
   } catch {
@@ -91,7 +99,30 @@ Deno.serve(async (request) => {
 
   const q = typeof corps.q === 'string' ? corps.q.trim() : '';
   // Deux lettres ne désignent rien et coûteraient un appel par frappe.
-  if (q.length < 3) return json({ villes: [] });
+  if (q.length < 3) return json({ villes: [], adresses: [] });
+
+  // Épingler « la calanque de Sormiou » n'est pas chercher une ville : on veut
+  // ici tout ce qui se situe — une rue, un restaurant, un point de vue. Le
+  // filtre par type de lieu habité est donc levé, et rien d'autre ne change.
+  if (corps.adresse === true) {
+    try {
+      const { valeur, origine } = await avecCacheEtQuota<AdresseTrouvee[]>({
+        client,
+        cle: `geocode-adresse:${q.toLocaleLowerCase('fr')}`,
+        provider: PROVIDER,
+        ttlSecondes: TTL_SECONDES,
+        limites: LIMITES,
+        appel: () => chercherAdresses(q),
+      });
+      return json({ adresses: valeur, stale: origine === 'cache-perime' });
+    } catch (cause) {
+      if (cause instanceof QuotaEpuise) {
+        return json({ adresses: [], unavailable: true, reason: 'quota' });
+      }
+      console.error('geocode adresse', cause);
+      return json({ adresses: [], unavailable: true, reason: 'source' });
+    }
+  }
 
   try {
     const { valeur, origine } = await avecCacheEtQuota<VilleTrouvee[]>({
@@ -117,6 +148,63 @@ async function estConnecte(request: Request, client: ReturnType<typeof serviceCl
   if (!entete?.startsWith('Bearer ')) return false;
   const { data } = await client.auth.getUser(entete.slice(7));
   return Boolean(data.user?.id);
+}
+
+/**
+ * Cherche un point précis, sans filtrer sur le type de lieu.
+ *
+ * L'adresse affichée est reconstruite à partir des champs structurés du
+ * fournisseur, jamais du chemin d'une URL ni d'un texte libre : c'est elle qui
+ * sera montrée à tout le groupe, et elle doit dire où se trouve le point.
+ */
+async function chercherAdresses(q: string): Promise<AdresseTrouvee[]> {
+  const url = new URL('https://photon.komoot.io/api');
+  url.searchParams.set('q', q);
+  url.searchParams.set('lang', 'fr');
+  url.searchParams.set('limit', String(MAX_RESULTATS));
+
+  const reponse = await fetch(url, {
+    headers: { accept: 'application/json', 'user-agent': AGENT },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!reponse.ok) throw new Error(`Photon ${reponse.status}`);
+
+  const brut = (await reponse.json()) as {
+    features?: {
+      geometry?: { coordinates?: unknown };
+      properties?: Record<string, unknown>;
+    }[];
+  };
+
+  const adresses: AdresseTrouvee[] = [];
+  for (const trait of brut.features ?? []) {
+    const p = trait.properties ?? {};
+    const coords = trait.geometry?.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) continue;
+    const [lng, lat] = coords as number[];
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
+
+    const texte = (cle: string) => (typeof p[cle] === 'string' ? (p[cle] as string).trim() : '');
+    const nom = texte('name') || texte('street') || texte('city');
+    if (!nom) continue;
+
+    const parties = [
+      [texte('housenumber'), texte('street')].filter(Boolean).join(' '),
+      texte('postcode'),
+      texte('city') || texte('county'),
+      texte('country'),
+    ].filter((part) => part !== '' && part !== nom);
+
+    adresses.push({
+      label: nom.slice(0, 120),
+      address: parties.join(', ').slice(0, 300),
+      lat,
+      lng,
+    });
+    if (adresses.length >= MAX_RESULTATS) break;
+  }
+  return adresses;
 }
 
 async function chercher(q: string): Promise<VilleTrouvee[]> {

@@ -42,7 +42,7 @@ export interface MapMarker {
   label: string;
   /** Texte court affiché dans la pastille : un rang, une initiale. */
   badge?: string;
-  kind: 'origin' | 'destination' | 'chosen' | 'place';
+  kind: 'origin' | 'destination' | 'chosen' | 'place' | 'pin';
   onSelect?: () => void;
 }
 
@@ -251,6 +251,10 @@ function classePourRepere(kind: MapMarker['kind']): string {
       // Plus petits que les villes : ils sont nombreux et secondaires. La
       // carte doit rester lisible même avec cent points posés dessus.
       return `${base} bg-gold-500 size-6 text-[10px]`;
+    case 'pin':
+      // Choisis par le groupe, pas ramenés d'une base de données : ils se
+      // distinguent des lieux suggérés, et se voient d'un coup d'œil.
+      return `${base} bg-gold-600 ring-2 ring-gold-300/70`;
     default:
       return `${base} bg-brand-500`;
   }

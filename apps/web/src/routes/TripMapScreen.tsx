@@ -9,6 +9,7 @@ import { TripMap, type MapMarker } from '@/components/TripMap';
 import { buildTripMarkers } from '@/lib/mapMarkers';
 import { chargerLieux } from '@/lib/places';
 import { getTripRepository } from '@/lib/trips';
+import { getDiscussion } from '@/lib/discussion';
 import { useGroupRealtime } from '@/lib/useGroupRealtime';
 import { useProposals } from '@/lib/useProposals';
 import { toFailure } from '@/lib/errors';
@@ -22,6 +23,7 @@ import { cn } from '@/lib/cn';
 export default function TripMapScreen() {
   const { id } = useParams<{ id: string }>();
   const repository = getTripRepository();
+  const discussion = getDiscussion();
   const [selection, setSelection] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
@@ -45,6 +47,14 @@ export default function TripMapScreen() {
     staleTime: 24 * 60 * 60 * 1000,
   });
 
+  // Les épingles viennent de la discussion, qui commence avant que la
+  // destination soit tranchée : elles s'affichent donc dès le premier jour.
+  const epingles = useQuery({
+    queryKey: ['epingles', id],
+    queryFn: () => discussion!.listPins(id!),
+    enabled: Boolean(id && discussion),
+  });
+
   const markers = useMemo<MapMarker[]>(() => {
     if (!data || !proposals) return [];
     return buildTripMarkers({
@@ -52,9 +62,10 @@ export default function TripMapScreen() {
       scores: proposals.scores,
       lockedDestinationId: retenue,
       places: lieux.data?.liste ?? [],
+      pins: epingles.data ?? [],
       onSelect: setSelection,
     });
-  }, [data, proposals, retenue, lieux.data]);
+  }, [data, proposals, retenue, lieux.data, epingles.data]);
 
   const trajet = useMemo(() => {
     if (!data) return null;

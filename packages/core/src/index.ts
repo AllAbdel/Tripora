@@ -30,5 +30,6 @@ export * from './fill.js';
 export * from './distinction.js';
 export * from './dates.js';
 export * from './text.js';
+export * from './links.js';
 export * from './ai/draft.js';
 export * from './ai/briefing.js';

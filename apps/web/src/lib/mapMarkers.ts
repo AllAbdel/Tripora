@@ -18,6 +18,7 @@ export function buildTripMarkers({
   scores,
   lockedDestinationId,
   places = [],
+  pins = [],
   onSelect,
 }: {
   origin: Place;
@@ -25,6 +26,16 @@ export function buildTripMarkers({
   lockedDestinationId: string | null;
   /** Lieux de la destination retenue. Ignorés tant que rien n'est tranché. */
   places?: readonly Poi[];
+  /**
+   * Endroits épinglés par le groupe dans la discussion.
+   *
+   * Contrairement aux lieux, ils s'affichent **à tout moment** : ils viennent
+   * de la conversation, qui commence bien avant que la destination soit
+   * tranchée, et les cacher jusque-là reviendrait à perdre ce que les gens ont
+   * pris la peine de retenir. Ceux dont on ignore les coordonnées ne sont pas
+   * placés : une épingle au mauvais endroit est pire qu'une épingle absente.
+   */
+  pins?: readonly { id: string; label: string; lat: number | null; lng: number | null }[];
   onSelect?: (destinationId: string) => void;
 }): MapMarker[] {
   const markers: MapMarker[] = [
@@ -63,6 +74,17 @@ export function buildTripMarkers({
         kind: 'place',
       });
     }
+  }
+
+  for (const epingle of pins) {
+    if (epingle.lat === null || epingle.lng === null) continue;
+    markers.push({
+      id: `epingle:${epingle.id}`,
+      point: { lat: epingle.lat, lng: epingle.lng },
+      label: epingle.label,
+      badge: '📌',
+      kind: 'pin',
+    });
   }
 
   return markers;

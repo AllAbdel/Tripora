@@ -16,6 +16,7 @@ import MapTab from '@/routes/MapTab';
 import TripItinerary from '@/routes/TripItinerary';
 import TripBudget from '@/routes/TripBudget';
 import BudgetTab from '@/routes/BudgetTab';
+import TripDiscussion from '@/routes/TripDiscussion';
 
 // MapLibre pèse à lui seul plus que tout le reste de l'application : la carte
 // n'est téléchargée que par les personnes qui l'ouvrent vraiment.
@@ -48,6 +49,7 @@ function TabbedRoutes() {
           }
         />
         <Route path="/voyages/:id/itineraire" element={<TripItinerary />} />
+        <Route path="/voyages/:id/discussion" element={<TripDiscussion />} />
         <Route path="/carte" element={<MapTab />} />
         <Route path="/voyages/:id/budget" element={<TripBudget />} />
         <Route path="/budget" element={<BudgetTab />} />

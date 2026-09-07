@@ -43,6 +43,48 @@ export async function chercherVilles(q: string): Promise<Destination[]> {
   }
 }
 
+/** Un point précis, tel qu'il sera épinglé sur la carte du voyage. */
+export interface AdresseTrouvee {
+  label: string;
+  address: string;
+  lat: number;
+  lng: number;
+}
+
+/**
+ * Cherche un endroit à épingler — une rue, un restaurant, une calanque.
+ *
+ * Ce n'est pas la même recherche que celle des destinations : là on cherchait
+ * une ville comparable aux autres, ici on cherche un point à poser sur la
+ * carte. Rien n'est deviné : sans résultat, l'épingle se crée quand même, mais
+ * sans coordonnées, et elle reste dans la liste plutôt que d'atterrir au
+ * hasard sur la carte.
+ */
+export async function chercherAdresses(q: string): Promise<AdresseTrouvee[]> {
+  if (!supabase || q.trim().length < 3) return [];
+  try {
+    const { data, error } = await supabase.functions.invoke('geocode', {
+      body: { q: q.trim(), adresse: true },
+    });
+    if (error) return [];
+    const adresses = (data as { adresses?: unknown })?.adresses;
+    if (!Array.isArray(adresses)) return [];
+    return adresses.filter(estAdresse);
+  } catch {
+    return [];
+  }
+}
+
+function estAdresse(brut: unknown): brut is AdresseTrouvee {
+  if (typeof brut !== 'object' || brut === null) return false;
+  const a = brut as Record<string, unknown>;
+  return (
+    typeof a['label'] === 'string' &&
+    typeof a['lat'] === 'number' &&
+    typeof a['lng'] === 'number'
+  );
+}
+
 /** Écrit la ville dans le catalogue partagé, pour tout le groupe. */
 export async function retenirVille(destination: Destination): Promise<void> {
   if (!supabase || !destination.discovered) return;

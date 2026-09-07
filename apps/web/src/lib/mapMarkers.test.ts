@@ -126,6 +126,39 @@ describe('repères de la carte', () => {
     expect(lieu?.point).toMatchObject({ lat: 38.737, lng: -9.153 });
   });
 
+  it('pose les épingles du groupe dès avant la décision', () => {
+    // Les lieux n'ont de sens qu'une fois la ville choisie ; les épingles, non :
+    // elles viennent de la discussion, qui commence le premier jour. Les cacher
+    // jusqu'au vote reviendrait à perdre ce que les gens ont pris la peine de
+    // retenir.
+    const reperes = buildTripMarkers({
+      origin: PARIS,
+      scores: TROIS,
+      lockedDestinationId: null,
+      pins: [{ id: 'p1', label: 'La calanque de Thomas', lat: 43.2105, lng: 5.421 }],
+    });
+    const epingle = reperes.find((repere) => repere.kind === 'pin');
+    expect(epingle?.label).toBe('La calanque de Thomas');
+    expect(epingle?.point).toMatchObject({ lat: 43.2105, lng: 5.421 });
+  });
+
+  it('ne place pas une épingle dont on ignore où elle est', () => {
+    // Sans coordonnées, un repère atterrirait au large du golfe de Guinée.
+    // L'épingle existe quand même — elle vit dans la liste, pas sur la carte.
+    const reperes = buildTripMarkers({
+      origin: PARIS,
+      scores: TROIS,
+      lockedDestinationId: null,
+      pins: [
+        { id: 'p1', label: 'Le resto dont parlait Léa', lat: null, lng: null },
+        { id: 'p2', label: 'Situé, lui', lat: 43.2, lng: 5.4 },
+      ],
+    });
+    const epingles = reperes.filter((repere) => repere.kind === 'pin');
+    expect(epingles).toHaveLength(1);
+    expect(epingles[0]?.label).toBe('Situé, lui');
+  });
+
   it('reste identique quand aucun lieu n’est fourni', () => {
     expect(
       buildTripMarkers({ origin: PARIS, scores: TROIS, lockedDestinationId: 'lisbonne' }),

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CalendarDays, Loader2, Lock, LockOpen, Map as MapIcon, MapPin, UserPlus, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Loader2, Lock, LockOpen, Map as MapIcon, MapPin, MessagesSquare, UserPlus, Users, Wallet } from 'lucide-react';
 import {
   estimateTransportOptions,
   findDestination,
@@ -182,6 +182,21 @@ export default function TripDetail() {
               </Card>
             </Link>
           )}
+
+          <Link to={`/voyages/${data.summary.id}/discussion`} className="block">
+            <Card className="transition-transform active:scale-[0.99]">
+              <CardBody className="flex items-center gap-3 p-4">
+                <MessagesSquare className="text-brand-500 size-5 shrink-0" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">Discussion</span>
+                  <span className="text-muted block text-sm">
+                    Partagez des liens, épinglez les endroits qui vous plaisent
+                  </span>
+                </span>
+                <span className="text-muted shrink-0" aria-hidden>›</span>
+              </CardBody>
+            </Card>
+          </Link>
 
           <Link to={`/voyages/${data.summary.id}/budget`} className="block">
             <Card className="transition-transform active:scale-[0.99]">
