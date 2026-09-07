@@ -7,7 +7,7 @@ ne s'ouvre pas chez quelqu'un, l'autre marche.
 | Hébergeur | Adresse | Rôle |
 |---|---|---|
 | Cloudflare Pages | `https://tripora-3rg.pages.dev` | Premier déploiement |
-| Vercel | `https://tripora.vercel.app` | Second déploiement, même code |
+| Vercel | `https://tripora-allabdels-projects.vercel.app` | Second déploiement, même code |
 
 Les deux construisent la branche `claude/tripora-travel-planning-app-r3pv5t` à
 chaque push, sans carte bancaire et sans quota qu'un groupe d'amis puisse
@@ -38,9 +38,17 @@ Depuis n'importe quel appareil :
 
 ## Configuration Vercel
 
+**L'adresse de production n'est pas `tripora.vercel.app`.** Ce nom appartient
+à un autre projet : `<nom>.vercel.app` est un espace de noms mondial, premier
+arrivé premier servi. Vercel attribue à la place
+`<projet>-<équipe>.vercel.app`, soit ici `tripora-allabdels-projects.vercel.app`.
+La liste exacte des adresses d'un déploiement se lit dans son champ `alias` —
+la deviner mène à tester une adresse qui appartient à quelqu'un d'autre et à
+conclure n'importe quoi.
+
 **La branche de production doit être `claude/tripora-travel-planning-app-r3pv5t`**
 (Settings → Git). Vercel propose `main` par défaut, et `main` ne contient qu'un
-README : laissé tel quel, `tripora.vercel.app` sert une page vide pendant que
+README : laissé tel quel, `tripora-allabdels-projects.vercel.app` sert une page vide pendant que
 la branche réelle n'est qu'une préversion à l'adresse longue.
 
 La version de Node vient de `engines.node` dans le `package.json` de la racine,
@@ -76,7 +84,7 @@ Une seule chose, et elle n'est pas automatisable : **Supabase → Authentication
 → URL Configuration → Redirect URLs**, ajouter
 
 ```
-https://tripora.vercel.app/**
+https://tripora-allabdels-projects.vercel.app/**
 ```
 
 L'application demande à Google de la renvoyer sur `window.location.origin`,

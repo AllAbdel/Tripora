@@ -12,7 +12,7 @@ pas chez toi, essaie l'autre — c'est exactement pour ça qu'il y en a deux
 (voir [HEBERGEMENT.md](HEBERGEMENT.md)).
 
 - **Cloudflare** : https://tripora-3rg.pages.dev
-- **Vercel** : https://tripora.vercel.app
+- **Vercel** : https://tripora-allabdels-projects.vercel.app
 
 Si aucune des deux ne s'ouvre, ce n'est pas le serveur : essaie en navigation
 privée, puis en données mobiles plutôt qu'en Wi-Fi. Si les données mobiles

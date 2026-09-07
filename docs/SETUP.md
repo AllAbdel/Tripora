@@ -84,8 +84,13 @@ donc d'abord créer le client OAuth chez Google.
      ```
      http://localhost:5173/**
      https://tripora-3rg.pages.dev/**
-     https://tripora.vercel.app/**
+     https://tripora-allabdels-projects.vercel.app/**
+     https://tripora-git-claude-tripora-travel-pla-21567e-allabdels-projects.vercel.app/**
      ```
+
+     La dernière ligne est l'adresse de préversion de la branche. Vercel en
+     crée une par branche, et c'est celle-là qu'on ouvre quand on teste un
+     déploiement avant qu'il devienne la production.
 
 Le motif `/**` compte : l'application redirige vers `/voyages` après connexion,
 et vers `/rejoindre/CODE` quand on arrive par une invitation.
