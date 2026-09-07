@@ -210,4 +210,4 @@ promettent aucun prix : ils évitent de ressaisir six fois les mêmes dates.
 **0 €.** Consommation attendue pour un groupe d'amis : moins de 5 % de chaque
 quota gratuit. Seule dépense possible, entièrement facultative : un nom de
 domaine, environ 10 € par an. Sans domaine, l'application vit sur
-`tripora.pages.dev`.
+`tripora-3rg.pages.dev`.

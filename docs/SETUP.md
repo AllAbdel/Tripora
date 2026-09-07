@@ -101,6 +101,34 @@ connexion sans explication. Le mode local et l'entrée par code d'invitation
 continuent de fonctionner — ce qui rend le symptôme trompeur. Chaque nouvel
 hébergeur ajoute donc une ligne ici.
 
+#### Deux pannes qui se ressemblent, et ne se corrigent pas au même endroit
+
+L'écran de connexion affiche désormais ce que le retour de Google disait, ce
+qui permet de les séparer :
+
+| Ce qui s'affiche | Où est le problème |
+|---|---|
+| « Le retour de Google n'a pas abouti » | L'adresse d'où l'on se connecte manque dans **Redirect URLs**, ci-dessus |
+| « Google a répondu, le serveur n'a pas pu conclure » (*unable to exchange external code*) | Les **identifiants Google** dans Supabase → Authentication → Providers → Google |
+
+Le second cas ne doit rien aux redirections : Google a accepté la connexion et
+délivré un code, et c'est Supabase qui échoue ensuite à l'échanger contre une
+session, **de serveur à serveur**. Google refuse donc la paire qu'on lui
+présente. Dans l'ordre :
+
+1. Dans Google Cloud → *APIs & Services* → *Credentials*, ouvrez le client
+   OAuth de type **Web application** — celui dont l'identifiant est déjà collé
+   dans Supabase, pas un autre.
+2. Vérifiez que **Authorized redirect URIs** contient exactement
+   `https://eelvllvgnsohznconfpt.supabase.co/auth/v1/callback`, sans barre
+   oblique finale.
+3. Générez un nouveau **Client secret** et recollez-le dans Supabase avec le
+   Client ID **du même client**, sans espace avant ni après, puis
+   enregistrez.
+
+Un secret régénéré, effacé, ou pris sur un autre client OAuth que son
+identifiant produit très exactement ce message.
+
 ### 3. Clés serveur dans Supabase (environ 2 minutes)
 
 **Supabase → Edge Functions → Secrets**, une ligne par clé :
