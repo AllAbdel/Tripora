@@ -57,6 +57,19 @@ export default defineConfig({
             },
           },
           {
+            // Photos de couverture : une par ville, jamais modifiées sur
+            // Commons sous le même nom. Gardées longtemps pour qu'un voyage
+            // reste illustré hors ligne, et plafonnées pour ne pas remplir le
+            // stockage d'un téléphone avec des villes qu'on ne reverra pas.
+            urlPattern: /^https:\/\/[a-z]+\.wikimedia\.org\/.*\.(?:jpe?g|png)/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tripora-couvertures',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 180 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             // Drapeaux : immuables une fois copiés, gardés longtemps, et
             // disponibles hors ligne dès qu'ils ont été vus une fois.
             urlPattern: /\/flags\/[a-z]{2}\.svg$/i,

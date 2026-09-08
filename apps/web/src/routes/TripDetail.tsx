@@ -34,6 +34,7 @@ import { ProchainGeste } from '@/components/ProchainGeste';
 import { getItinerary } from '@/lib/itinerary';
 import { EnTeteDesPropositions } from '@/components/EnTeteDesPropositions';
 import { Ligne, ListeFantome } from '@/components/ui/Squelette';
+import { Couverture } from '@/components/Couverture';
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
@@ -157,6 +158,8 @@ export default function TripDetail() {
 
       {data && (
         <>
+          {villeRetenue && <Couverture destination={villeRetenue} />}
+
           <header className="space-y-2">
             <h1 className="text-2xl font-bold tracking-tight">{data.summary.title}</h1>
             <p className="text-muted flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
