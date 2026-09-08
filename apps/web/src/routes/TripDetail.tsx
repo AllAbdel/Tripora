@@ -292,7 +292,7 @@ export default function TripDetail() {
                         rank={index + 1}
                         destination={destination}
                         score={score}
-                        normalesAnnee={normales.get(score.destinationId)}
+                        normalesAnnee={normales[score.destinationId]}
                         verrouillee={data.lockedDestinationId === score.destinationId}
                         choixDuGroupe={choix?.destinationId === score.destinationId}
                         transport={estimateTransportOptions(

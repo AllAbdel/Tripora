@@ -162,6 +162,25 @@ function comparer(a: ApplicationClassee, b: ApplicationClassee): number {
 }
 
 /**
+ * L'adresse par laquelle ouvrir un lien de parrainage.
+ *
+ * Jamais l'adresse finale : elle contient souvent un identifiant qui ressemble
+ * à un nom propre — celui de Wise se termine par le prénom du parrain — et il
+ * se retrouverait alors dans la barre d'état au survol, dans le menu
+ * « copier le lien », et imprimé dans le PDF récapitulatif.
+ *
+ * Le passage par `/go/<identifiant>` sur notre propre domaine le retire de
+ * partout où on le lit. Ce n'est pas un secret pour autant : l'adresse finale
+ * s'affiche dans la barre d'adresse après la redirection, et c'est très bien —
+ * l'objectif est de ne pas étaler un nom, pas de cacher où l'on envoie les
+ * gens. Les règles de redirection vivent dans `public/_redirects` et
+ * `vercel.json`.
+ */
+export function adresseDeParrainage(app: Pick<ApplicationUtile, 'id' | 'referralUrl'>): string | null {
+  return app.referralUrl ? `/go/${app.id}` : null;
+}
+
+/**
  * Les applications qui concernent cet endroit, classées, sans regroupement.
  *
  * Utile quand on veut les dix premières toutes catégories confondues — par

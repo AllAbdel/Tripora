@@ -1,0 +1,42 @@
+# En-têtes de sécurité, servis par Cloudflare Pages.
+#
+# Une politique de sécurité du contenu (CSP) n'est utile que si elle est
+# assez stricte pour bloquer un script injecté, et assez juste pour ne rien
+# casser. Chaque origine listée ici correspond à un appel réel, vérifié en
+# ouvrant l'application dans un navigateur et en lisant la console : une CSP
+# trop serrée ne produit pas d'erreur visible à l'utilisateur, seulement une
+# carte qui ne s'affiche plus.
+#
+# Ce qui est autorisé, et pourquoi :
+#
+#  - `*.supabase.co` : la base, l'authentification, le temps réel (wss) et les
+#    fonctions serveur. C'est le seul serveur auquel Tripora parle vraiment.
+#  - `tiles.openfreemap.org` : le fond de carte vectoriel.
+#  - `*.wikimedia.org` : les photos de couverture et les images des lieux.
+#  - `blob:` en `worker-src` : MapLibre compile ses ouvriers de rendu ainsi.
+#    Sans lui, la carte reste blanche.
+#  - `'unsafe-inline'` en `style-src` : Tailwind et MapLibre posent des styles
+#    en ligne. C'est la seule concession, et elle ne permet pas d'exécuter du
+#    code — seulement de colorer des éléments.
+#
+# Ce qui est refusé sans exception : tout script d'une autre origine, tout
+# cadre, et l'inclusion de Tripora dans un cadre étranger.
+/*
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.wikimedia.org https://*.wikipedia.org https://tiles.openfreemap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://*.wikimedia.org; manifest-src 'self'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Aucune de ces fonctions n'est utilisée : les refuser évite qu'un script
+  # injecté puisse seulement demander.
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  X-Frame-Options: DENY
+
+# Les fichiers versionnés par leur nom ne changent jamais : un an de cache.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Le service worker, lui, doit être revérifié à chaque visite, sinon une
+# correction reste invisible plusieurs jours.
+/sw.js
+  Cache-Control: no-cache

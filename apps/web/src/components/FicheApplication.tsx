@@ -1,5 +1,5 @@
 import { Apple, Globe, HandCoins, Play, TriangleAlert } from 'lucide-react';
-import type { ApplicationClassee, ApplicationUtile } from '@tripora/core';
+import { adresseDeParrainage, type ApplicationClassee, type ApplicationUtile } from '@tripora/core';
 import { cn } from '@/lib/cn';
 
 /**
@@ -68,8 +68,8 @@ export function FicheApplication({
         )}
       </div>
 
-      {app.referralUrl && app.referralNote && (
-        <Parrainage url={app.referralUrl} note={app.referralNote} />
+      {app.referralNote && adresseDeParrainage(app) && (
+        <Parrainage url={adresseDeParrainage(app)!} note={app.referralNote} />
       )}
     </article>
   );
@@ -88,6 +88,9 @@ export function FicheApplication({
 function Parrainage({ url, note }: { url: string; note: string }) {
   return (
     <div className="border-t border-[color:var(--border-subtle)] pt-2.5">
+      {/* `sponsored` dit aux moteurs que ce lien est commercial : la même
+          transparence que la mention affichée, côté machine. C'est aussi ce
+          qui empêche la feuille d'impression d'en imprimer l'adresse. */}
       <a
         href={url}
         target="_blank"

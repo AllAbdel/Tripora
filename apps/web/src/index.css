@@ -257,8 +257,13 @@
   }
 
   /* Les liens gardent leur sens : on imprime l'adresse à côté du texte, sauf
-     pour les ancres internes qui ne mènent nulle part sur papier. */
-  a[href^='http']::after {
+     pour les ancres internes qui ne mènent nulle part sur papier.
+     
+     Et sauf les liens commerciaux : leur adresse contient un identifiant de
+     parrainage, souvent construit sur un nom propre. L'imprimer reviendrait à
+     étaler ce nom sur chaque copie papier du voyage — exactement ce que le
+     passage par /go/… sert à éviter. */
+  a[href^='http']:not([rel~='sponsored'])::after {
     content: ' (' attr(href) ')';
     font-size: 0.75em;
     word-break: break-all;

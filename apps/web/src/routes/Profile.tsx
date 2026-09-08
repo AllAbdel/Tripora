@@ -5,6 +5,7 @@ import {
   BellOff,
   Check,
   HandCoins,
+  Lock,
   LogOut,
   Monitor,
   Moon,
@@ -100,13 +101,22 @@ export default function Profile() {
                 Gratuit, sans compte payant, sans publicité et sans revente de données. Ce qui le
                 finance tient en deux liens de parrainage, et c’est écrit en entier.
               </p>
-              <Link
-                to="/soutenir"
-                className="text-brand-600 dark:text-brand-300 inline-flex min-h-11 items-center gap-2 text-sm font-semibold"
-              >
-                <HandCoins className="size-4" aria-hidden />
-                Comment Tripora est financé
-              </Link>
+              <div className="flex flex-wrap gap-x-5">
+                <Link
+                  to="/soutenir"
+                  className="text-brand-600 dark:text-brand-300 inline-flex min-h-11 items-center gap-2 text-sm font-semibold"
+                >
+                  <HandCoins className="size-4" aria-hidden />
+                  Comment Tripora est financé
+                </Link>
+                <Link
+                  to="/confidentialite"
+                  className="text-brand-600 dark:text-brand-300 inline-flex min-h-11 items-center gap-2 text-sm font-semibold"
+                >
+                  <Lock className="size-4" aria-hidden />
+                  Confidentialité
+                </Link>
+              </div>
             </CardBody>
           </Card>
         </Section>

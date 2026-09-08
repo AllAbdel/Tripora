@@ -81,7 +81,7 @@ export default function Soutenir() {
           <Offre
             nom="Wise"
             quoi="Payer et retirer au vrai taux de change, dans presque toutes les devises."
-            url="https://wise.com/invite/ahpc/abdelslama1"
+            url="/go/wise"
             direct="https://wise.com"
             avantage="Vous et Tripora recevez chacun un avantage à l’ouverture."
           />
@@ -89,7 +89,7 @@ export default function Soutenir() {
           <Offre
             nom="BoursoBank"
             quoi="Un compte français dont les paiements et retraits en devise ne coûtent rien, selon la formule."
-            url="https://bour.so/p/xyxvlP0GvdG"
+            url="/go/boursobank"
             direct="https://www.boursobank.com"
             avantage="Récompense pour vous et pour Tripora, sous réserve d’un premier versement."
             reserve="Réservé aux résidents fiscaux français."

@@ -20,9 +20,24 @@ import { supabase } from './supabase';
  * pèse un dixième de la note.
  */
 
-export type NormalesParVille = ReadonlyMap<string, readonly number[]>;
+/**
+ * Les normales relevées, indexées par identifiant de ville.
+ *
+ * Un objet simple et non une `Map`, pour une raison qui a coûté un bug : le
+ * cache de requêtes est **persisté en JSON** dans le navigateur, pour que les
+ * voyages restent consultables hors ligne. Or `JSON.stringify(new Map())`
+ * donne `{}` — la structure survit à l'aller et revient vide au retour, sans
+ * la moindre erreur. Au rechargement suivant, `normales.size` valait
+ * `undefined`, le test « pas de normales » ne se déclenchait plus, et le
+ * moteur appelait `.get()` sur un objet qui n'en a pas.
+ *
+ * Règle qui en découle pour tout ce qui passe par une requête : **des données
+ * que JSON sait écrire et relire à l'identique**, jamais de Map, de Set ni de
+ * Date.
+ */
+export type NormalesParVille = Readonly<Record<string, readonly number[]>>;
 
-const VIDE: NormalesParVille = new Map();
+const VIDE: NormalesParVille = {};
 
 export async function chargerNormales(
   destinations: readonly Destination[],
@@ -39,12 +54,12 @@ export async function chargerNormales(
       .not('climate', 'is', null);
     if (error) return VIDE;
 
-    const parVille = new Map<string, readonly number[]>();
+    const parVille: Record<string, readonly number[]> = {};
     for (const ligne of data ?? []) {
       const serie = ligne.climate as unknown;
       // Trente-six nombres, ou rien : une série tronquée décalerait les mois.
       if (Array.isArray(serie) && serie.length === 36 && serie.every(estNombre)) {
-        parVille.set(ligne.id as string, serie);
+        parVille[ligne.id as string] = serie;
       }
     }
     return parVille;
@@ -58,8 +73,8 @@ export function sourceClimat(
   normales: NormalesParVille,
   month: number | undefined,
 ): ((destination: Destination) => MonthlyClimate | undefined) | undefined {
-  if (month === undefined || normales.size === 0) return undefined;
-  return (destination) => climateFromSeries(normales.get(destination.id), month);
+  if (month === undefined || Object.keys(normales).length === 0) return undefined;
+  return (destination) => climateFromSeries(normales[destination.id], month);
 }
 
 function estNombre(valeur: unknown): valeur is number {

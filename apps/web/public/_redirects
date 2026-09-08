@@ -1,3 +1,20 @@
+# Les liens de parrainage passent par notre propre domaine.
+#
+# Un lien d'invitation contient souvent un identifiant qui ressemble à un nom :
+# celui de Wise se termine par le prénom de la personne qui parraine. Le faire
+# transiter par /go/<service> le retire de l'interface, de la barre d'état du
+# navigateur au survol, et de l'URL imprimée dans le PDF récapitulatif.
+#
+# Ce n'est pas un secret pour autant — l'adresse finale s'affiche dans la barre
+# d'adresse une fois la redirection faite, et c'est très bien ainsi : l'objectif
+# est de ne pas afficher un nom propre partout, pas de cacher où l'on envoie
+# les gens.
+#
+# 302 et non 301 : un lien de parrainage change, et une redirection permanente
+# resterait en cache du navigateur bien après qu'on l'ait modifiée.
+/go/wise        https://wise.com/invite/ahpc/abdelslama1   302
+/go/boursobank  https://bour.so/p/xyxvlP0GvdG              302
+
 # Tripora est une application à page unique : c'est le navigateur qui décide
 # quel écran afficher selon l'URL. Sans cette règle, ouvrir directement une
 # adresse profonde renverrait une 404 de l'hébergeur, puisqu'aucun fichier ne

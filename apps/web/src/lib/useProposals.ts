@@ -68,7 +68,7 @@ export function useProposals(details: TripDetails | null | undefined): {
     const releves = prix.data?.parDestination;
     // `moisCible` sert les prix de vol et rend « 2026-10 » ; le climat veut le
     // numéro du mois, que le moteur calcule déjà de son côté.
-    const climat = sourceClimat(normales.data ?? new Map(), targetMonth(details.constraints));
+    const climat = sourceClimat(normales.data ?? {}, targetMonth(details.constraints));
     const sources = {
       ...(releves ? { transportPrice: (d: Destination) => releves[d.id] } : {}),
       ...(climat ? { climate: climat } : {}),
@@ -84,6 +84,6 @@ export function useProposals(details: TripDetails | null | undefined): {
     proposals,
     prix: prix.data,
     prixEnCours: prix.isLoading,
-    normales: normales.data ?? new Map(),
+    normales: normales.data ?? {},
   };
 }

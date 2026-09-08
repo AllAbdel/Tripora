@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { LogIn, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
@@ -109,7 +109,11 @@ export default function SignIn() {
 
       <p className="text-muted text-center text-xs leading-relaxed">
         Pas de mot de passe, pas de publicité, pas de pistage, pas de revente de données.
-        Vos noms et vos dépenses ne sont jamais transmis à un service d’intelligence artificielle.
+        Vos noms et vos dépenses ne sont jamais transmis à un service d’intelligence artificielle.{' '}
+        <Link to="/confidentialite" className="underline">
+          Ce que Tripora conserve
+        </Link>
+        .
       </p>
     </div>
   );
