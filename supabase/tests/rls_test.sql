@@ -735,4 +735,42 @@ end $$;
 reset role;
 reset request.jwt.claims;
 
+-- ============================================================================
+-- Quitter un voyage, et en retirer quelqu'un.
+-- ============================================================================
+
+set role authenticated;
+set request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+
+do $$
+declare n int;
+begin
+  -- Un membre se retire lui-même : c'est son droit, sans rien demander.
+  delete from public.trip_members
+  where trip_id = 'aaaaaaaa-0000-0000-0000-000000000001' and user_id = auth.uid();
+  get diagnostics n = row_count;
+  assert n = 1, format('Un membre doit pouvoir partir (%s)', n);
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+set role authenticated;
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+do $$
+begin
+  -- L'organisateur, lui, reste : le voyage deviendrait ingouvernable sans lui,
+  -- puisque seul son propriétaire peut arrêter la destination.
+  begin
+    delete from public.trip_members
+    where trip_id = 'aaaaaaaa-0000-0000-0000-000000000001' and user_id = auth.uid();
+    assert false, 'L''organisateur ne doit pas pouvoir quitter son propre voyage';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
 select '✅ Tous les tests RLS sont passés' as resultat;

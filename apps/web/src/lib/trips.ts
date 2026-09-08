@@ -45,12 +45,39 @@ export interface TripDetails {
   lockedDestinationId: string | null;
 }
 
+/** Ce qu'on peut corriger après coup, et rien d'autre. */
+export interface ModificationVoyage {
+  title?: string;
+  durationDays?: number;
+  participants?: number;
+  budgetPerPersonCents?: number | null;
+  dateMode?: TripConstraints['dateMode'];
+  month?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  windowStart?: string | null;
+  windowEnd?: string | null;
+}
+
 export interface TripRepository {
   readonly kind: 'supabase' | 'local';
   list(): Promise<TripSummary[]>;
   get(id: string): Promise<TripDetails | null>;
   create(draft: TripDraft, title: string): Promise<string>;
+  /**
+   * Corrige ce qui se corrige : le titre, la période, la durée, le budget.
+   *
+   * Pas la destination, pas le statut — ces deux-là sont la décision du
+   * groupe, et un déclencheur en base les réserve à l'organisateur. Pas le
+   * nombre de participants non plus tant que des gens ont rejoint : le
+   * réduire en dessous du compte réel ferait mentir tous les calculs.
+   */
+  update(id: string, valeurs: ModificationVoyage): Promise<void>;
   remove(id: string): Promise<void>;
+  /** Quitter le voyage. L'organisateur ne peut pas : il le supprime ou le passe. */
+  leave(id: string): Promise<void>;
+  /** Retirer quelqu'un. Réservé à l'organisateur, et vérifié en base. */
+  removeMember(id: string, userId: string): Promise<void>;
 }
 
 /** Reconstitue les contraintes du moteur depuis un brouillon enregistré. */
@@ -158,10 +185,51 @@ const localRepository: TripRepository = {
     return trip.id;
   },
 
+  async update(id, valeurs) {
+    writeLocal(
+      readLocal().map((trip) =>
+        trip.id === id
+          ? {
+              ...trip,
+              title: valeurs.title ?? trip.title,
+              draft: { ...trip.draft, ...brouillonModifie(valeurs) },
+            }
+          : trip,
+      ),
+    );
+  },
+
   async remove(id) {
     writeLocal(readLocal().filter((trip) => trip.id !== id));
   },
+
+  // Un voyage local n'a qu'un membre, soi-même : le quitter, c'est le
+  // supprimer, et il n'y a personne à en retirer.
+  async leave(id) {
+    writeLocal(readLocal().filter((trip) => trip.id !== id));
+  },
+
+  async removeMember() {
+    throw new Error('Un voyage local n’a qu’un participant.');
+  },
 };
+
+/** Les champs d'un brouillon local que la modification peut toucher. */
+function brouillonModifie(valeurs: ModificationVoyage): Partial<TripDraft> {
+  const change: Partial<TripDraft> = {};
+  if (valeurs.durationDays !== undefined) change.durationDays = valeurs.durationDays;
+  if (valeurs.participants !== undefined) change.participants = valeurs.participants;
+  if (valeurs.budgetPerPersonCents !== undefined) {
+    change.budgetPerPersonCents = valeurs.budgetPerPersonCents;
+  }
+  if (valeurs.dateMode !== undefined) change.dateMode = valeurs.dateMode;
+  if (valeurs.month !== undefined) change.month = valeurs.month ?? undefined;
+  if (valeurs.startDate !== undefined) change.startDate = valeurs.startDate ?? undefined;
+  if (valeurs.endDate !== undefined) change.endDate = valeurs.endDate ?? undefined;
+  if (valeurs.windowStart !== undefined) change.windowStart = valeurs.windowStart ?? undefined;
+  if (valeurs.windowEnd !== undefined) change.windowEnd = valeurs.windowEnd ?? undefined;
+  return change;
+}
 
 /**
  * Résout les villes découvertes avant d'afficher quoi que ce soit.
@@ -363,6 +431,47 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
       return tripId;
     },
 
+    async update(id, valeurs) {
+      const ligne: Record<string, unknown> = {};
+      if (valeurs.title !== undefined) ligne['title'] = valeurs.title.trim();
+      if (valeurs.durationDays !== undefined) ligne['duration_days'] = valeurs.durationDays;
+      if (valeurs.participants !== undefined) ligne['participants'] = valeurs.participants;
+      if (valeurs.budgetPerPersonCents !== undefined) {
+        ligne['budget_per_person_cents'] = valeurs.budgetPerPersonCents;
+      }
+      if (valeurs.dateMode !== undefined) ligne['date_mode'] = valeurs.dateMode;
+      if (valeurs.month !== undefined) ligne['target_month'] = valeurs.month;
+      if (valeurs.startDate !== undefined) ligne['start_date'] = valeurs.startDate;
+      if (valeurs.endDate !== undefined) ligne['end_date'] = valeurs.endDate;
+      if (valeurs.windowStart !== undefined) ligne['window_start'] = valeurs.windowStart;
+      if (valeurs.windowEnd !== undefined) ligne['window_end'] = valeurs.windowEnd;
+      if (Object.keys(ligne).length === 0) return;
+
+      const { error } = await client.from('trips').update(ligne).eq('id', id);
+      if (error) throw error;
+    },
+
+    async leave(id) {
+      const { data: session } = await client.auth.getUser();
+      const userId = session.user?.id;
+      if (!userId) throw new Error('Connexion requise');
+      const { error } = await client
+        .from('trip_members')
+        .delete()
+        .eq('trip_id', id)
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+
+    async removeMember(id, userId) {
+      const { error } = await client
+        .from('trip_members')
+        .delete()
+        .eq('trip_id', id)
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+
     async remove(id) {
       const { error } = await client
         .from('trips')
@@ -380,6 +489,21 @@ function pruneWeights(weights: Partial<PreferenceWeights>): Record<string, numbe
       (entry): entry is [string, number] => typeof entry[1] === 'number' && entry[1] > 0,
     ),
   );
+}
+
+/**
+ * La clé de cache d'un voyage, en un seul endroit.
+ *
+ * Elle porte le type de dépôt parce qu'un voyage local et un voyage serveur ne
+ * doivent jamais se mélanger dans le cache. Ce détail a coûté un bug : les
+ * écrans construisaient leur clé chacun de leur côté, l'un avec le type,
+ * l'autre sans, et une invalidation ne retrouvait pas l'autre. Le voyage était
+ * bien modifié en base, et l'écran affichait encore l'ancien titre.
+ *
+ * D'où cette fonction : une seule façon de nommer un voyage dans le cache.
+ */
+export function cleVoyage(id: string | undefined): readonly unknown[] {
+  return ['trip', getTripRepository().kind, id];
 }
 
 export function getTripRepository(): TripRepository {

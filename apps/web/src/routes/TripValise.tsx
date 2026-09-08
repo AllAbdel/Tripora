@@ -23,7 +23,7 @@ import { TextInput } from '@/components/ui/Field';
 import { Icone } from '@/components/Icone';
 import { ListeFantome } from '@/components/ui/Squelette';
 import { getValise, identifiantPersonnel, type EtatArticle } from '@/lib/packing';
-import { getTripRepository } from '@/lib/trips';
+import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { useAuth } from '@/lib/auth-context';
 import { signaler } from '@/lib/feedback';
 import { toFailure } from '@/lib/errors';
@@ -54,7 +54,7 @@ export default function TripValise() {
   const [reglagesOuverts, setReglagesOuverts] = useState(false);
 
   const voyage = useQuery({
-    queryKey: ['trip', id],
+    queryKey: cleVoyage(id),
     queryFn: () => repo.get(id!),
     enabled: Boolean(id),
   });

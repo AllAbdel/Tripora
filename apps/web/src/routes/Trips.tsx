@@ -47,9 +47,10 @@ export default function Trips() {
 
       <div className="space-y-4 px-5">
         {!backendReady && (
-          <Banner tone="warning" title="Mode local">
-            Les voyages créés ici restent sur cet appareil et ne sont pas partagés.
-            Reliez un projet Supabase pour inviter vos amis.
+          <Banner tone="warning" title="Ces voyages ne vivent que sur cet appareil">
+            Rien n’est envoyé sur un serveur : personne ne peut les rejoindre, ils ne suivent pas
+            d’un téléphone à l’autre, et vider les données du navigateur les efface
+            définitivement. C’est parfait pour essayer, risqué pour un vrai voyage.
           </Banner>
         )}
 
@@ -60,6 +61,7 @@ export default function Trips() {
         )}
 
         {isLoading && <ListeFantome combien={2} lignes={1} />}
+
 
         {data && data.length === 0 && (
           <EmptyState

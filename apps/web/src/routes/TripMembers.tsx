@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Link2, Loader2, QrCode as QrIcon, Share2, UserPlus } from 'lucide-react';
 import { AXIS_LABELS_FR, formatCents } from '@tripora/core';
@@ -10,6 +10,9 @@ import { Card, CardBody } from '@/components/ui/Card';
 // Chargé seulement quand quelqu'un demande le QR code.
 const QrCode = lazy(() => import('@/components/QrCode'));
 import { getCollaboration, type TripMember } from '@/lib/collaboration';
+import { cleVoyage, getTripRepository } from '@/lib/trips';
+import { signaler } from '@/lib/feedback';
+import { cn } from '@/lib/cn';
 import { useAuth } from '@/lib/auth-context';
 import { toFailure } from '@/lib/errors';
 
@@ -18,6 +21,7 @@ export default function TripMembers() {
   const collaboration = getCollaboration();
   const { identity } = useAuth();
   const queryClient = useQueryClient();
+  const naviguer = useNavigate();
   const [showQr, setShowQr] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -36,6 +40,37 @@ export default function TripMembers() {
   const creerInvitation = useMutation({
     mutationFn: () => collaboration!.createInvite(id!),
     onSuccess: (invite) => queryClient.setQueryData(['invitation', id], invite),
+  });
+
+  const voyage = useQuery({
+    queryKey: cleVoyage(id),
+    queryFn: () => getTripRepository().get(id!),
+    enabled: Boolean(id),
+  });
+  const jeSuisOrganisateur = voyage.data?.isOwner ?? false;
+
+  const rafraichir = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['membres', id] });
+    await queryClient.invalidateQueries({ queryKey: cleVoyage(id) });
+  };
+
+  const retirer = useMutation({
+    mutationFn: (userId: string) => getTripRepository().removeMember(id!, userId),
+    onSuccess: () => {
+      signaler('decision');
+      return rafraichir();
+    },
+    onError: () => signaler('echec'),
+  });
+
+  const partir = useMutation({
+    mutationFn: () => getTripRepository().leave(id!),
+    onSuccess: async () => {
+      signaler('decision');
+      await queryClient.invalidateQueries({ queryKey: ['trips'] });
+      naviguer('/voyages');
+    },
+    onError: () => signaler('echec'),
   });
 
   if (!collaboration) {
@@ -103,7 +138,14 @@ export default function TripMembers() {
           <ul className="space-y-2">
             {membres.data.map((membre) => (
               <li key={membre.userId}>
-                <CarteMembre membre={membre} cestMoi={membre.userId === identity?.id} />
+                <CarteMembre
+                  membre={membre}
+                  cestMoi={membre.userId === identity?.id}
+                  jeSuisOrganisateur={jeSuisOrganisateur}
+                  {...(jeSuisOrganisateur && membre.role !== 'owner'
+                    ? { onRetirer: () => retirer.mutate(membre.userId) }
+                    : {})}
+                />
               </li>
             ))}
           </ul>
@@ -192,11 +234,78 @@ export default function TripMembers() {
           )}
         </CardBody>
       </Card>
+      {voyage.data && !jeSuisOrganisateur && getTripRepository().kind === 'supabase' && (
+        <QuitterLeVoyage onPartir={() => partir.mutate()} enCours={partir.isPending} />
+      )}
+
+      {(retirer.isError || partir.isError) && (
+        <Banner tone="warning" title="Action impossible">
+          {toFailure(retirer.error ?? partir.error).message}
+        </Banner>
+      )}
     </div>
   );
 }
 
-function CarteMembre({ membre, cestMoi }: { membre: TripMember; cestMoi: boolean }) {
+/**
+ * Quitter le voyage.
+ *
+ * Discret et en bas de page : ce n'est pas une action qu'on propose, c'est une
+ * porte de sortie qui doit exister. Confirmation en deux temps, parce que
+ * partir emporte ses votes et ses envies, et qu'on ne revient qu'avec un
+ * nouveau lien d'invitation.
+ *
+ * L'organisateur n'y a pas droit — le voyage deviendrait ingouvernable, plus
+ * personne ne pouvant arrêter la destination. La base le refuse aussi, ce qui
+ * évite d'avoir à croire l'interface sur parole.
+ */
+function QuitterLeVoyage({ onPartir, enCours }: { onPartir: () => void; enCours: boolean }) {
+  const [confirme, setConfirme] = useState(false);
+
+  return (
+    <div className="pt-2">
+      {confirme ? (
+        <div className="space-y-2">
+          <p className="text-muted text-sm leading-relaxed">
+            Vos envies, vos votes et vos dépenses de ce voyage seront effacés. Revenir demandera
+            un nouveau lien d’invitation.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="danger" size="sm" loading={enCours} onClick={onPartir}>
+              Quitter définitivement
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setConfirme(false)}>
+              Annuler
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirme(true)}
+          className="text-muted min-h-11 text-sm underline"
+        >
+          Quitter ce voyage
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CarteMembre({
+  membre,
+  cestMoi,
+  jeSuisOrganisateur,
+  onRetirer,
+}: {
+  membre: TripMember;
+  cestMoi: boolean;
+  jeSuisOrganisateur: boolean;
+  /** Absent quand personne n'a le droit de retirer cette personne. */
+  onRetirer?: () => void;
+}) {
+  const [confirme, setConfirme] = useState(false);
+
   return (
     <Card>
       <CardBody className="flex items-center gap-3 p-4">
@@ -238,6 +347,24 @@ function CarteMembre({ membre, cestMoi }: { membre: TripMember; cestMoi: boolean
           >
             {membre.hasPreferences ? 'Modifier' : 'Répondre'}
           </Link>
+        )}
+
+        {/* Retirer quelqu'un se confirme : c'est irréversible pour ses envies
+            et ses votes, et un doigt qui glisse ne doit pas y suffire. */}
+        {onRetirer && jeSuisOrganisateur && !cestMoi && (
+          <button
+            type="button"
+            onClick={() => (confirme ? onRetirer() : setConfirme(true))}
+            onBlur={() => setConfirme(false)}
+            className={cn(
+              'shrink-0 rounded-full px-3 py-2 text-xs font-semibold transition-colors',
+              confirme
+                ? 'bg-red-600 text-white'
+                : 'text-muted hover:bg-brand-50 dark:hover:bg-ink-700/40',
+            )}
+          >
+            {confirme ? 'Confirmer' : 'Retirer'}
+          </button>
         )}
       </CardBody>
     </Card>

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Lock, LockOpen, MapPin, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, Lock, LockOpen, MapPin, Pencil, Users, Wallet } from 'lucide-react';
 import {
   estimateTransportOptions,
   findDestination,
@@ -15,7 +15,7 @@ import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProposalCard } from '@/components/ProposalCard';
-import { getTripRepository } from '@/lib/trips';
+import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { getCollaboration } from '@/lib/collaboration';
 import { getVoting, groupChoice, type VoteValue } from '@/lib/votes';
 import { useProposals } from '@/lib/useProposals';
@@ -44,7 +44,7 @@ export default function TripDetail() {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['trip', repository.kind, id],
+    queryKey: cleVoyage(id),
     queryFn: () => repository.get(id!),
     enabled: Boolean(id),
   });
@@ -171,6 +171,13 @@ export default function TripDetail() {
                 <Users className="size-3.5" aria-hidden />
                 {data.members.length} / {data.constraints.participants}
               </span>
+              <Link
+                to={`/voyages/${data.summary.id}/modifier`}
+                className="text-brand-600 dark:text-brand-300 inline-flex min-h-9 items-center gap-1.5 font-medium underline"
+              >
+                <Pencil className="size-3.5" aria-hidden />
+                Modifier
+              </Link>
               <span className="inline-flex items-center gap-1.5">
                 <Wallet className="size-3.5" aria-hidden />
                 {data.constraints.budgetPerPersonCents

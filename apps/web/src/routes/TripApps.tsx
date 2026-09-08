@@ -16,7 +16,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Field, TextInput } from '@/components/ui/Field';
 import { FicheApplication } from '@/components/FicheApplication';
 import { getApps, type PropositionApp } from '@/lib/apps';
-import { getTripRepository } from '@/lib/trips';
+import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
 import { signaler } from '@/lib/feedback';
@@ -39,7 +39,7 @@ export default function TripApps() {
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
 
   const voyage = useQuery({
-    queryKey: ['trip', id],
+    queryKey: cleVoyage(id),
     queryFn: () => repo.get(id!),
     enabled: Boolean(id),
   });

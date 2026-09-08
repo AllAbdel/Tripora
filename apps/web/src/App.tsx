@@ -22,6 +22,7 @@ import TripValise from '@/routes/TripValise';
 import TripRecapitulatif from '@/routes/TripRecapitulatif';
 import Soutenir from '@/routes/Soutenir';
 import Confidentialite from '@/routes/Confidentialite';
+import TripEdit from '@/routes/TripEdit';
 import ModerationApps from '@/routes/ModerationApps';
 
 // MapLibre pèse à lui seul plus que tout le reste de l'application : la carte
@@ -58,6 +59,7 @@ function TabbedRoutes() {
         <Route path="/voyages/:id/discussion" element={<TripDiscussion />} />
         <Route path="/voyages/:id/applications" element={<TripApps />} />
         <Route path="/voyages/:id/valise" element={<TripValise />} />
+        <Route path="/voyages/:id/modifier" element={<TripEdit />} />
         <Route path="/voyages/:id/recapitulatif" element={<TripRecapitulatif />} />
         <Route path="/applications/moderation" element={<ModerationApps />} />
         <Route path="/carte" element={<MapTab />} />

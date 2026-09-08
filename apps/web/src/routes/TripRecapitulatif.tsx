@@ -19,7 +19,7 @@ import { getExpenses } from '@/lib/expenses';
 import { getItinerary } from '@/lib/itinerary';
 import { getDiscussion } from '@/lib/discussion';
 import { getValise } from '@/lib/packing';
-import { getTripRepository } from '@/lib/trips';
+import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { useAuth } from '@/lib/auth-context';
 import { signaler } from '@/lib/feedback';
 
@@ -46,7 +46,7 @@ export default function TripRecapitulatif() {
   const { identity } = useAuth();
 
   const voyage = useQuery({
-    queryKey: ['trip', id],
+    queryKey: cleVoyage(id),
     queryFn: () => getTripRepository().get(id!),
     enabled: Boolean(id),
   });
