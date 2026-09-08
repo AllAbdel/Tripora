@@ -63,6 +63,16 @@ export interface ApplicationUtile {
   iosUrl: string | null;
   androidUrl: string | null;
   webUrl: string | null;
+  /**
+   * Lien de parrainage, **en plus** du lien direct et jamais à sa place.
+   *
+   * Il n'entre dans aucun calcul de ce fichier, et c'est délibéré : le jour où
+   * le classement dépendrait d'un parrainage, ces recommandations ne
+   * vaudraient plus rien. `comparer()` ne le lit pas, et un test le vérifie.
+   */
+  referralUrl?: string | null;
+  /** Ce que Tripora y gagne, dit en clair. Sans ça, on n'affiche pas le lien. */
+  referralNote?: string | null;
   /** Codes pays ISO 3166-1 alpha-2. Vide = partout. */
   countryCodes: readonly string[];
   /** Identifiants de destination du catalogue. Vide = pas de ville imposée. */
@@ -134,6 +144,14 @@ export function porteeDeApplication(
   return 'monde';
 }
 
+/**
+ * L'ordre de deux fiches.
+ *
+ * Trois critères, et pas un de plus : la portée, l'utilité déclarée, puis
+ * l'alphabet. Un lien de parrainage ne figure volontairement pas dans cette
+ * fonction — c'est la seule garantie qui vaille que la liste reste honnête,
+ * et c'est aussi ce qu'un test vérifie explicitement.
+ */
 function comparer(a: ApplicationClassee, b: ApplicationClassee): number {
   const parPortee = RANG_PORTEE[a.portee] - RANG_PORTEE[b.portee];
   if (parPortee !== 0) return parPortee;

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BellOff,
   Check,
+  HandCoins,
   LogOut,
   Monitor,
   Moon,
@@ -90,6 +91,24 @@ export default function Profile() {
 
         <Section titre="Retours">
           <ChoixDesRetours />
+        </Section>
+
+        <Section titre="Tripora">
+          <Card>
+            <CardBody className="space-y-2">
+              <p className="text-muted text-sm leading-relaxed">
+                Gratuit, sans compte payant, sans publicité et sans revente de données. Ce qui le
+                finance tient en deux liens de parrainage, et c’est écrit en entier.
+              </p>
+              <Link
+                to="/soutenir"
+                className="text-brand-600 dark:text-brand-300 inline-flex min-h-11 items-center gap-2 text-sm font-semibold"
+              >
+                <HandCoins className="size-4" aria-hidden />
+                Comment Tripora est financé
+              </Link>
+            </CardBody>
+          </Card>
         </Section>
 
         {jeModere.data && (

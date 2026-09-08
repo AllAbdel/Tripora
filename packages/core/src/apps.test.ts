@@ -103,6 +103,34 @@ describe('classement', () => {
   });
 });
 
+describe('parrainage', () => {
+  it('ne change strictement rien au classement', () => {
+    // Le jour où un lien de parrainage ferait remonter une fiche, tout le
+    // catalogue perdrait sa valeur : on ne saurait plus si une recommandation
+    // est là parce qu'elle est bonne ou parce qu'elle rapporte. Ce test est la
+    // seule chose qui garantisse que ça reste vrai dans six mois.
+    const sans = applicationsPour(CATALOGUE, { destinationId: 'istanbul', countryCode: 'TR' });
+
+    const avec = applicationsPour(
+      CATALOGUE.map((app) =>
+        // On parraine le moins prioritaire du lot : s'il remontait, ça se
+        // verrait immédiatement.
+        app.id === 'uber'
+          ? { ...app, referralUrl: 'https://exemple.test/parrainage', referralNote: 'note' }
+          : app,
+      ),
+      { destinationId: 'istanbul', countryCode: 'TR' },
+    );
+
+    expect(avec.map((a) => a.id)).toEqual(sans.map((a) => a.id));
+  });
+
+  it('laisse passer une fiche sans parrainage comme avant', () => {
+    const liste = applicationsPour(CATALOGUE, { countryCode: 'TR' });
+    expect(liste.every((app) => app.referralUrl === undefined)).toBe(true);
+  });
+});
+
 describe('les essentielles', () => {
   it('ne propose qu’une application par rubrique', () => {
     const tete = essentielles(CATALOGUE, { destinationId: 'istanbul', countryCode: 'TR' }, 5);

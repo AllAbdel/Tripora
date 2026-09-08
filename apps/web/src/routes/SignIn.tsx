@@ -108,7 +108,7 @@ export default function SignIn() {
       </div>
 
       <p className="text-muted text-center text-xs leading-relaxed">
-        Pas de mot de passe, pas de publicité, pas de revente de données.
+        Pas de mot de passe, pas de publicité, pas de pistage, pas de revente de données.
         Vos noms et vos dépenses ne sont jamais transmis à un service d’intelligence artificielle.
       </p>
     </div>

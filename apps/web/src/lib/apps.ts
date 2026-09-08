@@ -40,6 +40,7 @@ export interface ApplicationEnAttente extends ApplicationUtile {
 
 const COLONNES =
   'id, name, category, tagline, why, caveat, ios_url, android_url, web_url, ' +
+  'referral_url, referral_note, ' +
   'country_codes, destination_ids, priority, status, submitted_by, review_note, created_at';
 
 function versApplication(row: Record<string, unknown>): ApplicationEnAttente {
@@ -53,6 +54,8 @@ function versApplication(row: Record<string, unknown>): ApplicationEnAttente {
     iosUrl: (row['ios_url'] as string | null) ?? null,
     androidUrl: (row['android_url'] as string | null) ?? null,
     webUrl: (row['web_url'] as string | null) ?? null,
+    referralUrl: (row['referral_url'] as string | null) ?? null,
+    referralNote: (row['referral_note'] as string | null) ?? null,
     countryCodes: (row['country_codes'] as string[] | null) ?? [],
     destinationIds: (row['destination_ids'] as string[] | null) ?? [],
     priority: (row['priority'] as number | null) ?? 0,

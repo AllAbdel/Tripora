@@ -304,6 +304,39 @@ propres prix de vol, pour que le chiffre affiché soit vérifiable d'un clic.
 Aucun de ces liens n'est affilié et Tripora ne touche rien dessus. Ils ne
 promettent aucun prix : ils évitent de ressaisir six fois les mêmes dates.
 
+## Ce qui finance Tripora
+
+Rien, presque. Toutes les sources ci-dessus sont gratuites et le coût de
+fonctionnement est nul ; il ne reste qu'un nom de domaine.
+
+Le peu qu'il faut vient de **liens de parrainage** sur deux ou trois services
+que Tripora recommanderait de toute façon — Wise et BoursoBank aujourd'hui.
+Trois règles encadrent le procédé, et deux sont dans le code plutôt que dans
+une promesse :
+
+1. **Le classement les ignore.** `applicationsPour()` trie sur la portée et
+   l'utilité déclarée ; `referralUrl` n'entre dans aucune comparaison. Un test
+   de `apps.test.ts` parraine délibérément la fiche la moins prioritaire du lot
+   et vérifie que l'ordre ne bouge pas. C'est la seule garantie qui vaille : une
+   intention se perd en six mois, un test non.
+2. **Le lien direct reste affiché**, au-dessus du lien parrainé. Ne pas nous
+   faire gagner d'argent demande un geste de moins, pas un de plus.
+3. **Seul un administrateur peut en poser un.** Un déclencheur efface
+   `referral_url` sur toute écriture faite par quelqu'un d'autre — sans quoi la
+   première proposition venue arriverait avec le lien de son auteur. Un test
+   RLS le vérifie dans les deux sens.
+
+La mention est obligatoire côté base : `referral_url` sans `referral_note` est
+refusé par une contrainte. Afficher « lien de parrainage » sans dire ce qu'on y
+gagne n'est pas une divulgation, c'est une formalité — et en France, la
+transparence sur un partenariat commercial est une obligation, pas un choix
+éditorial.
+
+**Pas de publicité, et ce n'est pas une posture.** Une régie mesure qui vous
+êtes pour décider quoi vous montrer : traceur, identifiants envoyés à un tiers,
+et la promesse de confidentialité tombe. Un lien de parrainage ne sait même pas
+que vous existez tant que vous n'avez pas cliqué.
+
 ## Coût mensuel
 
 **0 €.** Consommation attendue pour un groupe d'amis : moins de 5 % de chaque

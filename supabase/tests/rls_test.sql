@@ -687,4 +687,52 @@ end $$;
 reset role;
 reset request.jwt.claims;
 
+-- ============================================================================
+-- Les liens de parrainage : personne ne s'invite dans le catalogue.
+--
+-- C'est le garde-fou le plus important de la fonctionnalité. Sans lui, la
+-- première proposition venue arriverait avec le lien de son auteur, un
+-- administrateur pressé la publierait, et le catalogue deviendrait exactement
+-- ce qu'il promet de ne pas être.
+-- ============================================================================
+
+set role authenticated;
+set request.jwt.claims =
+  '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated","email":"malin@example.com"}';
+
+do $$
+declare lien text;
+begin
+  insert into public.travel_apps
+    (id, name, category, tagline, why, status, submitted_by, referral_url, referral_note)
+  values ('essai-parrainage', 'Essai', 'argent', 'x', 'y', 'pending', auth.uid(),
+          'https://exemple.test/mon-parrainage', 'je touche tout');
+
+  select referral_url into lien from public.travel_apps where id = 'essai-parrainage';
+  assert lien is null, format('Le lien d''un membre doit être effacé, obtenu %s', lien);
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+set role authenticated;
+set request.jwt.claims =
+  '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","email":"abdelslam.allaouat.pro@gmail.com"}';
+
+do $$
+declare lien text;
+begin
+  update public.travel_apps
+     set referral_url = 'https://exemple.test/officiel', referral_note = 'note'
+   where id = 'essai-parrainage';
+
+  select referral_url into lien from public.travel_apps where id = 'essai-parrainage';
+  assert lien = 'https://exemple.test/officiel', 'L''administrateur, lui, doit pouvoir en poser un';
+
+  delete from public.travel_apps where id = 'essai-parrainage';
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
 select '✅ Tous les tests RLS sont passés' as resultat;

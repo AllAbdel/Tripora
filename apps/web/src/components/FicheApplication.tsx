@@ -1,4 +1,4 @@
-import { Apple, Globe, Play, TriangleAlert } from 'lucide-react';
+import { Apple, Globe, HandCoins, Play, TriangleAlert } from 'lucide-react';
 import type { ApplicationClassee, ApplicationUtile } from '@tripora/core';
 import { cn } from '@/lib/cn';
 
@@ -67,7 +67,41 @@ export function FicheApplication({
           </LienMagasin>
         )}
       </div>
+
+      {app.referralUrl && app.referralNote && (
+        <Parrainage url={app.referralUrl} note={app.referralNote} />
+      )}
     </article>
+  );
+}
+
+/**
+ * Le lien de parrainage, annoncé pour ce qu'il est.
+ *
+ * Il arrive **après** les liens ordinaires, jamais à leur place : qui ne veut
+ * pas nous faire gagner d'argent clique juste au-dessus, sans avoir à
+ * chercher. Et la mention n'est pas une formalité juridique repliée en petit —
+ * elle dit ce que Tripora y gagne, en toutes lettres, parce qu'un lecteur qui
+ * découvre après coup qu'on touchait une commission ne recroit plus rien de la
+ * liste.
+ */
+function Parrainage({ url, note }: { url: string; note: string }) {
+  return (
+    <div className="border-t border-[color:var(--border-subtle)] pt-2.5">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        className={cn(
+          'inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold',
+          'bg-gold-500/15 text-gold-800 dark:text-gold-200 hover:bg-gold-500/25',
+        )}
+      >
+        <HandCoins className="size-3.5" aria-hidden />
+        Ouvrir avec le parrainage de Tripora
+      </a>
+      <p className="text-muted mt-1.5 text-xs leading-relaxed">{note}</p>
+    </div>
   );
 }
 
