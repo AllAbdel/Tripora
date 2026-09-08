@@ -159,6 +159,42 @@ Restaurants, bars, musées, monuments, nature, plus les descriptions et les
 photos libres. La qualité varie selon les villes : c'est le prix du gratuit, et
 Tripora préfère afficher moins de lieux que des lieux inventés.
 
+### Photo de couverture — Wikipédia et Wikidata
+
+Sans clé, garde-quota à 400 appels par jour. Une photo par ville, mise en cache
+un an et partagée par tous les groupes : le coût réel est d'un appel par ville
+du catalogue, une fois.
+
+Trouver la bonne photo demande plus qu'une recherche, et trois essais l'ont
+montré :
+
+- **l'image de tête d'un article de ville est souvent un blason.** Pour
+  Lisbonne, c'était le drapeau municipal. On demande donc à Wikidata la
+  propriété **P18** (« image »), qui désigne la photo représentative et se
+  distingue du drapeau (P41) et des armoiries (P94) ;
+- **une recherche floue change de ville.** « Cambridge Royaume-Uni » ramenait
+  l'article du pays, qui porte des coordonnées comme n'importe quelle ville, et
+  donc une photo de Westminster. Le titre de l'article doit désormais
+  correspondre au nom cherché, sans quoi on ne renvoie rien : une mauvaise
+  photo est pire que pas de photo, parce qu'elle est crue ;
+- **certaines P18 sont des cartes.** Celle de Sumatra est un atlas de 1900. Le
+  format tranche mieux qu'une liste de mots-clés : sur Commons, les photos sont
+  en JPEG, les cartes et blasons en PNG ou en SVG.
+
+Mesure sur quarante destinations tirées au hasard du catalogue : quarante
+photos correctes.
+
+**Le crédit est obligatoire.** Les images de Commons sont librement
+réutilisables, presque jamais sans condition — la plupart exigent l'auteur et
+la licence. La fonction renvoie donc les deux, plus le lien vers la page du
+fichier, et l'interface les affiche sous la photo. Une fonction qui ne
+renverrait que l'URL inviterait à l'oublier.
+
+L'adresse reçue est vérifiée côté client avant d'atteindre un `<img>` : seuls
+les domaines de Wikimedia sont acceptés. Une adresse arbitraire ferait de
+chaque ouverture de voyage une requête vers un serveur tiers, qui apprendrait
+au passage l'adresse IP de tous les membres du groupe.
+
 ### Devises — Frankfurter
 
 Sans clé, sans quota, taux officiels de la Banque centrale européenne. Le taux
