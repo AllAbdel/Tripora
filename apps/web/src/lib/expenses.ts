@@ -1,6 +1,7 @@
 import type { Expense } from '@tripora/core';
 import { splitEqually } from '@tripora/core';
 import { supabase } from './supabase';
+import type { NomIcone } from '@tripora/core';
 
 /**
  * Les dépenses du voyage.
@@ -52,13 +53,13 @@ export interface ExpensesApi {
   remove(expenseId: string): Promise<void>;
 }
 
-export const CATEGORIES: { value: ExpenseCategory; label: string; emoji: string }[] = [
-  { value: 'food', label: 'Nourriture', emoji: '🍽️' },
-  { value: 'transport', label: 'Transport', emoji: '🚆' },
-  { value: 'accommodation', label: 'Hébergement', emoji: '🛏️' },
-  { value: 'activities', label: 'Activités', emoji: '🎟️' },
-  { value: 'shopping', label: 'Shopping', emoji: '🛍️' },
-  { value: 'other', label: 'Divers', emoji: '💫' },
+export const CATEGORIES: { value: ExpenseCategory; label: string; icone: NomIcone }[] = [
+  { value: 'food', label: 'Nourriture', icone: 'gastronomie' },
+  { value: 'transport', label: 'Transport', icone: 'transport' },
+  { value: 'accommodation', label: 'Hébergement', icone: 'hebergement' },
+  { value: 'activities', label: 'Activités', icone: 'billet' },
+  { value: 'shopping', label: 'Shopping', icone: 'shopping' },
+  { value: 'other', label: 'Divers', icone: 'divers' },
 ];
 
 const CLE_LOCALE = 'tripora.local-expenses';

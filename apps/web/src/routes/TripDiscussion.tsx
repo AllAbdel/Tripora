@@ -12,6 +12,7 @@ import { chercherAdresses, type AdresseTrouvee } from '@/lib/geocode';
 import { useAuth } from '@/lib/auth-context';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
+import { signaler } from '@/lib/feedback';
 
 /**
  * La discussion du voyage.
@@ -63,9 +64,11 @@ export default function TripDiscussion() {
   const envoyer = useMutation({
     mutationFn: (body: string) => discussion!.sendMessage(id!, body),
     onSuccess: () => {
+      signaler('tape');
       setTexte('');
       void queryClient.invalidateQueries({ queryKey: ['discussion', id] });
     },
+    onError: () => signaler('echec'),
   });
 
   const effacer = useMutation({
@@ -298,10 +301,12 @@ function FormulaireEpingle({
         messageId: message.id,
       }),
     onSuccess: () => {
+      signaler('reussite');
       void queryClient.invalidateQueries({ queryKey: ['epingles', tripId] });
       void queryClient.invalidateQueries({ queryKey: ['discussion', tripId] });
       onFerme();
     },
+    onError: () => signaler('echec'),
   });
 
   async function lancerRecherche() {

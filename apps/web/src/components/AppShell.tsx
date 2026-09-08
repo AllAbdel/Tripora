@@ -44,7 +44,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         </p>
       )}
 
-      <main className="flex-1 pb-24">{children}</main>
+      {/* La clé force React à remonter le contenu à chaque changement d'écran :
+          sans elle, l'animation d'entrée ne rejouerait qu'une fois. Un fondu
+          court et vertical, jamais un glissement latéral — un déplacement
+          horizontal raconte un sens de navigation que l'application n'a pas. */}
+      <main key={pathname} className="animate-page flex-1 pb-24">
+        {children}
+      </main>
 
       <nav
         aria-label="Navigation principale"

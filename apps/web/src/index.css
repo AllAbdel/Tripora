@@ -97,6 +97,8 @@
     *::before,
     *::after {
       animation-duration: 0.001ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.001ms !important;
     }
   }
@@ -122,6 +124,51 @@
   .animate-rise {
     animation: rise 0.35s var(--ease-out-soft) both;
   }
+
+  /* Une liste qui apparaît d'un bloc se lit comme un mur. Décalées de quelques
+     centièmes, les cartes se lisent dans l'ordre où elles comptent. Au-delà de
+     la huitième le retard cesse de croître : personne n'attend une seconde
+     pour voir le bas d'un écran. */
+  .animate-cascade > * {
+    animation: rise 0.4s var(--ease-out-soft) both;
+  }
+  .animate-cascade > *:nth-child(1) { animation-delay: 0ms; }
+  .animate-cascade > *:nth-child(2) { animation-delay: 45ms; }
+  .animate-cascade > *:nth-child(3) { animation-delay: 90ms; }
+  .animate-cascade > *:nth-child(4) { animation-delay: 130ms; }
+  .animate-cascade > *:nth-child(5) { animation-delay: 165ms; }
+  .animate-cascade > *:nth-child(6) { animation-delay: 195ms; }
+  .animate-cascade > *:nth-child(7) { animation-delay: 220ms; }
+  .animate-cascade > *:nth-child(n + 8) { animation-delay: 240ms; }
+
+  /* L'écran d'arrivée d'une navigation : un fondu court, sans glissement
+     latéral — un déplacement horizontal donne un sens à la navigation que
+     l'application n'a pas toujours. */
+  .animate-page {
+    animation: page 0.28s var(--ease-out-soft) both;
+  }
+
+  /* Le squelette d'un contenu qui arrive : une onde lente, pas un clignotement.
+     Un clignotement attire l'œil sur ce qui n'est pas encore là. */
+  .squelette {
+    background: linear-gradient(
+      100deg,
+      var(--surface-muted) 30%,
+      color-mix(in oklab, var(--surface-muted) 60%, var(--color-brand-200)) 50%,
+      var(--surface-muted) 70%
+    );
+    background-size: 220% 100%;
+    animation: onde 1.6s ease-in-out infinite;
+  }
+
+  /* Un appui qui s'enfonce : le retour le moins coûteux et le plus universel.
+     Appliqué au conteneur, il évite d'ajouter `active:scale` partout. */
+  .pressable {
+    transition: transform 0.16s var(--ease-out-soft);
+  }
+  .pressable:active {
+    transform: scale(0.975);
+  }
 }
 
 @keyframes rise {
@@ -132,5 +179,25 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes page {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes onde {
+  from {
+    background-position: 180% 0;
+  }
+  to {
+    background-position: -80% 0;
   }
 }

@@ -11,6 +11,7 @@ import { TextInput } from '@/components/ui/Field';
 import { FicheApplication } from '@/components/FicheApplication';
 import { getApps } from '@/lib/apps';
 import { toFailure } from '@/lib/errors';
+import { signaler } from '@/lib/feedback';
 
 /**
  * La file d'attente de modération.
@@ -43,6 +44,7 @@ export default function ModerationApps() {
   });
 
   const rafraichir = async () => {
+    signaler('decision');
     await queryClient.invalidateQueries({ queryKey: ['applications-en-attente'] });
     await queryClient.invalidateQueries({ queryKey: ['applications-publiees'] });
   };

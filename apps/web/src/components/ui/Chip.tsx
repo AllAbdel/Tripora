@@ -20,7 +20,7 @@ export function Chip({
       className={cn(
         'min-h-10 rounded-full border px-3.5 text-sm font-medium transition-colors',
         selected
-          ? 'border-brand-500 bg-brand-500 text-white'
+          ? 'border-brand-500 bg-brand-500 text-[color:var(--accent-contrast)]'
           : 'border-[color:var(--border-subtle)] text-muted surface-raised hover:border-brand-300',
         className,
       )}

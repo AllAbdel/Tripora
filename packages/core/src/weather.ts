@@ -12,6 +12,8 @@
  * langage : une prévision inventée ferait rater un train.
  */
 
+import type { NomIcone } from './icons.js';
+
 export interface DailyWeather {
   /** Jour local à destination, au format ISO. */
   date: string;
@@ -56,22 +58,23 @@ const LIBELLES: Readonly<Record<Sky, string>> = {
   orage: 'orage',
 };
 
-const EMOJIS: Readonly<Record<Sky, string>> = {
-  soleil: '☀️',
-  eclaircies: '🌤️',
-  nuages: '☁️',
-  brouillard: '🌫️',
-  pluie: '🌧️',
-  neige: '❄️',
-  orage: '⛈️',
+const ICONES: Readonly<Record<Sky, NomIcone>> = {
+  soleil: 'soleil',
+  eclaircies: 'eclaircies',
+  nuages: 'nuages',
+  brouillard: 'brouillard',
+  pluie: 'pluie',
+  neige: 'neige',
+  orage: 'orage',
 };
 
 export function weatherLabel(code: number): string {
   return LIBELLES[skyFor(code)];
 }
 
-export function weatherEmoji(code: number): string {
-  return EMOJIS[skyFor(code)];
+/** L'icône du ciel. Jamais d'émoji : voir `icons.ts`. */
+export function weatherIcon(code: number): NomIcone {
+  return ICONES[skyFor(code)];
 }
 
 /**

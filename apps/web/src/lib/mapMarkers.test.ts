@@ -69,7 +69,7 @@ describe('repères de la carte', () => {
     expect(markers).toHaveLength(2);
     expect(markers[1]?.id).toBe('budapest');
     expect(markers[1]?.kind).toBe('chosen');
-    expect(markers[1]?.badge).toBe('★');
+    expect(markers[1]?.glyphe).toBe('etoile');
   });
 
   it('utilise les vraies coordonnées du catalogue', () => {

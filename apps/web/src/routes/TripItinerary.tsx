@@ -6,9 +6,10 @@ import {
   Trash2, X,
 } from 'lucide-react';
 import {
-  awaitsPlace, AXIS_EMOJI, buildItinerary, dayVerdict, describeDay, fillItinerary,
+  awaitsPlace, AXIS_ICON, buildItinerary, dayVerdict, describeDay, fillItinerary,
   findDestination, formatCents, groupWeights, parseAmountToCents, suggestWeatherSwaps,
-  weatherEmoji,
+  weatherIcon,
+  type NomIcone,
   type DailyWeather, type Destination, type MemberPreference, type Poi,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
@@ -26,13 +27,15 @@ import { chargerLieux } from '@/lib/places';
 import { chargerMeteo, cleMeteo } from '@/lib/weather';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
+import { Icone } from '@/components/Icone';
 
-const ICONES: Record<string, string> = {
-  transit: '✈️',
-  checkin: '🔑',
-  checkout: '🧳',
-  meal: '🍽️',
-  evening: '🌙',
+/** L'icône d'un moment de la journée, quand l'activité n'en porte pas. */
+const ICONES: Record<string, NomIcone> = {
+  transit: 'avion',
+  checkin: 'arrivee',
+  checkout: 'depart',
+  meal: 'repas',
+  evening: 'soiree',
 };
 
 export default function TripItinerary() {
@@ -368,7 +371,7 @@ export default function TripItinerary() {
                 className={cn(
                   'min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition-colors',
                   jourActif === jour.dayIndex
-                    ? 'border-brand-500 bg-brand-500 text-white'
+                    ? 'border-brand-500 bg-brand-500 text-[color:var(--accent-contrast)]'
                     : 'border-[color:var(--border-subtle)] text-muted',
                 )}
               >
@@ -479,7 +482,7 @@ function Journee({
                       : 'bg-[color:var(--surface-muted)]',
                   )}
                 >
-                  <span aria-hidden>{weatherEmoji(meteo.code)}</span>
+                  <Icone nom={weatherIcon(meteo.code)} className="size-3.5" />
                   {describeDay(meteo)}
                   {dayVerdict(meteo) === 'dedans' && ' — plutôt à l’abri'}
                 </span>
@@ -497,8 +500,14 @@ function Journee({
           <li key={item.id}>
             <Card>
               <CardBody className="flex items-start gap-3 p-3.5">
-                <span aria-hidden className="pt-0.5 text-lg">
-                  {item.axis ? AXIS_EMOJI[item.axis] : (ICONES[item.kind] ?? '📍')}
+                <span
+                  aria-hidden
+                  className="bg-brand-50 text-brand-600 dark:bg-brand-900/50 dark:text-brand-300 mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg"
+                >
+                  <Icone
+                    nom={item.axis ? AXIS_ICON[item.axis] : (ICONES[item.kind] ?? 'lieu')}
+                    className="size-4"
+                  />
                 </span>
 
                 <div className="min-w-0 flex-1">

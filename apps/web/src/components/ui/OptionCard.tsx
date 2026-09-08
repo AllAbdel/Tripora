@@ -42,7 +42,7 @@ export function OptionCard({
           aria-hidden
           className={cn(
             'grid size-10 shrink-0 place-items-center rounded-xl',
-            selected ? 'bg-brand-500 text-white' : 'bg-[color:var(--surface-muted)] text-muted',
+            selected ? 'bg-brand-500 text-[color:var(--accent-contrast)]' : 'bg-[color:var(--surface-muted)] text-muted',
           )}
         >
           {icon}

@@ -26,6 +26,8 @@ export interface TripSummary {
   status: string;
   participants: number;
   destinationName: string | null;
+  /** Code ISO du pays de la destination retenue, pour en afficher le drapeau. */
+  destinationCountryCode: string | null;
   coverImageUrl: string | null;
   createdAt: string;
   /** Vrai quand le voyage ne vit que sur cet appareil. */
@@ -105,6 +107,7 @@ const localRepository: TripRepository = {
         status: 'draft',
         participants: trip.draft.participants,
         destinationName: null,
+        destinationCountryCode: null,
         coverImageUrl: null,
         createdAt: trip.createdAt,
         localOnly: true,
@@ -124,6 +127,7 @@ const localRepository: TripRepository = {
         status: retenue ? 'planned' : 'draft',
         participants: trip.draft.participants,
         destinationName: retenue ? (findDestination(retenue)?.name ?? retenue) : null,
+        destinationCountryCode: retenue ? (findDestination(retenue)?.countryCode ?? null) : null,
         coverImageUrl: null,
         createdAt: trip.createdAt,
         localOnly: true,
@@ -230,6 +234,7 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
         participants: row.participants as number,
         // La colonne stocke un identifiant technique : on affiche le nom.
         destinationName: lockedId ? (findDestination(lockedId)?.name ?? lockedId) : null,
+        destinationCountryCode: lockedId ? (findDestination(lockedId)?.countryCode ?? null) : null,
         coverImageUrl: (row.cover_image_url as string | null) ?? null,
         createdAt: row.created_at as string,
         localOnly: false,
@@ -271,6 +276,9 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
           status: data.status as string,
           participants: data.participants as number,
           destinationName: lockedId ? (findDestination(lockedId)?.name ?? lockedId) : null,
+          destinationCountryCode: lockedId
+            ? (findDestination(lockedId)?.countryCode ?? null)
+            : null,
           coverImageUrl: (data.cover_image_url as string | null) ?? null,
           createdAt: data.created_at as string,
           localOnly: false,

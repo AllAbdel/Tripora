@@ -6,6 +6,7 @@ import { Chip } from '@/components/ui/Chip';
 import { TextInput } from '@/components/ui/Field';
 import { chercherVilles, retenirVille } from '@/lib/geocode';
 import { useTripDraft } from '@/stores/tripDraft';
+import { Drapeau } from '@/components/Drapeau';
 
 /** Laisse finir de taper avant d'appeler : sinon c'est un appel par lettre. */
 const ATTENTE_MS = 350;
@@ -158,6 +159,7 @@ export function StepDestination() {
                     selected={destinationIds.includes(ville.id)}
                     onClick={() => choisir(ville)}
                   >
+                    <Drapeau code={ville.countryCode} className="mr-1.5" />
                     {ville.name}
                     {ville.country && (
                       <span className="text-muted ml-1.5 text-xs">{ville.country}</span>

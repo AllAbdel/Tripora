@@ -38,6 +38,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Les 147 drapeaux pèsent un mégaoctet à eux seuls, presque tout dû à
+        // une vingtaine d'armoiries détaillées. Les précharger ferait payer à
+        // tout le monde, à l'installation, des images que chacun ne verra que
+        // par poignées. Ils sont mis en cache au fil de l'affichage.
+        globIgnores: ['**/flags/*.svg'],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
@@ -48,6 +53,17 @@ export default defineConfig({
             options: {
               cacheName: 'openfreemap-tiles',
               expiration: { maxEntries: 3000, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Drapeaux : immuables une fois copiés, gardés longtemps, et
+            // disponibles hors ligne dès qu'ils ont été vus une fois.
+            urlPattern: /\/flags\/[a-z]{2}\.svg$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tripora-drapeaux',
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 180 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

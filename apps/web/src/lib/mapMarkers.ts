@@ -43,7 +43,7 @@ export function buildTripMarkers({
       id: 'origine',
       point: origin,
       label: `Départ de ${origin.name}`,
-      badge: '↑',
+      glyphe: 'depart',
       kind: 'origin',
     },
   ];
@@ -59,7 +59,9 @@ export function buildTripMarkers({
       id: destination.id,
       point: destination,
       label: `${destination.name} — ${score.total}/100`,
-      badge: lockedDestinationId ? '★' : String(index + 1),
+      ...(lockedDestinationId
+        ? { glyphe: 'etoile' as const }
+        : { badge: String(index + 1) }),
       kind: lockedDestinationId === destination.id ? 'chosen' : 'destination',
       ...(onSelect ? { onSelect: () => onSelect(destination.id) } : {}),
     });
@@ -82,7 +84,7 @@ export function buildTripMarkers({
       id: `epingle:${epingle.id}`,
       point: { lat: epingle.lat, lng: epingle.lng },
       label: epingle.label,
-      badge: '📌',
+      glyphe: 'epingle',
       kind: 'pin',
     });
   }

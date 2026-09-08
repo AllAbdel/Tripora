@@ -15,6 +15,7 @@ import { StepDestination } from './steps/StepDestination';
 import { StepDates } from './steps/StepDates';
 import { StepBudget } from './steps/StepBudget';
 import { StepPreferences } from './steps/StepPreferences';
+import { signaler } from '@/lib/feedback';
 
 const TITLES: Record<StepId, { question: string; help: string }> = {
   groupe: { question: 'Avec qui partez-vous ?', help: 'On pourra inviter les autres juste après.' },
@@ -71,9 +72,11 @@ export default function CreateTrip() {
       // Sans cette invalidation, la liste et l'écran du voyage afficheraient
       // encore le cache d'avant la création : le voyage semblerait introuvable.
       await queryClient.invalidateQueries({ queryKey: ['trips'] });
+      signaler('reussite');
       draft.reset();
       navigate(`/voyages/${id}`);
     } catch (cause) {
+      signaler('echec');
       const failure = toFailure(cause);
       // Un message métier explicite vaut mieux que la traduction générique ;
       // à défaut, la piste d'action compte autant que le constat.

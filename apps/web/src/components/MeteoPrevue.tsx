@@ -3,7 +3,7 @@ import { CloudSun } from 'lucide-react';
 import {
   dayVerdict,
   forecastForTrip,
-  weatherEmoji,
+  weatherIcon,
   weatherLabel,
   type DailyWeather,
   type Destination,
@@ -12,6 +12,7 @@ import {
 import { chargerMeteo, cleMeteo } from '@/lib/weather';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/lib/cn';
+import { Icone } from '@/components/Icone';
 
 /**
  * La météo du séjour, quand elle est connue.
@@ -95,9 +96,7 @@ function Jour({ jour }: { jour: DailyWeather }) {
       <span className="text-muted text-[10px] font-semibold uppercase">
         {jourCourt(jour.date)}
       </span>
-      <span className="text-lg leading-none" aria-hidden>
-        {weatherEmoji(jour.code)}
-      </span>
+      <Icone nom={weatherIcon(jour.code)} className="text-brand-500 size-5" />
       <span className="text-sm font-bold tabular-nums">{Math.round(jour.maxC)}°</span>
       <span className="text-muted text-[10px] tabular-nums">{Math.round(jour.minC)}°</span>
       <span className="sr-only">

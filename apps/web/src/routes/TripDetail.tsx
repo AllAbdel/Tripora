@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CalendarDays, Loader2, Lock, LockOpen, Map as MapIcon, MapPin, MessagesSquare, Smartphone, UserPlus, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, Loader2, Lock, LockOpen, MapPin, Users, Wallet } from 'lucide-react';
 import {
   estimateTransportOptions,
   findDestination,
@@ -26,6 +26,8 @@ import { MeteoPrevue } from '@/components/MeteoPrevue';
 import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
 import { Assistant } from '@/components/Assistant';
 import { toFailure } from '@/lib/errors';
+import { OutilsDuVoyage } from '@/components/OutilsDuVoyage';
+import { signaler } from '@/lib/feedback';
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
@@ -52,8 +54,10 @@ export default function TripDetail() {
   });
 
   const voter = useMutation({
-    mutationFn: ({ destinationId, value }: { destinationId: string; value: VoteValue | null }) =>
-      voting.cast(id!, destinationId, value),
+    mutationFn: ({ destinationId, value }: { destinationId: string; value: VoteValue | null }) => {
+      signaler('tape');
+      return voting.cast(id!, destinationId, value);
+    },
     // Le vote est un geste réflexe : on n'attend pas le serveur pour montrer
     // le résultat, et on se resynchronise juste après.
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['votes', id] }),
@@ -62,7 +66,13 @@ export default function TripDetail() {
   const verrouiller = useMutation({
     mutationFn: (destinationId: string | null) =>
       destinationId ? voting.lockDestination(id!, destinationId) : voting.unlockDestination(id!),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['trip'] }),
+    // Trancher la destination est le geste le plus engageant du parcours : il
+    // mérite un retour qui se distingue d'un simple appui.
+    onSuccess: () => {
+      signaler('decision');
+      return queryClient.invalidateQueries({ queryKey: ['trip'] });
+    },
+    onError: () => signaler('echec'),
   });
 
   const { proposals, prix, prixEnCours, normales } = useProposals(data);
@@ -139,27 +149,6 @@ export default function TripDetail() {
             locked={Boolean(data.lockedDestinationId)}
           />
 
-          {getCollaboration() && (
-            <Link to={`/voyages/${data.summary.id}/participants`} className="block">
-              <Card className="transition-transform active:scale-[0.99]">
-                <CardBody className="flex items-center gap-3 p-4">
-                  <UserPlus className="text-brand-500 size-5 shrink-0" aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold">
-                      {data.members.length < data.constraints.participants
-                        ? 'Inviter le reste du groupe'
-                        : 'Participants et envies'}
-                    </span>
-                    <span className="text-muted block text-sm">
-                      {decrireAttente(data.members.length, data.constraints.participants)}
-                    </span>
-                  </span>
-                  <span className="text-muted shrink-0" aria-hidden>›</span>
-                </CardBody>
-              </Card>
-            </Link>
-          )}
-
           {proposals && proposals.scores.length === 0 && (
             <Banner tone="warning" title="Aucune destination ne colle">
               Essayez d’élargir le budget, la période ou la durée. Avec très peu de temps
@@ -167,88 +156,13 @@ export default function TripDetail() {
             </Banner>
           )}
 
-          {data.lockedDestinationId && (
-            <Link to={`/voyages/${data.summary.id}/itineraire`} className="block">
-              <Card className="border-lagoon-500 transition-transform active:scale-[0.99]">
-                <CardBody className="flex items-center gap-3 p-4">
-                  <CalendarDays className="text-lagoon-500 size-5 shrink-0" aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold">L’itinéraire jour par jour</span>
-                    <span className="text-muted block text-sm">
-                      La structure du séjour, à remplir de vraies adresses
-                    </span>
-                  </span>
-                  <span className="text-muted shrink-0" aria-hidden>›</span>
-                </CardBody>
-              </Card>
-            </Link>
-          )}
-
-          <Link to={`/voyages/${data.summary.id}/discussion`} className="block">
-            <Card className="transition-transform active:scale-[0.99]">
-              <CardBody className="flex items-center gap-3 p-4">
-                <MessagesSquare className="text-brand-500 size-5 shrink-0" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold">Discussion</span>
-                  <span className="text-muted block text-sm">
-                    Partagez des liens, épinglez les endroits qui vous plaisent
-                  </span>
-                </span>
-                <span className="text-muted shrink-0" aria-hidden>›</span>
-              </CardBody>
-            </Card>
-          </Link>
-
-          <Link to={`/voyages/${data.summary.id}/budget`} className="block">
-            <Card className="transition-transform active:scale-[0.99]">
-              <CardBody className="flex items-center gap-3 p-4">
-                <Wallet className="text-brand-500 size-5 shrink-0" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold">Dépenses</span>
-                  <span className="text-muted block text-sm">
-                    Qui a avancé quoi, et qui doit combien à qui
-                  </span>
-                </span>
-                <span className="text-muted shrink-0" aria-hidden>›</span>
-              </CardBody>
-            </Card>
-          </Link>
-
-          {/* Une fois la ville tranchée, l'encart d'aperçu tient déjà ce rôle,
-              et mieux : il montre les fiches au lieu d'y mener. */}
-          {!villeRetenue && (
-            <Link to={`/voyages/${data.summary.id}/applications`} className="block">
-              <Card className="transition-transform active:scale-[0.99]">
-                <CardBody className="flex items-center gap-3 p-4">
-                  <Smartphone className="text-brand-500 size-5 shrink-0" aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold">Applications utiles</span>
-                    <span className="text-muted block text-sm">
-                      À installer avant de partir, où que vous alliez
-                    </span>
-                  </span>
-                  <span className="text-muted shrink-0" aria-hidden>›</span>
-                </CardBody>
-              </Card>
-            </Link>
-          )}
-
-          <Link to={`/voyages/${data.summary.id}/carte`} className="block">
-            <Card className="transition-transform active:scale-[0.99]">
-              <CardBody className="flex items-center gap-3 p-4">
-                <MapIcon className="text-brand-500 size-5 shrink-0" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold">Voir sur la carte</span>
-                  <span className="text-muted block text-sm">
-                    {data.lockedDestinationId
-                      ? 'Le trajet depuis ' + data.constraints.origin.name
-                      : 'Où sont les destinations en lice'}
-                  </span>
-                </span>
-                <span className="text-muted shrink-0" aria-hidden>›</span>
-              </CardBody>
-            </Card>
-          </Link>
+          <OutilsDuVoyage
+            tripId={data.summary.id}
+            destinationVerrouillee={Boolean(data.lockedDestinationId)}
+            collaborationActive={Boolean(getCollaboration())}
+            attente={decrireAttente(data.members.length, data.constraints.participants)}
+            destinationConnue={Boolean(villeRetenue)}
+          />
 
           {data.lockedDestinationId && (
             <Banner tone="info" title="Destination retenue">
@@ -336,7 +250,7 @@ export default function TripDetail() {
                 </Banner>
               )}
 
-              <ul className="space-y-3">
+              <ul className="animate-cascade space-y-3">
                 {proposals.scores.map((score, index) => {
                   const destination = findDestination(score.destinationId);
                   if (!destination) return null;

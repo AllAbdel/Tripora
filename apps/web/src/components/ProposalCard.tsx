@@ -29,6 +29,7 @@ import { ScoreRing } from '@/components/ScoreRing';
 import { messageIA, rediger } from '@/lib/ai';
 import { faitsPourExplication } from '@/lib/explication';
 import { cn } from '@/lib/cn';
+import { Drapeau } from '@/components/Drapeau';
 
 const TRANSPORT_ICONS = {
   plane: Plane,
@@ -134,7 +135,10 @@ export function ProposalCard({
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-lg font-bold">{destination.name}</h3>
-            <p className="text-muted text-sm">{destination.country}</p>
+            <p className="text-muted flex items-center gap-1.5 text-sm">
+              <Drapeau code={destination.countryCode} />
+              <span className="truncate">{destination.country}</span>
+            </p>
           </div>
           <ScoreRing score={score.total} />
         </div>

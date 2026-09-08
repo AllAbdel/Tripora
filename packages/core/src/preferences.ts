@@ -2,6 +2,9 @@
  * Les 8 axes de préférences de Tripora.
  * Cette liste est la référence unique : base de données, UI, IA et scoring l'utilisent tous.
  */
+
+import type { NomIcone } from './icons.js';
+
 export const PREFERENCE_AXES = [
   'culture',
   'nature',
@@ -40,15 +43,16 @@ export const AXIS_LABELS_FR: Record<PreferenceAxis, string> = {
   offbeat: 'Insolite',
 };
 
-export const AXIS_EMOJI: Record<PreferenceAxis, string> = {
-  culture: '🏛️',
-  nature: '🏔️',
-  food: '🍽️',
-  nightlife: '🎉',
-  relax: '🌴',
-  adventure: '🧗',
-  shopping: '🛍️',
-  offbeat: '🎭',
+/** L'icône de chaque envie. Jamais d'émoji : voir `icons.ts`. */
+export const AXIS_ICON: Record<PreferenceAxis, NomIcone> = {
+  culture: 'culture',
+  nature: 'nature',
+  food: 'gastronomie',
+  nightlife: 'fete',
+  relax: 'detente',
+  adventure: 'aventure',
+  shopping: 'shopping',
+  offbeat: 'insolite',
 };
 
 /** Objet de poids entièrement à zéro (point de départ neutre). */

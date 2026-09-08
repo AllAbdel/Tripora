@@ -6,7 +6,7 @@ import {
   forecastForTrip,
   parseForecast,
   skyFor,
-  weatherEmoji,
+  weatherIcon,
   weatherLabel,
   type DailyWeather,
 } from './weather.js';
@@ -31,7 +31,7 @@ describe('lecture des codes OMM', () => {
   it('donne un libellé et une image à chaque code', () => {
     for (const code of [0, 1, 2, 3, 45, 51, 61, 71, 80, 95, 99]) {
       expect(weatherLabel(code).length).toBeGreaterThan(3);
-      expect(weatherEmoji(code).length).toBeGreaterThan(0);
+      expect(weatherIcon(code).length).toBeGreaterThan(0);
     }
   });
 });

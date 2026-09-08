@@ -202,7 +202,7 @@ function CarteMembre({ membre, cestMoi }: { membre: TripMember; cestMoi: boolean
       <CardBody className="flex items-center gap-3 p-4">
         <span
           aria-hidden
-          className="bg-brand-500 grid size-11 shrink-0 place-items-center rounded-full text-base font-bold text-white"
+          className="bg-brand-500 grid size-11 shrink-0 place-items-center rounded-full text-base font-bold text-[color:var(--accent-contrast)]"
         >
           {membre.displayName.charAt(0).toUpperCase()}
         </span>

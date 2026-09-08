@@ -19,6 +19,7 @@ import { getApps, type PropositionApp } from '@/lib/apps';
 import { getTripRepository } from '@/lib/trips';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
+import { signaler } from '@/lib/feedback';
 
 /**
  * Toutes les applications utiles pour la destination du voyage.
@@ -217,9 +218,11 @@ function FormulaireProposition({ onFini }: { onFini: () => void }) {
           .filter((code) => /^[A-Z]{2}$/u.test(code)),
       }),
     onSuccess: async () => {
+      signaler('reussite');
       await queryClient.invalidateQueries({ queryKey: ['applications-miennes'] });
       onFini();
     },
+    onError: () => signaler('echec'),
   });
 
   const complet =

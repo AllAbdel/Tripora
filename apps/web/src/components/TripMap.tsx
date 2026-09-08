@@ -41,7 +41,10 @@ export interface MapMarker {
   point: GeoPoint;
   label: string;
   /** Texte court affiché dans la pastille : un rang, une initiale. */
+  /** Un chiffre de rang. Jamais un émoji : voir `glyphe` pour les symboles. */
   badge?: string;
+  /** Un pictogramme dessiné, quand le repère ne porte pas de rang. */
+  glyphe?: Glyphe;
   kind: 'origin' | 'destination' | 'chosen' | 'place' | 'pin';
   onSelect?: () => void;
 }
@@ -134,7 +137,8 @@ export function TripMap({
       const element = document.createElement('button');
       element.type = 'button';
       element.className = classePourRepere(marker.kind);
-      element.textContent = marker.badge ?? '';
+      if (marker.glyphe) element.append(dessinerGlyphe(marker.glyphe));
+      else element.textContent = marker.badge ?? '';
       element.setAttribute('aria-label', marker.label);
       element.title = marker.label;
 
@@ -236,6 +240,48 @@ export function TripMap({
       )}
     </div>
   );
+}
+
+export type Glyphe = 'depart' | 'etoile' | 'epingle';
+
+/**
+ * Les tracés des pictogrammes posés sur la carte.
+ *
+ * Ce sont des chemins SVG et non des émojis : sur la carte comme ailleurs, un
+ * émoji change de dessin selon l'appareil, ignore la couleur du repère et ne
+ * suit pas sa taille. Trois formes suffisent — d'où venir, ce qui est choisi,
+ * ce que le groupe a épinglé.
+ */
+const TRACES: Readonly<Record<Glyphe, string>> = {
+  depart: 'M12 19V5m0 0-6 6m6-6 6 6',
+  etoile: 'm12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.2-5.4-2.9-5.4 2.9 1-6.2L3.2 9.5l6.1-.9z',
+  epingle: 'M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z M12 10.5v.01',
+};
+
+/**
+ * Construit le pictogramme nœud par nœud plutôt qu'en affectant `innerHTML`.
+ *
+ * Le contenu est pourtant une constante du fichier : la règle du projet est
+ * qu'aucun HTML ne s'assemble par chaîne de caractères, sans exception à
+ * juger au cas par cas. Trois lignes de plus, et la question ne se pose plus.
+ */
+function dessinerGlyphe(glyphe: Glyphe): SVGSVGElement {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '16');
+  svg.setAttribute('height', '16');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2.4');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+
+  const trace = document.createElementNS(NS, 'path');
+  trace.setAttribute('d', TRACES[glyphe]);
+  svg.append(trace);
+  return svg;
 }
 
 function classePourRepere(kind: MapMarker['kind']): string {

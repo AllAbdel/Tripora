@@ -10,6 +10,7 @@ import { Logo } from '@/components/Logo';
 import { useAuth } from '@/lib/auth-context';
 import { getTripRepository, type TripSummary } from '@/lib/trips';
 import { toFailure } from '@/lib/errors';
+import { Drapeau } from '@/components/Drapeau';
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Brouillon',
@@ -79,7 +80,7 @@ export default function Trips() {
         )}
 
         {data && data.length > 0 && (
-          <ul className="space-y-3">
+          <ul className="animate-cascade space-y-3">
             {data.map((trip) => (
               <li key={trip.id}>
                 <TripCard trip={trip} />
@@ -95,7 +96,7 @@ export default function Trips() {
 function TripCard({ trip }: { trip: TripSummary }) {
   return (
     <Link to={`/voyages/${trip.id}`} className="block">
-      <Card className="animate-rise transition-transform active:scale-[0.99]">
+      <Card className="pressable">
         <CardBody className="space-y-2">
           <div className="flex items-start justify-between gap-3">
             <h2 className="min-w-0 flex-1 truncate text-lg font-semibold">{trip.title}</h2>
@@ -110,7 +111,11 @@ function TripCard({ trip }: { trip: TripSummary }) {
             </span>
             {trip.destinationName && (
               <span className="inline-flex items-center gap-1.5">
-                <MapPin className="size-3.5" aria-hidden />
+                {trip.destinationCountryCode ? (
+                  <Drapeau code={trip.destinationCountryCode} />
+                ) : (
+                  <MapPin className="size-3.5" aria-hidden />
+                )}
                 {trip.destinationName}
               </span>
             )}

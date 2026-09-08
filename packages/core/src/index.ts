@@ -34,3 +34,5 @@ export * from './links.js';
 export * from './ai/draft.js';
 export * from './ai/briefing.js';
 export * from './apps.js';
+export * from './palette.js';
+export * from './icons.js';

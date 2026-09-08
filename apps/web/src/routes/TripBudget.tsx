@@ -20,6 +20,7 @@ import { chargerTaux, CLE_TAUX, devisesProposees } from '@/lib/fx';
 import { useAuth } from '@/lib/auth-context';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
+import { Icone } from '@/components/Icone';
 
 export default function TripBudget() {
   const { id } = useParams<{ id: string }>();
@@ -252,7 +253,12 @@ export default function TripBudget() {
               <li key={entree.id}>
                 <Card>
                   <CardBody className="flex items-center gap-3 p-3.5">
-                    <span aria-hidden className="text-lg">{categorie?.emoji ?? '💫'}</span>
+                    <span
+                      aria-hidden
+                      className="bg-brand-50 text-brand-600 dark:bg-brand-900/50 dark:text-brand-300 grid size-9 shrink-0 place-items-center rounded-xl"
+                    >
+                      <Icone nom={categorie?.icone ?? 'divers'} className="size-4.5" />
+                    </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold">{entree.label}</p>
                       <p className="text-muted text-sm">
@@ -424,7 +430,10 @@ function Formulaire({
                 selected={categorie === entree.value}
                 onClick={() => setCategorie(entree.value)}
               >
-                {entree.emoji} {entree.label}
+                <span className="inline-flex items-center gap-1.5">
+                  <Icone nom={entree.icone} className="size-3.5" />
+                  {entree.label}
+                </span>
               </Chip>
             ))}
           </div>
