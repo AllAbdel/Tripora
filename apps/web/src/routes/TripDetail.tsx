@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Lock, LockOpen, MapPin, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, Lock, LockOpen, MapPin, Users, Wallet } from 'lucide-react';
 import {
   estimateTransportOptions,
   findDestination,
@@ -32,6 +32,8 @@ import { OutilsDuVoyage } from '@/components/OutilsDuVoyage';
 import { signaler } from '@/lib/feedback';
 import { ProchainGeste } from '@/components/ProchainGeste';
 import { getItinerary } from '@/lib/itinerary';
+import { EnTeteDesPropositions } from '@/components/EnTeteDesPropositions';
+import { Ligne, ListeFantome } from '@/components/ui/Squelette';
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
@@ -121,9 +123,16 @@ export default function TripDetail() {
   }, [proposals, votes.data]);
 
   if (isLoading) {
+    // Le voyage arrive dans cet ordre-là : un en-tête, un geste, la grille des
+    // écrans, les propositions. Mettre l'écran en place tout de suite évite le
+    // saut du vide au plein, et rend l'attente plus courte qu'elle ne l'est.
     return (
-      <div className="grid min-h-[60vh] place-items-center">
-        <Loader2 className="text-brand-500 size-6 animate-spin" aria-label="Chargement" />
+      <div className="mx-auto w-full max-w-2xl space-y-5 px-5 pt-4 pb-28">
+        <div className="space-y-2.5">
+          <Ligne className="h-6 w-3/5" />
+          <Ligne className="h-2.5 w-2/5" />
+        </div>
+        <ListeFantome combien={3} lignes={2} />
       </div>
     );
   }
@@ -248,26 +257,13 @@ export default function TripDetail() {
 
           {proposals && proposals.scores.length > 0 && (
             <>
-              <Card id="propositions" className="scroll-mt-4">
-                <CardBody className="space-y-1.5">
-                  <p className="font-semibold">
-                    {proposals.scores.length} destinations pour votre groupe
-                  </p>
-                  <p className="text-muted text-sm leading-relaxed">
-                    Classées sur le coût <strong>total</strong> du voyage et sur les envies
-                    de chacun, pas seulement sur le prix du billet. Chaque note est détaillée :
-                    aucune n’est décidée par une intelligence artificielle.
-                  </p>
-                  {data.members.length < data.constraints.participants && (
-                    <p className="text-muted text-sm leading-relaxed">
-                      Pour l’instant, seules les envies de {data.members.length} personne
-                      {data.members.length > 1 ? 's' : ''} sur {data.constraints.participants}{' '}
-                      sont prises en compte. Le classement changera quand les autres auront
-                      répondu.
-                    </p>
-                  )}
-                </CardBody>
-              </Card>
+              <EnTeteDesPropositions
+                combien={proposals.scores.length}
+                membresPresents={data.members.length}
+                membresAttendus={data.constraints.participants}
+                prixEstimes={!prixEnCours && proposals.allEstimated}
+                sourceConfiguree={Boolean(prix?.configured)}
+              />
 
               {prixEnCours && (
                 <Banner tone="info" title="Prix en cours de relevé">
@@ -280,14 +276,6 @@ export default function TripDetail() {
                 <Banner tone="warning" title="Limite gratuite atteinte pour aujourd’hui">
                   Les prix relevés reviendront demain. Tout le reste de Tripora fonctionne,
                   et les montants affichés restent des estimations honnêtes.
-                </Banner>
-              )}
-
-              {!prixEnCours && proposals.allEstimated && (
-                <Banner tone="info" title="Prix indicatifs">
-                  {prix?.configured
-                    ? 'Aucun tarif relevé pour ce départ et cette période : les montants sont des estimations, jamais des prix constatés.'
-                    : 'Aucune source de tarifs n’est reliée : les montants sont des estimations. Les vrais prix apparaîtront avec leur date dès qu’un jeton Travelpayouts sera renseigné côté serveur.'}
                 </Banner>
               )}
 

@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, MapPin, Plus, Users } from 'lucide-react';
+import { MapPin, Plus, Users } from 'lucide-react';
 import { ScreenHeader } from '@/components/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth-context';
 import { getTripRepository, type TripSummary } from '@/lib/trips';
 import { toFailure } from '@/lib/errors';
 import { Drapeau } from '@/components/Drapeau';
+import { ListeFantome } from '@/components/ui/Squelette';
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Brouillon',
@@ -58,11 +59,7 @@ export default function Trips() {
           </Banner>
         )}
 
-        {isLoading && (
-          <div className="grid place-items-center py-16">
-            <Loader2 className="text-brand-500 size-6 animate-spin" aria-label="Chargement" />
-          </div>
-        )}
+        {isLoading && <ListeFantome combien={2} lignes={1} />}
 
         {data && data.length === 0 && (
           <EmptyState
