@@ -31,6 +31,15 @@ export interface BookingLink {
   url: string;
   /** Ce que le lien ne dit pas, pour ne pas laisser croire à une promesse. */
   note?: string;
+  /**
+   * Vrai quand une réservation par ce lien peut rapporter une commission.
+   *
+   * Existe pour que l'interface le **dise**. Un lien affilié qui ne s'annonce
+   * pas est exactement ce qui fait perdre confiance dans le reste de l'écran,
+   * et la transparence sur un partenariat commercial est de toute façon une
+   * obligation en France.
+   */
+  affilie?: boolean;
 }
 
 /** Dates au format AAAA-MM-JJ, déduites du voyage quand il en a. */
@@ -155,4 +164,62 @@ export function travelLinks(
   });
 
   return liens;
+}
+
+// ---------------------------------------------------------------------------
+// Affiliation
+// ---------------------------------------------------------------------------
+
+/**
+ * Les partenaires dont on connaît la façon d'attribuer une réservation.
+ *
+ * Volontairement court. Travelpayouts distribue des dizaines de programmes,
+ * chacun avec sa propre forme de lien, et **inventer une forme ne produit pas
+ * un lien qui rapporte : ça produit un lien qui ne rapporte rien, ou pire, qui
+ * casse**. On ne décore donc que ce dont la forme est établie de longue date —
+ * le paramètre `marker` sur Aviasales — et on laisse les autres intacts.
+ *
+ * Ajouter un partenaire se fait ici, en copiant la forme exacte depuis le
+ * tableau de bord Travelpayouts, jamais de mémoire.
+ */
+const AFFILIABLES: Readonly<Record<string, (url: URL, marker: string) => void>> = {
+  aviasales: (url, marker) => url.searchParams.set('marker', marker),
+};
+
+/**
+ * Ajoute l'identifiant de partenaire aux liens qui savent l'exploiter.
+ *
+ * Trois garanties, et ce sont elles qui comptent plus que le code :
+ *
+ *  1. **la liste et son ordre ne changent pas.** Un écran qui réordonnerait
+ *     ses liens selon ce qu'ils rapportent ne serait plus un service ;
+ *  2. **sans identifiant, rien ne bouge** — pas même un paramètre vide ;
+ *  3. **ce qui est décoré est marqué `affilie`**, pour que l'interface
+ *     l'annonce plutôt que de le taire.
+ *
+ * Un test vérifie les trois, précisément parce qu'une intention se perd et
+ * qu'un test non.
+ */
+export function affilierLiens(
+  liens: readonly BookingLink[],
+  marker: string | undefined,
+): BookingLink[] {
+  const propre = (marker ?? '').trim();
+  // Un identifiant de partenaire est un nombre. Tout le reste est une faute de
+  // saisie, et poser une faute de saisie dans une URL ne rapporte rien.
+  if (!/^[0-9]{3,12}$/.test(propre)) return [...liens];
+
+  return liens.map((lien) => {
+    const decorer = AFFILIABLES[lien.id];
+    if (!decorer) return lien;
+    try {
+      const url = new URL(lien.url);
+      decorer(url, propre);
+      return { ...lien, url: url.toString(), affilie: true };
+    } catch {
+      // Une URL illisible reste telle quelle : mieux vaut un lien qui marche
+      // sans rapporter qu'un lien cassé.
+      return lien;
+    }
+  });
 }

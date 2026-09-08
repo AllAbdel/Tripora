@@ -195,10 +195,36 @@ tableau de bord.
 en passant par un lien Tripora. Il s'ajoute aux liens de réservation, pas aux
 requêtes de prix. L'API de données, elle, n'a besoin que du jeton.
 
+**Où le mettre : dans l'application web, pas dans les secrets Supabase.** Ce
+n'est pas un secret — il figure dans chaque lien de réservation produit, donc
+dans une URL que n'importe qui peut lire. Et les liens se construisent dans le
+navigateur : un secret serveur y serait inaccessible.
+
+```
+VITE_TRAVELPAYOUTS_MARKER=123456
+```
+
+À déclarer dans les variables d'environnement de Cloudflare Pages **et** de
+Vercel, puis redéployer. C'est tout : les liens « Réserver » deviennent
+affiliés, portent la mention « lien partenaire », et le paragraphe du bas
+change de phrase tout seul.
+
+**Ce qui est affilié aujourd'hui, et pourquoi si peu.** Seul le lien Aviasales
+l'est. Travelpayouts distribue des dizaines de programmes, chacun avec sa
+propre forme de lien, et inventer une forme ne produit pas un lien qui
+rapporte : ça produit un lien qui ne rapporte rien, ou qui casse. Pour en
+ajouter un — Booking, Hostelworld, Omio, GetYourGuide, Klook —, copiez la forme
+exacte depuis le générateur de liens du tableau de bord Travelpayouts et
+ajoutez une ligne dans `AFFILIABLES`, dans `packages/core/src/booking.ts`.
+Jamais de mémoire.
+
+Trois garanties tiennent quel que soit le nombre de partenaires, et un test
+les vérifie : la liste et son ordre ne changent pas selon ce qui rapporte, un
+identifiant absent ou mal formé ne modifie rien, et tout lien affilié est
+annoncé comme tel.
+
 Autrement dit : Tripora affiche déjà les vrais prix sans marker, et continuera
-très bien sans. Le jour où vous voudrez que les liens « Réserver » soient
-affiliés, ajoutez le secret `TRAVELPAYOUTS_MARKER` avec ce nombre — rien
-d'autre à changer.
+très bien sans.
 
 ⚠️ Régénérer le jeton invalide l'ancien immédiatement.
 

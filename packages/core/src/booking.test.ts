@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ajouterJours, sejourDe, stayLinks, travelLinks } from './booking.js';
+import { affilierLiens, ajouterJours, sejourDe, stayLinks, travelLinks } from './booking.js';
 import { findDestination } from './catalog/destinations.js';
 import type { TripConstraints } from './types.js';
 
@@ -121,5 +121,64 @@ describe('liens de transport', () => {
   it('avertit que le train et le bus n’ont pas de prix vérifié', () => {
     const terrestre = travelLinks(PARIS, LISBONNE, sejour).find((lien) => lien.kind === 'train')!;
     expect(terrestre.note).toContain('estimations');
+  });
+});
+
+describe('affiliation', () => {
+  const SEJOUR = { checkIn: '2026-07-04', checkOut: '2026-07-11', guests: 3 };
+
+  function liensDeVoyage() {
+    return travelLinks(PARIS, findDestination('istanbul')!, SEJOUR);
+  }
+
+  it('ne change ni la liste ni son ordre', () => {
+    // Un écran qui réordonnerait ses liens selon ce qu'ils rapportent ne serait
+    // plus un service. C'est la garantie la plus importante du module.
+    const avant = liensDeVoyage();
+    const apres = affilierLiens(avant, '123456');
+    expect(apres.map((lien) => lien.id)).toEqual(avant.map((lien) => lien.id));
+    expect(apres).toHaveLength(avant.length);
+  });
+
+  it('ne touche à rien sans identifiant', () => {
+    const avant = liensDeVoyage();
+    for (const rien of [undefined, '', '   ']) {
+      expect(affilierLiens(avant, rien)).toEqual(avant);
+    }
+  });
+
+  it('refuse un identifiant qui n’en est pas un', () => {
+    // Poser une faute de saisie dans une URL ne rapporte rien et abîme le lien.
+    const avant = liensDeVoyage();
+    for (const faux of ['mon-marker', '12', 'abc123', '1234567890123']) {
+      expect(affilierLiens(avant, faux)).toEqual(avant);
+    }
+  });
+
+  it('décore le partenaire connu, et lui seul', () => {
+    const apres = affilierLiens(liensDeVoyage(), '654321');
+    const vol = apres.find((lien) => lien.id === 'aviasales')!;
+    expect(new URL(vol.url).searchParams.get('marker')).toBe('654321');
+    expect(vol.affilie).toBe(true);
+
+    const train = apres.find((lien) => lien.id === 'omio')!;
+    expect(train.url).not.toContain('marker');
+    expect(train.affilie).toBeUndefined();
+  });
+
+  it('laisse les liens d’hébergement intacts, faute de forme établie', () => {
+    // Inventer une forme de lien ne produit pas un lien qui rapporte : ça
+    // produit un lien qui ne rapporte rien, ou qui casse.
+    const dormir = stayLinks(findDestination('istanbul')!, SEJOUR);
+    expect(affilierLiens(dormir, '654321')).toEqual(dormir);
+  });
+
+  it('garde le reste de l’URL identique', () => {
+    const avant = liensDeVoyage().find((lien) => lien.id === 'aviasales')!;
+    const apres = affilierLiens([avant], '654321')[0]!;
+    const params = new URL(apres.url).searchParams;
+    for (const [cle, valeur] of new URL(avant.url).searchParams) {
+      expect(params.get(cle)).toBe(valeur);
+    }
   });
 });
