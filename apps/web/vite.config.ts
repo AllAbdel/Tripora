@@ -48,12 +48,21 @@ export default defineConfig({
           {
             // Tuiles de carte : réutilisées agressivement, elles ne changent
             // presque jamais et représentent le gros du trafic.
+            //
+            // `statuses: [200]` et non `[0, 200]`, et le nom du cache a changé
+            // pour abandonner ce qu'un appareil garde peut-être déjà. Un statut
+            // 0 est une réponse opaque : elle se présente comme un succès mais
+            // son corps est illisible. Mise en cache par une stratégie
+            // « cache d'abord », elle transforme un incident réseau d'une
+            // seconde en carte vide pendant trente jours — le style se charge,
+            // sa couleur de fond s'affiche, aucune tuile n'arrive jamais, et
+            // MapLibre ne signale rien.
             urlPattern: /^https:\/\/tiles\.openfreemap\.org\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'openfreemap-tiles',
+              cacheName: 'openfreemap-tuiles-v2',
               expiration: { maxEntries: 3000, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              cacheableResponse: { statuses: [0, 200] },
+              cacheableResponse: { statuses: [200] },
             },
           },
           {
@@ -66,7 +75,9 @@ export default defineConfig({
             options: {
               cacheName: 'tripora-couvertures',
               expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 180 },
-              cacheableResponse: { statuses: [0, 200] },
+              // Voir les tuiles : une réponse opaque gardée six mois par une
+              // stratégie « cache d'abord » est une image morte pour six mois.
+              cacheableResponse: { statuses: [200] },
             },
           },
           {
@@ -77,7 +88,7 @@ export default defineConfig({
             options: {
               cacheName: 'tripora-drapeaux',
               expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 180 },
-              cacheableResponse: { statuses: [0, 200] },
+              cacheableResponse: { statuses: [200] },
             },
           },
           {

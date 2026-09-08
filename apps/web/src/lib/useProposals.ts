@@ -35,9 +35,19 @@ export function useProposals(details: TripDetails | null | undefined): {
   /** Normales relevées des candidates, pour les afficher sans les redemander. */
   normales: NormalesParVille;
 } {
+  /**
+   * Un voyage dont la destination a été choisie à la création n'a rien à
+   * comparer : le moteur ne saurait proposer que d'autres villes, et sa
+   * présélection borne la distance à la durée du séjour — d'où des
+   * propositions systématiquement proches du départ, sans le moindre rapport
+   * avec la destination retenue. On ne calcule donc rien, et on n'appelle ni
+   * les prix ni les normales climatiques pour rien.
+   */
+  const compare = details?.destinationMode !== 'fixed';
+
   const candidates = useMemo(
-    () => (details ? selectCandidates(details.constraints, { limit: ETUDIEES }) : []),
-    [details],
+    () => (details && compare ? selectCandidates(details.constraints, { limit: ETUDIEES }) : []),
+    [details, compare],
   );
 
   const prix = useQuery({
@@ -64,7 +74,7 @@ export function useProposals(details: TripDetails | null | undefined): {
   });
 
   const proposals = useMemo(() => {
-    if (!details) return null;
+    if (!details || !compare) return null;
     const releves = prix.data?.parDestination;
     // `moisCible` sert les prix de vol et rend « 2026-10 » ; le climat veut le
     // numéro du mois, que le moteur calcule déjà de son côté.
@@ -78,7 +88,7 @@ export function useProposals(details: TripDetails | null | undefined): {
       keep: PRESENTEES,
       ...(Object.keys(sources).length > 0 ? { sources } : {}),
     });
-  }, [details, prix.data, normales.data]);
+  }, [details, compare, prix.data, normales.data]);
 
   return {
     proposals,

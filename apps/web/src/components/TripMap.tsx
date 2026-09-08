@@ -28,13 +28,42 @@ const FONDS = {
   sombre: 'https://tiles.openfreemap.org/styles/dark',
 } as const;
 
-/** Fond de secours si les tuiles ne répondent pas : une carte grise vaut mieux
- *  qu'un écran blanc, et les repères restent lisibles. */
-const FOND_DEGRADE: StyleSpecification = {
-  version: 8,
-  sources: {},
-  layers: [{ id: 'vide', type: 'background', paint: { 'background-color': '#dfe6f0' } }],
-};
+/**
+ * Fond de secours quand les tuiles ne répondent pas.
+ *
+ * Deux teintes, parce qu'une plaque gris clair posée au milieu d'une interface
+ * sombre ressemble à un bug, alors que le repli doit ressembler à une carte
+ * qu'on n'a pas pu charger.
+ */
+function fondDegrade(sombre: boolean): StyleSpecification {
+  return {
+    version: 8,
+    sources: {},
+    layers: [
+      {
+        id: 'vide',
+        type: 'background',
+        paint: { 'background-color': sombre ? '#1c2333' : '#dfe6f0' },
+      },
+    ],
+  };
+}
+
+/**
+ * Délai au-delà duquel on considère que le fond de carte ne viendra pas.
+ *
+ * Il ne suffit pas d'écouter les erreurs : une tuile absente répond 404, et
+ * MapLibre traite ce cas comme « pas de données ici » sans rien signaler —
+ * c'est le comportement voulu pour un jeu de tuiles partiel. Le résultat, sur
+ * un jeu entièrement injoignable, est une carte parfaitement muette : le style
+ * se charge, sa couleur de fond s'affiche, et rien d'autre n'arrive jamais.
+ * Sur le fond sombre d'OpenFreeMap, cette couleur est rgb(12,12,12) — un
+ * rectangle noir sous les repères, sans le moindre message.
+ *
+ * On surveille donc l'état réel : passé ce délai, si aucune tuile n'est
+ * arrivée, on bascule sur le fond de repli et on le dit.
+ */
+const DELAI_TUILES_MS = 8000;
 
 export interface MapMarker {
   id: string;
@@ -71,6 +100,10 @@ export function TripMap({
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-color-scheme: dark)').matches === true);
 
+  // Le thème au moment de la création, figé : l'effet de création ne dépend
+  // plus du thème, il lui faut donc une valeur qui ne le fasse pas se rejouer.
+  const sombreAuDepart = useRef(sombre);
+
   /**
    * Position du doigt au début du geste, relevée au niveau du document en
    * phase de capture.
@@ -90,28 +123,31 @@ export function TripMap({
     return () => document.removeEventListener('pointerdown', noter, true);
   }, []);
 
-  // Création de la carte, une seule fois.
+  /**
+   * Création de la carte, une seule fois pour toute la vie du composant.
+   *
+   * Le thème n'est volontairement pas une dépendance : il l'a été, et chaque
+   * bascule clair/sombre détruisait puis reconstruisait la carte entière —
+   * pendant que l'effet de suivi du thème, juste en dessous, appelait de son
+   * côté `setStyle` sur la carte à peine née. Deux téléchargements du style à
+   * chaque montage, et un avertissement de MapLibre à chaque fois. Le thème se
+   * suit par `setStyle`, et rien d'autre.
+   */
   useEffect(() => {
     if (!container.current || carte.current) return;
 
     const instance = new MapLibreMap({
       container: container.current,
-      style: sombre ? FONDS.sombre : FONDS.clair,
+      style: sombreAuDepart.current ? FONDS.sombre : FONDS.clair,
       center: [2.35, 46.6],
       zoom: 4,
       attributionControl: { compact: true },
     });
     instance.addControl(new NavigationControl({ showCompass: false }), 'top-right');
     instance.on('error', (evenement: ErrorEvent) => {
-      // Tuiles injoignables (hors ligne, réseau filtré) : on bascule sur un
-      // fond neutre au lieu de laisser un écran vide sans explication.
+      // Réseau filtré, hors ligne, style introuvable : là, MapLibre parle.
       if (String(evenement.error?.message ?? '').match(/style|fetch|load/i)) {
         setTuilesIndisponibles(true);
-        try {
-          instance.setStyle(FOND_DEGRADE);
-        } catch {
-          /* la carte a déjà été détruite */
-        }
       }
     });
     carte.current = instance;
@@ -120,13 +156,44 @@ export function TripMap({
       instance.remove();
       carte.current = null;
     };
-  }, [sombre]);
+  }, []);
 
   // Suivi du thème.
   useEffect(() => {
-    if (!carte.current || tuilesIndisponibles) return;
-    carte.current.setStyle(sombre ? FONDS.sombre : FONDS.clair);
+    const instance = carte.current;
+    if (!instance || tuilesIndisponibles) return;
+    instance.setStyle(sombre ? FONDS.sombre : FONDS.clair);
   }, [sombre, tuilesIndisponibles]);
+
+  /**
+   * Surveillance des tuiles : le seul filet qui attrape l'échec silencieux.
+   *
+   * `loaded()` reste faux tant qu'une source attend ses tuiles, et le reste
+   * indéfiniment quand elles ne viennent pas. On le relit une fois, passé le
+   * délai, plutôt que d'attendre un évènement qui n'arrivera pas.
+   */
+  useEffect(() => {
+    const instance = carte.current;
+    if (!instance || tuilesIndisponibles) return;
+
+    const minuteur = window.setTimeout(() => {
+      if (!carte.current || carte.current.loaded()) return;
+      setTuilesIndisponibles(true);
+    }, DELAI_TUILES_MS);
+
+    return () => window.clearTimeout(minuteur);
+  }, [sombre, tuilesIndisponibles]);
+
+  // Bascule effective sur le fond de repli, dans le ton du thème.
+  useEffect(() => {
+    const instance = carte.current;
+    if (!instance || !tuilesIndisponibles) return;
+    try {
+      instance.setStyle(fondDegrade(sombre));
+    } catch {
+      /* la carte a déjà été détruite */
+    }
+  }, [tuilesIndisponibles, sombre]);
 
   // Repères et cadrage.
   useEffect(() => {
@@ -235,7 +302,7 @@ export function TripMap({
       <div ref={container} className="size-full" />
       {tuilesIndisponibles && (
         <p className="text-muted absolute inset-x-0 bottom-3 text-center text-xs">
-          Fond de carte indisponible hors ligne. Les repères restent à leur place.
+          Fond de carte indisponible pour le moment. Les repères restent à leur place.
         </p>
       )}
     </div>

@@ -113,6 +113,21 @@ export default function TripDetail() {
     ? findDestination(data.lockedDestinationId)
     : undefined;
 
+  /**
+   * Les étapes choisies à la création, quand il y en a plusieurs.
+   *
+   * L'écran de création accepte d'enchaîner les villes ; jusqu'ici seule la
+   * première survivait à l'enregistrement, et les suivantes disparaissaient
+   * sans un mot. On les affiche maintenant toutes.
+   */
+  const etapes = useMemo(
+    () =>
+      (data?.shortlist ?? [])
+        .map((identifiant) => findDestination(identifiant))
+        .filter((entree): entree is NonNullable<typeof entree> => entree !== undefined),
+    [data?.shortlist],
+  );
+
   // Ce que les votes désignent, qui n'est pas forcément ce que le calcul
   // classe en tête — et c'est très bien : le calcul propose, le groupe dispose.
   const choix = useMemo(() => {
@@ -226,12 +241,26 @@ export default function TripDetail() {
 
           {data.lockedDestinationId && (
             <Banner tone="info" title="Destination retenue">
-              Le groupe part à{' '}
-              <strong>
-                {findDestination(data.lockedDestinationId)?.name ?? data.lockedDestinationId}
-              </strong>
-              . L’itinéraire et la carte se construiront autour d’elle.
-              {data.isOwner && (
+              {etapes.length > 1 ? (
+                <>
+                  Le voyage passe par{' '}
+                  <strong>{etapes.map((etape) => etape.name).join(', ')}</strong>. L’itinéraire
+                  et la carte se construiront autour de ces étapes.
+                </>
+              ) : (
+                <>
+                  Le groupe part à{' '}
+                  <strong>
+                    {findDestination(data.lockedDestinationId)?.name ?? data.lockedDestinationId}
+                  </strong>
+                  . L’itinéraire et la carte se construiront autour d’elle.
+                </>
+              )}
+              {/* Rouvrir n'a de sens que là où il y a eu un vote : un voyage
+                  dont la destination a été choisie à la création n'en a jamais
+                  eu, et le bouton proposerait d'annuler ce choix sans rien
+                  offrir à la place. */}
+              {data.isOwner && data.destinationMode === 'suggest' && (
                 <>
                   {' '}
                   <button

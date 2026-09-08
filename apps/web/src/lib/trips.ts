@@ -43,6 +43,18 @@ export interface TripDetails {
   isOwner: boolean;
   /** Destination tranchée par le groupe, si le vote a abouti. */
   lockedDestinationId: string | null;
+  /**
+   * D'où vient la destination.
+   *
+   * `fixed` : elle a été choisie à la création. Le moteur de suggestion n'a
+   * alors rien à dire, et ses propositions ne s'affichent pas — elles seraient
+   * sans rapport, et bornées à la distance raisonnable pour la durée du
+   * séjour, donc toutes proches du départ. `suggest` : le groupe compare et
+   * vote.
+   */
+  destinationMode: 'fixed' | 'suggest';
+  /** Les étapes choisies à la création, dans l'ordre. Vide en mode `suggest`. */
+  shortlist: readonly string[];
 }
 
 /** Ce qu'on peut corriger après coup, et rien d'autre. */
@@ -122,7 +134,15 @@ function writeLocal(trips: LocalTrip[]): void {
   localStorage.setItem(LOCAL_KEY, JSON.stringify(trips));
 }
 
-const localRepository: TripRepository = {
+/**
+ * Le dépôt local, exporté pour les tests.
+ *
+ * C'est le mode dans lequel tourne l'application tant que Supabase n'est pas
+ * configuré, et celui où le bug de la destination choisie était le plus
+ * visible : le voyage s'affichait sans sa destination, sous une liste de
+ * propositions sans rapport.
+ */
+export const depotLocal: TripRepository = {
   kind: 'local',
 
   async list() {
@@ -146,7 +166,12 @@ const localRepository: TripRepository = {
     if (!trip) return null;
     const constraints = constraintsFromDraft(trip.draft);
     if (!constraints) return null;
-    const retenue = destinationLocaleRetenue(trip.id);
+    const choisi = trip.draft.destinationMode === 'fixed' ? trip.draft.destinationIds : [];
+    // En mode « on sait déjà où aller », la destination est celle qu'on a
+    // choisie : elle n'attend aucun vote. C'est ce qui manquait ici, et le
+    // voyage s'affichait sans sa destination, sous une liste de propositions
+    // qui n'avaient rien à voir avec elle.
+    const retenue = destinationLocaleRetenue(trip.id) ?? choisi[0] ?? null;
     return {
       summary: {
         id: trip.id,
@@ -162,6 +187,8 @@ const localRepository: TripRepository = {
       constraints,
       isOwner: true,
       lockedDestinationId: retenue,
+      destinationMode: trip.draft.destinationMode,
+      shortlist: choisi,
       members: [
         {
           userId: 'moi',
@@ -326,7 +353,9 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
 
       const { data: session } = await client.auth.getUser();
       const lockedId = (data.destination_locked_id as string | null) ?? null;
-      await hydraterDecouvertes(client, [lockedId]);
+      const mode = (data.destination_mode as 'fixed' | 'suggest' | null) ?? 'suggest';
+      const liste = (data.destination_shortlist as string[] | null) ?? [];
+      await hydraterDecouvertes(client, [lockedId, ...liste]);
 
       const preferences = (data.member_preferences ?? []) as {
         user_id: string;
@@ -338,6 +367,8 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
       return {
         isOwner: data.owner_id === session.user?.id,
         lockedDestinationId: lockedId,
+        destinationMode: mode,
+        shortlist: liste,
         summary: {
           id: data.id as string,
           title: data.title as string,
@@ -395,6 +426,10 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
           origin_lat: draft.origin?.lat ?? null,
           origin_lng: draft.origin?.lng ?? null,
           origin_iata: draft.origin?.iata ?? null,
+          destination_mode: draft.destinationMode,
+          // Toutes les étapes, dans l'ordre : l'écran de création annonce
+          // qu'un voyage peut en enchaîner plusieurs, et n'en gardait qu'une.
+          destination_shortlist: draft.destinationMode === 'fixed' ? draft.destinationIds : [],
           destination_locked_id:
             draft.destinationMode === 'fixed' ? (draft.destinationIds[0] ?? null) : null,
           participants: draft.participants,
@@ -507,5 +542,5 @@ export function cleVoyage(id: string | undefined): readonly unknown[] {
 }
 
 export function getTripRepository(): TripRepository {
-  return supabase ? supabaseRepository(supabase) : localRepository;
+  return supabase ? supabaseRepository(supabase) : depotLocal;
 }
