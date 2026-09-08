@@ -1,6 +1,7 @@
 import { preflight, json } from '../_shared/cors.ts';
 import { serviceClient } from '../_shared/supabase.ts';
 import { avecCacheEtQuota, QuotaEpuise } from '../_shared/budget.ts';
+import { estUnEmbleme, nomCourt, texteBrut, titreCorrespond } from './choix.ts';
 
 /**
  * Une photo pour une ville, et le crédit qui va avec.
@@ -22,13 +23,16 @@ import { avecCacheEtQuota, QuotaEpuise } from '../_shared/budget.ts';
  * `null` : une mauvaise photo est pire que pas de photo, parce qu'elle est
  * crue.
  *
- * Et surtout, on ne prend pas l'image de tête de l'article. Le premier essai
- * le faisait, et renvoyait pour Lisbonne… le drapeau municipal : sur beaucoup
- * d'articles de ville, l'image de tête est un blason. On demande à Wikidata la
- * propriété P18, « image », qui désigne la photo représentative — distincte du
- * drapeau (P41) et des armoiries (P94). En dernier recours seulement on
- * retombe sur l'image de tête, et on refuse alors tout ce qui ressemble à un
- * emblème.
+ * Deux sources d'image, et un filtre qui s'applique aux deux : la propriété
+ * P18 de Wikidata (« image », distincte du drapeau P41 et des armoiries P94),
+ * puis l'image de tête de l'article. P18 passe en premier parce qu'elle est
+ * choisie pour représenter le lieu, là où l'image de tête est souvent un
+ * blason — celui de Lisbonne — ou un montage de quatre vignettes. Le filtre
+ * écarte les emblèmes, les cartes, les vues prises depuis l'orbite et les
+ * légendes d'agence.
+ *
+ * On cherche en français d'abord, en anglais ensuite : quantité de petits
+ * lieux n'ont d'article que là-bas.
  *
  * **On crédite.** Les images de Commons sont librement réutilisables, presque
  * jamais sans condition : la plupart exigent l'auteur et la licence. C'est
@@ -144,28 +148,40 @@ interface PageTrouvee {
  * il coûte le même appel. La recherche ne sert que de rattrapage, pour les
  * villes dont l'article porte un titre désambiguïsé (« Cambridge (Ontario) »).
  */
+
 /**
- * Le nom d'article probable, tiré du nom du catalogue.
+ * Les deux Wikipédia interrogées, dans cet ordre.
  *
- * Une bonne partie des entrées ne sont pas des noms de ville mais des
- * intitulés : « Caen et les plages du Débarquement », « Ålesund et le
- * Geirangerfjord », « Sumatra — Medan et le lac Toba ». Aucun titre
- * d'article ne leur ressemblera jamais. On garde donc ce qui précède le
- * premier séparateur — c'est toujours le lieu principal, par construction du
- * catalogue.
- *
- * Le nom complet reste utilisé pour la recherche : le contexte qu'il apporte
- * aide à départager les homonymes.
+ * La française d'abord : le crédit et le titre d'article reviennent alors dans
+ * la langue de l'écran. L'anglaise ensuite, parce qu'elle est la seule à
+ * couvrir quantité de petits lieux — English Harbour à Antigua a un article et
+ * une photo en anglais, et rien du tout en français. Sans ce second essai,
+ * c'était une couverture vide sur une destination parfaitement réelle.
  */
-function nomCourt(nom: string): string {
-  const coupe = nom.split(/\s+[—–-]\s+| et (?=[a-zà-ÿ])|,/u)[0]?.trim() ?? nom;
-  // En dessous de trois lettres, la coupe a mal tourné : on garde l'original.
-  return coupe.length >= 3 ? coupe : nom;
+const WIKIS = ['fr.wikipedia.org', 'en.wikipedia.org'] as const;
+
+/** Un article trouvé, et le wiki d'où il vient — le fichier s'y lit ensuite. */
+interface ArticleTrouve {
+  page: PageTrouvee;
+  hote: string;
 }
 
-async function trouverArticle(nom: string, pays: string): Promise<PageTrouvee | null> {
+async function trouverArticle(nom: string, pays: string): Promise<ArticleTrouve | null> {
   const court = nomCourt(nom);
-  const parTitre = (await api('fr.wikipedia.org', {
+  for (const hote of WIKIS) {
+    const page = await articleSur(hote, nom, court, pays);
+    if (page) return { page, hote };
+  }
+  return null;
+}
+
+async function articleSur(
+  hote: string,
+  nom: string,
+  court: string,
+  pays: string,
+): Promise<PageTrouvee | null> {
+  const parTitre = (await api(hote, {
     action: 'query',
     titles: court,
     redirects: '1',
@@ -181,15 +197,16 @@ async function trouverArticle(nom: string, pays: string): Promise<PageTrouvee | 
   );
   if (exacte) return exacte;
 
-  return await chercherArticle(nom, court, pays);
+  return await chercherArticle(hote, nom, court, pays);
 }
 
 async function chercherArticle(
+  hote: string,
   nom: string,
   court: string,
   pays: string,
 ): Promise<PageTrouvee | null> {
-  const recherche = (await api('fr.wikipedia.org', {
+  const recherche = (await api(hote, {
     action: 'query',
     generator: 'search',
     gsrsearch: `${nom} ${pays}`,
@@ -220,12 +237,19 @@ async function chercherArticle(
  * couverture juste et créditée, payé une fois par ville pour tous les groupes.
  */
 async function chercherCouverture(nom: string, pays: string): Promise<Couverture | null> {
-  const page = await trouverArticle(nom, pays);
-  if (!page?.title) return null;
+  const trouve = await trouverArticle(nom, pays);
+  if (!trouve) return null;
+  const { page, hote } = trouve;
+  const titre = page.title;
+  if (!titre) return null;
 
-  // Wikidata d'abord, l'image de tête ensuite — mais le filtre anti-emblème
-  // s'applique aux deux. Sur un test de quarante villes, la seule erreur
-  // restante venait de là : le P18 de Sumatra est une carte de 1900.
+  // Wikidata d'abord, l'image de tête ensuite — le filtre s'applique aux deux.
+  //
+  // L'ordre inverse a été essayé, et il coûte plus qu'il ne rapporte : sur les
+  // articles de grandes villes, l'image de tête est très souvent un montage de
+  // quatre vignettes (Lyon, Gênes, Göteborg) ou un fichier sans nom, et un
+  // montage fait une mauvaise photo de couverture. Le P18 de Wikidata est
+  // choisi pour représenter le lieu, et c'est exactement ce qu'on cherche.
   const candidats = [
     await imageDeWikidata(page.pageprops?.wikibase_item),
     page.pageimage,
@@ -233,7 +257,7 @@ async function chercherCouverture(nom: string, pays: string): Promise<Couverture
   const fichier = candidats.find((nom) => nom && !estUnEmbleme(nom));
   if (!fichier) return null;
 
-  const details = (await api('fr.wikipedia.org', {
+  const details = (await api(hote, {
     action: 'query',
     titles: `File:${fichier}`,
     prop: 'imageinfo',
@@ -266,36 +290,10 @@ async function chercherCouverture(nom: string, pays: string): Promise<Couverture
     pageDuFichier:
       info?.descriptionurl ??
       `https://commons.wikimedia.org/wiki/${encodeURIComponent(`File:${fichier}`)}`,
-    article: page.title,
+    article: titre,
   };
 }
 
-/** Sans accents, sans casse, sans ponctuation : la forme comparable d'un nom. */
-function plier(texte: string): string {
-  return texte
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-/**
- * L'article trouvé parle-t-il bien de la ville cherchée ?
- *
- * On accepte le titre exact et le titre suivi d'une précision entre
- * parenthèses — « Cambridge (Massachusetts) » est bien un Cambridge. On refuse
- * tout le reste, y compris un article qui ne ferait que contenir le nom :
- * « Université de Cambridge » n'est pas une ville, et « Royaume-Uni » encore
- * moins.
- */
-function titreCorrespond(titre: string | undefined, nom: string): boolean {
-  if (!titre) return false;
-  const cherche = plier(nom);
-  const trouve = plier(titre);
-  if (cherche.length === 0) return false;
-  return trouve === cherche || trouve.startsWith(`${cherche} `);
-}
 
 /**
  * La photo représentative, telle que Wikidata la désigne.
@@ -323,54 +321,4 @@ async function imageDeWikidata(entite: string | undefined): Promise<string | und
   }
 }
 
-/** Les mots qui trahissent un emblème ou une carte plutôt qu'une photo. */
-const PAS_UNE_PHOTO =
-  /(flag|bandeira|bandera|drapeau|coat[ _]of[ _]arms|wappen|blason|bras[aã]o|escudo|seal|logo|\bmap\b|\bmapa\b|\bcarte\b|atlas|topograph|relief|orthographic|satellite|localisation|location)/i;
 
-/**
- * Une photo, ou autre chose ?
- *
- * Le format fait le gros du tri, et il le fait mieux que n'importe quelle
- * liste de mots : sur Commons, les photographies sont en JPEG et les cartes,
- * schémas et blasons en PNG ou en SVG. Une image vectorielle n'est jamais une
- * ville.
- *
- * Le PNG reste accepté sous condition, parce que quelques vraies photos y sont
- * — celle de Lisbonne, par exemple. Il passe alors par la liste de mots, qui
- * écarte les cartes topographiques et les blasons.
- *
- * Rien de tout ça n'est infaillible : pour une île ou une région, Wikipédia
- * illustre parfois avec une carte, et aucun filtre ne rattrapera tous les cas.
- * L'écran a un fond de repli pour ceux-là.
- */
-function estUnEmbleme(fichier: string | undefined): boolean {
-  if (!fichier) return true;
-  if (/\.jpe?g$/i.test(fichier)) return PAS_UNE_PHOTO.test(fichier);
-  if (/\.png$/i.test(fichier)) return PAS_UNE_PHOTO.test(fichier);
-  // Tout le reste — SVG, GIF, TIFF — n'est pas une photographie de ville.
-  return true;
-}
-
-/**
- * Le crédit arrive en HTML — Commons y met des liens, des balises et parfois
- * une mise en page entière. On n'en garde que le texte, parce que rien de tout
- * cela ne sera jamais interprété comme du HTML côté client : la règle du projet
- * est qu'aucune chaîne venue du réseau ne devient du balisage.
- */
-function texteBrut(html: string | undefined): string | null {
-  if (!html) return null;
-  const texte = html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#0?39;|&apos;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (texte.length === 0) return null;
-  // Un crédit de trois lignes ne tient pas sous une image ; au-delà, on
-  // renvoie vers la page du fichier, qui porte la mention complète.
-  return texte.length > 120 ? `${texte.slice(0, 117)}…` : texte;
-}

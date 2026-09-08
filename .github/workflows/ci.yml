@@ -39,6 +39,22 @@ jobs:
       - name: Build
         run: pnpm build
 
+  fonctions:
+    name: Fonctions edge (choix de couverture)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Seul le module de décision est testé : le reste de la fonction importe
+      # le client Supabase, et l'installer ici coûterait plus que ce que ça
+      # vérifierait. Les erreurs qu'on a livrées venaient toutes d'ici.
+      - name: Tests
+        run: deno test supabase/functions/cover/choix.test.ts
+
   base_de_donnees:
     name: Base de données (schéma et politiques RLS)
     runs-on: ubuntu-latest
