@@ -350,8 +350,29 @@ pas dans les liens d'invitation personnels.
 personnel ou commercial, et celle qui liste les canaux interdits. Si le texte
 mentionne « cercle familial et amical », la réponse est non.
 
-Le règlement de parrainage BoursoBank n'est accessible que depuis l'espace
-client : il reste à vérifier sur ces deux points par le titulaire du compte.
+**Les deux règlements lus côte à côte disent le contraire**, et c'est la leçon
+la plus utile de l'épisode : deux programmes de parrainage n'ont rien de
+comparable, il faut lire chacun.
+
+Le règlement BoursoBank **autorise** ce que celui de Wise interdit. Son
+article 2 prévoit que le parrain peut « envoyer une invitation via un moyen de
+communication à distance (sms, réseaux sociaux, etc.) qui contiendra son code
+de parrainage unique ». Aucune clause de cercle privé, aucune interdiction
+d'usage commercial, aucune restriction de canal. Le lien reste donc.
+
+Trois points de ce règlement contraignent quand même la fiche :
+
+- **4.7** interdit « toute modification des conditions de l'Offre Parrainage
+  sous peine d'exclusion ». La fiche ne chiffre donc pas la prime et n'énonce
+  aucune condition d'éligibilité de son cru : elle décrit, et renvoie au texte
+  officiel qui fait foi. La mention « réservé aux résidents fiscaux français »
+  a été retirée pour cette raison — c'est une condition d'ouverture de compte,
+  pas une condition de l'offre ;
+- **4.3** plafonne à vingt primes sur douze mois glissants : c'est le maximum
+  que cette ligne peut rapporter en un an ;
+- **article 1** : le parrain doit détenir, en plus du compte, au moins un
+  produit de la liste (carte active, assurance, livret, crédit, produit de
+  Bourse). Un compte et un CSL seuls ne suffisent pas.
 
 **Pas de publicité, et ce n'est pas une posture.** Une régie mesure qui vous
 êtes pour décider quoi vous montrer : traceur, identifiants envoyés à un tiers,

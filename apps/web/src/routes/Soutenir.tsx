@@ -83,8 +83,8 @@ export default function Soutenir() {
             quoi="Un compte français dont les paiements et retraits en devise ne coûtent rien, selon la formule."
             url="/go/boursobank"
             direct="https://www.boursobank.com"
-            avantage="Récompense pour vous et pour Tripora, sous réserve d’un premier versement."
-            reserve="Réservé aux résidents fiscaux français."
+            avantage="Une prime pour vous et pour Tripora à l’ouverture effective du compte, selon l’offre en cours."
+            reserve="Réservé aux personnes majeures qui n’ont jamais été clientes de BoursoBank. Le montant et les conditions figurent sur la page officielle, et ce sont elles qui font foi."
             qr="/soutien-boursobank-qr.jpg"
           />
         </CardBody>
