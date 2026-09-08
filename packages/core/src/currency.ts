@@ -150,7 +150,19 @@ const NON_PUBLIEES: Readonly<Record<string, string>> = {
   UYU: 'peso uruguayen',
   UZS: 'sum ouzbek',
   VND: 'dong vietnamien',
-  XOF: 'franc CFA',
+  AWG: 'florin arubais',
+  BDT: 'taka bangladais',
+  BND: 'dollar brunéien',
+  GIP: 'livre de Gibraltar',
+  LSL: 'loti lesothan',
+  PYG: 'guarani paraguayen',
+  SRD: 'dollar surinamais',
+  SZL: 'lilangeni swazi',
+  TJS: 'somoni tadjik',
+  TTD: 'dollar trinidadien',
+  XAF: 'franc CFA d’Afrique centrale',
+  XCD: 'dollar des Caraïbes orientales',
+  XOF: 'franc CFA d’Afrique de l’Ouest',
 };
 
 /** Le nom français d'une devise, publiée ou non. Le code, à défaut. */
@@ -172,7 +184,7 @@ const DEVISE_PAR_PAYS: Readonly<Record<string, string>> = {
   FI: 'EUR', FR: 'EUR', GR: 'EUR', HR: 'EUR', IE: 'EUR', IT: 'EUR', LT: 'EUR',
   LU: 'EUR', LV: 'EUR', ME: 'EUR', MT: 'EUR', NL: 'EUR', PT: 'EUR', SI: 'EUR',
   AD: 'EUR', GP: 'EUR', MC: 'EUR', MQ: 'EUR', RE: 'EUR', SK: 'EUR', SM: 'EUR',
-  XK: 'EUR',
+  XK: 'EUR', BL: 'EUR', PM: 'EUR', YT: 'EUR',
   // Collectivités du Pacifique : le franc CFP, indexé sur l'euro.
   NC: 'XPF', PF: 'XPF',
   // Hors zone euro, mais publiées par la BCE.
@@ -196,6 +208,12 @@ const DEVISE_PAR_PAYS: Readonly<Record<string, string>> = {
   SN: 'XOF', TN: 'TND', TW: 'TWD', TZ: 'TZS', UA: 'UAH', UY: 'UYU', UZ: 'UZS',
   VN: 'VND',
   MA: 'MAD',
+  // Pays sans monnaie propre : ils utilisent le dollar américain tel quel.
+  SV: 'USD', TL: 'USD',
+  // Ajoutés avec la deuxième vague de destinations.
+  AG: 'XCD', AW: 'AWG', BD: 'BDT', BJ: 'XOF', BN: 'BND', CI: 'XOF', CM: 'XAF',
+  GA: 'XAF', GD: 'XCD', GI: 'GIP', LC: 'XCD', LS: 'LSL', PY: 'PYG', SR: 'SRD',
+  SZ: 'SZL', TJ: 'TJS', TT: 'TTD',
 };
 
 export function currencyForCountry(countryCode: string): string | undefined {
