@@ -309,10 +309,9 @@ promettent aucun prix : ils évitent de ressaisir six fois les mêmes dates.
 Rien, presque. Toutes les sources ci-dessus sont gratuites et le coût de
 fonctionnement est nul ; il ne reste qu'un nom de domaine.
 
-Le peu qu'il faut vient de **liens de parrainage** sur deux ou trois services
-que Tripora recommanderait de toute façon — Wise et BoursoBank aujourd'hui.
-Trois règles encadrent le procédé, et deux sont dans le code plutôt que dans
-une promesse :
+Le peu qu'il faut vient de **liens de parrainage** sur des services que Tripora
+recommanderait de toute façon — BoursoBank aujourd'hui. Trois règles encadrent
+le procédé, et deux sont dans le code plutôt que dans une promesse :
 
 1. **Le classement les ignore.** `applicationsPour()` trie sur la portée et
    l'utilité déclarée ; `referralUrl` n'entre dans aucune comparaison. Un test
@@ -331,6 +330,28 @@ refusé par une contrainte. Afficher « lien de parrainage » sans dire ce qu'on
 gagne n'est pas une divulgation, c'est une formalité — et en France, la
 transparence sur un partenariat commercial est une obligation, pas un choix
 éditorial.
+
+### La quatrième règle, apprise à nos dépens
+
+**Un programme de parrainage est un contrat, et la plupart interdisent la
+diffusion publique.** Wise a figuré ici deux jours avant qu'on lise ses
+conditions : elles réservent le lien au « cercle familial et amical » (3.1 j),
+visent expressément l'usage « via un site web » (2.4), et prévoient jusqu'à la
+résiliation de l'accès au compte (6.1 c). Le lien a été retiré ; Wise reste
+recommandé sur ses mérites, avec son lien direct.
+
+La voie légitime existe et Wise la nomme lui-même : le **Programme de
+Partenariat Affilié**, prévu exactement pour ce cas. Même chose côté voyage :
+Travelpayouts, Booking, GetYourGuide et les eSIM ont tous un programme
+d'affiliation qui autorise la diffusion publique. C'est là qu'il faut aller,
+pas dans les liens d'invitation personnels.
+
+**Avant d'ajouter un lien, lire deux clauses** : celle qui parle d'usage
+personnel ou commercial, et celle qui liste les canaux interdits. Si le texte
+mentionne « cercle familial et amical », la réponse est non.
+
+Le règlement de parrainage BoursoBank n'est accessible que depuis l'espace
+client : il reste à vérifier sur ces deux points par le titulaire du compte.
 
 **Pas de publicité, et ce n'est pas une posture.** Une régie mesure qui vous
 êtes pour décider quoi vous montrer : traceur, identifiants envoyés à un tiers,

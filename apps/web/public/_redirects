@@ -1,5 +1,9 @@
 # Les liens de parrainage passent par notre propre domaine.
 #
+# Wise a été retiré : ses conditions réservent le lien de parrainage au cercle
+# familial et amical et interdisent l'usage « via un site web ». Voir la
+# migration 20260908120000.
+#
 # Un lien d'invitation contient souvent un identifiant qui ressemble à un nom :
 # celui de Wise se termine par le prénom de la personne qui parraine. Le faire
 # transiter par /go/<service> le retire de l'interface, de la barre d'état du
@@ -12,7 +16,6 @@
 #
 # 302 et non 301 : un lien de parrainage change, et une redirection permanente
 # resterait en cache du navigateur bien après qu'on l'ait modifiée.
-/go/wise        https://wise.com/invite/ahpc/abdelslama1   302
 /go/boursobank  https://bour.so/p/xyxvlP0GvdG              302
 
 # Tripora est une application à page unique : c'est le navigateur qui décide

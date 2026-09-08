@@ -75,16 +75,8 @@ export default function Soutenir() {
         <CardBody className="space-y-4">
           <h2 className="flex items-center gap-2 font-semibold">
             <HandCoins className="text-gold-600 dark:text-gold-400 size-4 shrink-0" aria-hidden />
-            Les deux liens du moment
+            Le lien du moment
           </h2>
-
-          <Offre
-            nom="Wise"
-            quoi="Payer et retirer au vrai taux de change, dans presque toutes les devises."
-            url="/go/wise"
-            direct="https://wise.com"
-            avantage="Vous et Tripora recevez chacun un avantage à l’ouverture."
-          />
 
           <Offre
             nom="BoursoBank"
@@ -95,6 +87,27 @@ export default function Soutenir() {
             reserve="Réservé aux résidents fiscaux français."
             qr="/soutien-boursobank-qr.jpg"
           />
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardBody className="space-y-2">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Scale className="text-muted size-4 shrink-0" aria-hidden />
+            Un lien qu’on a retiré
+          </h2>
+          <p className="text-muted text-sm leading-relaxed">
+            Wise portait un lien de parrainage ici. Il a été retiré après lecture de ses
+            conditions : elles réservent ces liens au cercle familial et amical, interdisent
+            l’usage « via un site web », et prévoient jusqu’à la fermeture du compte en cas de
+            manquement. Wise reste recommandé dans le catalogue, sur ses mérites et avec son
+            lien direct — c’est ce qu’il y était avant qu’il soit question d’en tirer quelque
+            chose.
+          </p>
+          <p className="text-muted text-sm leading-relaxed">
+            Ça vaut d’être écrit plutôt que corrigé en silence : un lien de parrainage n’est pas
+            gratuit parce qu’il rapporte peu, il est encadré par un contrat qu’on a accepté.
+          </p>
         </CardBody>
       </Card>
 

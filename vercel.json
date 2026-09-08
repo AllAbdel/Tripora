@@ -6,11 +6,6 @@
   "framework": null,
   "redirects": [
     {
-      "source": "/go/wise",
-      "destination": "https://wise.com/invite/ahpc/abdelslama1",
-      "permanent": false
-    },
-    {
       "source": "/go/boursobank",
       "destination": "https://bour.so/p/xyxvlP0GvdG",
       "permanent": false
