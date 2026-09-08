@@ -36,3 +36,4 @@ export * from './ai/briefing.js';
 export * from './apps.js';
 export * from './palette.js';
 export * from './icons.js';
+export * from './packing.js';

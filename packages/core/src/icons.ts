@@ -43,4 +43,11 @@ export type NomIcone =
   | 'depart'
   | 'repas'
   | 'soiree'
-  | 'lieu';
+  | 'lieu'
+  // Valise
+  | 'papiers'
+  | 'vetements'
+  | 'chaussures'
+  | 'toilette'
+  | 'sante'
+  | 'electronique';

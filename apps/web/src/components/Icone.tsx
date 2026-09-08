@@ -1,5 +1,11 @@
 import {
   Beer,
+  Droplets,
+  Footprints,
+  HeartPulse,
+  IdCard,
+  Plug,
+  Shirt,
   BedDouble,
   Cloud,
   CloudFog,
@@ -64,6 +70,13 @@ const TRACES: Record<NomIcone, typeof Sun> = {
   repas: UtensilsCrossed,
   soiree: Moon,
   lieu: MapPin,
+
+  papiers: IdCard,
+  vetements: Shirt,
+  chaussures: Footprints,
+  toilette: Droplets,
+  sante: HeartPulse,
+  electronique: Plug,
 };
 
 export function Icone({

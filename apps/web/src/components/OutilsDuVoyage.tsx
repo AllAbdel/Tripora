@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import {
   CalendarDays,
+  Luggage,
   Map as MapIcon,
   MessagesSquare,
   Smartphone,
@@ -75,6 +76,13 @@ export function OutilsDuVoyage({
       icone: Wallet,
       titre: 'Dépenses',
       detail: 'Qui doit quoi',
+      accent: false,
+    },
+    destinationVerrouillee && {
+      to: `/voyages/${tripId}/valise`,
+      icone: Luggage,
+      titre: 'Ma valise',
+      detail: 'Selon le climat',
       accent: false,
     },
     !destinationConnue && {

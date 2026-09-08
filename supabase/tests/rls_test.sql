@@ -614,4 +614,77 @@ end $$;
 reset role;
 reset request.jwt.claims;
 
+-- ============================================================================
+-- La valise : ce qui se partage, et ce qui ne regarde personne.
+--
+-- Deux règles opposées dans la même fonctionnalité, et c'est voulu : la valise
+-- se lit (pour savoir qui emporte l'adaptateur) mais ne s'écrit que par son
+-- propriétaire ; le profil, lui, ne se lit même pas — savoir qui emporte un
+-- traitement quotidien n'est l'affaire de personne.
+-- ============================================================================
+
+set role authenticated;
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+insert into public.trip_packing (trip_id, user_id, item_id, checked, for_group)
+values ('aaaaaaaa-0000-0000-0000-000000000001', auth.uid(), 'adaptateur', true, true);
+
+insert into public.trip_packing_profiles (trip_id, user_id, needs, laundry)
+values ('aaaaaaaa-0000-0000-0000-000000000001', auth.uid(), array['traitement-quotidien'], true);
+
+reset role;
+reset request.jwt.claims;
+
+-- Un autre membre du même voyage.
+set role authenticated;
+set request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+
+do $$
+declare n int;
+begin
+  -- Il voit que quelqu'un emporte l'adaptateur : c'est tout l'intérêt.
+  select count(*) into n
+  from public.trip_packing
+  where trip_id = 'aaaaaaaa-0000-0000-0000-000000000001' and for_group;
+  assert n = 1, format('La prise en charge doit être visible du groupe (%s)', n);
+
+  -- Mais il ne coche pas à la place des autres.
+  update public.trip_packing set checked = false where item_id = 'adaptateur';
+  get diagnostics n = row_count;
+  assert n = 0, format('On ne coche pas la valise d''un autre (%s ligne(s))', n);
+
+  -- Et le profil de santé de son ami ne le regarde pas.
+  select count(*) into n
+  from public.trip_packing_profiles
+  where trip_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  assert n = 0, 'Le profil de valise ne doit être lisible que par son propriétaire';
+
+  -- Signer une ligne au nom de quelqu'un d'autre est refusé.
+  begin
+    insert into public.trip_packing (trip_id, user_id, item_id)
+    values ('aaaaaaaa-0000-0000-0000-000000000001',
+            '11111111-1111-1111-1111-111111111111', 'pyjama');
+    assert false, 'On ne remplit pas la valise d''un autre';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
+-- Un intrus au voyage ne voit rien du tout.
+set role authenticated;
+set request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
+
+do $$
+declare n int;
+begin
+  select count(*) into n from public.trip_packing
+  where trip_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  assert n = 0, 'Un non-membre ne voit aucune valise';
+end $$;
+
+reset role;
+reset request.jwt.claims;
+
 select '✅ Tous les tests RLS sont passés' as resultat;
