@@ -48,7 +48,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           sans elle, l'animation d'entrée ne rejouerait qu'une fois. Un fondu
           court et vertical, jamais un glissement latéral — un déplacement
           horizontal raconte un sens de navigation que l'application n'a pas. */}
-      <main key={pathname} className="animate-page flex-1 pb-24">
+      <main key={pathname} className="animate-page flex-1 pb-24 print:pb-0">
         {children}
       </main>
 

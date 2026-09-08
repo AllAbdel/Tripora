@@ -201,3 +201,77 @@
     background-position: -80% 0;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   L'impression, et donc le PDF.
+   
+   Le PDF de Tripora est fabriqué par le navigateur : « Enregistrer au format
+   PDF » depuis la boîte d'impression donne du vrai texte, sélectionnable et
+   recherchable, sans qu'on télécharge une bibliothèque de plusieurs centaines
+   de kilo-octets pour un résultat moins bon.
+   
+   Reste à ce que la page ressemble à un document. Trois choses suffisent :
+   du noir sur du blanc quel que soit le thème choisi, rien de fixe qui vienne
+   se répéter sur chaque feuille, et des blocs qui ne se coupent pas au milieu
+   d'une journée d'itinéraire.
+   --------------------------------------------------------------------------- */
+@media print {
+  :root,
+  .dark {
+    --surface: #ffffff;
+    --surface-muted: #ffffff;
+    --surface-raised: #ffffff;
+    --border-subtle: #cbd3e0;
+    --text-strong: #000000;
+    --text-muted: #444c5c;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    /* L'encre d'une marge de téléphone n'a aucun sens sur une feuille A4. */
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* La barre de navigation, les bandeaux hors ligne, les boutons : tout ce qui
+     s'appuie sur un clic disparaît. Sans ça, la nav se réimprime en travers
+     de chaque page. */
+  nav,
+  [data-impression='masquer'] {
+    display: none !important;
+  }
+
+  main {
+    padding-bottom: 0 !important;
+  }
+
+  /* Aucune animation à l'impression : elles se figent au hasard de leur
+     progression et laissent des blocs à moitié transparents. */
+  .animate-rise,
+  .animate-cascade > *,
+  .animate-page {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Les liens gardent leur sens : on imprime l'adresse à côté du texte, sauf
+     pour les ancres internes qui ne mènent nulle part sur papier. */
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.75em;
+    word-break: break-all;
+    color: #444c5c;
+  }
+
+  /* Une journée d'itinéraire, une rubrique de valise : ça se lit d'un bloc. */
+  section,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 14mm;
+  }
+}

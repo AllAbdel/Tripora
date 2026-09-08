@@ -134,7 +134,15 @@ export interface ArticleValise {
   quantite: number | null;
   /** Pourquoi cet article, et pourquoi cette quantité. Toujours renseigné. */
   pourquoi: string;
-  /** Vrai quand l'oublier gâche le voyage — pas seulement gêne. */
+  /**
+   * Vrai uniquement quand l'oubli **ne se répare pas sur place**.
+   *
+   * Une brosse à dents, une crème solaire, un chargeur : leur oubli est
+   * agaçant, il se corrige en dix minutes dans n'importe quelle ville. Un
+   * passeport, une ordonnance, des lentilles à sa correction : non. Marquer
+   * les premiers comme les seconds enlèverait tout sens au marqueur — quand
+   * tout est essentiel, plus rien ne l'est, et on ne regarde plus.
+   */
   essentiel: boolean;
   /** Vrai quand un seul suffit pour tout le groupe. */
   partageable: boolean;
@@ -325,7 +333,6 @@ export function preparerLaValise({
     rubrique: 'vetements',
     quantite: q.intime,
     pourquoi: `${duree}${rythme}.`,
-    essentiel: true,
   });
   poser(articles, {
     id: 'chaussettes',
@@ -333,7 +340,6 @@ export function preparerLaValise({
     rubrique: 'vetements',
     quantite: q.intime,
     pourquoi: `${duree}${rythme}. Prévoyez-en une paire de plus si vous marchez beaucoup.`,
-    essentiel: true,
   });
   poser(articles, {
     id: 'pyjama',
@@ -360,7 +366,6 @@ export function preparerLaValise({
     pourquoi: profil.cabineSeulement
       ? 'En cabine, le dentifrice compte dans les 100 ml : prenez un petit tube.'
       : 'L’oubli le plus fréquent, et le plus pénible à réparer un dimanche soir.',
-    essentiel: true,
   });
   poser(articles, {
     id: 'deodorant',
@@ -390,8 +395,7 @@ export function preparerLaValise({
       quantite: 1,
       pourquoi:
         'Un litre maximum, flacons de 100 ml au plus. Sans le sachet, le contrôle vous les prend.',
-      essentiel: true,
-    });
+      });
   }
   poser(articles, {
     id: 'serviette',
@@ -419,8 +423,7 @@ export function preparerLaValise({
       rubrique: 'sante',
       quantite: null,
       pourquoi: `${meteo} : le premier jour de coup de soleil coûte les trois suivants.`,
-      essentiel: true,
-    });
+      });
     poser(articles, {
       id: 'gourde',
       label: 'Gourde',
@@ -449,7 +452,6 @@ export function preparerLaValise({
     rubrique: 'electronique',
     quantite: 1,
     pourquoi: 'Le seul objet dont l’oubli se paie dès le premier soir.',
-    essentiel: true,
   });
   const prise = typeDePrise(destination.countryCode);
   if (prise && !memePays) {
@@ -459,8 +461,7 @@ export function preparerLaValise({
       rubrique: 'electronique',
       quantite: 1,
       pourquoi: `Les prises y sont de type ${prise}. Un adaptateur universel suffit pour tout le groupe.`,
-      essentiel: true,
-      partageable: true,
+        partageable: true,
     });
   }
   poser(articles, {
@@ -561,7 +562,6 @@ function ajouterVetementsSelonLeTemps(
       rubrique: 'vetements',
       quantite: 1,
       pourquoi: 'Le soleil de milieu de journée se supporte mal tête nue.',
-      essentiel: climat.temps === 'caniculaire',
     });
     poser(articles, {
       id: 'lunettes-soleil',
@@ -601,7 +601,6 @@ function ajouterVetementsSelonLeTemps(
       rubrique: 'vetements',
       quantite: 1,
       pourquoi: `${meteo}. Trois couches fines tiennent plus chaud qu’un seul vêtement épais.`,
-      essentiel: true,
     });
     poser(articles, {
       id: 'bonnet-gants',
@@ -611,7 +610,6 @@ function ajouterVetementsSelonLeTemps(
       pourquoi: climat.gel
         ? 'Il gèle la nuit : les extrémités sont ce qui rend une journée dehors insupportable.'
         : 'Le trio qui change tout dès qu’il y a du vent.',
-      essentiel: climat.gel,
     });
     poser(articles, {
       id: 'thermique',
@@ -637,7 +635,6 @@ function ajouterVetementsSelonLeTemps(
       rubrique: 'vetements',
       quantite: 1,
       pourquoi: `${meteo} : un parapluie ne tient pas dans le vent, une capuche si.`,
-      essentiel: true,
     });
   }
 }
@@ -654,7 +651,6 @@ function ajouterChaussures(
     rubrique: 'chaussures',
     quantite: 1,
     pourquoi: `On marche facilement quinze kilomètres par jour en ville. Des chaussures neuves sur ${jours} jours, c’est des ampoules dès le deuxième.`,
-    essentiel: true,
   });
 
   if (climat && (climat.temps === 'chaud' || climat.temps === 'caniculaire')) {
@@ -685,7 +681,6 @@ function ajouterChaussures(
       rubrique: 'chaussures',
       quantite: 1,
       pourquoi: 'Des pieds mouillés par ce froid, et la journée s’arrête là.',
-      essentiel: true,
     });
   }
 }
@@ -714,8 +709,7 @@ function ajouterBesoins(
       quantite: null,
       pourquoi:
         'À emporter même hors période prévue : les marques et les formats habituels ne se trouvent pas partout.',
-      essentiel: true,
-    });
+      });
   }
   if (a('rasage')) {
     poser(articles, {
@@ -808,7 +802,6 @@ function ajouterSelonLesEnvies(
       quantite: 1,
       pourquoi:
         'Le groupe a coché nature ou aventure : des baskets de ville sur un sentier humide, c’est une cheville tordue.',
-      essentiel: true,
     });
     poser(articles, {
       id: 'tenue-rando',

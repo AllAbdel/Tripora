@@ -249,6 +249,34 @@ describe('forme de la liste', () => {
     expect(partages).not.toContain('sous-vetements');
   });
 
+  it('garde le marqueur « essentiel » rare, et sur ce qui ne s’achète pas', () => {
+    // Quand tout est essentiel, plus rien ne l'est : le marqueur ne vaut que
+    // s'il reste exceptionnel. Il ne désigne que ce dont l'oubli ne se répare
+    // pas sur place — des papiers, une ordonnance, une correction de vue.
+    const valise = tout(
+      preparerLaValise({
+        destination: ISTANBUL,
+        constraints: contraintes({ month: 1 }),
+        envies: normalizeWeights({ nature: 1, culture: 1 }),
+        profil: {
+          besoins: ['lentilles', 'traitement-quotidien'],
+          lessivePossible: false,
+          cabineSeulement: true,
+        },
+      }),
+    );
+    const essentiels = valise.filter((entree) => entree.essentiel).map((entree) => entree.id);
+
+    expect(essentiels).toContain('piece-identite');
+    expect(essentiels).toContain('lentilles');
+    expect(essentiels).toContain('traitement');
+    // Tout ça s'achète en dix minutes dans n'importe quelle ville.
+    for (const achetable of ['brosse-a-dents', 'chargeur', 'adaptateur', 'creme-solaire', 'manteau']) {
+      expect(essentiels).not.toContain(achetable);
+    }
+    expect(essentiels.length).toBeLessThanOrEqual(valise.length / 4);
+  });
+
   it('ne laisse aucune rubrique vide', () => {
     const rubriques = preparerLaValise({ destination: ISTANBUL, constraints: contraintes() });
     expect(rubriques.every((rubrique) => rubrique.articles.length > 0)).toBe(true);
