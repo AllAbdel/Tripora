@@ -26,25 +26,39 @@ export const NUANCES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as cons
 export type Nuance = (typeof NUANCES)[number];
 
 /**
- * La courbe de la palette d'origine : clarté OKLab visée pour chaque nuance, et
- * part de la saturation maximale. Mesurée sur le bleu Tripora, elle donne à
- * toute couleur choisie le même rythme clair → sombre.
+ * La courbe de la palette d'origine, mesurée sur le bleu de l'icône.
+ *
+ * - `t` : où se place la nuance entre le presque-blanc et la couleur
+ *   principale, pour celles qui sont plus claires qu'elle.
+ * - `f` : de quelle fraction de la couleur principale elle s'assombrit, pour
+ *   celles qui sont plus sombres.
+ * - `c` : sa part de l'intensité maximale.
+ *
+ * Deux échelles plutôt qu'une liste de clartés absolues, parce que la clarté de
+ * la nuance 500 n'est pas fixe : elle est calculée pour chaque teinte (voir
+ * `clarteLisible`). Toute la palette se replace ensuite autour d'elle.
  */
-const COURBE: Readonly<Record<Nuance, { l: number; c: number }>> = {
-  50: { l: 0.972, c: 0.13 },
-  100: { l: 0.94, c: 0.24 },
-  200: { l: 0.878, c: 0.45 },
-  300: { l: 0.79, c: 0.7 },
-  400: { l: 0.688, c: 0.94 },
-  500: { l: 0.62, c: 1 },
-  600: { l: 0.53, c: 0.95 },
-  700: { l: 0.44, c: 0.83 },
-  800: { l: 0.36, c: 0.7 },
-  900: { l: 0.28, c: 0.56 },
+const COURBE: Readonly<Record<Nuance, { t?: number; f?: number; c: number }>> = {
+  50: { t: 0.042, c: 0.087 },
+  100: { t: 0.143, c: 0.181 },
+  200: { t: 0.337, c: 0.362 },
+  300: { t: 0.559, c: 0.589 },
+  400: { t: 0.854, c: 0.869 },
+  500: { t: 1, c: 1 },
+  600: { f: 0.849, c: 0.924 },
+  700: { f: 0.71, c: 0.769 },
+  800: { f: 0.577, c: 0.613 },
+  900: { f: 0.468, c: 0.487 },
 };
 
+/** La clarté du presque-blanc dont part la palette. */
+const PLUS_CLAIR = 0.98;
+
 /** Au-delà, une teinte devient fluorescente sur un écran et fatigue à la lecture. */
-const CHROMA_MAX = 0.16;
+const CHROMA_MAX = 0.21;
+
+/** Seuil AA du texte courant. Le texte d'un bouton n'est pas du « grand texte ». */
+const CONTRASTE_AA = 4.5;
 
 export interface Oklch {
   /** Clarté perçue, de 0 (noir) à 1 (blanc). */
@@ -133,6 +147,29 @@ export function oklchVersHex({ l, c, h }: Oklch): string {
 export type Palette = Record<Nuance, string>;
 
 /**
+ * La clarté la plus haute à laquelle une teinte peut être posée en gardant du
+ * texte blanc lisible par-dessus.
+ *
+ * C'est le pivot de toute la palette, et il n'est pas le même selon la teinte :
+ * un jaune atteint le seuil bien plus bas qu'un bleu. Le calculer plutôt que de
+ * le fixer évite d'avoir à choisir entre une couleur fidèle et un bouton
+ * lisible — on prend la plus claire des deux qui reste lisible.
+ *
+ * Recherche par dichotomie : la fonction de contraste n'est pas inversible
+ * analytiquement, et quarante bissections coûtent quelques microsecondes.
+ */
+function clarteLisible(h: number, c: number): number {
+  let bas = 0.2;
+  let haut = 0.85;
+  for (let pas = 0; pas < 40; pas += 1) {
+    const milieu = (bas + haut) / 2;
+    if (contraste(oklchVersHex({ l: milieu, c, h }), '#ffffff') >= CONTRASTE_AA) bas = milieu;
+    else haut = milieu;
+  }
+  return bas;
+}
+
+/**
  * Les dix nuances dérivées d'une couleur.
  *
  * Renvoie `null` si la couleur est illisible : à l'appelant de garder celle
@@ -147,10 +184,18 @@ export function paletteDepuis(couleur: string): Palette | null {
   // une couleur fluorescente est ramenée à ce qu'un écran rend proprement.
   const chroma = Math.min(base.c, CHROMA_MAX);
 
+  // Le pivot : la nuance 500, aussi claire que possible sans rendre illisible
+  // le texte des boutons qu'elle porte.
+  const pivot = clarteLisible(base.h, chroma);
+
   const palette = {} as Palette;
   for (const nuance of NUANCES) {
     const point = COURBE[nuance];
-    palette[nuance] = oklchVersHex({ l: point.l, c: chroma * point.c, h: base.h });
+    const l =
+      point.t === undefined
+        ? pivot * (point.f ?? 1)
+        : PLUS_CLAIR - (PLUS_CLAIR - pivot) * point.t;
+    palette[nuance] = oklchVersHex({ l, c: chroma * point.c, h: base.h });
   }
   return palette;
 }
@@ -177,11 +222,13 @@ export function contraste(a: string, b: string): number {
 /**
  * Le noir ou le blanc, selon lequel se lit le mieux sur ce fond.
  *
- * Un bouton jaune vif avec du texte blanc est joli sur une maquette et
- * illisible au soleil. Cette fonction évite d'avoir à y penser à chaque
- * couleur choisie.
+ * Le blanc est préféré dès qu'il passe le seuil AA, même si le noir contraste
+ * davantage : c'est la convention d'un bouton plein, et la palette est
+ * précisément construite pour que ce cas soit toujours le bon. La branche noire
+ * reste utile pour une couleur reçue d'ailleurs — un fond clair quelconque.
  */
 export function texteSur(fond: string): '#ffffff' | '#0b1220' {
+  if (contraste(fond, '#ffffff') >= CONTRASTE_AA) return '#ffffff';
   return contraste(fond, '#ffffff') >= contraste(fond, '#0b1220') ? '#ffffff' : '#0b1220';
 }
 

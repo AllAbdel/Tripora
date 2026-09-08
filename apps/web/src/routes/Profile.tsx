@@ -177,9 +177,10 @@ function ChoixDeTheme() {
  * le sélecteur existe parce que ceux qui ont une couleur en tête n'accepteront
  * pas l'à-peu-près le plus proche.
  *
- * Quelle que soit la couleur, la palette entière est recalculée pour garder le
- * même contraste : c'est ce qui empêche un jaune vif de rendre les boutons
- * illisibles. Le détail est dans `palette.ts`.
+ * La couleur affichée sur la pastille est celle que l'application prendra,
+ * pas celle du sélecteur : la palette assombrit la teinte jusqu'au point où du
+ * texte blanc reste lisible dessus. Montrer autre chose serait promettre une
+ * couleur qu'on ne donne pas. Le détail est dans `palette.ts`.
  */
 function ChoixDeCouleur() {
   const { accent, setAccent } = useTheme();
@@ -223,28 +224,23 @@ function ChoixDeCouleur() {
             aria-checked={surMesure}
             aria-label="Une autre couleur"
             onClick={() => champ.current?.click()}
-            className={cn(
-              'relative grid size-11 place-items-center rounded-full transition-transform',
-              'active:scale-90',
-              surMesure
-                ? 'ring-2 ring-offset-2 ring-offset-[color:var(--surface-raised)]'
-                : 'ring-1 ring-[color:var(--border-subtle)]',
-            )}
+            className="relative grid size-11 place-items-center rounded-full transition-transform active:scale-90"
             style={
               surMesure
-                ? { backgroundColor: accent, boxShadow: `0 0 0 2px ${accent} inset` }
+                ? {
+                    backgroundColor: paletteDepuis(accent)?.[500] ?? accent,
+                    outline: `2px solid ${paletteDepuis(accent)?.[500] ?? accent}`,
+                    outlineOffset: '2px',
+                  }
                 : {
                     background:
-                      'conic-gradient(#e2564a,#e08a1e,#c8c31e,#2f8f4e,#1c8c9b,#0a84ff,#6257d6,#c2418f,#e2564a)',
+                      'conic-gradient(#d1463c,#b46100,#8a8a00,#258747,#058391,#0073ec,#6e65e5,#c64492,#d1463c)',
+                    outline: '1px solid var(--border-subtle)',
                   }
             }
           >
             {surMesure ? (
-              <Check
-                className="size-5"
-                style={{ color: paletteDepuis(accent) ? '#fff' : undefined }}
-                aria-hidden
-              />
+              <Check className="size-5 text-white" aria-hidden />
             ) : (
               <Palette className="size-4 text-white drop-shadow" aria-hidden />
             )}
@@ -261,8 +257,9 @@ function ChoixDeCouleur() {
         </div>
 
         <p className="text-muted text-xs leading-relaxed">
-          Toute l’application suit. La palette est recalculée pour rester lisible, quelle que soit
-          la couleur : un jaune vif prendra du texte noir, pas du blanc.
+          Toute l’application suit, jusqu’à la barre du téléphone. La couleur est assombrie
+          juste ce qu’il faut pour que le texte des boutons reste lisible — un jaune fluo
+          deviendra un ambre profond, pas un bouton illisible.
         </p>
       </CardBody>
     </Card>
@@ -289,16 +286,15 @@ function Pastille({
       aria-label={nom}
       title={nom}
       onClick={onClick}
-      className={cn(
-        'grid size-11 place-items-center rounded-full transition-transform active:scale-90',
-        actif
-          ? 'ring-2 ring-offset-2 ring-offset-[color:var(--surface-raised)]'
-          : 'ring-1 ring-black/10 dark:ring-white/15',
-      )}
+      className="grid size-11 place-items-center rounded-full transition-transform active:scale-90"
       style={{
         backgroundColor: palette?.[500] ?? couleur,
-        ...(actif ? { boxShadow: `0 0 0 2px ${palette?.[500] ?? couleur} inset` } : {}),
-        ...(actif ? { ['--tw-ring-color' as string]: palette?.[500] ?? couleur } : {}),
+        // Un contour plutôt que l'anneau de Tailwind : sa couleur se pilote
+        // depuis un style en ligne, ce que `ring` ne permet pas proprement.
+        outline: actif
+          ? `2px solid ${palette?.[500] ?? couleur}`
+          : '1px solid color-mix(in oklab, currentColor 15%, transparent)',
+        outlineOffset: actif ? '2px' : '0',
       }}
     >
       {actif && <Check className="size-5 text-white drop-shadow" aria-hidden />}

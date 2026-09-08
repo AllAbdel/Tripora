@@ -58,9 +58,10 @@ describe('palette dérivée', () => {
 
   it('reste proche du bleu d’origine, dont la courbe est tirée', () => {
     const palette = paletteDepuis('#0a84ff')!;
-    // La nuance 500 doit ressembler à la couleur demandée, pas la copier au
-    // pixel : elle est replacée sur la courbe commune.
-    expect(contraste(palette[500], '#0a84ff')).toBeLessThan(1.35);
+    // La nuance 500 doit ressembler à la couleur demandée sans la copier au
+    // pixel : elle est assombrie juste assez pour porter du texte blanc.
+    expect(contraste(palette[500], '#0a84ff')).toBeLessThan(1.3);
+    expect(hexVersOklch(palette[500])!.l).toBeLessThan(hexVersOklch('#0a84ff')!.l);
   });
 
   it('garde la teinte demandée sur toute la palette', () => {
@@ -84,17 +85,36 @@ describe('palette dérivée', () => {
 });
 
 describe('lisibilité', () => {
-  it('choisit un texte qui passe le seuil AA sur chaque couleur proposée', () => {
-    for (const { couleur } of ACCENTS_PROPOSES) {
-      const palette = paletteDepuis(couleur)!;
-      const fond = palette[500];
-      // 4,5 est le seuil AA du texte courant ; on le vérifie sur la nuance qui
-      // sert de fond aux boutons principaux.
-      expect(contraste(fond, texteSur(fond))).toBeGreaterThanOrEqual(4.5);
+  it('porte du texte blanc lisible, quelle que soit la couleur demandée', () => {
+    // Y compris des couleurs que personne ne devrait choisir : c'est là que la
+    // règle compte. Un bouton doit rester lisible même si son fond est un jaune
+    // fluo — la palette l'assombrit jusqu'à ce qu'il le soit.
+    for (const couleur of [
+      ...ACCENTS_PROPOSES.map((a) => a.couleur),
+      '#ffff00',
+      '#00ff00',
+      '#ffffff',
+      '#000000',
+      '#ff00ff',
+    ]) {
+      const fond = paletteDepuis(couleur)![500];
+      expect(texteSur(fond)).toBe('#ffffff');
+      expect(contraste(fond, '#ffffff')).toBeGreaterThanOrEqual(4.5);
     }
   });
 
-  it('met du noir sur un jaune vif, pas du blanc', () => {
+  it('garde les fonds clairs lisibles sous leur texte foncé', () => {
+    // Les nuances 50 et 100 servent de fond aux pastilles, avec du 700 dessus.
+    for (const { couleur } of ACCENTS_PROPOSES) {
+      const palette = paletteDepuis(couleur)!;
+      expect(contraste(palette[50], palette[700])).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(palette[100], palette[700])).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('met du noir sur un fond clair reçu d’ailleurs', () => {
+    // Cette branche ne sert plus aux couleurs de la palette, qui sont toutes
+    // assez sombres — mais bien à une couleur quelconque, d'où qu'elle vienne.
     expect(texteSur('#ffd400')).toBe('#0b1220');
     expect(texteSur('#0a3fff')).toBe('#ffffff');
   });

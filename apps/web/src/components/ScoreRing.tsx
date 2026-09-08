@@ -9,9 +9,13 @@ export function ScoreRing({ score, size = 56 }: { score: number; size?: number }
   const circumference = 2 * Math.PI * radius;
   const filled = (Math.min(100, Math.max(0, score)) / 100) * circumference;
 
+  // L'échelle suit la couleur choisie plutôt qu'une seconde teinte figée :
+  // un anneau turquoise sur une interface devenue rouge ne dit plus « très
+  // bon », il dit « raté ». L'or reste pour le milieu, parce qu'il se lit
+  // comme une réserve dans à peu près toutes les cultures visuelles.
   const tone =
-    score >= 80 ? 'text-lagoon-500'
-    : score >= 60 ? 'text-brand-500'
+    score >= 80 ? 'text-brand-600 dark:text-brand-400'
+    : score >= 60 ? 'text-brand-400 dark:text-brand-300'
     : score >= 40 ? 'text-gold-500'
     : 'text-[color:var(--text-muted)]';
 
