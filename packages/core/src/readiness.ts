@@ -176,3 +176,165 @@ export function tripReadiness({
     readyToDecide: !blockers.some((blocage) => blocage.blocking),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Le prochain geste
+// ---------------------------------------------------------------------------
+
+/**
+ * Où mène le bouton. Le noyau nomme une intention, l'interface connaît l'URL :
+ * la logique du parcours reste testable sans rien savoir du routeur.
+ */
+export type CibleGeste =
+  | 'mes-envies'
+  | 'participants'
+  | 'propositions'
+  | 'trancher'
+  | 'itineraire';
+
+export interface Geste {
+  /** Ce qu'il y a à faire, à l'impératif et sans jargon. */
+  titre: string;
+  /** Ce que ça débloque. Une raison d'agir vaut mieux qu'une consigne. */
+  pourquoi: string;
+  cible: CibleGeste;
+  /** Le texte du bouton. Court : c'est un bouton, pas une phrase. */
+  libelle: string;
+  /** Vrai quand c'est à cette personne d'agir, pas au groupe d'attendre. */
+  personnel: boolean;
+}
+
+/**
+ * Une seule chose à faire, maintenant.
+ *
+ * `tripReadiness` dit tout ce qui manque ; c'est utile mais c'est une liste, et
+ * une liste ne se fait pas faire. Le groupe qui ouvre l'application veut savoir
+ * quoi faire dans les trois secondes, pas auditer son avancement.
+ *
+ * Deux règles gouvernent le choix :
+ *
+ *  1. **ce que je peux faire seul passe avant ce que j'attends des autres.**
+ *     Dire ses propres envies ne dépend de personne ; relancer le groupe, si.
+ *     Proposer d'abord la relance donnerait l'impression que l'application
+ *     attend les autres alors qu'elle m'attend, moi ;
+ *  2. **jamais deux gestes à la fois.** Le détail reste consultable — il est
+ *     dans `blockers` — mais il est replié. Deux appels à l'action côte à côte
+ *     n'en font aucun.
+ *
+ * Renvoie `null` quand il n'y a rien à faire : un écran qui félicite prend de
+ * la place pour rien.
+ */
+export function prochainGeste(entree: {
+  readiness: Readiness;
+  /** Cette personne a-t-elle dit ses propres envies ? */
+  jAiRepondu: boolean;
+  /** A-t-elle voté sur au moins une destination ? */
+  jAiVote: boolean;
+  jeSuisOrganisateur: boolean;
+  destinationArretee: boolean;
+  /** Vrai quand l'itinéraire n'a encore aucune activité. */
+  itineraireVide: boolean;
+  /** Faux en mode local : inviter n'aurait aucun sens. */
+  collaborationPossible: boolean;
+  /** Combien de destinations sont proposées au vote. */
+  propositions: number;
+}): Geste | null {
+  const {
+    readiness,
+    jAiRepondu,
+    jAiVote,
+    jeSuisOrganisateur,
+    destinationArretee,
+    itineraireVide,
+    collaborationPossible,
+    propositions,
+  } = entree;
+
+  // 1. Ce qui ne dépend que de moi.
+  if (!jAiRepondu) {
+    return {
+      titre: 'Dites ce dont vous avez envie',
+      pourquoi:
+        'Tant que votre profil est vide, le classement optimise pour les autres et pas pour vous.',
+      cible: 'mes-envies',
+      libelle: 'Remplir mes envies',
+      personnel: true,
+    };
+  }
+
+  const manque = (kind: BlockerKind) => readiness.blockers.find((b) => b.kind === kind);
+
+  // 2. Ce que le groupe attend, du plus bloquant au moins gênant.
+  if (collaborationPossible && manque('members')) {
+    return {
+      titre: 'Il manque du monde',
+      pourquoi: manque('members')!.consequence,
+      cible: 'participants',
+      libelle: 'Envoyer le lien',
+      personnel: false,
+    };
+  }
+
+  if (collaborationPossible && manque('preferences')) {
+    return {
+      titre: 'Certains n’ont pas dit leurs envies',
+      pourquoi: manque('preferences')!.consequence,
+      cible: 'participants',
+      libelle: 'Voir qui manque',
+      personnel: false,
+    };
+  }
+
+  // 3. Le vote — d'abord le mien, ensuite celui des autres.
+  if (!destinationArretee && propositions > 0) {
+    if (!jAiVote) {
+      return {
+        titre: 'Donnez votre avis sur les propositions',
+        pourquoi: 'Le classement propose ; c’est le vote qui décide.',
+        cible: 'propositions',
+        libelle: 'Voter',
+        personnel: true,
+      };
+    }
+
+    if (manque('vote')) {
+      return {
+        titre: 'Le vote n’est pas complet',
+        pourquoi: manque('vote')!.consequence,
+        cible: 'participants',
+        libelle: 'Relancer le groupe',
+        personnel: false,
+      };
+    }
+
+    // Tout le monde a voté : reste à trancher, et seul l'organisateur le peut.
+    return jeSuisOrganisateur
+      ? {
+          titre: 'Le groupe a voté',
+          pourquoi: 'Vous pouvez arrêter la destination ; l’itinéraire et la carte suivront.',
+          cible: 'trancher',
+          libelle: 'Trancher',
+          personnel: true,
+        }
+      : {
+          titre: 'En attente de la décision',
+          pourquoi: 'Tout le monde a voté. C’est à l’organisateur d’arrêter la destination.',
+          cible: 'propositions',
+          libelle: 'Revoir les propositions',
+          personnel: false,
+        };
+  }
+
+  // 4. Après la décision : remplir le séjour.
+  if (destinationArretee && itineraireVide) {
+    return {
+      titre: 'Construisez le séjour',
+      pourquoi: 'La destination est arrêtée : il reste à décider quoi faire, jour par jour.',
+      cible: 'itineraire',
+      libelle: 'Ouvrir l’itinéraire',
+      personnel: false,
+    };
+  }
+
+  return null;
+}

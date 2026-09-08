@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasAnswered, tripReadiness } from './readiness.js';
+import { hasAnswered, prochainGeste, tripReadiness } from './readiness.js';
 import { normalizeWeights } from './preferences.js';
 import type { MemberPreference, TripConstraints } from './types.js';
 
@@ -156,5 +156,116 @@ describe('ce qui bloque le groupe', () => {
     for (const blocage of etat.blockers) {
       expect(`${blocage.label} ${blocage.consequence}`).not.toContain('dominique');
     }
+  });
+});
+
+describe('le prochain geste', () => {
+  /** Un contexte où tout va bien : chaque test n'en change qu'une chose. */
+  function contexte(surcharge: Parameters<typeof prochainGeste>[0] | object = {}) {
+    return prochainGeste({
+      readiness: tripReadiness({
+        constraints: constraints(),
+        members: COMPLET,
+        votes: 4,
+        locked: true,
+      }),
+      jAiRepondu: true,
+      jAiVote: true,
+      jeSuisOrganisateur: false,
+      destinationArretee: true,
+      itineraireVide: false,
+      collaborationPossible: true,
+      propositions: 6,
+      ...surcharge,
+    });
+  }
+
+  it('ne propose rien quand il n’y a rien à faire', () => {
+    expect(contexte()).toBeNull();
+  });
+
+  it('fait passer ce que je peux faire seul avant ce que j’attends des autres', () => {
+    // Ici tout manque à la fois : personne n'a rejoint, personne n'a répondu,
+    // personne n'a voté. Ce qui doit ressortir, c'est ma propre réponse — la
+    // seule qui ne dépende de personne.
+    const geste = contexte({
+      readiness: tripReadiness({ constraints: constraints(), members: [membre('moi', false)] }),
+      jAiRepondu: false,
+      jAiVote: false,
+      destinationArretee: false,
+      itineraireVide: true,
+    });
+    expect(geste?.cible).toBe('mes-envies');
+    expect(geste?.personnel).toBe(true);
+  });
+
+  it('propose d’inviter quand il manque du monde', () => {
+    const geste = contexte({
+      readiness: tripReadiness({ constraints: constraints(), members: [membre('a')], votes: 1 }),
+      destinationArretee: false,
+    });
+    expect(geste?.cible).toBe('participants');
+    expect(geste?.personnel).toBe(false);
+  });
+
+  it('ne propose jamais d’inviter en mode local', () => {
+    // Sans serveur, il n'y a personne à inviter : proposer un lien serait une
+    // impasse, et une impasse en haut de l'écran décourage plus qu'un vide.
+    const geste = contexte({
+      readiness: tripReadiness({ constraints: constraints(), members: [membre('a')], votes: 1 }),
+      collaborationPossible: false,
+      destinationArretee: false,
+    });
+    expect(geste?.cible).not.toBe('participants');
+  });
+
+  it('demande mon vote avant de relancer les autres', () => {
+    const geste = contexte({
+      readiness: tripReadiness({ constraints: constraints(), members: COMPLET, votes: 1 }),
+      jAiVote: false,
+      destinationArretee: false,
+    });
+    expect(geste?.cible).toBe('propositions');
+    expect(geste?.personnel).toBe(true);
+  });
+
+  it('propose de trancher à l’organisateur, et d’attendre aux autres', () => {
+    const tousOntVote = {
+      readiness: tripReadiness({ constraints: constraints(), members: COMPLET, votes: 4 }),
+      destinationArretee: false,
+    };
+    expect(contexte({ ...tousOntVote, jeSuisOrganisateur: true })?.cible).toBe('trancher');
+
+    const membreSimple = contexte({ ...tousOntVote, jeSuisOrganisateur: false });
+    expect(membreSimple?.cible).not.toBe('trancher');
+    expect(membreSimple?.personnel).toBe(false);
+  });
+
+  it('n’envoie pas voter s’il n’y a rien à voter', () => {
+    // Un voyage dont la destination est déjà écrite dans les contraintes n'a
+    // aucune proposition : lui demander de voter serait absurde.
+    const geste = contexte({
+      readiness: tripReadiness({ constraints: constraints(), members: COMPLET }),
+      jAiVote: false,
+      destinationArretee: false,
+      propositions: 0,
+    });
+    expect(geste?.cible).not.toBe('propositions');
+  });
+
+  it('bascule sur l’itinéraire une fois la destination arrêtée', () => {
+    const geste = contexte({ itineraireVide: true });
+    expect(geste?.cible).toBe('itineraire');
+  });
+
+  it('ne nomme jamais personne, comme le reste du module', () => {
+    const geste = contexte({
+      readiness: tripReadiness({
+        constraints: constraints(),
+        members: [membre('camille'), membre('dominique', false)],
+      }),
+      destinationArretee: false,
+    });
+    expect(`${geste?.titre} ${geste?.pourquoi}`).not.toContain('dominique');
   });
 });

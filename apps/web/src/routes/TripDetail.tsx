@@ -6,8 +6,10 @@ import {
   estimateTransportOptions,
   findDestination,
   formatCents,
+  hasAnswered,
   MONTHS_FR,
   targetMonth,
+  tripReadiness,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -28,6 +30,8 @@ import { Assistant } from '@/components/Assistant';
 import { toFailure } from '@/lib/errors';
 import { OutilsDuVoyage } from '@/components/OutilsDuVoyage';
 import { signaler } from '@/lib/feedback';
+import { ProchainGeste } from '@/components/ProchainGeste';
+import { getItinerary } from '@/lib/itinerary';
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
@@ -76,6 +80,31 @@ export default function TripDetail() {
   });
 
   const { proposals, prix, prixEnCours, normales } = useProposals(data);
+
+  // Ce que « le prochain geste » a besoin de savoir, et que l'écran connaît
+  // déjà : ce que j'ai fait, moi, par opposition à ce que le groupe a fait.
+  const monProfil = data?.members.find((membre) => membre.userId === identity?.id);
+  const jAiRepondu = monProfil ? hasAnswered(monProfil.weights) : false;
+  const jAiVote = Object.values(votes.data?.tallies ?? {}).some((tally) => tally.mine !== null);
+
+  const etatDuGroupe = data
+    ? tripReadiness({
+        constraints: data.constraints,
+        members: data.members,
+        votes: votes.data?.voters ?? 0,
+        locked: Boolean(data.lockedDestinationId),
+      })
+    : null;
+
+  // L'itinéraire n'est chargé que si la destination est arrêtée : avant, il
+  // n'existe pas, et l'appel serait un aller-retour pour un tableau vide.
+  const itineraire = useQuery({
+    queryKey: ['itineraire', id],
+    queryFn: () => getItinerary().load(id!),
+    enabled: Boolean(id && data?.lockedDestinationId),
+    staleTime: 5 * 60 * 1000,
+  });
+  const itineraireVide = (itineraire.data ?? []).every((jour) => jour.items.length === 0);
 
   const villeRetenue = data?.lockedDestinationId
     ? findDestination(data.lockedDestinationId)
@@ -142,6 +171,18 @@ export default function TripDetail() {
             )}
           </header>
 
+          <ProchainGeste
+            tripId={data.summary.id}
+            readiness={etatDuGroupe!}
+            jAiRepondu={jAiRepondu}
+            jAiVote={jAiVote}
+            jeSuisOrganisateur={data.isOwner}
+            destinationArretee={Boolean(data.lockedDestinationId)}
+            itineraireVide={itineraireVide}
+            collaborationPossible={Boolean(getCollaboration())}
+            propositions={proposals?.scores.length ?? 0}
+          />
+
           <OuEnEstLeGroupe
             constraints={data.constraints}
             members={data.members}
@@ -207,7 +248,7 @@ export default function TripDetail() {
 
           {proposals && proposals.scores.length > 0 && (
             <>
-              <Card>
+              <Card id="propositions" className="scroll-mt-4">
                 <CardBody className="space-y-1.5">
                   <p className="font-semibold">
                     {proposals.scores.length} destinations pour votre groupe
@@ -292,7 +333,7 @@ export default function TripDetail() {
               </ul>
 
               {!data.lockedDestinationId && (
-                <Card>
+                <Card id="trancher" className="scroll-mt-4">
                   <CardBody className="space-y-3">
                     <p className="font-semibold">Trancher</p>
                     {choix ? (
