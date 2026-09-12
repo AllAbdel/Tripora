@@ -3,6 +3,7 @@
  * Importée à la fois par l'application web et par les Edge Functions Supabase,
  * pour que le calcul affiché et le calcul stocké soient rigoureusement les mêmes.
  */
+export * from './match.js';
 export * from './preferences.js';
 export * from './money.js';
 export * from './currency.js';

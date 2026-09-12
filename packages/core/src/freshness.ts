@@ -18,6 +18,25 @@ export interface PricedValue {
   provider?: string;
   /** Date de relevé, en ISO. Obligatoire quand `source === 'observed'`. */
   fetchedAt?: string;
+  /**
+   * Le site qui vendait à ce prix-là, quand la source le dit.
+   *
+   * Distinct de `provider` : Aviasales agrège, mais le tarif vient d'une
+   * agence précise — Trip.com, Kiwi, une compagnie en direct. Sans cette
+   * mention, « prix vu sur Aviasales » laisse croire qu'on achète là-bas.
+   */
+  reseller?: string;
+  /**
+   * Nombre de changements du trajet auquel ce prix correspond.
+   *
+   * `0` pour un direct, `undefined` quand la source ne le dit pas — ce qui
+   * n'est pas la même chose, et l'écran doit pouvoir faire la différence
+   * plutôt que d'annoncer un vol direct par défaut.
+   */
+  stops?: number;
+  /** Dates du trajet relevé, en ISO. Un prix sans date ne se compare pas. */
+  departAt?: string;
+  returnAt?: string;
 }
 
 /**
@@ -80,6 +99,71 @@ function quandCelaAEteVu(iso: string, now: Date): string {
   if (jours === 1) return 'hier';
   if (jours <= 7) return `il y a ${jours} jours`;
   return `le ${new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
+}
+
+/** D'où vient ce prix, en une phrase qui nomme le site. */
+export interface Provenance {
+  /** « Relevé le 8 sept. sur Aviasales » — court, pour tenir sous un montant. */
+  court: string;
+  /** La phrase complète, revendeur et dates compris. */
+  long: string;
+  /** Vrai quand un vrai site a été consulté, faux pour une estimation maison. */
+  releve: boolean;
+}
+
+/**
+ * Dire d'où vient chaque prix, toujours, et nommer le site.
+ *
+ * `freshnessLabel` donne l'étiquette courte posée sous un montant. Celle-ci va
+ * plus loin : un prix affiché engage, et « prix indicatif » ne dit pas qui a
+ * estimé quoi. Un voyageur qui voit 420 € doit pouvoir savoir en une ligne si
+ * quelqu'un vend à ce prix, ou si c'est Tripora qui l'a calculé.
+ */
+export function describeSource(value: PricedValue, now: Date = new Date()): Provenance {
+  const assessed = assessFreshness(value, now);
+
+  if (assessed.source === 'unavailable') {
+    return {
+      court: 'Prix non disponible',
+      long: 'Aucune source n’a de prix pour ce trajet.',
+      releve: false,
+    };
+  }
+
+  if (assessed.source === 'estimated') {
+    return {
+      court: 'Estimation Tripora',
+      long:
+        'Estimation calculée par Tripora à partir de la distance et de moyennes ' +
+        'de marché. Aucun site n’a été consulté pour ce montant.',
+      releve: false,
+    };
+  }
+
+  const site = assessed.provider ?? 'une source datée';
+  const quand = quandCelaAEteVu(assessed.fetchedAt!, now);
+  const revendeur = assessed.reseller ? `, vendu par ${assessed.reseller}` : '';
+  const dates = decrireLesDates(assessed.departAt, assessed.returnAt);
+  return {
+    court: `Relevé ${quand} sur ${site}`,
+    long: `Prix relevé ${quand} sur ${site}${revendeur}${dates}.`,
+    releve: true,
+  };
+}
+
+function decrireLesDates(depart: string | undefined, retour: string | undefined): string {
+  const jour = (iso: string | undefined): string | null => {
+    if (!iso) return null;
+    const date = new Date(iso);
+    return Number.isNaN(date.getTime())
+      ? null
+      : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+  const aller = jour(depart);
+  const rentree = jour(retour);
+  if (aller && rentree) return `, pour un aller le ${aller} et un retour le ${rentree}`;
+  if (aller) return `, pour un départ le ${aller}`;
+  return '';
 }
 
 /** La source la plus faible d'un ensemble : un total est aussi fiable que son pire élément. */

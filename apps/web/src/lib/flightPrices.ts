@@ -74,6 +74,23 @@ export async function chargerPrixVols(
  * plutôt que d'afficher un montant issu d'un champ qu'on n'a pas su relire.
  * Chaque entrée douteuse est ignorée en silence, les autres sont conservées.
  */
+/**
+ * Le nom du revendeur mérite-t-il d'être affiché ?
+ *
+ * Le serveur filtre déjà, et on refait le tri ici : la réponse vient du
+ * réseau, et un nom d'agence finit sous les yeux de quelqu'un. Travelpayouts
+ * répond dans la langue de son marché — « Авиасейлс » pour un relevé russe,
+ * c'est-à-dire Aviasales, qu'on cite déjà comme source. On n'accepte donc que
+ * de l'alphabet latin, et pas l'agrégateur lui-même.
+ */
+function revendeurLisible(valeur: unknown): boolean {
+  if (typeof valeur !== 'string') return false;
+  const nom = valeur.trim();
+  if (nom.length === 0 || nom.length > 60) return false;
+  if (!/^[\p{Script=Latin}0-9 .,'&()/-]+$/u.test(nom)) return false;
+  return nom.toLowerCase().replace(/[^a-z]/g, '') !== 'aviasales';
+}
+
 export function lirePrix(data: unknown): PrixVols {
   if (typeof data !== 'object' || data === null) return VIDE;
   const enveloppe = data as Record<string, unknown>;
@@ -90,11 +107,18 @@ export function lirePrix(data: unknown): PrixVols {
       if (typeof entree.fetchedAt !== 'string' || Number.isNaN(Date.parse(entree.fetchedAt))) {
         continue;
       }
+      const escales = Number(entree.stops);
       parDestination[id] = {
         cents,
         source: 'observed',
         provider: typeof entree.provider === 'string' ? entree.provider : 'Aviasales',
         fetchedAt: entree.fetchedAt,
+        // Le nombre d'escales n'est repris que s'il est plausible : mieux vaut
+        // « escales inconnues » qu'un chiffre issu d'un champ mal relu.
+        ...(Number.isInteger(escales) && escales >= 0 && escales <= 5 ? { stops: escales } : {}),
+        ...(revendeurLisible(entree.reseller) ? { reseller: entree.reseller as string } : {}),
+        ...(typeof entree.departAt === 'string' ? { departAt: entree.departAt } : {}),
+        ...(typeof entree.returnAt === 'string' ? { returnAt: entree.returnAt } : {}),
       };
     }
   }

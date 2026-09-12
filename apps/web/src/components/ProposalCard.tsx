@@ -1,26 +1,24 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   ChevronDown,
   CloudRain,
   Crown,
   Loader2,
   Lock,
-  Plane,
-  Train,
-  Bus,
-  Car,
-  Ship,
   Sparkles,
   Thermometer,
 } from 'lucide-react';
 import {
   climateFor,
+  correspondanceAuxEnvies,
   costLines,
   formatCents,
   freshnessLabel,
-  TRANSPORT_LABELS_FR,
   type DestinationScore,
   type Destination,
+  type LieuNomme,
+  type MemberPreference,
+  type PricedValue,
   type TransportEstimate,
 } from '@tripora/core';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -30,14 +28,8 @@ import { messageIA, rediger } from '@/lib/ai';
 import { faitsPourExplication } from '@/lib/explication';
 import { cn } from '@/lib/cn';
 import { Drapeau } from '@/components/Drapeau';
-
-const TRANSPORT_ICONS = {
-  plane: Plane,
-  train: Train,
-  bus: Bus,
-  car: Car,
-  ferry: Ship,
-} as const;
+import { DetailDesEnvies, ResumeDesEnvies } from '@/components/CorrespondanceEnvies';
+import { DetailDuTrajet } from '@/components/DetailDuTrajet';
 
 export function ProposalCard({
   rank,
@@ -47,6 +39,9 @@ export function ProposalCard({
   normalesAnnee,
   month,
   participants,
+  membres,
+  depart,
+  prixReleve,
   vote,
   choixDuGroupe = false,
   verrouillee = false,
@@ -61,6 +56,18 @@ export function ProposalCard({
   month?: number | undefined;
   /** Taille du groupe, transmise à l'explication rédigée. Aucun nom ne l'est. */
   participants: number;
+  /** Les envies saisies, pour dire ce que cette ville-là en couvre. */
+  membres: readonly MemberPreference[];
+  /** Le point de départ, pour décrire le trajet plutôt que d'en donner le prix seul. */
+  depart: LieuNomme;
+  /**
+   * Le prix de vol réellement relevé, quand il y en a un.
+   *
+   * Il porte ce que l'estimation ne peut pas savoir : le nombre d'escales, le
+   * site qui vend, les dates du trajet. On le substitue au prix estimé sur la
+   * seule ligne « avion », les autres modes restant des estimations.
+   */
+  prixReleve?: PricedValue | undefined;
   /** Barre de vote, absente quand on voyage seul. */
   vote?: ReactNode;
   /** Celle que les votes désignent, distincte de celle que le calcul classe en tête. */
@@ -69,6 +76,10 @@ export function ProposalCard({
 }) {
   const [open, setOpen] = useState(false);
   const climat = month === undefined ? undefined : climateFor(destination.id, month);
+  const correspondance = useMemo(
+    () => correspondanceAuxEnvies(destination, membres),
+    [destination, membres],
+  );
   const [texte, setTexte] = useState<string | null>(null);
   const [redaction, setRedaction] = useState(false);
 
@@ -170,6 +181,8 @@ export function ProposalCard({
             rien à décider. Le détail des facteurs est juste en dessous. */}
         <p className="text-sm leading-relaxed">{score.edge ?? score.summary}</p>
 
+        <ResumeDesEnvies correspondance={correspondance} />
+
         {vote}
 
         <button
@@ -187,6 +200,11 @@ export function ProposalCard({
 
         {open && (
           <div className="animate-rise space-y-4 border-t border-[color:var(--border-subtle)] pt-3">
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold">Ce que ça donne sur vos envies</h4>
+              <DetailDesEnvies correspondance={correspondance} />
+            </section>
+
             <section className="space-y-1.5">
               <h4 className="text-sm font-semibold">Ce que coûte le voyage</h4>
               <ul className="space-y-1 text-sm">
@@ -258,28 +276,23 @@ export function ProposalCard({
             </section>
 
             {transport.length > 0 && (
-              <section className="space-y-1.5">
+              <section className="space-y-2.5">
                 <h4 className="text-sm font-semibold">Comment y aller</h4>
-                <ul className="space-y-1.5 text-sm">
-                  {transport.map((option) => {
-                    const Icon = TRANSPORT_ICONS[option.mode];
-                    return (
-                      <li key={option.mode} className="flex items-center gap-2.5">
-                        <Icon className="text-muted size-4 shrink-0" aria-hidden />
-                        <span className="font-medium">{TRANSPORT_LABELS_FR[option.mode]}</span>
-                        <span className="text-muted flex-1 text-xs">
-                          {formatDuration(option.durationMin)}
-                        </span>
-                        <span className="tabular-nums">
-                          {formatCents(option.price.cents ?? 0, 'EUR', { hideCentimes: true })}
-                        </span>
-                      </li>
-                    );
-                  })}
+                <ul className="space-y-2.5">
+                  {transport.map((option) => (
+                    <li key={option.mode}>
+                      <DetailDuTrajet
+                        depart={depart}
+                        arrivee={destination}
+                        option={
+                          option.mode === 'plane' && prixReleve
+                            ? { ...option, price: prixReleve }
+                            : option
+                        }
+                      />
+                    </li>
+                  ))}
                 </ul>
-                <p className="text-muted pt-0.5 text-xs">
-                  Durées aller-retour estimées, transferts compris.
-                </p>
               </section>
             )}
           </div>
@@ -289,9 +302,3 @@ export function ProposalCard({
   );
 }
 
-function formatDuration(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  if (hours === 0) return `${rest} min`;
-  return rest === 0 ? `${hours} h` : `${hours} h ${String(rest).padStart(2, '0')}`;
-}

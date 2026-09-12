@@ -38,6 +38,10 @@ interface PrixReleve {
   fetchedAt: string;
   departAt?: string;
   returnAt?: string;
+  /** Nombre de changements du vol relevé. Absent quand la source se tait. */
+  stops?: number;
+  /** L'agence qui vendait à ce prix : Aviasales agrège, elle ne vend pas. */
+  reseller?: string;
 }
 
 Deno.serve(async (request) => {
@@ -91,6 +95,8 @@ Deno.serve(async (request) => {
         fetchedAt: tarif.releveLe ?? releve,
         ...(tarif.departAt ? { departAt: tarif.departAt } : {}),
         ...(tarif.returnAt ? { returnAt: tarif.returnAt } : {}),
+        ...(tarif.escales === undefined ? {} : { stops: tarif.escales }),
+        ...(tarif.agence ? { reseller: tarif.agence } : {}),
       };
     }
 
@@ -114,6 +120,14 @@ interface TarifBrut {
   departAt?: string;
   returnAt?: string;
   releveLe?: string;
+  /**
+   * `number_of_changes` de Travelpayouts : le nombre d'escales du vol auquel
+   * ce prix correspond. On le remonte tel quel, parce qu'un prix d'appel avec
+   * deux escales n'est pas le même voyage qu'un direct au même tarif.
+   */
+  escales?: number;
+  /** `gate` : le site qui vendait, à distinguer de l'agrégateur. */
+  agence?: string;
 }
 
 /**
@@ -124,6 +138,24 @@ interface TarifBrut {
  * deux et on ignore en silence ce qui ne ressemble pas à un tarif, plutôt que
  * de tout perdre sur un champ inattendu.
  */
+/**
+ * Le nom du revendeur vaut-il la peine d'être montré ?
+ *
+ * Travelpayouts renvoie le champ `gate` dans la langue de son marché : un
+ * relevé russe donne « Авиасейлс », qui est le même Aviasales que celui qu'on
+ * cite déjà comme source. Afficher « vendu par Авиасейлс » à un francophone
+ * n'apporte rien et fait douter du reste. On ne garde donc qu'un nom en
+ * alphabet latin, et seulement s'il désigne quelqu'un d'autre que
+ * l'agrégateur — sinon la phrase se répète pour ne rien dire.
+ */
+function nomDAgenceLisible(valeur: unknown): boolean {
+  if (typeof valeur !== 'string') return false;
+  const nom = valeur.trim();
+  if (nom.length === 0 || nom.length > 60) return false;
+  if (!/^[\p{Script=Latin}0-9 .,'&()/-]+$/u.test(nom)) return false;
+  return nom.toLowerCase().replace(/[^a-z]/g, '') !== 'aviasales';
+}
+
 function lireTarifs(charge: unknown): Record<string, TarifBrut> {
   const sortie: Record<string, TarifBrut> = {};
 
@@ -135,11 +167,14 @@ function lireTarifs(charge: unknown): Record<string, TarifBrut> {
     if (!Number.isFinite(prix) || prix <= 0) return;
     const existant = sortie[code];
     if (existant && existant.prix <= prix) return;
+    const escales = Number(entree.number_of_changes ?? entree.transfers);
     sortie[code] = {
       prix,
       ...(typeof entree.depart_date === 'string' ? { departAt: entree.depart_date } : {}),
       ...(typeof entree.return_date === 'string' ? { returnAt: entree.return_date } : {}),
       ...(typeof entree.found_at === 'string' ? { releveLe: entree.found_at } : {}),
+      ...(Number.isInteger(escales) && escales >= 0 && escales <= 5 ? { escales } : {}),
+      ...(nomDAgenceLisible(entree.gate) ? { agence: entree.gate as string } : {}),
     };
   };
 

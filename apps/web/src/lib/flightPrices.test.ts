@@ -97,3 +97,48 @@ describe('lecture défensive de la réponse serveur', () => {
     expect(lirePrix({ prices: {}, configured: true, quotaExceeded: true }).quotaExceeded).toBe(true);
   });
 });
+
+describe('ce que la source dit du vol', () => {
+  const base = {
+    cents: 13_600,
+    source: 'observed',
+    provider: 'Aviasales',
+    fetchedAt: '2026-09-06T10:06:01Z',
+  };
+
+  const lire = (extra: Record<string, unknown>) =>
+    lirePrix({ prices: { lisbonne: { ...base, ...extra } }, configured: true })
+      .parDestination['lisbonne'];
+
+  it('reprend le nombre d’escales tel que la source le donne', () => {
+    expect(lire({ stops: 1 })?.stops).toBe(1);
+    expect(lire({ stops: 0 })?.stops).toBe(0);
+  });
+
+  it('préfère ne rien dire à dire n’importe quoi sur les escales', () => {
+    // Sans nombre d'escales, l'écran affiche « escales inconnues » ; avec un
+    // chiffre mal relu, il annoncerait un vol qui n'existe pas.
+    expect(lire({})?.stops).toBeUndefined();
+    expect(lire({ stops: 42 })?.stops).toBeUndefined();
+    expect(lire({ stops: 'deux' })?.stops).toBeUndefined();
+  });
+
+  it('garde le revendeur quand il est lisible et qu’il ajoute quelque chose', () => {
+    expect(lire({ reseller: 'Trip.com' })?.reseller).toBe('Trip.com');
+  });
+
+  it('écarte le revendeur écrit dans un alphabet qu’on n’affichera pas', () => {
+    // Travelpayouts répond dans la langue de son marché.
+    expect(lire({ reseller: 'Авиасейлс' })?.reseller).toBeUndefined();
+  });
+
+  it('n’écrit pas « vendu par Aviasales » sous « relevé sur Aviasales »', () => {
+    expect(lire({ reseller: 'Aviasales' })?.reseller).toBeUndefined();
+  });
+
+  it('reprend les dates du trajet relevé', () => {
+    const prix = lire({ departAt: '2026-11-13', returnAt: '2026-11-16' });
+    expect(prix?.departAt).toBe('2026-11-13');
+    expect(prix?.returnAt).toBe('2026-11-16');
+  });
+});

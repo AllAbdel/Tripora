@@ -338,6 +338,9 @@ export default function TripDetail() {
                         )}
                         month={targetMonth(data.constraints)}
                         participants={data.constraints.participants}
+                        membres={data.members}
+                        depart={data.constraints.origin}
+                        prixReleve={prix?.parDestination[score.destinationId]}
                         vote={
                           !data.lockedDestinationId ? (
                             <VoteBar
