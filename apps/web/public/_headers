@@ -13,8 +13,15 @@
 #    fonctions serveur. C'est le seul serveur auquel Tripora parle vraiment.
 #  - `tiles.openfreemap.org` : le fond de carte vectoriel.
 #  - `*.wikimedia.org` : les photos de couverture et les images des lieux.
-#  - `blob:` en `worker-src` : MapLibre compile ses ouvriers de rendu ainsi.
-#    Sans lui, la carte reste blanche.
+#  - `blob:` en `worker-src` et `child-src` : MapLibre charge normalement son
+#    ouvrier de rendu comme un fichier voisin — c'est le chemin nominal, et il
+#    ne demande aucune permission particulière depuis qu'on lui donne
+#    l'adresse émise par le build. Mais quand le navigateur ne sait pas
+#    exécuter un ouvrier de type module, la bibliothèque récupère le script et
+#    le rejoue depuis un blob. `child-src` double `worker-src` pour les moteurs
+#    qui ne connaissent que le premier. Sans ces deux-là, la carte reste noire
+#    sur ces navigateurs, et sans le moindre message : privé d'ouvrier,
+#    MapLibre n'affiche que la couleur de fond du style, et ne signale rien.
 #  - `'unsafe-inline'` en `style-src` : Tailwind et MapLibre posent des styles
 #    en ligne. C'est la seule concession, et elle ne permet pas d'exécuter du
 #    code — seulement de colorer des éléments.
@@ -22,7 +29,7 @@
 # Ce qui est refusé sans exception : tout script d'une autre origine, tout
 # cadre, et l'inclusion de Tripora dans un cadre étranger.
 /*
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.wikimedia.org https://*.wikipedia.org https://tiles.openfreemap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://*.wikimedia.org; manifest-src 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.wikimedia.org https://*.wikipedia.org https://tiles.openfreemap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://*.wikimedia.org; manifest-src 'self'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

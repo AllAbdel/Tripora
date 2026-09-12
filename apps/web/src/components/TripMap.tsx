@@ -7,7 +7,9 @@ import {
   type ErrorEvent,
   type StyleSpecification,
 } from 'maplibre-gl';
+import { setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import adresseDeLOuvrier from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { GeoPoint } from '@tripora/core';
 import { useTheme } from '@/stores/theme';
 
@@ -22,6 +24,31 @@ import { useTheme } from '@/stores/theme';
  * seule plus que tout le reste de l'application, et la plupart des écrans n'en
  * ont pas besoin.
  */
+
+/**
+ * Où trouver l'ouvrier de rendu de MapLibre.
+ *
+ * Sans cette ligne, la carte est noire — et muette, ce qui est pire.
+ *
+ * MapLibre ne construit plus son ouvrier à partir d'un blob : il le charge
+ * comme un fichier voisin, en calculant son adresse à partir de `import.meta`
+ * de son propre module. Une fois la bibliothèque empaquetée par Vite dans
+ * `assets/TripMapScreen-xxxx.js`, cette adresse devient
+ * `assets/maplibre-gl-worker.mjs` — un fichier que le build n'émet pas. La
+ * requête part, revient 404, l'ouvrier ne démarre jamais.
+ *
+ * Et rien ne le signale : sans ouvrier, aucune tuile n'est décodée, mais
+ * MapLibre n'émet pas d'évènement d'erreur pour autant. Le style se charge, sa
+ * couleur de fond s'affiche — rgb(12,12,12) pour le fond sombre
+ * d'OpenFreeMap — les repères se posent par-dessus, et la carte reste un
+ * rectangle noir. Ni la console, ni le réseau, ni la CSP n'y sont pour quelque
+ * chose.
+ *
+ * `?worker&url` demande à Vite d'empaqueter l'ouvrier et ses dépendances en un
+ * fichier versionné, et de nous en rendre l'adresse. On la donne à MapLibre
+ * avant toute création de carte.
+ */
+setWorkerUrl(adresseDeLOuvrier);
 
 const FONDS = {
   clair: 'https://tiles.openfreemap.org/styles/positron',

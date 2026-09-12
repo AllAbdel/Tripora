@@ -106,6 +106,10 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
+  // MapLibre demande un ouvrier de type module ; Vite doit donc l'émettre
+  // comme tel, sinon il retombe sur une variante classique que la
+  // bibliothèque recharge ensuite par blob — ce que la CSP refuse.
+  worker: { format: 'es' },
   build: {
     rollupOptions: {
       output: {
