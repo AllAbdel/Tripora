@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Loader2, Plus, Trash2, X } from 'lucide-react';
 import {
   computeBalances, currencyForCountry, currencyName, describeRate, DESTINATIONS,
-  formatCents, isConvertible, parseAmountToCents, referenceRate, simplifyDebts,
-  toReferenceCents, totalSpent, type FxRates,
+  findDestination, formatCents, isConvertible, parseAmountToCents, referenceRate,
+  simplifyDebts, toReferenceCents, totalSpent, type FxRates,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
@@ -21,6 +21,8 @@ import { useAuth } from '@/lib/auth-context';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
 import { Icone } from '@/components/Icone';
+import { PrevuEtReel } from '@/components/PrevuEtReel';
+import { useProposals } from '@/lib/useProposals';
 
 export default function TripBudget() {
   const { id } = useParams<{ id: string }>();
@@ -67,7 +69,26 @@ export default function TripBudget() {
     return table;
   }, [membres.data, identity]);
 
+  // Les prix relevés viennent du même endroit que sur l'écran du voyage : la
+  // requête est partagée par le cache, et ne coûte donc rien de plus ici.
+  const { prix } = useProposals(voyage.data);
+
   const participants = useMemo(() => [...noms.keys()], [noms]);
+
+  /**
+   * Combien de personnes partagent la note.
+   *
+   * Le nombre de membres inscrits, ou à défaut celui annoncé à la création :
+   * tant que le groupe n'a pas rejoint, c'est le seul chiffre honnête pour
+   * rapporter une dépense à un budget prévu.
+   */
+  const combien = Math.max(participants.length, voyage.data?.constraints.participants ?? 1);
+
+  const villeRetenue = voyage.data?.lockedDestinationId
+    ? findDestination(voyage.data.lockedDestinationId)
+    : undefined;
+
+  const prixDuVol = prix?.parDestination[voyage.data?.lockedDestinationId ?? ''];
 
   /** La devise du pays où l'on va : c'est celle qu'on proposera par défaut. */
   const deviseLocale = useMemo(() => {
@@ -125,7 +146,23 @@ export default function TripBudget() {
   return (
     <div className="space-y-4 px-5 pt-6">
       <Retour id={id} />
-      <h1 className="text-2xl font-bold tracking-tight">Dépenses</h1>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Budget</h1>
+        <p className="text-muted text-sm">
+          {voyage.data.summary.title}
+          {villeRetenue ? ` · ${villeRetenue.name}` : ''} · {voyage.data.constraints.durationDays}{' '}
+          jour{voyage.data.constraints.durationDays > 1 ? 's' : ''} à {combien} personne
+          {combien > 1 ? 's' : ''}
+        </p>
+      </div>
+
+      <PrevuEtReel
+        constraints={voyage.data.constraints}
+        destination={villeRetenue}
+        prixDuVol={prixDuVol}
+        depenseCents={comptes?.total ?? 0}
+        participants={combien}
+      />
 
       {(ajouter.error || liste.error) && (
         <Banner tone="warning" title="Un problème est survenu">
@@ -133,44 +170,35 @@ export default function TripBudget() {
         </Banner>
       )}
 
-      {comptes && (
+      {/* Seul, il n'y a personne à qui devoir quoi que ce soit : la carte
+          n'aurait qu'une ligne, et elle dirait « à jour ». */}
+      {comptes && participants.length > 1 && (
         <Card>
           <CardBody className="space-y-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-muted text-sm font-medium">Total dépensé</span>
-              {/* Une estimation s'arrondit, de l'argent réellement dépensé
-                  non : 71,50 € affiché « 72 € » ferait douter des comptes. */}
-              <span className="text-2xl font-bold tabular-nums">
-                {formatCents(comptes.total)}
-              </span>
+            <div className="space-y-1.5">
+              <p className="text-sm font-semibold">Où en est chacun</p>
+              <ul className="space-y-1 text-sm">
+                {comptes.soldes.map((solde) => (
+                  <li key={solde.userId} className="flex justify-between gap-4">
+                    <span className="truncate">{noms.get(solde.userId) ?? 'Ancien membre'}</span>
+                    <span
+                      className={cn(
+                        'shrink-0 tabular-nums',
+                        solde.cents > 0 && 'text-lagoon-700 dark:text-lagoon-300',
+                        solde.cents < 0 && 'text-gold-700 dark:text-gold-300',
+                        solde.cents === 0 && 'text-muted',
+                      )}
+                    >
+                      {solde.cents === 0
+                        ? 'à jour'
+                        : solde.cents > 0
+                          ? `+${formatCents(solde.cents)}`
+                          : formatCents(solde.cents)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-
-            {participants.length > 1 && (
-              <div className="space-y-1.5 border-t border-[color:var(--border-subtle)] pt-3">
-                <p className="text-sm font-semibold">Où en est chacun</p>
-                <ul className="space-y-1 text-sm">
-                  {comptes.soldes.map((solde) => (
-                    <li key={solde.userId} className="flex justify-between gap-4">
-                      <span className="truncate">{noms.get(solde.userId) ?? 'Ancien membre'}</span>
-                      <span
-                        className={cn(
-                          'shrink-0 tabular-nums',
-                          solde.cents > 0 && 'text-lagoon-700 dark:text-lagoon-300',
-                          solde.cents < 0 && 'text-gold-700 dark:text-gold-300',
-                          solde.cents === 0 && 'text-muted',
-                        )}
-                      >
-                        {solde.cents === 0
-                          ? 'à jour'
-                          : solde.cents > 0
-                            ? `+${formatCents(solde.cents)}`
-                            : formatCents(solde.cents)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </CardBody>
         </Card>
       )}

@@ -67,6 +67,26 @@ export function buildTripMarkers({
     });
   }
 
+  /**
+   * La destination choisie à la création n'a pas de score, et n'en aura
+   * jamais : le moteur ne compare rien pour un voyage qui sait déjà où il va.
+   * Sans ce rattrapage, sa carte n'aurait que le point de départ — un trait
+   * vers nulle part, et une ville absente de sa propre carte.
+   */
+  if (lockedDestinationId && affichees.length === 0) {
+    const destination = findDestination(lockedDestinationId);
+    if (destination) {
+      markers.push({
+        id: destination.id,
+        point: destination,
+        label: destination.name,
+        glyphe: 'etoile',
+        kind: 'chosen',
+        ...(onSelect ? { onSelect: () => onSelect(destination.id) } : {}),
+      });
+    }
+  }
+
   if (lockedDestinationId) {
     for (const lieu of places) {
       markers.push({

@@ -172,3 +172,36 @@ describe('repères de la carte', () => {
     );
   });
 });
+
+describe('destination choisie à la création', () => {
+  it('pose quand même son repère, sans score pour la porter', () => {
+    // Le moteur ne compare rien pour un voyage qui sait déjà où il va : sans
+    // ce rattrapage, sa carte n'aurait que le point de départ.
+    const repères = buildTripMarkers({
+      origin: PARIS,
+      scores: [],
+      lockedDestinationId: 'rome',
+    });
+    expect(repères.map((r) => r.id)).toEqual(['origine', 'rome']);
+    expect(repères[1]?.kind).toBe('chosen');
+    expect(repères[1]?.glyphe).toBe('etoile');
+  });
+
+  it('ne double pas le repère quand un score existe déjà', () => {
+    const repères = buildTripMarkers({
+      origin: PARIS,
+      scores: [score('rome', 82)],
+      lockedDestinationId: 'rome',
+    });
+    expect(repères.filter((r) => r.id === 'rome')).toHaveLength(1);
+  });
+
+  it('ne pose rien pour un identifiant inconnu du catalogue', () => {
+    const repères = buildTripMarkers({
+      origin: PARIS,
+      scores: [],
+      lockedDestinationId: 'ville-qui-n-existe-pas',
+    });
+    expect(repères.map((r) => r.id)).toEqual(['origine']);
+  });
+});
