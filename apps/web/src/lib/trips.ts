@@ -142,23 +142,41 @@ function writeLocal(trips: LocalTrip[]): void {
  * visible : le voyage s'affichait sans sa destination, sous une liste de
  * propositions sans rapport.
  */
+/**
+ * La fiche d'un voyage local, telle que l'accueil et l'écran du voyage la
+ * montrent tous les deux.
+ *
+ * Elle était écrite deux fois, et les deux versions avaient divergé :
+ * l'écran du voyage savait retrouver la destination choisie, l'accueil
+ * renvoyait `null` sans condition. Une carte affichait donc « Brouillon » et
+ * pas de drapeau pour un voyage dont la destination était arrêtée depuis le
+ * premier écran. Un seul endroit, maintenant : les deux ne peuvent plus
+ * raconter des choses différentes du même voyage.
+ */
+function ficheLocale(trip: LocalTrip): TripSummary {
+  const choisi = trip.draft.destinationMode === 'fixed' ? trip.draft.destinationIds : [];
+  const retenue = destinationLocaleRetenue(trip.id) ?? choisi[0] ?? null;
+  const destination = retenue ? findDestination(retenue) : undefined;
+  return {
+    id: trip.id,
+    title: trip.title,
+    status: retenue ? 'planned' : 'draft',
+    participants: trip.draft.participants,
+    destinationName: retenue ? (destination?.name ?? retenue) : null,
+    destinationCountryCode: destination?.countryCode ?? null,
+    coverImageUrl: null,
+    createdAt: trip.createdAt,
+    localOnly: true,
+  };
+}
+
 export const depotLocal: TripRepository = {
   kind: 'local',
 
   async list() {
     return readLocal()
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .map((trip) => ({
-        id: trip.id,
-        title: trip.title,
-        status: 'draft',
-        participants: trip.draft.participants,
-        destinationName: null,
-        destinationCountryCode: null,
-        coverImageUrl: null,
-        createdAt: trip.createdAt,
-        localOnly: true,
-      }));
+      .map(ficheLocale);
   },
 
   async get(id) {
@@ -173,17 +191,7 @@ export const depotLocal: TripRepository = {
     // qui n'avaient rien à voir avec elle.
     const retenue = destinationLocaleRetenue(trip.id) ?? choisi[0] ?? null;
     return {
-      summary: {
-        id: trip.id,
-        title: trip.title,
-        status: retenue ? 'planned' : 'draft',
-        participants: trip.draft.participants,
-        destinationName: retenue ? (findDestination(retenue)?.name ?? retenue) : null,
-        destinationCountryCode: retenue ? (findDestination(retenue)?.countryCode ?? null) : null,
-        coverImageUrl: null,
-        createdAt: trip.createdAt,
-        localOnly: true,
-      },
+      summary: ficheLocale(trip),
       constraints,
       isOwner: true,
       lockedDestinationId: retenue,

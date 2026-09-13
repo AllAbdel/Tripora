@@ -81,3 +81,48 @@ describe('ligne glissante', () => {
     ).toBeTruthy();
   });
 });
+
+describe('ce qui interrompt un geste', () => {
+  it('ne supprime rien quand le navigateur reprend la main', () => {
+    // `pointercancel` n'est pas un relâchement : c'est le navigateur qui
+    // annule. Le confondre avec la fin du geste supprimait un voyage que
+    // personne n'avait fini de glisser.
+    const { surSupprimer, surEpingler, zone } = poser();
+    fireEvent.pointerDown(zone, { clientX: 200, clientY: 100, pointerType: 'touch' });
+    fireEvent.pointerMove(zone, { clientX: 188, clientY: 100 });
+    fireEvent.pointerMove(zone, { clientX: 60, clientY: 100 });
+    fireEvent.pointerCancel(zone);
+    expect(surSupprimer).not.toHaveBeenCalled();
+    expect(surEpingler).not.toHaveBeenCalled();
+  });
+
+  it('empêche le glisser-déposer natif de tuer le geste', () => {
+    // Une carte est un lien, et un lien se traîne : à la souris, le navigateur
+    // lançait un glisser-déposer au bout de deux pixels, ce qui annulait le
+    // pointeur. Le geste ne démarrait jamais sur ordinateur.
+    const { zone } = poser();
+    const debut = new Event('dragstart', { bubbles: true, cancelable: true });
+    zone.dispatchEvent(debut);
+    expect(debut.defaultPrevented).toBe(true);
+  });
+
+  it('étouffe le clic qui suit un glissement', () => {
+    // Sinon glisser pour supprimer ouvrait la confirmation *et*, derrière
+    // elle, la page du voyage.
+    const { zone } = poser();
+    glisser(zone, -140);
+    const clic = new MouseEvent('click', { bubbles: true, cancelable: true });
+    screen.getByText('contenu').dispatchEvent(clic);
+    expect(clic.defaultPrevented).toBe(true);
+  });
+
+  it('laisse passer un appui simple', () => {
+    // Sans mouvement, il n'y a pas de geste : la carte doit s'ouvrir.
+    const { zone } = poser();
+    fireEvent.pointerDown(zone, { clientX: 200, clientY: 100, pointerType: 'touch' });
+    fireEvent.pointerUp(zone);
+    const clic = new MouseEvent('click', { bubbles: true, cancelable: true });
+    screen.getByText('contenu').dispatchEvent(clic);
+    expect(clic.defaultPrevented).toBe(false);
+  });
+});

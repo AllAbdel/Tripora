@@ -10,6 +10,13 @@ import { supabase } from './supabase';
  *
  * Rien ici ne casse l'écran en cas d'échec : ne pas réussir à épingler est
  * ennuyeux, perdre la liste des voyages ne l'est pas du tout.
+ *
+ * La liste sort d'ici sous forme de tableau, et jamais d'ensemble. Le cache
+ * des requêtes est conservé d'une visite à l'autre en JSON : un `Set` y part
+ * en `{}` et en revient sans ses méthodes. L'écran des voyages appelait alors
+ * `.has()` sur un objet vide, et toute l'application s'arrêtait sur une page
+ * blanche à la deuxième ouverture. Un tableau traverse le JSON intact ; c'est
+ * à l'écran d'en faire un ensemble s'il en veut un.
  */
 
 const CLE_LOCALE = 'tripora.favoris';
@@ -32,14 +39,19 @@ function ecrireLocal(identifiants: readonly string[]): void {
   }
 }
 
-/** Les identifiants des voyages épinglés par la personne connectée. */
-export async function listerFavoris(): Promise<ReadonlySet<string>> {
+/**
+ * Les identifiants des voyages épinglés par la personne connectée.
+ *
+ * Tableau et non ensemble : cette valeur est mise en cache puis relue depuis
+ * le stockage du navigateur. Voir la note en tête de fichier.
+ */
+export async function listerFavoris(): Promise<readonly string[]> {
   const client = supabase;
-  if (!client) return new Set(lireLocal());
+  if (!client) return [...new Set(lireLocal())];
 
   const { data, error } = await client.from('trip_favorites').select('trip_id');
-  if (error || !data) return new Set(lireLocal());
-  return new Set(data.map((ligne) => ligne.trip_id as string));
+  if (error || !data) return [...new Set(lireLocal())];
+  return [...new Set(data.map((ligne) => ligne.trip_id as string))];
 }
 
 /**

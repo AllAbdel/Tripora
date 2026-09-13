@@ -1,4 +1,10 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import {
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
 import { Star, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
@@ -40,6 +46,14 @@ export function LigneGlissante({
   const [decalage, setDecalage] = useState(0);
   const [glisse, setGlisse] = useState(false);
   const depart = useRef<{ x: number; y: number; horizontal: boolean } | null>(null);
+  /**
+   * Vrai juste après un glissement, le temps d'étouffer le clic qui le suit.
+   *
+   * Une carte est un lien : au relâchement, le navigateur envoie un clic comme
+   * si on avait simplement appuyé dessus. Sans ce garde-fou, glisser pour
+   * supprimer ouvrait la confirmation *et* la page du voyage derrière elle.
+   */
+  const vientDeGlisser = useRef(false);
 
   function commencer(evenement: ReactPointerEvent<HTMLDivElement>) {
     if (evenement.pointerType === 'mouse' && evenement.button !== 0) return;
@@ -80,10 +94,37 @@ export function LigneGlissante({
     setGlisse(false);
 
     if (horizontal) {
+      vientDeGlisser.current = true;
       if (decalage <= -SEUIL_ACTION) surSupprimer();
       else if (decalage >= SEUIL_ACTION) surEpingler();
     }
     setDecalage(0);
+  }
+
+  /**
+   * Le geste est interrompu : on repose la carte sans rien déclencher.
+   *
+   * Un `pointercancel` n'est pas un relâchement — c'est le navigateur qui
+   * reprend la main, parce qu'il a décidé de faire défiler la page ou de
+   * commencer un glisser-déposer. Le traiter comme une fin de geste faisait
+   * supprimer un voyage que personne n'avait fini de glisser.
+   */
+  function annuler() {
+    depart.current = null;
+    setGlisse(false);
+    setDecalage(0);
+  }
+
+  /**
+   * Le clic qui suit un glissement n'en est pas un.
+   *
+   * On l'intercepte à la descente, avant que le lien ne l'entende.
+   */
+  function filtrerLeClic(evenement: ReactMouseEvent<HTMLDivElement>) {
+    if (!vientDeGlisser.current) return;
+    vientDeGlisser.current = false;
+    evenement.preventDefault();
+    evenement.stopPropagation();
   }
 
   const versLaSuppression = decalage <= -PENTE_MINIMALE;
@@ -119,7 +160,16 @@ export function LigneGlissante({
         onPointerDown={commencer}
         onPointerMove={suivre}
         onPointerUp={finir}
-        onPointerCancel={finir}
+        onPointerCancel={annuler}
+        onClickCapture={filtrerLeClic}
+        /**
+         * Une carte est un lien, et un lien se traîne : à la souris, deux
+         * pixels de mouvement suffisaient au navigateur pour lancer un
+         * glisser-déposer, qui annule aussitôt le pointeur. Le geste ne
+         * démarrait donc jamais sur ordinateur — la carte ne bougeait pas
+         * d'un pixel, et rien ne disait pourquoi.
+         */
+        onDragStart={(evenement) => evenement.preventDefault()}
         style={{ transform: `translateX(${decalage}px)` }}
         className={cn(
           'relative flex items-stretch gap-1.5',

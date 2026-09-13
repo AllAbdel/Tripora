@@ -7,6 +7,11 @@ node_modules/
 
 # Builds
 dist/
+# Build « mode local » : la même application construite sans serveur, pour
+# exercer au navigateur le chemin hors ligne (voyages, dépenses et votes gardés
+# sur l'appareil) sans toucher à la vraie base.
+#   VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= vite build --outDir dist-local
+dist-local/
 build/
 .output/
 *.tsbuildinfo

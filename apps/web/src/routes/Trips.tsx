@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MapPin, Plus, Star, Users } from 'lucide-react';
@@ -51,16 +51,16 @@ export default function Trips() {
     onMutate: async ({ id, epingle }) => {
       // Bascule optimiste : l'épingle doit répondre au doigt, pas au réseau.
       await queryClient.cancelQueries({ queryKey: ['favoris', repository.kind] });
-      const avant = queryClient.getQueryData<ReadonlySet<string>>(['favoris', repository.kind]);
-      const apres = new Set(avant ?? []);
-      if (epingle) apres.add(id);
-      else apres.delete(id);
-      queryClient.setQueryData(['favoris', repository.kind], apres as ReadonlySet<string>);
+      const avant = queryClient.getQueryData<readonly string[]>(['favoris', repository.kind]);
+      const apres = epingle
+        ? [...new Set([...(avant ?? []), id])]
+        : (avant ?? []).filter((entree) => entree !== id);
+      queryClient.setQueryData(['favoris', repository.kind], apres);
       signaler(epingle ? 'reussite' : 'tape');
       return { avant };
     },
     onError: (_erreur, _variables, contexte) => {
-      queryClient.setQueryData(['favoris', repository.kind], contexte?.avant ?? new Set());
+      queryClient.setQueryData(['favoris', repository.kind], contexte?.avant ?? []);
       signaler('echec');
     },
     onSettled: () => {
@@ -78,7 +78,9 @@ export default function Trips() {
     onError: () => signaler('echec'),
   });
 
-  const epingles = favoris.data ?? new Set<string>();
+  // L'ensemble se reconstruit ici, à partir du tableau qui a traversé le
+  // cache : c'est la forme commode pour interroger, pas pour conserver.
+  const epingles = useMemo(() => new Set(favoris.data ?? []), [favoris.data]);
   const listeTriee = data ? favorisEnTete(data, epingles) : undefined;
 
   return (
@@ -169,14 +171,23 @@ function TripCard({ trip, epingle }: { trip: TripSummary; epingle: boolean }) {
     <Link to={`/voyages/${trip.id}`} className="block">
       <Card className={cn('pressable', epingle && 'border-gold-500')}>
         <CardBody className="space-y-2">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="flex min-w-0 flex-1 items-center gap-1.5 text-lg font-semibold">
+          {/* Le titre passe avant l'étiquette de statut. Sur un téléphone, une
+              fois retirés les deux boutons d'action et l'étiquette « Destination
+              choisie », il ne restait que quatre-vingts pixels au nom du voyage :
+              « Bali entre potes » s'affichait « Bali e… ». L'en-tête se replie
+              donc, et le titre garde de quoi être lu — quitte à renvoyer
+              l'étiquette à la ligne suivante. */}
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
+            <h2 className="flex min-w-0 flex-1 basis-40 items-start gap-1.5 text-lg font-semibold">
               {epingle && (
-                <Star className="text-gold-500 size-4 shrink-0 fill-current" aria-label="Épinglé" />
+                <Star
+                  className="text-gold-500 mt-1 size-4 shrink-0 fill-current"
+                  aria-label="Épinglé"
+                />
               )}
-              <span className="truncate">{trip.title}</span>
+              <span className="line-clamp-2 break-words">{trip.title}</span>
             </h2>
-            <span className="text-brand-700 dark:text-brand-200 bg-brand-50 dark:bg-brand-900/50 shrink-0 rounded-full px-2.5 py-1 text-xs font-medium">
+            <span className="text-brand-700 dark:text-brand-200 bg-brand-50 dark:bg-brand-900/50 ms-auto shrink-0 rounded-full px-2.5 py-1 text-xs font-medium">
               {STATUS_LABELS[trip.status] ?? trip.status}
             </span>
           </div>

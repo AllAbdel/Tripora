@@ -83,3 +83,37 @@ describe('voyage à destination choisie', () => {
     expect(voyage?.lockedDestinationId).toBeNull();
   });
 });
+
+describe('la carte du voyage sur l’accueil', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('nomme la destination choisie, comme le fait l’écran du voyage', async () => {
+    poser(BROUILLON);
+    const [carte] = await depotLocal.list();
+    const voyage = await depotLocal.get('v1');
+    // La liste renvoyait `null` sans condition : le voyage apparaissait sans
+    // sa destination sur le premier écran, et avec elle sur le second.
+    expect(carte?.destinationName).toBe(voyage?.summary.destinationName);
+    expect(carte?.destinationName).toBe('Bali');
+  });
+
+  it('donne le pays, sans quoi il n’y a pas de drapeau à afficher', async () => {
+    poser(BROUILLON);
+    const [carte] = await depotLocal.list();
+    expect(carte?.destinationCountryCode).toBeTruthy();
+  });
+
+  it('ne dit plus « brouillon » d’un voyage dont la destination est arrêtée', async () => {
+    poser(BROUILLON);
+    const [carte] = await depotLocal.list();
+    expect(carte?.status).toBe('planned');
+  });
+
+  it('reste un brouillon tant que rien n’est décidé', async () => {
+    poser({ ...BROUILLON, destinationMode: 'suggest', destinationIds: [] });
+    const [carte] = await depotLocal.list();
+    expect(carte?.status).toBe('draft');
+    expect(carte?.destinationName).toBeNull();
+    expect(carte?.destinationCountryCode).toBeNull();
+  });
+});
