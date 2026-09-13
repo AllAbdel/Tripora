@@ -1,13 +1,16 @@
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router';
-import { CloudOff, Coins, Luggage, Map, User } from 'lucide-react';
+import { CloudOff } from 'lucide-react';
+import type { SVGProps } from 'react';
+import { GlypheCarte, GlypheDepenses, GlypheProfil, GlypheVoyages } from '@/components/PageGlyphs';
+import { ongletActif } from '@/lib/onglets';
 import { useEnLigne } from '@/lib/useEnLigne';
 import { cn } from '@/lib/cn';
 
 interface Tab {
   to: string;
   label: string;
-  icon: typeof Luggage;
+  icon: (props: SVGProps<SVGSVGElement>) => React.ReactElement;
 }
 
 /**
@@ -15,11 +18,16 @@ interface Tab {
  * atteignable au pouce sur un grand téléphone. Quatre entrées maximum, sinon
  * les cibles deviennent trop étroites.
  */
+// Les mêmes pictogrammes que sur la planche d'icônes — la valise, la carte
+// pliée, la pile de pièces, le profil — plutôt que des pictogrammes de
+// bibliothèque proches mais différents. Ici au trait fin d'une barre
+// d'onglets, sans le fond dégradé des grandes tuiles : un dégradé par onglet
+// alourdirait une barre large de quatre cases.
 const TABS: Tab[] = [
-  { to: '/voyages', label: 'Voyages', icon: Luggage },
-  { to: '/carte', label: 'Carte', icon: Map },
-  { to: '/budget', label: 'Budget', icon: Coins },
-  { to: '/profil', label: 'Profil', icon: User },
+  { to: '/voyages', label: 'Voyages', icon: GlypheVoyages },
+  { to: '/carte', label: 'Carte', icon: GlypheCarte },
+  { to: '/budget', label: 'Budget', icon: GlypheDepenses },
+  { to: '/profil', label: 'Profil', icon: GlypheProfil },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -60,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <ul className="flex items-stretch justify-around">
           {TABS.map(({ to, label, icon: Icon }) => {
-            const active = pathname === to || pathname.startsWith(`${to}/`);
+            const active = ongletActif(to, pathname);
             return (
               <li key={to} className="flex-1">
                 <NavLink

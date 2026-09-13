@@ -3,31 +3,31 @@ import { render } from '@testing-library/react';
 import { Pastille, type NomDePastille } from './Pastille';
 
 /**
- * Les teintes viennent de la planche d'icônes, relevées au pixel sur chaque
- * tuile. Les figer ici évite qu'elles dérivent une par une au fil des retouches
- * jusqu'à ce que la grille ne ressemble plus à rien de commun.
+ * Les dégradés viennent de la planche d'icônes, relevés au pixel aux deux
+ * coins de chaque tuile. Les figer ici évite qu'ils dérivent un par un au fil
+ * des retouches jusqu'à ce que la grille ne ressemble plus à rien de commun.
  */
-const TEINTES: Partial<Record<NomDePastille, string>> = {
-  accueil: 'rgb(38, 144, 227)',
-  voyages: 'rgb(52, 190, 146)',
-  creer: 'rgb(134, 104, 244)',
-  carte: 'rgb(253, 170, 78)',
-  itineraire: 'rgb(247, 117, 114)',
-  participants: 'rgb(92, 107, 242)',
-  votes: 'rgb(241, 106, 120)',
-  depenses: 'rgb(95, 190, 85)',
-  hebergements: 'rgb(141, 94, 233)',
-  transport: 'rgb(33, 145, 225)',
-  meteo: 'rgb(33, 192, 174)',
-  profil: 'rgb(65, 86, 116)',
+const DEGRADES: Partial<Record<NomDePastille, string>> = {
+  accueil: 'linear-gradient(135deg, rgb(62, 164, 237), rgb(2, 114, 208))',
+  voyages: 'linear-gradient(135deg, rgb(73, 205, 154), rgb(23, 160, 130))',
+  creer: 'linear-gradient(135deg, rgb(159, 129, 244), rgb(100, 72, 239))',
+  carte: 'linear-gradient(135deg, rgb(252, 189, 84), rgb(253, 134, 72))',
+  itineraire: 'linear-gradient(135deg, rgb(251, 130, 116), rgb(241, 91, 107))',
+  participants: 'linear-gradient(135deg, rgb(105, 120, 246), rgb(69, 83, 233))',
+  votes: 'linear-gradient(135deg, rgb(248, 120, 126), rgb(232, 87, 113))',
+  depenses: 'linear-gradient(135deg, rgb(117, 207, 97), rgb(70, 168, 64))',
+  hebergements: 'linear-gradient(135deg, rgb(162, 116, 240), rgb(112, 64, 224))',
+  transport: 'linear-gradient(135deg, rgb(55, 167, 237), rgb(2, 114, 207))',
+  meteo: 'linear-gradient(135deg, rgb(51, 207, 183), rgb(10, 177, 164))',
+  profil: 'linear-gradient(135deg, rgb(81, 101, 130), rgb(43, 63, 93))',
 };
 
 describe('pastilles', () => {
-  it('porte la teinte relevée sur la planche', () => {
-    for (const [nom, teinte] of Object.entries(TEINTES)) {
+  it('porte le dégradé relevé sur la planche', () => {
+    for (const [nom, degrade] of Object.entries(DEGRADES)) {
       const { container, unmount } = render(<Pastille nom={nom as NomDePastille} />);
       const boite = container.firstElementChild as HTMLElement;
-      expect(boite.style.backgroundColor, nom).toBe(teinte);
+      expect(boite.style.backgroundImage, nom).toBe(degrade);
       unmount();
     }
   });
@@ -47,12 +47,22 @@ describe('pastilles', () => {
     expect(container.textContent).toBe('');
   });
 
+  it('dessine aussi un pictogramme pour les quatre pastilles sans planche', () => {
+    // Sans référence, elles gardent un pictogramme de bibliothèque au trait —
+    // mais un pictogramme tout de même, jamais un carré vide.
+    for (const nom of ['discussion', 'valise', 'recapitulatif', 'applications'] as const) {
+      const { container, unmount } = render(<Pastille nom={nom} />);
+      expect(container.querySelector('svg'), nom).not.toBeNull();
+      unmount();
+    }
+  });
+
   it('change de gabarit sans changer de couleur', () => {
     const petite = render(<Pastille nom="meteo" taille="sm" />);
     const grande = render(<Pastille nom="meteo" taille="lg" />);
-    const teinte = (r: typeof petite) =>
-      (r.container.firstElementChild as HTMLElement).style.backgroundColor;
-    expect(teinte(petite)).toBe(teinte(grande));
+    const degrade = (r: typeof petite) =>
+      (r.container.firstElementChild as HTMLElement).style.backgroundImage;
+    expect(degrade(petite)).toBe(degrade(grande));
     expect((petite.container.firstElementChild as HTMLElement).className).not.toBe(
       (grande.container.firstElementChild as HTMLElement).className,
     );

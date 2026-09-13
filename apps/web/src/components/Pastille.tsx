@@ -1,22 +1,25 @@
 import {
-  BedDouble,
-  CalendarDays,
-  CheckSquare,
-  CloudSun,
-  Coins,
   Backpack,
   FileText,
-  Home,
-  Luggage,
-  Map as MapIcon,
   MessagesSquare,
-  Plane,
-  Plus,
   Smartphone,
-  User,
-  Users,
   type LucideIcon,
 } from 'lucide-react';
+import type { ComponentType, SVGProps } from 'react';
+import {
+  GlypheAccueil,
+  GlypheCarte,
+  GlypheCreer,
+  GlypheDepenses,
+  GlypheHebergements,
+  GlypheItineraire,
+  GlypheMeteo,
+  GlypheParticipants,
+  GlypheProfil,
+  GlypheTransport,
+  GlypheVoyages,
+  GlypheVotes,
+} from '@/components/PageGlyphs';
 import { cn } from '@/lib/cn';
 
 /**
@@ -28,8 +31,17 @@ import { cn } from '@/lib/cn';
  * côté — une couleur seule n'est pas une information accessible, et la même
  * teinte sert deux fois dans la planche.
  *
- * Ce sont des pictogrammes dessinés, jamais des émojis : un émoji change de
- * forme selon l'appareil, ignore la couleur demandée et ne suit pas la taille.
+ * Douze de ces seize pastilles reprennent le tracé exact de la planche
+ * (`PageGlyphs.tsx`, vectorisé au pixel) sur le dégradé exact qui les
+ * accompagne. La première version recolorait des pictogrammes de bibliothèque
+ * au **trait** — fins, ajourés — quand la planche montre des silhouettes
+ * **pleines** sur fond dégradé : deux langages graphiques différents, qui ne
+ * pouvaient pas se ressembler.
+ *
+ * Les quatre restantes (discussion, valise, récapitulatif, applications)
+ * n'ont pas de tuile dans la planche fournie : elles gardent leurs
+ * pictogrammes de bibliothèque et une teinte unie, en attendant qu'une
+ * référence existe pour elles aussi. C'est un compromis assumé, pas un oubli.
  */
 
 export type NomDePastille =
@@ -50,33 +62,43 @@ export type NomDePastille =
   | 'recapitulatif'
   | 'applications';
 
+/** Un pictogramme dessiné (`PageGlyphs`) ou un pictogramme de bibliothèque. */
+type IconePastille = ComponentType<SVGProps<SVGSVGElement>> | LucideIcon;
+
 interface Pastille {
-  icone: LucideIcon;
-  /** La teinte de la planche, relevée au pixel sur la tuile correspondante. */
-  teinte: string;
+  icone: IconePastille;
+  /**
+   * Le dégradé de la tuile, du coin clair au coin sombre — relevé au pixel
+   * sur la planche pour les douze premières, approché pour les quatre
+   * dernières.
+   */
+  degrade: readonly [depart: string, arrivee: string];
+  /** Vrai pour les pictogrammes de bibliothèque, qui restent au trait. */
+  auTrait?: boolean;
 }
 
 const PASTILLES: Readonly<Record<NomDePastille, Pastille>> = {
-  accueil: { icone: Home, teinte: '#2690e3' },
-  voyages: { icone: Luggage, teinte: '#34be92' },
-  creer: { icone: Plus, teinte: '#8668f4' },
-  carte: { icone: MapIcon, teinte: '#fdaa4e' },
-  itineraire: { icone: CalendarDays, teinte: '#f77572' },
-  participants: { icone: Users, teinte: '#5c6bf2' },
-  votes: { icone: CheckSquare, teinte: '#f16a78' },
-  depenses: { icone: Coins, teinte: '#5fbe55' },
-  hebergements: { icone: BedDouble, teinte: '#8d5ee9' },
-  transport: { icone: Plane, teinte: '#2191e1' },
-  meteo: { icone: CloudSun, teinte: '#21c0ae' },
-  profil: { icone: User, teinte: '#415674' },
-  // Trois fonctions que la planche ne montrait pas : on prolonge la même
-  // grammaire plutôt que de les laisser en gris au milieu des autres.
-  discussion: { icone: MessagesSquare, teinte: '#3aa8d8' },
+  accueil: { icone: GlypheAccueil, degrade: ['#3ea4ed', '#0272d0'] },
+  voyages: { icone: GlypheVoyages, degrade: ['#49cd9a', '#17a082'] },
+  creer: { icone: GlypheCreer, degrade: ['#9f81f4', '#6448ef'] },
+  carte: { icone: GlypheCarte, degrade: ['#fcbd54', '#fd8648'] },
+  itineraire: { icone: GlypheItineraire, degrade: ['#fb8274', '#f15b6b'] },
+  participants: { icone: GlypheParticipants, degrade: ['#6978f6', '#4553e9'] },
+  votes: { icone: GlypheVotes, degrade: ['#f8787e', '#e85771'] },
+  depenses: { icone: GlypheDepenses, degrade: ['#75cf61', '#46a840'] },
+  hebergements: { icone: GlypheHebergements, degrade: ['#a274f0', '#7040e0'] },
+  transport: { icone: GlypheTransport, degrade: ['#37a7ed', '#0272cf'] },
+  meteo: { icone: GlypheMeteo, degrade: ['#33cfb7', '#0ab1a4'] },
+  profil: { icone: GlypheProfil, degrade: ['#516582', '#2b3f5d'] },
+  // Quatre fonctions que la planche fournie ne montrait pas : on prolonge la
+  // même grammaire de couleur plutôt que de les laisser en gris au milieu des
+  // autres, mais leur pictogramme reste celui d'une bibliothèque, au trait.
+  discussion: { icone: MessagesSquare, degrade: ['#5cb8e4', '#3aa8d8'], auTrait: true },
   // La planche donne la valise aux voyages ; celle qu'on prépare pour soi
   // prend donc le sac à dos, sinon les deux se confondent dans la grille.
-  valise: { icone: Backpack, teinte: '#e08a3c' },
-  recapitulatif: { icone: FileText, teinte: '#6b7a99' },
-  applications: { icone: Smartphone, teinte: '#7c6cf0' },
+  valise: { icone: Backpack, degrade: ['#eba15c', '#e08a3c'], auTrait: true },
+  recapitulatif: { icone: FileText, degrade: ['#8797ab', '#6b7a99'], auTrait: true },
+  applications: { icone: Smartphone, degrade: ['#9689f5', '#7c6cf0'], auTrait: true },
 };
 
 const TAILLES = {
@@ -86,7 +108,7 @@ const TAILLES = {
 } as const;
 
 /**
- * Le carré coloré et son pictogramme blanc.
+ * Le carré dégradé et son pictogramme blanc.
  *
  * Purement décoratif : le nom de la fonction est toujours écrit à côté, donc
  * la pastille est masquée aux lecteurs d'écran plutôt que répétée.
@@ -100,20 +122,30 @@ export function Pastille({
   taille?: keyof typeof TAILLES;
   className?: string;
 }) {
-  const { icone: Icone, teinte } = PASTILLES[nom];
+  const { icone: Icone, degrade, auTrait } = PASTILLES[nom];
+  const [depart, arrivee] = degrade;
   const mesures = TAILLES[taille];
   return (
     <span
       aria-hidden
       className={cn('grid shrink-0 place-items-center', mesures.boite, className)}
       style={{
-        backgroundColor: teinte,
-        // L'ombre reprend la teinte : une ombre grise sous un carré coloré
-        // fait sale, et la planche n'en a pas.
-        boxShadow: `0 2px 8px -2px ${teinte}80`,
+        backgroundImage: `linear-gradient(135deg, ${depart}, ${arrivee})`,
+        // L'ombre reprend la teinte sombre du dégradé : une ombre grise sous
+        // un carré coloré fait sale, et la planche n'en a pas.
+        boxShadow: `0 2px 8px -2px ${arrivee}80`,
       }}
     >
-      <Icone className={cn(mesures.icone, 'text-white')} strokeWidth={2.4} />
+      {auTrait ? (
+        // Pas de remplissage ici : essayé, et deux pictogrammes different
+        // (le sac à dos, le téléphone) s'aplatissent alors en le même
+        // rectangle blanc muet, indiscernables l'un de l'autre. Un trait un
+        // peu fin est un moindre défaut qu'une confusion entre deux
+        // fonctions différentes.
+        <Icone className={cn(mesures.icone, 'text-white')} strokeWidth={2.4} />
+      ) : (
+        <Icone className={cn(mesures.icone, 'text-white')} />
+      )}
     </span>
   );
 }
