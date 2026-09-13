@@ -1,5 +1,21 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { favorisEnTete, listerFavoris } from './favoris';
+
+/**
+ * Sans serveur, explicitement.
+ *
+ * `apps/web/.env` est versionné — il ne contient que des valeurs publiques —
+ * donc le client Supabase existe dès qu'on lance les tests depuis le dépôt, et
+ * `listerFavoris` part interroger la vraie base. Ici elle répondait « aucun
+ * favori » pour un appelant non authentifié, et le test échouait en
+ * intégration continue tout en passant sur une machine dont le réseau est
+ * fermé. Un test ne doit dépendre ni de l'un ni de l'autre : on coupe le
+ * serveur pour de bon, et le chemin local est le seul exercé.
+ *
+ * La configuration de Vitest vide déjà ces variables pour tous les tests ;
+ * ce remplacement-ci garantit le chemin même si quelqu'un l'y remet.
+ */
+vi.mock('./supabase', () => ({ supabase: null }));
 
 describe('ordre des favoris', () => {
   const voyages = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }];

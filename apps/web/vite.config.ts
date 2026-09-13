@@ -217,6 +217,19 @@ export default defineConfig({
     // les parcours de bout en bout et échouait sur leurs imports, qui
     // n'existent que dans un vrai navigateur.
     include: ['src/**/*.test.{ts,tsx}'],
+    /**
+     * Les tests unitaires tournent sans serveur, toujours.
+     *
+     * `apps/web/.env` est versionné — il ne contient que des valeurs
+     * publiques — donc sans cette mise à blanc, le client Supabase existe dès
+     * qu'on lance les tests depuis le dépôt, et le code qui teste « y a-t-il
+     * un serveur ? » part interroger la vraie base. Un test passait alors sur
+     * une machine au réseau fermé et échouait en intégration continue, où il
+     * atteignait la production pour de bon.
+     *
+     * Un test qui veut le chemin serveur remplace le module explicitement.
+     */
+    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
