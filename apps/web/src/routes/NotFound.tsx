@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 export default function NotFound() {
   return (
     <EmptyState
+      niveauDuTitre={1}
       title="Page introuvable"
       description="Le lien est peut-être ancien, ou le voyage a été supprimé."
       action={

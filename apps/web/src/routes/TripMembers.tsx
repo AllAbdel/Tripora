@@ -77,6 +77,7 @@ export default function TripMembers() {
     return (
       <div className="space-y-4 px-5 pt-6">
         <RetourVoyage id={id} />
+        <h1 className="text-2xl font-bold tracking-tight">Participants</h1>
         <Banner tone="warning" title="Pas de partage en mode local">
           Inviter quelqu’un demande un serveur : sans lui, il n’y aurait nulle part où
           l’autre personne irait chercher le voyage. Reliez un projet Supabase pour

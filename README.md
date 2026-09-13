@@ -80,8 +80,24 @@ bancaire, une vingtaine de minutes.
 | `pnpm dev` | Serveur de développement |
 | `pnpm check` | Lint, types, tests et build : tout ce que vérifie l'intégration continue |
 | `pnpm test` | Tests unitaires et d'interface |
+| `pnpm --filter @tripora/web test:e2e` | Ouvre l'application construite dans un vrai navigateur et refait les parcours |
 | `./supabase/tests/run.sh` | Rejoue le schéma sur un Postgres local et teste les politiques RLS |
 | `pnpm --filter @tripora/web icons` | Régénère le jeu d'icônes PWA |
+
+### Pourquoi des tests dans un navigateur
+
+Les tests unitaires ne voient pas tout. Cinq défauts livrés le même jour sont
+passés devant cinq cent trente tests au vert : une page blanche à la deuxième
+ouverture — le cache des requêtes est relu en JSON, et un `Set` en revenait
+vide —, un glissement sans effet à la souris parce que le navigateur lançait
+son propre glisser-déposer, un voyage qui perdait sa destination sur l'accueil.
+Aucun n'était visible autrement qu'en ouvrant l'application.
+
+`pnpm --filter @tripora/web test:e2e` construit l'application **sans serveur
+configuré** — mode local, aucun réseau, aucune vraie donnée, aucun quota — la
+sert sous la vraie politique de sécurité, et refait les parcours au format
+téléphone. Chaque test correspond à un défaut réellement survenu, et chacun a
+été vérifié en remettant le défaut pour s'assurer qu'il échoue bien.
 
 ## Organisation du dépôt
 

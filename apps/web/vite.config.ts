@@ -212,6 +212,11 @@ export default defineConfig({
   },
   server: { port: 5173, host: true },
   test: {
+    // Deux exécuteurs, deux territoires : Vitest prend les `.test.` de `src`,
+    // Playwright les `.spec.` de `e2e`. Sans cette limite, Vitest ramassait
+    // les parcours de bout en bout et échouait sur leurs imports, qui
+    // n'existent que dans un vrai navigateur.
+    include: ['src/**/*.test.{ts,tsx}'],
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],

@@ -55,6 +55,42 @@ jobs:
       - name: Tests
         run: deno test supabase/functions/cover/choix.test.ts
 
+  navigateur:
+    name: Navigateur (parcours de bout en bout)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Chromium seul : les trois défauts que ces tests attrapent ne dépendent
+      # d'aucun moteur en particulier, et installer Firefox et WebKit
+      # triplerait le temps d'installation pour rien.
+      - name: Chromium
+        run: pnpm --filter @tripora/web exec playwright install --with-deps chromium
+
+      - name: Parcours
+        run: pnpm --filter @tripora/web test:e2e
+
+      # La trace rejoue un échec clic par clic, avec le réseau et la console.
+      # Sans elle, un échec en intégration continue n'est qu'un nom de test.
+      - name: Traces des échecs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-playwright
+          path: apps/web/test-results/
+          retention-days: 7
+
   base_de_donnees:
     name: Base de données (schéma et politiques RLS)
     runs-on: ubuntu-latest

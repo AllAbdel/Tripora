@@ -81,6 +81,7 @@ export default function MyPreferences() {
         >
           ← Retour au voyage
         </Link>
+        <h1 className="text-2xl font-bold tracking-tight">Vos envies</h1>
         <Banner tone="warning" title="Pas disponible en mode local">
           Sans serveur, un voyage n’a qu’un participant : vos envies sont celles saisies
           à la création.

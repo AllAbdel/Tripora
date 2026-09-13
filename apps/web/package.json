@@ -8,10 +8,11 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "icons": "node scripts/generate-icons.mjs",
     "flags": "tsx scripts/generate-flags.mjs",
-    "lint": "eslint src scripts --max-warnings 0",
+    "lint": "eslint src scripts e2e --max-warnings 0",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {

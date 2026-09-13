@@ -14,6 +14,11 @@ dist/
 dist-local/
 # Build avec cartes de source, pour savoir ce qui pèse dans quel morceau.
 dist-map/
+# Build servi aux tests de bout en bout, reconstruit à chaque lancement.
+dist-e2e/
+# Traces et captures des tests de bout en bout qui ont échoué.
+test-results/
+playwright-report/
 build/
 .output/
 *.tsbuildinfo

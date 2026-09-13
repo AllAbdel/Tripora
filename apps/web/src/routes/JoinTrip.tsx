@@ -56,6 +56,7 @@ export default function JoinTrip() {
     return (
       <div className="mx-auto max-w-md space-y-5 px-6 py-12 text-center">
         <Logo className="mx-auto size-14" />
+        <h1 className="text-2xl font-bold tracking-tight">Rejoindre un voyage</h1>
         <Banner tone="warning" title="Mode local">
           Rejoindre un voyage demande un serveur. Cette application n’est pas encore
           reliée au sien.

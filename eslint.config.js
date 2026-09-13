@@ -52,7 +52,15 @@ export default tseslint.config(
   },
 
   {
-    files: ['**/*.test.ts', '**/*.test.tsx', 'apps/web/scripts/**'],
+    files: [
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      'apps/web/scripts/**',
+      // Les tests de bout en bout pilotent un navigateur : ils inspectent
+      // des valeurs que le typage ne connaît pas et ont les mêmes libertés
+      // que les autres tests.
+      'apps/web/e2e/**',
+    ],
     rules: {
       'no-console': 'off',
       // `importOriginal<typeof import('…')>()` est la forme imposée par
