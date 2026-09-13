@@ -12,6 +12,8 @@ dist/
 # sur l'appareil) sans toucher à la vraie base.
 #   VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= vite build --outDir dist-local
 dist-local/
+# Build avec cartes de source, pour savoir ce qui pèse dans quel morceau.
+dist-map/
 build/
 .output/
 *.tsbuildinfo
