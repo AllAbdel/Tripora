@@ -1,16 +1,7 @@
 import { Link } from 'react-router';
-import {
-  CalendarDays,
-  FileText,
-  Luggage,
-  Map as MapIcon,
-  MessagesSquare,
-  Smartphone,
-  UserPlus,
-  Wallet,
-} from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { signaler } from '@/lib/feedback';
+import { Pastille } from '@/components/Pastille';
 
 /**
  * Les écrans du voyage, en une grille compacte.
@@ -46,56 +37,56 @@ export function OutilsDuVoyage({
   const cases = [
     collaborationActive && {
       to: `/voyages/${tripId}/participants`,
-      icone: UserPlus,
+      pastille: 'participants' as const,
       titre: 'Participants',
       detail: attente,
       accent: false,
     },
     destinationVerrouillee && {
       to: `/voyages/${tripId}/itineraire`,
-      icone: CalendarDays,
+      pastille: 'itineraire' as const,
       titre: 'Itinéraire',
       detail: 'Jour par jour',
       accent: true,
     },
     {
       to: `/voyages/${tripId}/discussion`,
-      icone: MessagesSquare,
+      pastille: 'discussion' as const,
       titre: 'Discussion',
       detail: 'Liens et épingles',
       accent: false,
     },
     {
       to: `/voyages/${tripId}/carte`,
-      icone: MapIcon,
+      pastille: 'carte' as const,
       titre: 'Carte',
       detail: destinationVerrouillee ? 'Le trajet et les lieux' : 'Les villes en lice',
       accent: false,
     },
     {
       to: `/voyages/${tripId}/budget`,
-      icone: Wallet,
+      pastille: 'depenses' as const,
       titre: 'Dépenses',
       detail: 'Qui doit quoi',
       accent: false,
     },
     destinationVerrouillee && {
       to: `/voyages/${tripId}/valise`,
-      icone: Luggage,
+      pastille: 'valise' as const,
       titre: 'Ma valise',
       detail: 'Selon le climat',
       accent: false,
     },
     {
       to: `/voyages/${tripId}/recapitulatif`,
-      icone: FileText,
+      pastille: 'recapitulatif' as const,
       titre: 'Récapitulatif',
       detail: 'PDF et partage',
       accent: false,
     },
     !destinationConnue && {
       to: `/voyages/${tripId}/applications`,
-      icone: Smartphone,
+      pastille: 'applications' as const,
       titre: 'Applications',
       detail: 'À installer avant',
       accent: false,
@@ -104,23 +95,20 @@ export function OutilsDuVoyage({
 
   return (
     <div className="animate-cascade grid grid-cols-2 gap-2.5">
-      {cases.map(({ to, icone: Icone, titre, detail, accent }) => (
+      {cases.map(({ to, pastille, titre, detail, accent }) => (
         <Link
           key={to}
           to={to}
           onClick={() => signaler('tape')}
           className={cn(
-            'pressable surface-raised flex min-h-24 flex-col justify-between rounded-2xl border p-3.5',
+            'pressable surface-raised flex min-h-24 flex-col justify-between gap-2 rounded-2xl border p-3.5',
             'shadow-[var(--shadow-card)]',
             accent
               ? 'border-lagoon-500 bg-lagoon-500/5'
               : 'border-[color:var(--border-subtle)]',
           )}
         >
-          <Icone
-            className={cn('size-5', accent ? 'text-lagoon-500' : 'text-brand-500')}
-            aria-hidden
-          />
+          <Pastille nom={pastille} taille="sm" />
           <span className="min-w-0">
             <span className="block text-sm font-semibold">{titre}</span>
             <span className="text-muted block truncate text-xs">{detail}</span>

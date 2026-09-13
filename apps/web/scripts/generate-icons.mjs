@@ -19,7 +19,14 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ICONS = resolve(HERE, '../public/icons');
-const BACKGROUND = '#0a84ff';
+/**
+ * Le fond posé derrière l'icône quand il faut remplir le cadre.
+ *
+ * C'est le dégradé de l'icône elle-même, relevé sur ses bords haut et bas :
+ * un aplat uni, si vif soit-il, laisserait un liseré visible aux quatre coins
+ * arrondis. Avec le même dégradé, le raccord ne se voit pas.
+ */
+const BACKGROUND = 'linear-gradient(160deg, #1169cc 0%, #0a5aa8 55%, #0571a7 100%)';
 
 /** Chromium peut venir du projet ou de l'installation globale de la machine. */
 function loadPlaywright() {
@@ -41,6 +48,29 @@ function loadPlaywright() {
   );
 }
 
+/**
+ * Où trouver Chromium quand Playwright ne le sait pas.
+ *
+ * Playwright cherche une version précise du « headless shell », qui n'est pas
+ * toujours celle installée sur la machine : un environnement de développement
+ * fourni avec un Chromium complet fait alors échouer le lancement, alors que
+ * le navigateur est là. On lui donne le chemin quand on en connaît un, et on
+ * le laisse se débrouiller sinon.
+ */
+function chemins() {
+  const candidats = [
+    process.env.CHROMIUM_PATH,
+    process.env.PLAYWRIGHT_BROWSERS_PATH
+      ? resolve(process.env.PLAYWRIGHT_BROWSERS_PATH, 'chromium')
+      : null,
+    '/opt/pw-browsers/chromium',
+  ];
+  for (const chemin of candidats) {
+    if (chemin && existsSync(chemin)) return { executablePath: chemin };
+  }
+  return {};
+}
+
 /** Page HTML minimale contenant l'illustration, à la taille voulue. */
 function page(inner, size, { scale = 1, bleed = false } = {}) {
   return `<!doctype html><meta charset="utf-8">
@@ -57,10 +87,13 @@ function page(inner, size, { scale = 1, bleed = false } = {}) {
 const TARGETS = [
   { file: 'icon-192.png', size: 192 },
   { file: 'icon-512.png', size: 512 },
-  { file: 'apple-touch-icon.png', size: 180 },
+  // iOS ne gère pas la transparence : il pose du noir derrière, puis applique
+  // son propre masque arrondi. Sans fond, les quatre coins de l'icône sortent
+  // noirs sur l'écran d'accueil.
+  { file: 'apple-touch-icon.png', size: 180, bleed: true },
   // Zone de sécurité maskable : Android peut rogner jusqu'à 20 % sur les bords.
   { file: 'icon-maskable-512.png', size: 512, scale: 0.78, bleed: true },
-  { file: 'og-image.png', size: 512 },
+  { file: 'og-image.png', size: 512, bleed: true },
 ];
 
 async function main() {
@@ -80,7 +113,7 @@ async function main() {
   }
 
   const { chromium } = loadPlaywright();
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(chemins());
   try {
     for (const target of TARGETS) {
       const context = await browser.newContext({

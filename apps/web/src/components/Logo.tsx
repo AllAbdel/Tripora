@@ -1,34 +1,62 @@
 import { cn } from '@/lib/cn';
 
 /**
- * Marque de Tripora : un repère de carte, un groupe à l'intérieur, la note du
- * groupe au-dessus. Version simplifiée de l'icône, lisible dès 20 pixels.
+ * La marque de Tripora : une montagne enneigée, un soleil, et un avion qui
+ * décolle en suivant la vallée.
+ *
+ * Même dessin que l'icône de l'application, redessiné en vectoriel pour rester
+ * net à toutes les tailles. Les identifiants de dégradé sont préfixés : deux
+ * logos sur une même page partageraient sinon les mêmes, et le dernier monté
+ * l'emporterait.
  */
 export function Logo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 48 48" className={cn('size-9', className)} role="img" aria-label="Tripora">
+    <svg viewBox="0 0 512 512" className={cn('size-9', className)} role="img" aria-label="Tripora">
       <defs>
-        <linearGradient id="logo-fond" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#3fb0ff" />
-          <stop offset="1" stopColor="#0066f0" />
+        <linearGradient id="logo-ciel" x1="0.1" y1="0" x2="0.9" y2="1">
+          <stop offset="0" stopColor="#153f88" />
+          <stop offset="0.55" stopColor="#0b4c99" />
+          <stop offset="1" stopColor="#0571a7" />
+        </linearGradient>
+        <linearGradient id="logo-vallee" x1="0.15" y1="0.15" x2="0.9" y2="0.95">
+          <stop offset="0" stopColor="#2f8fe0" />
+          <stop offset="0.5" stopColor="#2ec5cf" />
+          <stop offset="1" stopColor="#41dfa4" />
+        </linearGradient>
+        <linearGradient id="logo-astre" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffc85a" />
+          <stop offset="1" stopColor="#f39a1c" />
         </linearGradient>
       </defs>
-      <rect width="48" height="48" rx="12" fill="url(#logo-fond)" />
+
+      <rect width="512" height="512" rx="118" fill="url(#logo-ciel)" />
+      <circle cx="358" cy="139" r="42" fill="url(#logo-astre)" />
+
+      {/* La montagne : sommet enneigé à gauche, versant bleu qui plonge à droite. */}
+      <path d="M104 318 214 152l60 90 34-44 96 120z" fill="#eef4fa" />
+      <path d="M274 242l34-44 96 120H236z" fill="#1c68c8" />
+      <path d="M214 152l30 45-31 24-27-22z" fill="#ffffff" />
+
+      {/* La vallée en deux temps : un liseré blanc qui borde le creux par
+          l'extérieur, puis la courbe turquoise par-dessus. C'est le liseré qui
+          détache la forme du fond bleu. */}
       <path
-        d="M24 41c0 0-11-9.6-11-17.7a11 11 0 1 1 22 0C35 31.4 24 41 24 41z"
-        fill="#ffffff"
+        d="M92 262c-14 96 44 172 148 172 84 0 152-46 214-146-30 122-116 194-222 194C122 482 68 396 92 262z"
+        fill="#f2f8fd"
       />
-      <circle cx="24" cy="23" r="8.2" fill="none" stroke="#1c8c9b" strokeWidth="1.6" />
-      <g fill="#1f3a6e">
-        <circle cx="19.4" cy="20.4" r="1.5" />
-        <circle cx="24" cy="19.9" r="1.6" />
-        <circle cx="28.6" cy="20.4" r="1.5" />
-        <rect x="18.4" y="22.4" width="2" height="6" rx="1" />
-        <rect x="23" y="21.9" width="2.1" height="6.6" rx="1.05" />
-        <rect x="27.6" y="22.4" width="2" height="6" rx="1" />
-      </g>
-      <g fill="#f5b301">
-        <path d="M24 3.4l1.5 3 3.3.5-2.4 2.3.6 3.3L24 10.9l-3 1.6.6-3.3L19.2 6.9l3.3-.5z" />
+      <path
+        d="M122 268c-10 80 40 142 128 142 76 0 138-42 196-132-24 104-100 164-196 164-96 0-142-70-128-174z"
+        fill="url(#logo-vallee)"
+      />
+
+      {/* L'avion, dessiné droit puis incliné : tracé directement en oblique, il
+          faudrait poser une dizaine de points sur une diagonale, et le moindre
+          écart donne un chevron plutôt qu'un avion. */}
+      <g transform="translate(360 212) rotate(46) scale(1.28) translate(-50 -60)">
+        <path
+          d="M50 4c8 0 14 16 14 36l32 26v11L64 63v25l13 13v9L50 101l-27 9v-9l13-13V63L4 77V66l32-26C36 20 42 4 50 4z"
+          fill="#ffffff"
+        />
       </g>
     </svg>
   );

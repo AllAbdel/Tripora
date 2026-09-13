@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router';
-import { CloudOff, Compass, Map, User, Wallet } from 'lucide-react';
+import { CloudOff, Coins, Luggage, Map, User } from 'lucide-react';
 import { useEnLigne } from '@/lib/useEnLigne';
 import { cn } from '@/lib/cn';
 
 interface Tab {
   to: string;
   label: string;
-  icon: typeof Compass;
+  icon: typeof Luggage;
 }
 
 /**
@@ -16,9 +16,9 @@ interface Tab {
  * les cibles deviennent trop étroites.
  */
 const TABS: Tab[] = [
-  { to: '/voyages', label: 'Voyages', icon: Compass },
+  { to: '/voyages', label: 'Voyages', icon: Luggage },
   { to: '/carte', label: 'Carte', icon: Map },
-  { to: '/budget', label: 'Budget', icon: Wallet },
+  { to: '/budget', label: 'Budget', icon: Coins },
   { to: '/profil', label: 'Profil', icon: User },
 ];
 
