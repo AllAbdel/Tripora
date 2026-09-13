@@ -336,6 +336,18 @@ const ICONES: Record<RubriqueValise, Parameters<typeof Icone>[0]['nom']> = {
  * fois, il doit être atteignable sans viser. L'explication est toujours
  * visible — la cacher derrière un repli reviendrait à donner un ordre.
  */
+/**
+ * Ce qu'un lecteur d'écran doit entendre pour une case de la valise.
+ *
+ * Le même contenu que la ligne visible, dans le même ordre : la quantité, le
+ * nom, et le fait qu'on ne peut pas s'en passer.
+ */
+function nomDeLArticle(article: ArticleValise, quantite: number | null): string {
+  const morceaux = [quantite !== null ? `${quantite}` : null, article.label];
+  if (article.essentiel) morceaux.push('(essentiel)');
+  return morceaux.filter(Boolean).join(' ');
+}
+
 function Ligne({
   article,
   etat,
@@ -363,13 +375,20 @@ function Ligne({
         type="button"
         role="checkbox"
         aria-checked={coche}
+        // Sans ce nom, un lecteur d'écran annonçait « case à cocher, non
+        // cochée » vingt-huit fois de suite, sans jamais dire de quoi.
+        aria-label={nomDeLArticle(article, quantite)}
         disabled={desactive}
         onClick={() => {
           signaler('tape');
           onCocher(!coche);
         }}
         className={cn(
-          'mt-0.5 grid size-6 shrink-0 place-items-center rounded-md border-2 transition-colors',
+          'relative mt-0.5 grid size-6 shrink-0 place-items-center rounded-md border-2 transition-colors',
+          // Le carré fait vingt-quatre pixels, ce qui est joli et trop petit
+          // pour un pouce : la zone sensible est étendue à quarante-quatre
+          // par un pseudo-élément, sans rien déplacer à l'écran.
+          'before:absolute before:-inset-2.5 before:content-[""]',
           coche
             ? 'border-brand-500 bg-brand-500 text-[color:var(--accent-contrast)]'
             : 'border-[color:var(--border-subtle)]',

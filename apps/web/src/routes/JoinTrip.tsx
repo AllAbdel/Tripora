@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { Loader2, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
@@ -54,11 +54,18 @@ export default function JoinTrip() {
 
   if (!backendReady) {
     return (
-      <div className="mx-auto max-w-md space-y-4 px-6 py-12">
+      <div className="mx-auto max-w-md space-y-5 px-6 py-12 text-center">
+        <Logo className="mx-auto size-14" />
         <Banner tone="warning" title="Mode local">
           Rejoindre un voyage demande un serveur. Cette application n’est pas encore
           reliée au sien.
         </Banner>
+        {/* On arrive ici par un lien d'invitation, souvent sans connaître
+            Tripora. Un écran qui dit non et ne propose rien est une porte
+            fermée : la personne n'a plus qu'à quitter. */}
+        <Link to="/voyages">
+          <Button block>Découvrir Tripora</Button>
+        </Link>
       </div>
     );
   }

@@ -71,6 +71,16 @@ export default function MyPreferences() {
   if (!collaboration) {
     return (
       <div className="space-y-4 px-5 pt-6">
+        {/* Le lien de retour vaut pour cette branche aussi. Sans lui, l'écran
+            était sans issue : pas de barre d'onglets, pas de retour, et dans
+            une application installée en plein écran, pas de bouton « page
+            précédente » du navigateur pour s'en sortir. */}
+        <Link
+          to={`/voyages/${id ?? ''}`}
+          className="text-muted hover:text-brand-500 -ml-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm transition-colors"
+        >
+          ← Retour au voyage
+        </Link>
         <Banner tone="warning" title="Pas disponible en mode local">
           Sans serveur, un voyage n’a qu’un participant : vos envies sont celles saisies
           à la création.
