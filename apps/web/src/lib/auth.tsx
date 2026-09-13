@@ -4,6 +4,8 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { isSupabaseConfigured } from './env';
 import { RETOUR_OAUTH } from './oauthReturn';
+import { oublierApresDeconnexion } from './stockage';
+import { viderLeCache } from './cache';
 import { AuthContext, type AuthContextValue, type Identity } from './auth-context';
 
 const LOCAL_KEY = 'tripora.local-identity';
@@ -175,8 +177,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    localStorage.removeItem(LOCAL_KEY);
-    if (supabase) await supabase.auth.signOut();
+    // L'ordre compte : on prévient le serveur tant que la session est encore
+    // lisible, puis on efface. L'inverse laisserait un jeton révoqué côté
+    // serveur et bien vivant côté navigateur.
+    if (supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Hors ligne, la révocation échoue. On efface quand même : quelqu'un
+        // qui rend son téléphone ne doit pas dépendre du réseau pour cela.
+      }
+    }
+
+    // Sans serveur, les voyages n'existent que dans ce navigateur : les
+    // effacer serait détruire le travail de quelqu'un sans le lui demander.
+    oublierApresDeconnexion({ gardeLesDonneesLocales: !supabase });
+
+    // Le cache en mémoire survit au vidage du stockage : sans cela, le compte
+    // suivant verrait s'afficher les voyages du précédent le temps que les
+    // requêtes reviennent.
+    viderLeCache();
+
     setIdentity(null);
   }, []);
 

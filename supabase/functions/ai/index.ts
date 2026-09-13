@@ -290,7 +290,7 @@ async function repondre(
 
 /** SHA-256 de la tâche et de son entrée : même question, même réponse, zéro appel. */
 async function empreinte(tache: string, entree: string): Promise<string> {
-  const octets = new TextEncoder().encode(`${tache} ${entree}`);
+  const octets = new TextEncoder().encode(`${tache}\0${entree}`);
   const hash = await crypto.subtle.digest('SHA-256', octets);
   return Array.from(new Uint8Array(hash))
     .map((octet) => octet.toString(16).padStart(2, '0'))
