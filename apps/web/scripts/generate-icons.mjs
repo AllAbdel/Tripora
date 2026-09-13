@@ -4,8 +4,13 @@
  *   node scripts/generate-icons.mjs
  *
  * Source utilisée, par ordre de priorité :
- *   1. public/icons/source.png  ← déposez-y l'icône d'origine, elle prime
- *   2. public/icons/icon.svg    ← version vectorielle recréée, par défaut
+ *   1. scripts/source-icone/source.png  ← l'icône d'origine, elle prime
+ *   2. public/icons/icon.svg            ← version vectorielle recréée
+ *
+ * La source vit hors de `public/` à dessein : tout ce qui s'y trouve part sur
+ * le site et se retrouve préchargé par le Service Worker. Un fichier de
+ * travail de 640 Ko que personne ne demande jamais n'a rien à faire dans le
+ * forfait de données de quelqu'un.
  *
  * La rastérisation passe par Chromium (déjà présent dans l'environnement de
  * développement) : aucune dépendance native, aucun service en ligne, rien à
@@ -19,6 +24,8 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ICONS = resolve(HERE, '../public/icons');
+/** L'original, gardé hors du site : c'est un fichier de travail. */
+const SOURCE = resolve(HERE, 'source-icone');
 /**
  * Le fond posé derrière l'icône quand il faut remplir le cadre.
  *
@@ -97,14 +104,14 @@ const TARGETS = [
 ];
 
 async function main() {
-  const sourcePng = resolve(ICONS, 'source.png');
+  const sourcePng = resolve(SOURCE, 'source.png');
   const sourceSvg = resolve(ICONS, 'icon.svg');
 
   let inner;
   if (existsSync(sourcePng)) {
     const data = readFileSync(sourcePng).toString('base64');
     inner = `<img src="data:image/png;base64,${data}" alt="">`;
-    console.log('→ Source : public/icons/source.png');
+    console.log('→ Source : scripts/source-icone/source.png');
   } else if (existsSync(sourceSvg)) {
     inner = readFileSync(sourceSvg, 'utf8');
     console.log('→ Source : public/icons/icon.svg');
@@ -140,15 +147,16 @@ async function main() {
   }
 
   writeFileSync(
-    resolve(ICONS, 'README.md'),
+    resolve(SOURCE, 'README.md'),
     [
-      '# Icônes',
+      '# Source des icônes',
       '',
-      'Fichiers générés par `pnpm --filter @tripora/web icons`.',
+      "`source.png` est l'original dont découlent tous les formats de",
+      '`public/icons/`. Régénérez-les avec `pnpm --filter @tripora/web icons`.',
       '',
-      "Pour utiliser l'icône d'origine plutôt que la version vectorielle recréée,",
-      'déposez-la ici sous le nom `source.png` (1024×1024 de préférence) puis',
-      'relancez la commande : tous les formats en découlent.',
+      "Ce dossier est volontairement hors de `public/` : ce qui s'y trouve est",
+      'publié et préchargé par le Service Worker, et cette image ne sert',
+      "qu'à la génération.",
       '',
     ].join('\n'),
   );

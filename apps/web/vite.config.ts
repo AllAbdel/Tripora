@@ -3,14 +3,43 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import type { Plugin } from 'vite';
+
+/**
+ * L'adresse publique du site, pour les balises de partage.
+ *
+ * Open Graph veut une URL absolue : une image en chemin relatif n'est pas
+ * suivie par tous les robots, et le lien collé dans la conversation du groupe
+ * s'affiche alors sans aperçu. On la prend dans l'environnement — c'est la
+ * même que celle de l'authentification quand elle est renseignée — et à
+ * défaut on retombe sur le chemin relatif, qui marche chez la plupart.
+ */
+function origineDuSite(): Plugin {
+  return {
+    name: 'tripora-origine-du-site',
+    transformIndexHtml(html) {
+      const brute = process.env['VITE_SITE_ORIGIN'] ?? process.env['VITE_AUTH_ORIGIN'] ?? '';
+      const origine = brute.trim().replace(/\/+$/u, '');
+      return html.replaceAll('%ORIGINE_DU_SITE%', origine);
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    origineDuSite(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Ce que la page demande elle-même à chaque ouverture, et qui doit donc
+      // rester disponible hors ligne.
       includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
+      // Les icônes du manifeste, elles, sont récupérées par le navigateur au
+      // moment d'installer, puis gardées par le système. Le réglage par défaut
+      // les précharge malgré tout — un demi-mégaoctet téléchargé deux fois,
+      // qu'aucun écran ne demande jamais.
+      includeManifestIcons: false,
       manifest: {
         name: 'Tripora — voyages entre amis',
         short_name: 'Tripora',
@@ -38,11 +67,41 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        // Les 147 drapeaux pèsent un mégaoctet à eux seuls, presque tout dû à
-        // une vingtaine d'armoiries détaillées. Les précharger ferait payer à
-        // tout le monde, à l'installation, des images que chacun ne verra que
-        // par poignées. Ils sont mis en cache au fil de l'affichage.
-        globIgnores: ['**/flags/*.svg'],
+        /**
+         * Ce que la première visite ne doit pas payer.
+         *
+         * Le préchargement était devenu un forfait de 4,5 Mo téléchargés
+         * avant le premier écran, sur un produit qu'on ouvre en déplacement,
+         * souvent en itinérance. Presque tout était du poids mort :
+         *
+         * — les 147 drapeaux, un mégaoctet à eux seuls et presque tout dû à
+         *   une vingtaine d'armoiries détaillées, alors que chacun n'en voit
+         *   qu'une poignée ;
+         * — la carte et son ouvrier de rendu, 1,5 Mo, pour un onglet que
+         *   beaucoup n'ouvrent jamais ;
+         * — l'image de partage, que seuls les robots des messageries vont
+         *   chercher, jamais le navigateur de quelqu'un ;
+         * — l'image de couverture d'un écran de soutien, vue une fois ;
+         * — les trois grandes icônes du manifeste, un demi-mégaoctet que le
+         *   navigateur va chercher lui-même au moment d'installer et que le
+         *   système garde ensuite : les précharger, c'est les télécharger
+         *   deux fois. Le favicon et l'icône Apple, eux, restent : la page
+         *   les demande à chaque ouverture.
+         *
+         * Rien de tout cela ne disparaît hors ligne pour autant : la règle
+         * « ressources de l'application » plus bas les garde dès la première
+         * fois qu'on s'en sert. On paie ce qu'on utilise, quand on l'utilise.
+         */
+        globIgnores: [
+          '**/flags/*.svg',
+          '**/assets/TripMapScreen-*',
+          '**/assets/maplibre-gl-worker-*',
+          '**/icons/og-image.png',
+          '**/icons/icon-192.png',
+          '**/icons/icon-512.png',
+          '**/icons/icon-maskable-512.png',
+          '**/*.jpg',
+        ],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
@@ -88,6 +147,21 @@ export default defineConfig({
             options: {
               cacheName: 'tripora-drapeaux',
               expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 180 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
+            // Ce que le préchargement laisse de côté : morceaux de code
+            // chargés à la demande, images lourdes. Leur nom contient une
+            // empreinte, donc un fichier gardé ne peut pas être périmé — une
+            // version différente a un autre nom. « Cache d'abord » est ici
+            // exact, et non un pari.
+            urlPattern: ({ sameOrigin, url }: { sameOrigin: boolean; url: URL }) =>
+              sameOrigin && /\/(assets|icons)\/|\.jpe?g$/u.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tripora-ressources-v1',
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 60 },
               cacheableResponse: { statuses: [200] },
             },
           },
