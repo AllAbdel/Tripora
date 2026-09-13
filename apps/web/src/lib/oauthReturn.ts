@@ -27,10 +27,43 @@ export interface RetourOAuth {
   erreur?: string;
   /** Explication lisible fournie avec l'erreur. */
   description?: string;
+  /**
+   * Le vérificateur PKCE était-il présent sur ce domaine au moment du retour ?
+   *
+   * C'est la question qui départage les deux pannes, et elle ne se pose qu'ici :
+   * le client Supabase efface le vérificateur dès qu'il s'en sert. Un `code`
+   * sans vérificateur veut dire qu'on a atterri **ailleurs** que là d'où l'on
+   * est parti — le vérificateur est resté dans le stockage de l'autre domaine,
+   * et aucun échange n'est possible. Aucune requête ne partira, aucune erreur
+   * ne sera levée : c'est la panne silencieuse.
+   */
+  verificateur: boolean;
+}
+
+/**
+ * Le vérificateur PKCE rangé par le client Supabase, s'il y en a un.
+ *
+ * On balaie le stockage plutôt que de recalculer la clé : elle vaut
+ * `sb-<ref>-auth-token-code-verifier`, dépend de la référence du projet et du
+ * `storageKey` configuré, et un balayage ne peut pas se tromper de convention.
+ */
+function verificateurPresent(): boolean {
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const cle = localStorage.key(index);
+      if (cle?.endsWith('-code-verifier') && (localStorage.getItem(cle)?.length ?? 0) > 0) {
+        return true;
+      }
+    }
+  } catch {
+    // Stockage refusé (navigation privée stricte) : sans lui, PKCE ne peut de
+    // toute façon pas fonctionner, et le dire vaut mieux que le supposer.
+  }
+  return false;
 }
 
 function lire(): RetourOAuth {
-  if (typeof window === 'undefined') return { code: false };
+  if (typeof window === 'undefined') return { code: false, verificateur: false };
   try {
     const query = new URLSearchParams(window.location.search);
     // Le flux implicite range ses paramètres dans le fragment, pas dans la
@@ -42,11 +75,12 @@ function lire(): RetourOAuth {
     const description = prendre('error_description');
     return {
       code: Boolean(prendre('code')),
+      verificateur: verificateurPresent(),
       ...(erreur ? { erreur } : {}),
       ...(description ? { description } : {}),
     };
   } catch {
-    return { code: false };
+    return { code: false, verificateur: false };
   }
 }
 
@@ -103,15 +137,30 @@ export function diagnosticConnexion(
     };
   }
 
+  if (retour.code && !retour.verificateur) {
+    // Le cas silencieux, et maintenant nommé pour ce qu'il est : on est parti
+    // d'un domaine, on est revenu sur un autre. Le vérificateur PKCE est resté
+    // dans le stockage du premier, et aucun échange n'est possible ici.
+    return {
+      titre: 'Vous n’êtes pas revenu sur le même site',
+      message:
+        'La connexion est partie d’une adresse et Google vous a ramené sur celle-ci, qui est ' +
+        'une autre. La preuve de sécurité créée au départ est restée là-bas, et la session ne ' +
+        'peut pas s’ouvrir ici. C’est ce qui se passe quand l’adresse de départ n’est pas ' +
+        'autorisée côté serveur : la redirection retombe alors sur l’adresse par défaut du ' +
+        'projet. Tripora relance la connexion depuis ici, où elle aboutira.',
+      aFaire: `Pour que cela n’arrive plus depuis l’autre adresse, ajoutez-la dans Supabase → Authentication → URL Configuration → Redirect URLs, sous la forme : <adresse de départ>/**`,
+    };
+  }
+
   if (retour.code) {
-    // Le cas silencieux, et de loin le plus courant : le retour a bien eu
-    // lieu, mais la session n'a pas pu être ouverte sur ce domaine-ci.
     return {
       titre: 'Le retour de Google n’a pas abouti',
       message:
-        'Vous êtes bien revenu de Google, mais la session n’a pas pu être ouverte sur cette adresse. ' +
-        'C’est presque toujours que cette adresse n’est pas autorisée côté serveur.',
-      aFaire: `Dans Supabase → Authentication → URL Configuration → Redirect URLs, ajoutez : ${origine}/**`,
+        'Vous êtes bien revenu de Google avec la preuve de sécurité attendue, mais la session ' +
+        'n’a pas pu s’ouvrir. Réessayez ; si cela se reproduit, c’est côté serveur qu’il faut ' +
+        'regarder.',
+      aFaire: `Dans Supabase → Authentication → URL Configuration → Redirect URLs, vérifiez la présence de : ${origine}/**`,
     };
   }
 

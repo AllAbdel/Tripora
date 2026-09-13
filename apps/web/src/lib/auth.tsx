@@ -3,9 +3,45 @@ import type { ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { isSupabaseConfigured } from './env';
+import { RETOUR_OAUTH } from './oauthReturn';
 import { AuthContext, type AuthContextValue, type Identity } from './auth-context';
 
 const LOCAL_KEY = 'tripora.local-identity';
+
+/**
+ * Marqueur de la relance automatique, valable le temps de l'onglet.
+ *
+ * Il borne la reprise à un seul tour : si le second passage échoue lui aussi,
+ * on s'arrête et on affiche le diagnostic, plutôt que de renvoyer quelqu'un en
+ * boucle chez Google.
+ */
+const CLE_RELANCE = 'tripora.oauth-relance';
+
+/**
+ * L'adresse d'où la connexion doit partir, quand le projet en désigne une.
+ *
+ * Une même application déployée sur plusieurs domaines — Cloudflare Pages,
+ * Vercel, une préversion de branche — a autant de stockages séparés, et le
+ * serveur n'autorise le retour que sur les adresses qu'il connaît. Partir de
+ * l'une et revenir sur l'autre rend l'échange PKCE impossible : la preuve
+ * créée au départ est restée sur le premier domaine.
+ *
+ * Renseigner `VITE_AUTH_ORIGIN` fait partir toutes les connexions de la même
+ * adresse, celle qui est autorisée, quel que soit le domaine par lequel on est
+ * arrivé. Sans elle, on reste sur le comportement d'avant, et le filet de
+ * rattrapage ci-dessous prend le relais.
+ */
+const ORIGINE_AUTH = (import.meta.env.VITE_AUTH_ORIGIN ?? '').trim().replace(/\/+$/u, '');
+
+/** Faut-il d'abord se rendre sur l'adresse d'authentification ? */
+function ailleursQuePrevu(): boolean {
+  if (!ORIGINE_AUTH || typeof window === 'undefined') return false;
+  try {
+    return new URL(ORIGINE_AUTH).origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
 
 function readLocalIdentity(): Identity | null {
   try {
@@ -45,14 +81,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
 
     let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
+    const client = supabase;
+
+    /**
+     * Reprendre la connexion là où elle s'est perdue.
+     *
+     * On revient de Google avec un code d'autorisation, mais la preuve créée
+     * au départ n'est pas dans ce stockage-ci : on est parti d'un domaine et
+     * revenu sur un autre, et l'échange ne peut pas se faire. Le client
+     * Supabase, lui, ne dira rien — il n'a même pas de requête à émettre.
+     *
+     * C'est précisément le moment où l'on recliquait à la main, et où ça
+     * marchait : cette adresse-ci est forcément autorisée, puisque le serveur
+     * vient de nous y envoyer. On relance donc depuis ici, une seule fois.
+     * Google reconnaît la session ouverte et renvoie sans rien demander : de
+     * l'extérieur, cela ressemble à un chargement un peu long.
+     */
+    async function reprendreLaConnexion(): Promise<boolean> {
+      if (!RETOUR_OAUTH.code || RETOUR_OAUTH.verificateur || RETOUR_OAUTH.erreur) return false;
+      try {
+        if (sessionStorage.getItem(CLE_RELANCE)) return false;
+        sessionStorage.setItem(CLE_RELANCE, '1');
+      } catch {
+        // Sans stockage de session, impossible de borner la reprise : on
+        // s'abstient plutôt que de risquer une boucle.
+        return false;
+      }
+      const { error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/voyages` },
+      });
+      // Le navigateur part chez Google : on laisse l'écran en attente plutôt
+      // que d'afficher un instant la page de connexion.
+      return !error;
+    }
+
+    void (async () => {
+      const { data } = await client.auth.getSession();
       if (!active) return;
+
+      if (!data.session && (await reprendreLaConnexion())) return;
+      if (!active) return;
+
       setIdentity(fromSession(data.session));
       setLoading(false);
-    });
+    })();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = client.auth.onAuthStateChange((_event, session) => {
       setIdentity(fromSession(session));
+      // Une session qui arrive après coup — échange PKCE conclu, jeton
+      // rafraîchi — doit lever l'écran d'attente, sinon il tourne sans fin.
+      if (session) setLoading(false);
     });
 
     return () => {
@@ -63,6 +142,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) throw new Error('Aucun serveur configuré');
+
+    // Une seule adresse détient les sessions : si on n'y est pas, on y va
+    // d'abord. Le paramètre demande à l'écran d'arrivée de reprendre tout seul.
+    if (ailleursQuePrevu()) {
+      window.location.assign(`${ORIGINE_AUTH}/?connexion=google`);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/voyages` },

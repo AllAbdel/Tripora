@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { LogIn, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -21,6 +21,26 @@ export default function SignIn() {
     () => diagnosticConnexion(RETOUR_OAUTH, window.location.origin, env.supabaseUrl),
     [],
   );
+
+  /**
+   * Reprise après un renvoi vers l'adresse d'authentification.
+   *
+   * `signInWithGoogle` amène ici quand la connexion partait d'un domaine qui
+   * n'aurait pas pu la conclure. Le paramètre dit qu'on n'est pas venu de son
+   * plein gré : on repart chez Google tout de suite, sans faire recliquer.
+   */
+  const reprise = useRef(false);
+  useEffect(() => {
+    if (reprise.current) return;
+    if (new URLSearchParams(window.location.search).get('connexion') !== 'google') return;
+    reprise.current = true;
+    // L'adresse est nettoyée d'abord : un rechargement ne doit pas relancer.
+    window.history.replaceState(null, '', window.location.pathname);
+    void run('google');
+    // `run` est stable pour ce qui nous intéresse : elle ne dépend que de
+    // fonctions du contexte, elles-mêmes mémoïsées.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function run(kind: 'google' | 'guest') {
     setError(null);
