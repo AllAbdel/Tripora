@@ -1907,6 +1907,93 @@ export const DESTINATIONS: readonly Destination[] = [
   make('asuncion', 'Asunción et les missions', 'Paraguay', 'PY', -25.2637, -57.5759, ['ASU'],
     { culture: 0.8, nature: 0.6, food: 0.65, nightlife: 0.45, relax: 0.4, adventure: 0.5, shopping: 0.3, offbeat: 1.0 },
     0.45, 0.5, [4, 5, 6, 7, 8, 9], 'America/Asuncion'),
+
+  // ------------------------------------------------------------------------
+  // Dix-sept pays de plus : les archipels, et le bout des lignes.
+  //
+  // Ce qui manquait cette fois n'était pas un pays oublié mais une famille
+  // entière : les petites îles. La moitié nord des Petites Antilles, le
+  // Pacifique au-delà de Fidji, et trois pays continentaux qu'on ne traverse
+  // pas par hasard — le Guyana, le Turkménistan, la Gambie.
+  //
+  // Ce sont des destinations à vol long et à liaison rare : le classement les
+  // écartera de lui-même pour un week-end, ce qui est exactement ce qu'on veut.
+  // Elles existent pour le séjour de deux semaines où « surprends-nous » doit
+  // pouvoir répondre autre chose que Lisbonne.
+  //
+  // Même règle qu'aux vagues précédentes : rien sous alerte de sécurité
+  // active, rien sans liaison régulière. Le Yémen, la Libye et la Birmanie
+  // restent dehors, et le resteront tant que Tripora ne saura pas afficher un
+  // avis aux voyageurs.
+  // ------------------------------------------------------------------------
+  make('grand-cayman', 'Grand Cayman', 'Îles Caïmans', 'KY', 19.3133, -81.2546, ['GCM'],
+    { culture: 0.3, nature: 0.9, food: 0.75, nightlife: 0.5, relax: 1.0, adventure: 0.85, shopping: 0.45, offbeat: 0.55 },
+    // Parmi les îles les plus chères des Caraïbes : place financière, tout est
+    // importé, et la plongée y est facturée au prix de sa réputation.
+    1.55, 0.45, [11, 12, 1, 2, 3, 4], 'America/Cayman'),
+  make('providenciales', 'Providenciales et Grace Bay', 'Îles Turques-et-Caïques', 'TC', 21.7736, -72.2661, ['PLS'],
+    { culture: 0.2, nature: 0.95, food: 0.7, nightlife: 0.4, relax: 1.0, adventure: 0.75, shopping: 0.3, offbeat: 0.6 },
+    1.5, 0.35, [11, 12, 1, 2, 3, 4, 5], 'America/Grand_Turk'),
+  make('tortola', 'Tortola et les Îles Vierges', 'Îles Vierges britanniques', 'VG', 18.4286, -64.6185, ['EIS', 'STT'],
+    { culture: 0.3, nature: 0.95, food: 0.65, nightlife: 0.5, relax: 1.0, adventure: 0.9, shopping: 0.25, offbeat: 0.7 },
+    1.4, 0.4, [12, 1, 2, 3, 4, 5], 'America/Tortola'),
+  make('roseau', 'Roseau et la Dominique', 'Dominique', 'DM', 15.3092, -61.3790, ['DOM'],
+    // L'île nature des Caraïbes : trois cent soixante-cinq rivières, un lac
+    // bouillant, et presque pas de plage de sable blanc. On n'y va pas bronzer.
+    { culture: 0.5, nature: 1.0, food: 0.6, nightlife: 0.25, relax: 0.7, adventure: 1.0, shopping: 0.15, offbeat: 0.95 },
+    0.8, 0.5, [12, 1, 2, 3, 4], 'America/Dominica'),
+  make('bequia', 'Bequia et les Grenadines', 'Saint-Vincent-et-les-Grenadines', 'VC', 13.0080, -61.2270, ['SVD'],
+    { culture: 0.45, nature: 0.95, food: 0.65, nightlife: 0.4, relax: 1.0, adventure: 0.85, shopping: 0.2, offbeat: 0.9 },
+    0.95, 0.4, [12, 1, 2, 3, 4, 5], 'America/St_Vincent'),
+  make('basseterre', 'Basseterre et Saint-Kitts', 'Saint-Christophe-et-Niévès', 'KN', 17.2955, -62.7250, ['SKB'],
+    { culture: 0.7, nature: 0.9, food: 0.65, nightlife: 0.45, relax: 0.95, adventure: 0.8, shopping: 0.25, offbeat: 0.85 },
+    1.0, 0.45, [12, 1, 2, 3, 4], 'America/St_Kitts'),
+  make('bermudes', 'Hamilton et les Bermudes', 'Bermudes', 'BM', 32.2949, -64.7814, ['BDA'],
+    // Ni tropicales ni caraïbes : plein Atlantique, à deux heures de New York,
+    // avec des plages roses et un hiver à dix-huit degrés.
+    { culture: 0.6, nature: 0.9, food: 0.7, nightlife: 0.45, relax: 0.95, adventure: 0.8, shopping: 0.4, offbeat: 0.7 },
+    1.7, 0.5, [5, 6, 7, 8, 9, 10], 'Atlantic/Bermuda'),
+  make('honiara', 'Honiara et les Salomon', 'Îles Salomon', 'SB', -9.4456, 159.9729, ['HIR'],
+    // Le lagon le plus dense en épaves de la Seconde Guerre mondiale, et un
+    // tourisme qui commence à peine : on y plonge presque seul.
+    { culture: 0.6, nature: 1.0, food: 0.5, nightlife: 0.2, relax: 0.8, adventure: 1.0, shopping: 0.15, offbeat: 1.0 },
+    0.85, 0.4, [5, 6, 7, 8, 9, 10], 'Pacific/Guadalcanal'),
+  make('rabaul', 'Rabaul et la Nouvelle-Bretagne', 'Papouasie-Nouvelle-Guinée', 'PG', -4.1990, 152.1637, ['RAB', 'POM'],
+    { culture: 0.7, nature: 1.0, food: 0.45, nightlife: 0.15, relax: 0.55, adventure: 1.0, shopping: 0.15, offbeat: 1.0 },
+    0.9, 0.45, [5, 6, 7, 8, 9, 10], 'Pacific/Port_Moresby'),
+  make('chuuk', 'Chuuk et son lagon', 'Micronésie', 'FM', 7.4467, 151.8431, ['TKK'],
+    { culture: 0.4, nature: 1.0, food: 0.45, nightlife: 0.15, relax: 0.75, adventure: 1.0, shopping: 0.1, offbeat: 1.0 },
+    1.0, 0.3, [12, 1, 2, 3, 4], 'Pacific/Chuuk'),
+  make('tarawa', 'Tarawa et Kiribati', 'Kiribati', 'KI', 1.3291, 172.9790, ['TRW'],
+    { culture: 0.6, nature: 0.95, food: 0.4, nightlife: 0.1, relax: 0.8, adventure: 0.9, shopping: 0.1, offbeat: 1.0 },
+    0.95, 0.25, [5, 6, 7, 8, 9, 10], 'Pacific/Tarawa'),
+  make('niue', 'Alofi et Niue', 'Niue', 'NU', -19.0554, -169.9187, ['IUE'],
+    // Un caillou de corail sans plage ni rivière, où l'on nage avec les
+    // baleines à bosse depuis le bord entre juillet et octobre.
+    { culture: 0.45, nature: 1.0, food: 0.5, nightlife: 0.1, relax: 0.95, adventure: 1.0, shopping: 0.1, offbeat: 1.0 },
+    1.05, 0.3, [7, 8, 9, 10], 'Pacific/Niue'),
+  make('wallis', 'Wallis et Futuna', 'Wallis-et-Futuna', 'WF', -13.2825, -176.1745, ['WLS'],
+    { culture: 0.8, nature: 0.95, food: 0.55, nightlife: 0.1, relax: 0.9, adventure: 0.8, shopping: 0.1, offbeat: 1.0 },
+    1.1, 0.3, [5, 6, 7, 8, 9], 'Pacific/Wallis'),
+  make('kaieteur', 'Georgetown et le Kaieteur', 'Guyana', 'GY', 6.8013, -58.1551, ['GEO'],
+    // La plus haute chute d'un seul jet au monde, cinq fois Niagara, au bout
+    // d'un vol en petit avion au-dessus de la forêt.
+    { culture: 0.6, nature: 1.0, food: 0.6, nightlife: 0.3, relax: 0.4, adventure: 1.0, shopping: 0.2, offbeat: 1.0 },
+    0.6, 0.5, [2, 3, 4, 9, 10, 11], 'America/Guyana'),
+  make('lome', 'Lomé et le pays tamberma', 'Togo', 'TG', 6.1319, 1.2228, ['LFW'],
+    { culture: 0.9, nature: 0.7, food: 0.65, nightlife: 0.5, relax: 0.5, adventure: 0.8, shopping: 0.45, offbeat: 1.0 },
+    0.45, 0.55, [11, 12, 1, 2], 'Africa/Lome'),
+  make('banjul', 'Banjul et le fleuve Gambie', 'Gambie', 'GM', 13.4549, -16.5790, ['BJL'],
+    // Le pays est un fleuve : on le remonte en pirogue, et c'est l'un des
+    // meilleurs endroits d'Afrique de l'Ouest pour les oiseaux.
+    { culture: 0.75, nature: 0.9, food: 0.6, nightlife: 0.45, relax: 0.8, adventure: 0.75, shopping: 0.4, offbeat: 0.95 },
+    0.5, 0.5, [11, 12, 1, 2, 3], 'Africa/Banjul'),
+  make('achgabat', 'Achgabat et le Darvaza', 'Turkménistan', 'TM', 37.9601, 58.3261, ['ASB'],
+    // Une capitale entière en marbre blanc, et un cratère de gaz en feu depuis
+    // cinquante ans au milieu du désert. Le visa se mérite : il faut un
+    // itinéraire approuvé, ce que l'écran de préparation ne saura pas dire.
+    { culture: 0.85, nature: 0.8, food: 0.55, nightlife: 0.15, relax: 0.3, adventure: 0.95, shopping: 0.3, offbeat: 1.0 },
+    0.5, 0.5, [4, 5, 9, 10], 'Asia/Ashgabat'),
 ] as const;
 
 /** Accès direct par identifiant, construit une seule fois. */

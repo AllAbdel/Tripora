@@ -163,6 +163,14 @@ const NON_PUBLIEES: Readonly<Record<string, string>> = {
   XAF: 'franc CFA d’Afrique centrale',
   XCD: 'dollar des Caraïbes orientales',
   XOF: 'franc CFA d’Afrique de l’Ouest',
+  // Ajoutées avec les archipels.
+  BMD: 'dollar bermudien',
+  GMD: 'dalasi gambien',
+  GYD: 'dollar guyanien',
+  KYD: 'dollar des îles Caïmans',
+  PGK: 'kina papou',
+  SBD: 'dollar des îles Salomon',
+  TMT: 'manat turkmène',
 };
 
 /** Le nom français d'une devise, publiée ou non. Le code, à défaut. */
@@ -214,6 +222,14 @@ const DEVISE_PAR_PAYS: Readonly<Record<string, string>> = {
   AG: 'XCD', AW: 'AWG', BD: 'BDT', BJ: 'XOF', BN: 'BND', CI: 'XOF', CM: 'XAF',
   GA: 'XAF', GD: 'XCD', GI: 'GIP', LC: 'XCD', LS: 'LSL', PY: 'PYG', SR: 'SRD',
   SZ: 'SZL', TJ: 'TJS', TT: 'TTD',
+  // Les archipels, et le bout des lignes. Plusieurs de ces pays n'ont pas de
+  // monnaie propre : les Turques-et-Caïques, les Îles Vierges britanniques et
+  // la Micronésie paient en dollar américain, Kiribati en dollar australien,
+  // Niue en dollar néo-zélandais. On l'inscrit plutôt que de laisser un blanc,
+  // sans quoi l'écran des dépenses ne saurait pas quoi convertir.
+  BM: 'BMD', DM: 'XCD', FM: 'USD', GM: 'GMD', GY: 'GYD', KI: 'AUD', KN: 'XCD',
+  KY: 'KYD', NU: 'NZD', PG: 'PGK', SB: 'SBD', TC: 'USD', TG: 'XOF', TM: 'TMT',
+  VC: 'XCD', VG: 'USD', WF: 'XPF',
 };
 
 export function currencyForCountry(countryCode: string): string | undefined {
