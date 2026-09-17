@@ -13,6 +13,7 @@ import {
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
+import { Pastille } from '@/components/Pastille';
 import { Drapeau } from '@/components/Drapeau';
 import { ListeFantome } from '@/components/ui/Squelette';
 import { getExpenses } from '@/lib/expenses';
@@ -168,6 +169,7 @@ export default function TripRecapitulatif() {
         >
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
+        <Pastille nom="recapitulatif" taille="sm" />
         <h1 className="min-w-0 flex-1 truncate text-lg font-semibold">Récapitulatif</h1>
       </div>
 

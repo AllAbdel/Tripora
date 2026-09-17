@@ -87,6 +87,7 @@ export default function Trips() {
     <>
       <ScreenHeader
         title="Mes voyages"
+        pastille="voyages"
         subtitle={identity ? `Bonjour ${identity.displayName}` : undefined}
         action={
           <Link to="/voyages/nouveau" aria-label="Créer un voyage">

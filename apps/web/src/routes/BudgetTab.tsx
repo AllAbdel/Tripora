@@ -1,4 +1,4 @@
-import { Wallet } from 'lucide-react';
+import { GlypheDepenses } from '@/components/PageGlyphs';
 import { TripPickerTab } from './TripPickerTab';
 
 export default function BudgetTab() {
@@ -6,7 +6,8 @@ export default function BudgetTab() {
     <TripPickerTab
       title="Budget"
       sousChemin="budget"
-      icone={<Wallet className="text-brand-500 size-5" aria-hidden />}
+      pastille="depenses"
+      icone={<GlypheDepenses className="text-brand-500 size-5" aria-hidden />}
       descriptionVide="Notez ce que chacun avance pendant le voyage : Tripora calcule qui doit combien à qui, et réduit les remboursements au minimum."
     />
   );

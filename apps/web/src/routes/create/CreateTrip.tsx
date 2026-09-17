@@ -6,6 +6,7 @@ import { findDestination } from '@tripora/core';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Progress } from '@/components/ui/Progress';
+import { Pastille } from '@/components/Pastille';
 import { getTripRepository } from '@/lib/trips';
 import { toFailure } from '@/lib/errors';
 import { isStepComplete, STEPS, suggestTitle, useTripDraft, type StepId } from '@/stores/tripDraft';
@@ -102,8 +103,15 @@ export default function CreateTrip() {
           >
             <ArrowLeft className="size-5" aria-hidden />
           </button>
-          <span className="text-muted text-sm font-medium tabular-nums">
-            Étape {index + 1} sur {STEPS.length}
+          {/* La pastille « créer » de la planche : le titre de l'écran est la
+              question de l'étape en cours, jamais le nom de l'assistant, donc
+              sans elle rien ne rappelle où l'on se trouve. */}
+          <Pastille nom="creer" taille="sm" />
+          <span className="text-muted text-sm font-medium">
+            Nouveau voyage ·{' '}
+            <span className="tabular-nums">
+              Étape {index + 1} sur {STEPS.length}
+            </span>
           </span>
         </div>
 

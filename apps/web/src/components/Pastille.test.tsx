@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { Pastille, type NomDePastille } from './Pastille';
@@ -21,6 +23,22 @@ const DEGRADES: Partial<Record<NomDePastille, string>> = {
   meteo: 'linear-gradient(135deg, rgb(51, 207, 183), rgb(10, 177, 164))',
   profil: 'linear-gradient(135deg, rgb(81, 101, 130), rgb(43, 63, 93))',
 };
+
+/** Les seize noms, dans l'ordre de la planche puis des quatre ajouts. */
+const NOMS: readonly NomDePastille[] = [
+  'accueil', 'voyages', 'creer', 'carte', 'itineraire', 'participants', 'votes', 'depenses',
+  'hebergements', 'transport', 'meteo', 'profil', 'discussion', 'valise', 'recapitulatif',
+  'applications',
+];
+
+/** Tous les fichiers TypeScript sous un dossier, sous-dossiers compris. */
+function fichiers(racine: string): string[] {
+  return readdirSync(racine, { withFileTypes: true }).flatMap((entree) => {
+    const chemin = join(racine, entree.name);
+    if (entree.isDirectory()) return fichiers(chemin);
+    return /\.tsx?$/.test(entree.name) ? [chemin] : [];
+  });
+}
 
 describe('pastilles', () => {
   it('porte le dégradé relevé sur la planche', () => {
@@ -55,6 +73,31 @@ describe('pastilles', () => {
       expect(container.querySelector('svg'), nom).not.toBeNull();
       unmount();
     }
+  });
+
+  /**
+   * Le défaut que ce test existe pour empêcher : douze pictogrammes dessinés
+   * au pixel, et six d'entre eux — la maison, le plus, la case cochée, le lit,
+   * l'avion, le soleil — qui ne s'affichaient nulle part dans l'application.
+   * Ils étaient déclarés, testés, commentés, et personne ne les voyait jamais.
+   *
+   * Une pastille qui n'est posée sur aucun écran est du travail invisible :
+   * soit on lui trouve sa place, soit on la retire.
+   */
+  it('est posée quelque part dans l’application', () => {
+    const sources = fichiers(join(process.cwd(), 'src'));
+    const utilisations = sources
+      .filter((chemin) => !chemin.endsWith('Pastille.tsx') && !chemin.includes('.test.'))
+      .map((chemin) => readFileSync(chemin, 'utf8'))
+      .join('\n');
+
+    const orphelines = NOMS.filter(
+      (nom) =>
+        !utilisations.includes(`pastille="${nom}"`) &&
+        !utilisations.includes(`nom="${nom}"`) &&
+        !utilisations.includes(`pastille: '${nom}'`),
+    );
+    expect(orphelines, 'pastilles dessinées mais jamais affichées').toEqual([]);
   });
 
   it('change de gabarit sans changer de couleur', () => {

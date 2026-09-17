@@ -11,6 +11,7 @@ import {
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
+import { Pastille } from '@/components/Pastille';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Field, TextInput } from '@/components/ui/Field';
@@ -95,6 +96,7 @@ export default function TripApps() {
         >
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
+        <Pastille nom="applications" taille="sm" />
         <div className="min-w-0">
           <h1 className="truncate text-lg font-semibold">Applications utiles</h1>
           {destination && <p className="text-muted truncate text-sm">Pour {destination.name}</p>}

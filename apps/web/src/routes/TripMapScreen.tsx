@@ -11,6 +11,7 @@ import {
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
+import { TitreDePage } from '@/components/TitreDePage';
 import { TripMap, type MapMarker } from '@/components/TripMap';
 import { buildTripMarkers } from '@/lib/mapMarkers';
 import { chargerLieux } from '@/lib/places';
@@ -109,7 +110,7 @@ export default function TripMapScreen() {
     <div className="flex min-h-[calc(100dvh-6rem)] flex-col">
       <div className="px-5 pt-6 pb-3">
         <Retour id={id} />
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">{data.summary.title}</h1>
+        <TitreDePage pastille="carte" className="mt-2">{data.summary.title}</TitreDePage>
         <p className="text-muted text-sm">
           {retenue
             ? `Vous partez à ${findDestination(retenue)?.name}, à ${Math.round(

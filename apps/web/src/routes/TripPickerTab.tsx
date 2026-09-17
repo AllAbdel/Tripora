@@ -7,6 +7,7 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { getTripRepository } from '@/lib/trips';
+import type { NomDePastille } from '@/components/Pastille';
 
 /**
  * Un onglet du bas qui n'a de sens que rapporté à un voyage.
@@ -19,12 +20,15 @@ export function TripPickerTab({
   title,
   sousChemin,
   icone,
+  pastille,
   descriptionVide,
 }: {
   title: string;
   /** Segment ajouté après /voyages/:id, par exemple « carte ». */
   sousChemin: string;
   icone: ReactNode;
+  /** La pastille de la planche qui correspond à l'onglet. */
+  pastille: NomDePastille;
   descriptionVide: string;
 }) {
   const repository = getTripRepository();
@@ -44,7 +48,7 @@ export function TripPickerTab({
   if (!data || data.length === 0) {
     return (
       <>
-        <ScreenHeader title={title} />
+        <ScreenHeader title={title} pastille={pastille} />
         <EmptyState
           illustration={icone}
           title="Aucun voyage à afficher"
@@ -65,7 +69,7 @@ export function TripPickerTab({
 
   return (
     <>
-      <ScreenHeader title={title} subtitle="Quel voyage ?" />
+      <ScreenHeader title={title} pastille={pastille} subtitle="Quel voyage ?" />
       <ul className="space-y-3 px-5">
         {data.map((trip) => (
           <li key={trip.id}>

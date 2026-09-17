@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Link2, Loader2, QrCode as QrIcon, Share2, UserPlus } from 'lucide-react';
 import { AXIS_LABELS_FR, formatCents } from '@tripora/core';
 import { Button } from '@/components/ui/Button';
+import { TitreDePage } from '@/components/TitreDePage';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
 
@@ -77,7 +78,7 @@ export default function TripMembers() {
     return (
       <div className="space-y-4 px-5 pt-6">
         <RetourVoyage id={id} />
-        <h1 className="text-2xl font-bold tracking-tight">Participants</h1>
+        <TitreDePage pastille="participants">Participants</TitreDePage>
         <Banner tone="warning" title="Pas de partage en mode local">
           Inviter quelqu’un demande un serveur : sans lui, il n’y aurait nulle part où
           l’autre personne irait chercher le voyage. Reliez un projet Supabase pour
@@ -117,7 +118,7 @@ export default function TripMembers() {
   return (
     <div className="space-y-4 px-5 pt-6">
       <RetourVoyage id={id} />
-      <h1 className="text-2xl font-bold tracking-tight">Participants</h1>
+      <TitreDePage pastille="participants">Participants</TitreDePage>
 
       {membres.error && <Banner tone="warning">{toFailure(membres.error).message}</Banner>}
 

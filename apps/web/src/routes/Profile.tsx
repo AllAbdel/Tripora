@@ -64,7 +64,7 @@ export default function Profile() {
 
   return (
     <>
-      <ScreenHeader title="Profil" />
+      <ScreenHeader title="Profil" pastille="profil" />
 
       <div className="space-y-6 px-5 pb-4">
         <Card className="animate-rise">

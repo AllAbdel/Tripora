@@ -10,6 +10,8 @@ import {
 } from '@tripora/core';
 import { Card, CardBody } from '@/components/ui/Card';
 import { env } from '@/lib/env';
+import { TitreDeSection } from '@/components/TitreDePage';
+import type { NomDePastille } from '@/components/Pastille';
 
 /**
  * Les liens de réservation, préremplis.
@@ -49,8 +51,8 @@ export function Reserver({
           </p>
         </div>
 
-        <Groupe titre="Où dormir" liens={dormir} />
-        <Groupe titre="Comment y aller" liens={aller} />
+        <Groupe titre="Où dormir" pastille="hebergements" liens={dormir} />
+        <Groupe titre="Comment y aller" pastille="transport" liens={aller} />
 
         {/* La phrase change avec la réalité. Affirmer « on ne touche rien »
             alors qu'un lien est affilié serait le genre de détail qui, une fois
@@ -66,11 +68,21 @@ export function Reserver({
   );
 }
 
-function Groupe({ titre, liens }: { titre: string; liens: BookingLink[] }) {
+function Groupe({
+  titre,
+  pastille,
+  liens,
+}: {
+  titre: string;
+  pastille: NomDePastille;
+  liens: BookingLink[];
+}) {
   if (liens.length === 0) return null;
   return (
     <section className="space-y-1.5">
-      <h3 className="text-sm font-semibold">{titre}</h3>
+      <TitreDeSection pastille={pastille} niveau="h3">
+        {titre}
+      </TitreDeSection>
       <ul className="space-y-1.5">
         {liens.map((lien) => (
           <li key={lien.id}>

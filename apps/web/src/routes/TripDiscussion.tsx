@@ -5,6 +5,7 @@ import { ArrowLeft, ExternalLink, MapPin, Pin, Send, Trash2, X } from 'lucide-re
 import { fragmenterMessage, nomPropose, premierLien, type FragmentMessage } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
+import { TitreDePage } from '@/components/TitreDePage';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Field, TextInput } from '@/components/ui/Field';
 import { getDiscussion, type Epingle, type Message } from '@/lib/discussion';
@@ -80,7 +81,7 @@ export default function TripDiscussion() {
     return (
       <div className="space-y-4 px-5 pt-6">
         <Retour id={id} />
-        <h1 className="text-2xl font-bold tracking-tight">Discussion</h1>
+        <TitreDePage pastille="discussion">Discussion</TitreDePage>
         <Banner tone="warning" title="Mode local">
           La discussion n’existe qu’à plusieurs, donc qu’avec un serveur. Vos voyages
           restent consultables sur cet appareil.
@@ -97,7 +98,7 @@ export default function TripDiscussion() {
       <div className="space-y-3 px-5 pt-6">
         <Retour id={id} />
         <div className="flex items-baseline justify-between gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">Discussion</h1>
+          <TitreDePage pastille="discussion">Discussion</TitreDePage>
           {marquees.length > 0 && (
             <Link
               to={`/voyages/${id ?? ''}/carte`}

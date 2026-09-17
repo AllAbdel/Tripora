@@ -35,6 +35,7 @@ import { getItinerary } from '@/lib/itinerary';
 import { EnTeteDesPropositions } from '@/components/EnTeteDesPropositions';
 import { Ligne, ListeFantome } from '@/components/ui/Squelette';
 import { Couverture } from '@/components/Couverture';
+import { TitreDePage } from '@/components/TitreDePage';
 
 export default function TripDetail() {
   const { id } = useParams<{ id: string }>();
@@ -176,7 +177,10 @@ export default function TripDetail() {
           {villeRetenue && <Couverture destination={villeRetenue} />}
 
           <header className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">{data.summary.title}</h1>
+            {/* La maison de la planche : cet écran est l'accueil du voyage,
+                celui où ramène chaque « Retour au voyage » et d'où partent
+                toutes les autres pastilles de la grille. */}
+            <TitreDePage pastille="accueil">{data.summary.title}</TitreDePage>
             <p className="text-muted flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-3.5" aria-hidden />

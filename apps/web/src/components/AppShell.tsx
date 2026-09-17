@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router';
 import { CloudOff } from 'lucide-react';
 import type { SVGProps } from 'react';
 import { GlypheCarte, GlypheDepenses, GlypheProfil, GlypheVoyages } from '@/components/PageGlyphs';
+import { Pastille, type NomDePastille } from '@/components/Pastille';
 import { ongletActif } from '@/lib/onglets';
 import { useEnLigne } from '@/lib/useEnLigne';
 import { cn } from '@/lib/cn';
@@ -92,21 +93,33 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-/** En-tête d'écran, avec un titre lisible d'un coup d'œil. */
+/**
+ * En-tête d'écran, avec un titre lisible d'un coup d'œil.
+ *
+ * La pastille à gauche du titre est celle de la planche d'icônes : la maison
+ * pour l'accueil, la valise pour les voyages, la carte pliée pour la carte.
+ * C'est le même repère que dans la grille du voyage, donc on retrouve l'écran
+ * où on vient d'arriver sans lire le titre — utile quand on navigue vite.
+ */
 export function ScreenHeader({
   title,
   subtitle,
   action,
+  pastille,
 }: {
   title: string;
   subtitle?: string;
   action?: ReactNode;
+  pastille?: NomDePastille;
 }) {
   return (
     <header className="flex items-start justify-between gap-4 px-5 pt-6 pb-4">
-      <div className="min-w-0">
-        <h1 className="truncate text-2xl font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-muted mt-1 text-sm">{subtitle}</p>}
+      <div className="flex min-w-0 items-center gap-3">
+        {pastille && <Pastille nom={pastille} />}
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-bold tracking-tight">{title}</h1>
+          {subtitle && <p className="text-muted mt-1 text-sm">{subtitle}</p>}
+        </div>
       </div>
       {action}
     </header>

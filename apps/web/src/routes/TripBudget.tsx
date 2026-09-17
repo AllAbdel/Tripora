@@ -9,6 +9,7 @@ import {
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
+import { TitreDePage } from '@/components/TitreDePage';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Field, TextInput } from '@/components/ui/Field';
@@ -147,7 +148,7 @@ export default function TripBudget() {
     <div className="space-y-4 px-5 pt-6">
       <Retour id={id} />
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Budget</h1>
+        <TitreDePage pastille="depenses">Budget</TitreDePage>
         <p className="text-muted text-sm">
           {voyage.data.summary.title}
           {villeRetenue ? ` · ${villeRetenue.name}` : ''} · {voyage.data.constraints.durationDays}{' '}

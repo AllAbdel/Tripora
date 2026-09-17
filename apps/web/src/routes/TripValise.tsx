@@ -17,6 +17,7 @@ import {
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
+import { Pastille } from '@/components/Pastille';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { TextInput } from '@/components/ui/Field';
@@ -187,6 +188,7 @@ export default function TripValise() {
         >
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
+        <Pastille nom="valise" taille="sm" />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-lg font-semibold">Ma valise</h1>
           {destination && (

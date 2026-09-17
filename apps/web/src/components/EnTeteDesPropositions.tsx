@@ -1,5 +1,6 @@
 import { ChevronDown, Info } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
+import { Pastille } from '@/components/Pastille';
 import { cn } from '@/lib/cn';
 
 /**
@@ -45,8 +46,14 @@ export function EnTeteDesPropositions({
               '[&::-webkit-details-marker]:hidden',
             )}
           >
-            <span className="flex min-h-9 items-baseline justify-between gap-3">
-              <span className="font-semibold">{combien} destinations pour votre groupe</span>
+            <span className="flex min-h-9 items-center justify-between gap-3">
+              {/* La pastille du vote : cet encart ouvre la liste sur laquelle
+                  le groupe se prononce, et c'est le seul endroit de
+                  l'application où l'on vote. */}
+              <Pastille nom="votes" taille="sm" />
+              <span className="min-w-0 flex-1 font-semibold">
+                {combien} destinations pour votre groupe
+              </span>
               <ChevronDown
                 className="text-muted size-4 shrink-0 transition-transform group-open:rotate-180"
                 aria-hidden

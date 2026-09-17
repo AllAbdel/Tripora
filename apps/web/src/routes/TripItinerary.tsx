@@ -14,6 +14,7 @@ import {
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
+import { TitreDePage } from '@/components/TitreDePage';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Field, TextInput } from '@/components/ui/Field';
 import { LieuxSuggeres } from '@/components/LieuxSuggeres';
@@ -239,7 +240,7 @@ export default function TripItinerary() {
     return (
       <div className="space-y-4 px-5 pt-6">
         <Retour id={id} />
-        <h1 className="text-2xl font-bold tracking-tight">Itinéraire</h1>
+        <TitreDePage pastille="itineraire">Itinéraire</TitreDePage>
         <Banner tone="info" title="La destination n’est pas encore arrêtée">
           L’itinéraire se construit autour d’une ville. Votez d’abord, puis revenez ici.
         </Banner>
@@ -267,7 +268,7 @@ export default function TripItinerary() {
     <div className="space-y-4 px-5 pt-6">
       <Retour id={id} />
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">{destination.name}</h1>
+        <TitreDePage pastille="itineraire">{destination.name}</TitreDePage>
         <p className="text-muted text-sm">
           {voyage.data.constraints.durationDays} jours · au départ de{' '}
           {voyage.data.constraints.origin.name}

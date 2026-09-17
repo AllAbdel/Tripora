@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { CloudSun } from 'lucide-react';
 import {
   dayVerdict,
   forecastForTrip,
@@ -13,6 +12,7 @@ import { chargerMeteo, cleMeteo } from '@/lib/weather';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/lib/cn';
 import { Icone } from '@/components/Icone';
+import { TitreDeSection } from '@/components/TitreDePage';
 
 /**
  * La météo du séjour, quand elle est connue.
@@ -57,10 +57,7 @@ export function MeteoPrevue({
   return (
     <Card>
       <CardBody className="space-y-3">
-        <div className="flex items-center gap-2">
-          <CloudSun className="text-brand-500 size-4 shrink-0" aria-hidden />
-          <h2 className="text-sm font-bold">La météo sur place</h2>
-        </div>
+        <TitreDeSection pastille="meteo">La météo sur place</TitreDeSection>
 
         <ul className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="list">
           {jours.map((jour) => (
