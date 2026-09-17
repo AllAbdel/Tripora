@@ -516,10 +516,14 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
     },
 
     async remove(id) {
-      const { error } = await client
-        .from('trips')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
+      // Passe par une fonction plutôt que par un `update` direct : Postgres
+      // exige qu'une ligne modifiée reste visible à la politique de lecture
+      // après l'écriture, même sans réclamer la ligne en retour. Cette
+      // politique exige `deleted_at is null` — exactement ce que la
+      // suppression douce vient de rendre faux — donc l'update échouait pour
+      // tout le monde, y compris le créateur. La fonction contourne la
+      // politique de lecture et vérifie elle-même l'autorisation.
+      const { error } = await client.rpc('soft_delete_trip', { p_trip_id: id });
       if (error) throw error;
     },
   };
