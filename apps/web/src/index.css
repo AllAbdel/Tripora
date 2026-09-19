@@ -133,7 +133,9 @@
      papier — l'ombre ne sert qu'à décoller ce qui flotte vraiment. */
   --shadow-card: 0 1px 2px rgb(58 52 43 / 0.05);
   --shadow-lift: 0 1px 2px rgb(58 52 43 / 0.06), 0 12px 28px -18px rgb(58 52 43 / 0.5);
-  --shadow-float: 0 10px 30px -10px rgb(26 95 180 / 0.4);
+  /* Assez pour décoller un bouton flottant, pas assez pour l'auréoler : sur
+     le fond sombre, un halo coloré transforme une touche en néon. */
+  --shadow-float: 0 8px 20px -12px rgb(26 95 180 / 0.35);
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
