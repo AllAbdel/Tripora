@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { ACCENTS_PROPOSES, paletteDepuis } from '@tripora/core';
 import { ScreenHeader } from '@/components/AppShell';
+import { EtatDesServices } from '@/components/EtatDesServices';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -84,6 +85,10 @@ export default function Profile() {
             </div>
           </CardBody>
         </Card>
+
+        <Section titre="État des services">
+          <EtatDesServices />
+        </Section>
 
         <Section titre="Apparence">
           <ChoixDeTheme />

@@ -115,6 +115,22 @@ Deux refus assumés dans le relevé : une **année à trous n'est jamais écrite
 et **rien n'est réécrit**, ce qui rend l'appel rejouable sans gaspiller de
 quota.
 
+> **À faire après chaque ajout au catalogue.** La fonction ne tourne pas toute
+> seule : une ville ajoutée reste sans normales jusqu'à ce qu'on la rappelle,
+> et elle est alors classée sur ses seuls `bestMonths`. Dix-sept destinations
+> — les archipels ajoutés le 13 septembre — sont restées ainsi six jours sans
+> que rien ne le signale. Comme rien n'est réécrit, l'appel est sans risque :
+>
+> ```
+> curl -X POST "$SUPABASE_URL/functions/v1/climate-normals" \
+>   -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+>   -H "Content-Type: application/json" -d '{"limite":50}'
+> ```
+>
+> Elle répond `{"remplies":N,"restantes":M,"termine":true|false}` : on relance
+> tant que `termine` est faux. Pour savoir s'il y a du travail :
+> `select count(*) from destinations where climate is null and not discovered;`
+
 Les normales de cinquante-cinq villes restent écrites dans
 `packages/core/src/catalog/climate.ts`. Elles servent de repli hors ligne :
 sans réseau, un classement se calcule encore. Le même décodeur lit les deux
