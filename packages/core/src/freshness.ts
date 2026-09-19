@@ -146,9 +146,22 @@ export function describeSource(value: PricedValue, now: Date = new Date()): Prov
   const dates = decrireLesDates(assessed.departAt, assessed.returnAt);
   return {
     court: `Relevé ${quand} sur ${site}`,
-    long: `Prix relevé ${quand} sur ${site}${revendeur}${dates}.`,
+    long: terminer(`Prix relevé ${quand} sur ${site}${revendeur}${dates}`),
     releve: true,
   };
+}
+
+/**
+ * Termine une phrase sans doubler le point.
+ *
+ * Huit mois sur douze s'abrègent en français avec un point — janv., févr.,
+ * avr., juil., sept., oct., nov., déc. — et la phrase se terminait donc par
+ * « un retour le 13 nov.. » deux fois sur trois. Un détail, mais il apparaît
+ * sous chaque prix relevé, c'est-à-dire à l'endroit exact où l'on demande
+ * qu'on nous croie sur parole.
+ */
+function terminer(phrase: string): string {
+  return phrase.endsWith('.') ? phrase : `${phrase}.`;
 }
 
 function decrireLesDates(depart: string | undefined, retour: string | undefined): string {

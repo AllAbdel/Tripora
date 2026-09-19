@@ -40,9 +40,10 @@ Ce qui repose sur des faits mesurés plutôt que sur des estimations :
   endroits sur les créneaux encore génériques, en respectant l'envie de chacun
   et en regroupant la journée par quartier — sans jamais écraser ce que
   quelqu'un a écrit ;
-- **le climat**, normales mensuelles calculées sur les archives 2023-2025 pour
-  les 55 destinations, embarquées dans le code : aucun appel, aucun quota,
-  fonctionne hors ligne.
+- **le climat**, normales mensuelles calculées sur les archives 2023-2025 :
+  les 604 destinations du catalogue les ont, relevées par `climate-normals` ;
+  55 d'entre elles sont en plus écrites dans le code et servent de repli hors
+  ligne — aucun appel, aucun quota.
 
 Sans aucune clé d'API, tout continue de fonctionner : les prix redeviennent des
 estimations, l'IA disparaît de l'écran, et rien d'autre ne bouge.
