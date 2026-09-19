@@ -1,32 +1,21 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MapPin, Plus, Star, Users } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { ScreenHeader } from '@/components/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
-import { Card, CardBody } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/lib/auth-context';
 import { getTripRepository, type TripSummary } from '@/lib/trips';
 import { toFailure } from '@/lib/errors';
-import { Drapeau } from '@/components/Drapeau';
-import { cn } from '@/lib/cn';
+import { CarteDeVoyage } from '@/components/CarteDeVoyage';
 import { ListeFantome } from '@/components/ui/Squelette';
 import { LigneGlissante } from '@/components/LigneGlissante';
 import { ConfirmerSuppression } from '@/components/ConfirmerSuppression';
 import { basculerFavori, favorisEnTete, listerFavoris } from '@/lib/favoris';
 import { signaler } from '@/lib/feedback';
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: 'Brouillon',
-  proposing: 'Recherche de destinations',
-  voting: 'Vote en cours',
-  planned: 'Destination choisie',
-  ongoing: 'En cours',
-  done: 'Terminé',
-};
 
 export default function Trips() {
   const { identity, backendReady } = useAuth();
@@ -144,7 +133,7 @@ export default function Trips() {
                     }
                     surSupprimer={() => setASupprimer(trip)}
                   >
-                    <TripCard trip={trip} epingle={epingles.has(trip.id)} />
+                    <CarteDeVoyage trip={trip} epingle={epingles.has(trip.id)} />
                   </LigneGlissante>
                 </li>
               ))}
@@ -164,53 +153,5 @@ export default function Trips() {
         surConfirmer={() => aSupprimer && supprimer.mutate(aSupprimer.id)}
       />
     </>
-  );
-}
-
-function TripCard({ trip, epingle }: { trip: TripSummary; epingle: boolean }) {
-  return (
-    <Link to={`/voyages/${trip.id}`} className="block">
-      <Card className={cn('pressable', epingle && 'border-gold-500')}>
-        <CardBody className="space-y-2">
-          {/* Le titre passe avant l'étiquette de statut. Sur un téléphone, une
-              fois retirés les deux boutons d'action et l'étiquette « Destination
-              choisie », il ne restait que quatre-vingts pixels au nom du voyage :
-              « Bali entre potes » s'affichait « Bali e… ». L'en-tête se replie
-              donc, et le titre garde de quoi être lu — quitte à renvoyer
-              l'étiquette à la ligne suivante. */}
-          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
-            <h2 className="flex min-w-0 flex-1 basis-40 items-start gap-1.5 text-lg font-semibold">
-              {epingle && (
-                <Star
-                  className="text-gold-500 mt-1 size-4 shrink-0 fill-current"
-                  aria-label="Épinglé"
-                />
-              )}
-              <span className="line-clamp-2 break-words">{trip.title}</span>
-            </h2>
-            <span className="text-brand-700 dark:text-brand-200 bg-brand-50 dark:bg-brand-900/50 ms-auto shrink-0 rounded-full px-2.5 py-1 text-xs font-medium">
-              {STATUS_LABELS[trip.status] ?? trip.status}
-            </span>
-          </div>
-          <p className="text-muted flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-            <span className="inline-flex items-center gap-1.5">
-              <Users className="size-3.5" aria-hidden />
-              {trip.participants} {trip.participants > 1 ? 'participants' : 'participant'}
-            </span>
-            {trip.destinationName && (
-              <span className="inline-flex items-center gap-1.5">
-                {trip.destinationCountryCode ? (
-                  <Drapeau code={trip.destinationCountryCode} />
-                ) : (
-                  <MapPin className="size-3.5" aria-hidden />
-                )}
-                {trip.destinationName}
-              </span>
-            )}
-            {trip.localOnly && <span className="text-xs">· sur cet appareil</span>}
-          </p>
-        </CardBody>
-      </Card>
-    </Link>
   );
 }

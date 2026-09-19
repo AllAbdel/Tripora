@@ -46,7 +46,10 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center rounded-full font-semibold',
+        // Un rectangle à peine adouci, pas une pilule. La pilule est la forme
+        // par défaut de toutes les interfaces générées : elle n'appartient à
+        // personne. Le même rayon que les cartes fait, lui, une famille.
+        'inline-flex items-center justify-center rounded-[var(--radius-card)] font-semibold',
         'transition-[background-color,transform,box-shadow] duration-200',
         'active:scale-[0.98] disabled:pointer-events-none disabled:opacity-55',
         VARIANTS[variant],

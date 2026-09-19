@@ -14,8 +14,16 @@ export type ThemePreference = 'system' | 'light' | 'dark';
  */
 export type Retours = 'silencieux' | 'vibrations' | 'complet';
 
-/** La couleur d'origine, tirée de l'icône. Le repère quand on veut revenir. */
-export const ACCENT_PAR_DEFAUT = '#0a84ff';
+/**
+ * La couleur d'origine, et le repère quand on veut y revenir.
+ *
+ * Elle était prise telle quelle sur l'icône : un bleu d'écran, très clair et
+ * très saturé. Sur le papier crème de la nouvelle mise en page il criait — un
+ * bleu de bouton système au milieu d'un carnet. Celui-ci est le même bleu,
+ * descendu vers l'encre : plus profond, moins électrique, il se pose sur la
+ * page au lieu de flotter au-dessus.
+ */
+export const ACCENT_PAR_DEFAUT = '#1a5fb4';
 
 interface ThemeState {
   preference: ThemePreference;

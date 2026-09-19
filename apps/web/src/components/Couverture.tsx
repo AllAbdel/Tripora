@@ -25,8 +25,12 @@ import { cn } from '@/lib/cn';
  * Les afficher n'est pas une politesse, c'est ce qui rend l'usage légal.
  *
  * **Rien ne casse quand il n'y a rien.** Sans photo — hors ligne, quota
- * atteint, ville sans article — la bande devient un dégradé tiré de la couleur
- * de l'application. Pas un cadre vide, pas une icône d'image brisée.
+ * atteint, ville sans article — la bande ne devient ni un cadre vide ni une
+ * icône d'image brisée : le nom de la ville s'y compose en très grand, dans
+ * la romane, sur du papier. C'était un dégradé bleu-turquoise ; il tenait la
+ * place, mais un aplat saturé au milieu d'une page crème saute aux yeux comme
+ * un rectangle de remplissage — exactement ce qu'il était. Une absence qu'on
+ * compose vaut mieux qu'une absence qu'on maquille.
  */
 export function Couverture({ destination }: { destination: Destination }) {
   const [chargee, setChargee] = useState(false);
@@ -47,11 +51,20 @@ export function Couverture({ destination }: { destination: Destination }) {
     <div
       className={cn(
         'relative isolate mb-1 h-40 overflow-hidden rounded-[var(--radius-card)]',
-        // Le dégradé sert de fond permanent : il occupe la place avant que la
-        // photo arrive, et reste visible s'il n'y en a aucune.
-        'from-brand-600 via-brand-500 to-lagoon-500 bg-gradient-to-br',
+        'border filet bg-[color:var(--color-paper-100)] dark:bg-[color:var(--color-ink-700)]',
       )}
     >
+      {/* Le nom, en fond de plaque : visible avant que la photo n'arrive,
+          et seul décor s'il n'y en a jamais. */}
+      <span
+        aria-hidden
+        className="titre-lieu absolute inset-0 grid place-items-center overflow-hidden
+                   text-[3.75rem] whitespace-nowrap text-[color:var(--color-paper-300)]
+                   dark:text-[color:var(--color-ink-500)]"
+      >
+        {destination.name}
+      </span>
+
       {photo && (
         <img
           src={photo.url}
@@ -61,7 +74,7 @@ export function Couverture({ destination }: { destination: Destination }) {
           onLoad={() => setChargee(true)}
           onError={() => setEchouee(true)}
           className={cn(
-            'size-full object-cover transition-opacity duration-700',
+            'relative size-full object-cover transition-opacity duration-700',
             chargee ? 'opacity-100' : 'opacity-0',
           )}
         />
@@ -73,8 +86,8 @@ export function Couverture({ destination }: { destination: Destination }) {
           target="_blank"
           rel="noopener noreferrer"
           className={cn(
-            'absolute right-2 bottom-2 flex max-w-[85%] items-center gap-1 rounded-full',
-            'bg-black/45 px-2.5 py-1 text-[0.65rem] leading-tight text-white/90',
+            'absolute right-2 bottom-2 flex max-w-[85%] items-center gap-1 rounded-[4px]',
+            'bg-black/45 px-2 py-1 text-[0.65rem] leading-tight text-white/90',
             'backdrop-blur-sm transition-colors hover:bg-black/65',
           )}
         >

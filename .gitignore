@@ -5,8 +5,12 @@ memory-bank/
 node_modules/
 .pnpm-store/
 
-# Builds
+# Builds. Le motif attrape aussi les sorties jetables — `dist-verif`,
+# `dist-essai` — qu'on fabrique pour vérifier une refonte et qu'on oublie
+# d'effacer ensuite : une seule d'entre elles ajoute deux cents fichiers à
+# l'index au premier `git add -A`.
 dist/
+dist-*/
 # Build « mode local » : la même application construite sans serveur, pour
 # exercer au navigateur le chemin hors ligne (voyages, dépenses et votes gardés
 # sur l'appareil) sans toucher à la vraie base.
