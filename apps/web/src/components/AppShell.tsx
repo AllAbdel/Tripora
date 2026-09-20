@@ -76,12 +76,25 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={to}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-2xl py-1.5',
-                    'text-[0.7rem] font-medium transition-colors',
-                    active ? 'text-brand-500' : 'text-muted',
+                    'relative flex min-h-12 flex-col items-center justify-center gap-1 py-1.5',
+                    'text-[0.6875rem] tracking-[0.06em] uppercase transition-colors',
+                    active
+                      ? 'text-brand-600 dark:text-brand-300 font-semibold'
+                      : 'text-muted font-medium',
                   )}
                 >
-                  <Icon className={cn('size-5', active && 'scale-110')} aria-hidden />
+                  {/* L'onglet actif se signale par un filet posé au-dessus,
+                      pas seulement par une couleur. Un trait se voit sans
+                      distinguer les teintes, et il appartient à la même
+                      grammaire que le reste de la page. */}
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'absolute inset-x-4 top-0 h-px transition-opacity',
+                      active ? 'bg-current opacity-100' : 'opacity-0',
+                    )}
+                  />
+                  <Icon className="size-5" aria-hidden />
                   {label}
                 </NavLink>
               </li>

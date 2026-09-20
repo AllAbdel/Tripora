@@ -426,6 +426,14 @@
     display: none !important;
   }
 
+  /* Le grain du papier n'a rien à faire sur du vrai papier : c'est un calque
+     fixe, que plusieurs navigateurs réimpriment sur chaque feuille — un voile
+     moucheté par-dessus l'itinéraire, et de l'encre dépensée pour du bruit.
+     L'écran imite une matière que la feuille possède déjà. */
+  body::after {
+    display: none !important;
+  }
+
   main {
     padding-bottom: 0 !important;
   }

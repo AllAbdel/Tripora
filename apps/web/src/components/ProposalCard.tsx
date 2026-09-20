@@ -23,7 +23,7 @@ import {
 } from '@tripora/core';
 import { Card, CardBody } from '@/components/ui/Card';
 import { ClimateStrip } from '@/components/ClimateStrip';
-import { ScoreRing } from '@/components/ScoreRing';
+import { Notation } from '@/components/Notation';
 import { messageIA, rediger } from '@/lib/ai';
 import { faitsPourExplication } from '@/lib/explication';
 import { cn } from '@/lib/cn';
@@ -119,8 +119,10 @@ export function ProposalCard({
         {(verrouillee || choixDuGroupe) && (
           <p
             className={cn(
-              'flex items-center gap-1.5 text-xs font-bold tracking-wide uppercase',
-              verrouillee ? 'text-lagoon-700 dark:text-lagoon-300' : 'text-gold-700 dark:text-gold-300',
+              'etiquette flex items-center gap-1.5',
+              verrouillee
+                ? '!text-lagoon-700 dark:!text-lagoon-300'
+                : '!text-gold-700 dark:!text-gold-300',
             )}
           >
             {verrouillee ? (
@@ -137,27 +139,34 @@ export function ProposalCard({
           </p>
         )}
 
+        {/* Le rang était une gommette numérotée devant le nom. C'est une liste
+            classée : le rang mérite d'être le repère qu'on suit du pouce en
+            descendant, pas une décoration de huit pixels. Il passe donc en
+            grand chiffre, en retrait derrière le nom — présent sans disputer
+            la vedette à la ville. */}
         <div className="flex items-start gap-3">
           <span
             aria-hidden
-            className="bg-brand-50 text-brand-700 dark:bg-brand-900/50 dark:text-brand-200 mt-1 grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold"
+            className="titre chiffres w-8 shrink-0 text-[1.75rem] leading-none
+                       text-[color:var(--color-paper-400)] dark:text-[color:var(--color-ink-500)]"
           >
-            {rank}
+            {String(rank).padStart(2, '0')}
           </span>
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-lg font-bold">{destination.name}</h3>
-            <p className="text-muted flex items-center gap-1.5 text-sm">
+            <h3 className="titre-lieu truncate text-[1.375rem]">{destination.name}</h3>
+            <p className="etiquette mt-1 flex items-center gap-1.5">
               <Drapeau code={destination.countryCode} />
               <span className="truncate">{destination.country}</span>
             </p>
           </div>
-          <ScoreRing score={score.total} />
+          <Notation note={score.total} />
         </div>
 
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5">
-          <p className="text-2xl font-bold tabular-nums">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5
+                        border-t pt-3 filet">
+          <p className="titre chiffres text-[1.75rem] leading-none">
             {formatCents(score.cost.totalCents, 'EUR', { hideCentimes: true })}
-            <span className="text-muted ml-1.5 text-sm font-medium">par personne</span>
+            <span className="etiquette ms-2">par personne</span>
           </p>
           {climat && (
             <p className="text-muted flex items-center gap-2.5 text-xs font-medium">
