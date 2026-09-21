@@ -362,7 +362,10 @@ export default function TripItinerary() {
 
       {enregistre && enregistre.length > 0 && (
         <>
-          <nav aria-label="Journées" className="flex gap-2 overflow-x-auto pb-1">
+          <nav
+            aria-label="Journées"
+            className="-mx-1 flex gap-1 overflow-x-auto border-b px-1 filet"
+          >
             {enregistre.map((jour) => (
               <button
                 key={jour.id}
@@ -370,10 +373,13 @@ export default function TripItinerary() {
                 onClick={() => setJourActif(jour.dayIndex)}
                 aria-current={jourActif === jour.dayIndex ? 'true' : undefined}
                 className={cn(
-                  'min-h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition-colors',
+                  // Un onglet souligné plutôt qu'une gélule pleine : six
+                  // gélules bleues alignées ressemblent à une barre de filtres
+                  // d'application de commerce, pas aux jours d'un séjour.
+                  'etiquette relative min-h-11 shrink-0 border-b-2 px-3 transition-colors',
                   jourActif === jour.dayIndex
-                    ? 'border-brand-500 bg-brand-500 text-[color:var(--accent-contrast)]'
-                    : 'border-[color:var(--border-subtle)] text-muted',
+                    ? 'border-brand-500 !text-[color:var(--text-strong)]'
+                    : 'border-transparent',
                 )}
               >
                 Jour {jour.dayIndex}
@@ -496,14 +502,27 @@ function Journee({
         </span>
       </header>
 
-      <ul className="space-y-2">
+      {/* Une journée est une suite, pas un tas. Chaque créneau était une carte
+          flottante : six boîtes empilées, six ombres, et aucun lien visible
+          entre le matin et le soir. Le rail rétablit la seule chose qui compte
+          ici — que ça s'enchaîne. Les créneaux se séparent par un filet, comme
+          les lignes d'un programme imprimé. */}
+      <ul className="relative ps-11">
+        <span
+          aria-hidden
+          className="absolute inset-y-4 start-4 w-px bg-[color:var(--border-subtle)]"
+        />
         {jour.items.map((item, index) => (
-          <li key={item.id}>
-            <Card>
-              <CardBody className="flex items-start gap-3 p-3.5">
+          <li key={item.id} className="relative border-b py-3 filet last:border-b-0">
+            <div className="flex items-start gap-3">
                 <span
                   aria-hidden
-                  className="bg-brand-50 text-brand-600 dark:bg-brand-900/50 dark:text-brand-300 mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg"
+                  // Le décalage est négatif : la pastille se positionne par
+                  // rapport au `li`, dont le bord gauche est déjà rentré des
+                  // 44 px du rail. À `start-0` elle retombait sur le texte.
+                  className="surface-raised absolute -start-11 top-3 grid size-8 shrink-0
+                             place-items-center rounded-full border filet
+                             text-[color:var(--text-muted)]"
                 >
                   <Icone
                     nom={item.axis ? AXIS_ICON[item.axis] : (ICONES[item.kind] ?? 'lieu')}
@@ -512,13 +531,13 @@ function Journee({
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-baseline gap-x-2">
-                    {item.startTime && (
-                      <span className="text-muted text-sm tabular-nums">{item.startTime}</span>
-                    )}
+                  {item.startTime && (
+                    <span className="etiquette chiffres block">{item.startTime}</span>
+                  )}
+                  <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2">
                     <span className="font-semibold">{item.title}</span>
                     {item.costCents > 0 && (
-                      <span className="text-muted text-sm tabular-nums">
+                      <span className="text-muted chiffres text-sm">
                         {formatCents(item.costCents, 'EUR', { hideCentimes: true })}
                       </span>
                     )}
@@ -551,8 +570,7 @@ function Journee({
                     <Trash2 className="size-4" aria-hidden />
                   </BoutonIcone>
                 </div>
-              </CardBody>
-            </Card>
+            </div>
           </li>
         ))}
       </ul>
