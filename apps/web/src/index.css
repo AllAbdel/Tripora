@@ -232,6 +232,34 @@
     border-radius: 6px;
   }
 
+  /* Le français au milieu d'une page arabe.
+  
+     La traduction est partielle et le restera un moment : sur une page en
+     arabe, des paragraphes français cohabitent avec des paragraphes arabes.
+     Sans rien faire, l'algorithme bidirectionnel applique le sens du conteneur
+     à la ponctuation de fin, et « risqué pour un vrai voyage. » s'affiche
+     « .risqué pour un vrai voyage » — le point passe devant. C'est visible sur
+     chaque phrase non traduite, et ça donne l'impression d'un texte cassé.
+  
+     `plaintext` fait adopter à chaque bloc le sens de son premier caractère
+     fort : la phrase française redevient française, la phrase arabe reste
+     arabe, et personne n'a rien à étiqueter à la main. La règle ne s'applique
+     qu'en lecture de droite à gauche — en français elle ne changerait rien,
+     et une règle qui ne sert à rien finit par gêner. */
+  [dir='rtl'] :where(p, h1, h2, h3, h4, h5, h6, li, dd, dt, figcaption, blockquote, div, label) {
+    /* `plaintext` ne touche qu'à la résolution bidirectionnelle du contenu
+       en ligne, jamais à la boîte : on peut l'appliquer largement, y compris
+       aux `div`, sans déranger une seule mise en page. Il fallait bien, parce
+       qu'un texte n'est pas toujours dans un `p` — celui d'un bandeau, par
+       exemple, est dans un `div`, et il gardait son point à l'envers. */
+    unicode-bidi: plaintext;
+  }
+  [dir='rtl'] :where(p, h1, h2, h3, h4, h5, h6, li, dd, dt, figcaption, blockquote) {
+    /* L'alignement, lui, change la boîte : on le garde aux seuls blocs de
+       texte, là où « start » veut dire quelque chose. */
+    text-align: start;
+  }
+
   /* Respect strict de la préférence système : pas d'animation imposée. */
   @media (prefers-reduced-motion: reduce) {
     *,

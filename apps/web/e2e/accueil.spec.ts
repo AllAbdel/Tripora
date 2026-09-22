@@ -27,7 +27,7 @@ test('la deuxième ouverture affiche encore quelque chose', async ({ page }) => 
   await expect(page).toHaveURL(/\/voyages\/v1$/);
 
   await page.goto('/voyages', { waitUntil: 'networkidle' });
-  await expect(page.getByRole('heading', { name: 'Mes voyages' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Mes trips' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Bali entre potes' })).toBeVisible();
   expect(plantages, 'aucune erreur ne doit remonter jusqu’à la page').toEqual([]);
 });

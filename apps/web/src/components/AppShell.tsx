@@ -7,10 +7,13 @@ import { Pastille, type NomDePastille } from '@/components/Pastille';
 import { ongletActif } from '@/lib/onglets';
 import { useEnLigne } from '@/lib/useEnLigne';
 import { cn } from '@/lib/cn';
+import { useT } from '@/i18n/useT';
+import type { CleDeTexte } from '@/i18n/textes';
 
 interface Tab {
   to: string;
-  label: string;
+  /** La clé de traduction, pas le texte : la barre change de langue. */
+  cle: CleDeTexte;
   icon: (props: SVGProps<SVGSVGElement>) => React.ReactElement;
 }
 
@@ -25,15 +28,16 @@ interface Tab {
 // d'onglets, sans le fond dégradé des grandes tuiles : un dégradé par onglet
 // alourdirait une barre large de quatre cases.
 const TABS: Tab[] = [
-  { to: '/voyages', label: 'Voyages', icon: GlypheVoyages },
-  { to: '/carte', label: 'Carte', icon: GlypheCarte },
-  { to: '/budget', label: 'Budget', icon: GlypheDepenses },
-  { to: '/profil', label: 'Profil', icon: GlypheProfil },
+  { to: '/voyages', cle: 'nav.trips', icon: GlypheVoyages },
+  { to: '/carte', cle: 'nav.carte', icon: GlypheCarte },
+  { to: '/budget', cle: 'nav.budget', icon: GlypheDepenses },
+  { to: '/profil', cle: 'nav.profil', icon: GlypheProfil },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const enLigne = useEnLigne();
+  const t = useT();
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
@@ -49,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                      justify-center gap-2 px-4 py-2 text-xs font-medium"
         >
           <CloudOff className="size-3.5 shrink-0" aria-hidden />
-          Hors réseau — vous voyez la dernière version connue de vos voyages.
+          {t('etat.horsreseau')}
         </p>
       )}
 
@@ -68,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                    bg-[color:var(--surface)]/85 px-2 pt-1.5 backdrop-blur-xl"
       >
         <ul className="flex items-stretch justify-around">
-          {TABS.map(({ to, label, icon: Icon }) => {
+          {TABS.map(({ to, cle, icon: Icon }) => {
             const active = ongletActif(to, pathname);
             return (
               <li key={to} className="flex-1">
@@ -95,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     )}
                   />
                   <Icon className="size-5" aria-hidden />
-                  {label}
+                  {t(cle)}
                 </NavLink>
               </li>
             );

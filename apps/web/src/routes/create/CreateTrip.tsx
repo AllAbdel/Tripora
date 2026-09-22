@@ -108,7 +108,7 @@ export default function CreateTrip() {
               sans elle rien ne rappelle où l'on se trouve. */}
           <Pastille nom="creer" taille="sm" />
           <span className="text-muted text-sm font-medium">
-            Nouveau voyage ·{' '}
+            Nouveau trip ·{' '}
             <span className="tabular-nums">
               Étape {index + 1} sur {STEPS.length}
             </span>

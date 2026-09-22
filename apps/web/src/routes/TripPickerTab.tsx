@@ -55,7 +55,7 @@ export function TripPickerTab({
           description={descriptionVide}
           action={
             <Link to="/voyages/nouveau">
-              <Button>Créer un voyage</Button>
+              <Button>Créer un trip</Button>
             </Link>
           }
         />

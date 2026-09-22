@@ -19,6 +19,7 @@ import { ACCENTS_PROPOSES, paletteDepuis } from '@tripora/core';
 import { ScreenHeader } from '@/components/AppShell';
 import { EtatDesServices } from '@/components/EtatDesServices';
 import { MonProfilDeclare } from '@/components/MonProfilDeclare';
+import { ChoixDeLangue } from '@/components/ChoixDeLangue';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -93,6 +94,10 @@ export default function Profile() {
 
         <Section titre="État des services">
           <EtatDesServices />
+        </Section>
+
+        <Section titre="Langue">
+          <ChoixDeLangue />
         </Section>
 
         <Section titre="Apparence">

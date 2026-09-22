@@ -54,6 +54,12 @@ export default defineConfig({
 
   use: {
     baseURL: `http://localhost:${PORT}`,
+    // Une langue fixée, sinon les tests lisent l'application dans la langue du
+    // navigateur qui les exécute — « en-US » par défaut. Ils ont commencé à
+    // échouer le jour du multilingue en cherchant « Mes trips » sur un écran
+    // qui affichait « My trips », ce qui était exactement le comportement
+    // attendu. Le sens de lecture de droite à gauche a son propre test.
+    locale: 'fr-FR',
     // La trace d'un échec vaut mieux qu'une capture : on rejoue le test clic
     // par clic, avec le réseau et la console.
     trace: 'retain-on-failure',

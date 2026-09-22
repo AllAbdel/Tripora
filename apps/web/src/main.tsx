@@ -6,10 +6,14 @@ import App from './App';
 import { AuthProvider } from '@/lib/auth';
 import { persister, queryClient } from '@/lib/cache';
 import { applyTheme, useTheme, watchSystemTheme } from '@/stores/theme';
+import { appliquerLaLangue, useLangue } from '@/stores/langue';
 import './index.css';
 
 applyTheme(useTheme.getState().preference);
 watchSystemTheme();
+// Avant le premier rendu : `lang` et `dir` sur <html>. Poser `dir="rtl"` après
+// coup ferait sauter toute la page d'un côté à l'autre sous les yeux.
+appliquerLaLangue(useLangue.getState().preference);
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Élément racine introuvable');

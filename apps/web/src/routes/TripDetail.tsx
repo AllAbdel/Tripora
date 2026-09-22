@@ -174,7 +174,7 @@ export default function TripDetail() {
         className="text-muted hover:text-brand-500 -ml-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm transition-colors"
       >
         <ArrowLeft className="size-4" aria-hidden />
-        Mes voyages
+        Mes trips
       </Link>
 
       {error && <Banner tone="warning">{toFailure(error).message}</Banner>}

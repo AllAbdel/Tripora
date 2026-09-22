@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { ScreenHeader } from '@/components/AppShell';
 import { Button } from '@/components/ui/Button';
+import { useT } from '@/i18n/useT';
 import { Banner } from '@/components/ui/Banner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Logo } from '@/components/Logo';
@@ -19,6 +20,7 @@ import { signaler } from '@/lib/feedback';
 
 export default function Trips() {
   const { identity, backendReady } = useAuth();
+  const t = useT();
   const repository = getTripRepository();
   const queryClient = useQueryClient();
   const [aSupprimer, setASupprimer] = useState<TripSummary | null>(null);
@@ -75,13 +77,13 @@ export default function Trips() {
   return (
     <>
       <ScreenHeader
-        title="Mes voyages"
+        title={t('trips.titre')}
         pastille="voyages"
         subtitle={identity ? `Bonjour ${identity.displayName}` : undefined}
         action={
-          <Link to="/voyages/nouveau" aria-label="Créer un voyage">
+          <Link to="/voyages/nouveau" aria-label={t('action.creer')}>
             <Button size="sm" icon={<Plus className="size-4" aria-hidden />}>
-              Nouveau
+              {t('action.nouveau')}
             </Button>
           </Link>
         }
@@ -108,12 +110,12 @@ export default function Trips() {
         {data && data.length === 0 && (
           <EmptyState
             illustration={<Logo className="size-16 opacity-90" />}
-            title="Aucun voyage pour l’instant"
-            description="Créez un voyage, invitez vos amis, et laissez chacun dire son budget et ses envies. Tripora compare les destinations et explique ses prix."
+            title={t('trips.vide.titre')}
+            description={t('trips.vide.texte')}
             action={
               <Link to="/voyages/nouveau">
                 <Button size="lg" icon={<Plus className="size-5" aria-hidden />}>
-                  Créer un voyage
+                  {t('action.creer')}
                 </Button>
               </Link>
             }

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Créer un voyage, du premier écran au dernier.
+ * Créer un trip, du premier écran au dernier.
  *
  * C'est le parcours sans lequel rien d'autre n'existe, et le seul que
  * personne ne peut contourner. Six étapes, chacune avec sa condition : le
@@ -23,9 +23,9 @@ test('on crée un voyage de bout en bout, et il apparaît sur l’accueil', asyn
 
   await page.goto('/', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
-  await expect(page.getByRole('heading', { name: 'Mes voyages' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Mes trips' })).toBeVisible();
 
-  await page.getByRole('link', { name: /Créer un voyage|Créer/ }).first().click();
+  await page.getByRole('link', { name: /Créer un trip|Créer/ }).first().click();
   await expect(page).toHaveURL(/\/voyages\/nouveau$/);
 
   // 1 — Avec qui
@@ -76,7 +76,7 @@ test('on crée un voyage de bout en bout, et il apparaît sur l’accueil', asyn
   );
   expect(enregistres, 'le voyage doit avoir été écrit').toHaveLength(1);
 
-  await page.getByRole('link', { name: /Mes voyages|Voyages/ }).first().click();
+  await page.getByRole('link', { name: /Trips/ }).first().click();
   await expect(page.getByRole('heading', { level: 2 })).toHaveCount(1);
   expect(plantages).toEqual([]);
 });
@@ -86,7 +86,7 @@ test('l’assistant refuse d’avancer tant qu’il manque le départ', async ({
   // on croit avoir répondu.
   await page.goto('/', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
-  await page.getByRole('link', { name: /Créer un voyage|Créer/ }).first().click();
+  await page.getByRole('link', { name: /Créer un trip|Créer/ }).first().click();
   await suivant(page).click();
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('D’où partez-vous ?');
