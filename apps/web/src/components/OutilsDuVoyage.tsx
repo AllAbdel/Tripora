@@ -25,6 +25,8 @@ export function OutilsDuVoyage({
   collaborationActive,
   attente,
   destinationConnue,
+  estOrganisateur,
+  candidaturesEnAttente,
 }: {
   tripId: string;
   destinationVerrouillee: boolean;
@@ -33,6 +35,9 @@ export function OutilsDuVoyage({
   attente: string;
   /** Vrai quand l'encart d'applications de l'aperçu tient déjà ce rôle. */
   destinationConnue: boolean;
+  estOrganisateur: boolean;
+  /** Combien de gens attendent une réponse. Zéro quand le voyage n'est pas ouvert. */
+  candidaturesEnAttente: number;
 }) {
   const cases = [
     collaborationActive && {
@@ -83,6 +88,21 @@ export function OutilsDuVoyage({
       titre: 'Récapitulatif',
       detail: 'PDF et partage',
       accent: false,
+    },
+    // Ouvrir son voyage à des inconnus n'a de sens qu'une fois la destination
+    // arrêtée : c'est elle, avec le point de départ, qui permet de se trouver.
+    destinationVerrouillee && {
+      to: estOrganisateur ? `/voyages/${tripId}/candidatures` : `/voyages/${tripId}/ouverts`,
+      pastille: 'ouvert' as const,
+      titre: estOrganisateur ? 'Trip ouvert' : 'Partir avec d’autres',
+      detail:
+        candidaturesEnAttente > 0 ?
+          `${candidaturesEnAttente} candidature${candidaturesEnAttente > 1 ? 's' : ''} à lire`
+        : estOrganisateur ? 'Ouvrir à des inconnus'
+        : 'Rejoindre un groupe',
+      // La seule case qui peut réclamer quelque chose : quelqu'un attend une
+      // réponse, et c'est plus pressant que le reste de la grille.
+      accent: candidaturesEnAttente > 0,
     },
     !destinationConnue && {
       to: `/voyages/${tripId}/applications`,

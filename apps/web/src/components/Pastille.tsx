@@ -1,10 +1,4 @@
-import {
-  Backpack,
-  FileText,
-  MessagesSquare,
-  Smartphone,
-  type LucideIcon,
-} from 'lucide-react';
+import { Backpack, FileText, Globe2, MessagesSquare, Smartphone, type LucideIcon } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 import {
   GlypheAccueil,
@@ -60,7 +54,8 @@ export type NomDePastille =
   | 'discussion'
   | 'valise'
   | 'recapitulatif'
-  | 'applications';
+  | 'applications'
+  | 'ouvert';
 
 /** Un pictogramme dessiné (`PageGlyphs`) ou un pictogramme de bibliothèque. */
 type IconePastille = ComponentType<SVGProps<SVGSVGElement>> | LucideIcon;
@@ -99,6 +94,9 @@ const PASTILLES: Readonly<Record<NomDePastille, Pastille>> = {
   valise: { icone: Backpack, degrade: ['#eba15c', '#e08a3c'], auTrait: true },
   recapitulatif: { icone: FileText, degrade: ['#8797ab', '#6b7a99'], auTrait: true },
   applications: { icone: Smartphone, degrade: ['#9689f5', '#7c6cf0'], auTrait: true },
+  // Le trip ouvert : un globe, parce qu'on sort du cercle des amis. Il se
+  // distingue volontairement des « participants », qui sont ceux du voyage.
+  ouvert: { icone: Globe2, degrade: ['#37c2b1', '#1f9d95'], auTrait: true },
 };
 
 const TAILLES = {

@@ -32,6 +32,7 @@ import { OutilsDuVoyage } from '@/components/OutilsDuVoyage';
 import { signaler } from '@/lib/feedback';
 import { ProchainGeste } from '@/components/ProchainGeste';
 import { getItinerary } from '@/lib/itinerary';
+import { getTripsOuverts } from '@/lib/tripsOuverts';
 import { EnTeteDesPropositions } from '@/components/EnTeteDesPropositions';
 import { Ligne, ListeFantome } from '@/components/ui/Squelette';
 import { Couverture } from '@/components/Couverture';
@@ -109,6 +110,17 @@ export default function TripDetail() {
     staleTime: 5 * 60 * 1000,
   });
   const itineraireVide = (itineraire.data ?? []).every((jour) => jour.items.length === 0);
+
+  // Combien de gens attendent une réponse. Seul l'organisateur d'un voyage
+  // publié a quelque chose à y voir : pour tous les autres, l'appel n'aurait
+  // aucune raison d'être fait.
+  const candidatures = useQuery({
+    queryKey: ['candidatures-en-attente', id],
+    queryFn: async () =>
+      (await getTripsOuverts().candidatures(id!)).filter((c) => c.suite === 'en-attente').length,
+    enabled: Boolean(id && data?.isOwner && data?.lockedDestinationId),
+    staleTime: 60 * 1000,
+  });
 
   const villeRetenue = data?.lockedDestinationId
     ? findDestination(data.lockedDestinationId)
@@ -241,6 +253,8 @@ export default function TripDetail() {
             collaborationActive={Boolean(getCollaboration())}
             attente={decrireAttente(data.members.length, data.constraints.participants)}
             destinationConnue={Boolean(villeRetenue)}
+            estOrganisateur={data.isOwner}
+            candidaturesEnAttente={candidatures.data ?? 0}
           />
 
           {data.lockedDestinationId && (

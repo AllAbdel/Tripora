@@ -11,20 +11,29 @@ export function NumberStepper({
   min = 1,
   max = 30,
   label,
+  aide,
   suffix,
+  pas = 1,
 }: {
   value: number;
   onChange: (value: number) => void;
   min?: number;
   max?: number;
   label: string;
+  /** Une ligne sous le libellé, quand le compteur a besoin d'être expliqué. */
+  aide?: string;
   suffix?: string;
+  /** Le saut d'un appui. Vingt caractères se comptent mal un par un. */
+  pas?: number;
 }) {
-  const step = (delta: number) => onChange(Math.min(max, Math.max(min, value + delta)));
+  const step = (delta: number) => onChange(Math.min(max, Math.max(min, value + delta * pas)));
 
   return (
     <div className="flex items-center justify-between gap-4 rounded-2xl border border-[color:var(--border-subtle)] surface-raised p-3">
-      <span className="pl-1 font-medium">{label}</span>
+      <span className="min-w-0 pl-1">
+        <span className="block font-medium">{label}</span>
+        {aide && <span className="text-muted block text-sm">{aide}</span>}
+      </span>
       <div className="flex items-center gap-1">
         <StepperButton onClick={() => step(-1)} disabled={value <= min} label={`Moins`}>
           <Minus className="size-4" aria-hidden />
