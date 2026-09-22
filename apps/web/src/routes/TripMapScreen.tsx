@@ -14,7 +14,7 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { TitreDePage } from '@/components/TitreDePage';
 import { TripMap, type MapMarker } from '@/components/TripMap';
 import { buildTripMarkers } from '@/lib/mapMarkers';
-import { chargerLieux } from '@/lib/places';
+import { requeteDesLieux } from '@/lib/places';
 import { getTripRepository } from '@/lib/trips';
 import { getDiscussion } from '@/lib/discussion';
 import { useGroupRealtime } from '@/lib/useGroupRealtime';
@@ -48,12 +48,7 @@ export default function TripMapScreen() {
 
   // Les lieux ne sont demandés qu'une fois la destination arrêtée : avant, ils
   // n'auraient aucun sens, et ce serait un appel par ville comparée.
-  const lieux = useQuery({
-    queryKey: ['lieux', villeRetenue?.id],
-    queryFn: () => chargerLieux(villeRetenue!),
-    enabled: Boolean(villeRetenue),
-    staleTime: 24 * 60 * 60 * 1000,
-  });
+  const lieux = useQuery(requeteDesLieux(villeRetenue));
 
   // Les épingles viennent de la discussion, qui commence avant que la
   // destination soit tranchée : elles s'affichent donc dès le premier jour.

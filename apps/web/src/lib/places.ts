@@ -1,3 +1,4 @@
+import { queryOptions } from '@tanstack/react-query';
 import { classifyPoi, fold, type Destination, type Poi } from '@tripora/core';
 import { supabase } from './supabase';
 
@@ -12,15 +13,14 @@ import { supabase } from './supabase';
  *
  * **OpenStreetMap ensuite**, pour tout ce que le catalogue n'a pas : les six
  * cent quatre destinations ne seront jamais toutes écrites à la main, et OSM
- * connaît le musée du quartier que personne n'aurait pensé à citer. La
- * fonction serveur en ramène la matière brute ; c'est ici qu'elle devient une
- * liste utilisable, en passant par `classifyPoi` du moteur.
+ * connaît le musée du quartier que personne n'aurait pensé à citer.
  *
- * L'ordre n'est pas cosmétique : c'est lui qui a manqué pendant deux
- * semaines. La fonction `places` échouait pour toutes les villes sauf
- * Lisbonne, en silence, et l'écran se contentait d'être vide. Avec le
- * catalogue en premier, une panne d'OpenStreetMap ne retire plus que le
- * complément.
+ * OpenStreetMap passe par la base, pas par une fonction serveur : Overpass
+ * refuse les adresses des Edge Functions, et l'ancienne fonction `places`
+ * a échoué pour toutes les villes sauf Lisbonne pendant deux semaines. La
+ * base, elle, sort par une autre adresse. Mais sa requête est asynchrone : au
+ * premier appel pour une ville, elle répond « en attente », et c'est à
+ * l'écran de rappeler quelques secondes plus tard — voir `requeteDesLieux`.
  *
  * Tout échec reste silencieux, comme pour les prix : une panne de fournisseur
  * ne doit jamais vider un écran.
@@ -30,6 +30,11 @@ export interface Lieux {
   liste: Poi[];
   /** Vrai quand la limite gratuite du jour est atteinte. */
   quotaExceeded: boolean;
+  /**
+   * Vrai quand OpenStreetMap a été interrogé et n'a pas encore répondu. La
+   * liste contient déjà le catalogue ; il faut rappeler pour le complément.
+   */
+  enAttente?: boolean;
 }
 
 const VIDE: Lieux = { liste: [], quotaExceeded: false };
@@ -54,8 +59,10 @@ export async function chargerLieux(destination: Destination): Promise<Lieux> {
   if (!supabase) return { liste: duCatalogue, quotaExceeded: false };
 
   try {
-    const { data, error } = await supabase.functions.invoke('places', {
-      body: { destinationId: destination.id, lat: destination.lat, lng: destination.lng },
+    // Seul l'identifiant part : les coordonnées sont relues dans la base,
+    // pour que personne ne fasse interroger Overpass sur l'endroit de son choix.
+    const { data, error } = await supabase.rpc('lieux_osm', {
+      p_destination_id: destination.id,
     });
     if (error || !data) return { liste: duCatalogue, quotaExceeded: false };
     const osm = lireLieux(data);
@@ -63,6 +70,35 @@ export async function chargerLieux(destination: Destination): Promise<Lieux> {
   } catch {
     return { liste: duCatalogue, quotaExceeded: false };
   }
+}
+
+/** Assez pour laisser Overpass répondre, pas assez pour qu'on l'entende. */
+const RAPPEL_MS = 4_000;
+/**
+ * Trente rappels, deux minutes : au-delà, la base tient la demande pour
+ * perdue de toute façon. On arrête plutôt que de sonder dans le vide.
+ */
+const RAPPELS_MAX = 30;
+const UN_JOUR_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * La requête des lieux, identique pour les trois écrans qui s'en servent.
+ *
+ * Même clé, mêmes réglages : la carte, l'itinéraire et le sélecteur de lieux
+ * partagent une seule réponse, et un seul cycle de rappels quand OpenStreetMap
+ * est en attente. Une réponse en attente n'est jamais tenue pour fraîche —
+ * sans quoi quitter l'écran avant l'arrivée des lieux les aurait fait
+ * attendre vingt-quatre heures.
+ */
+export function requeteDesLieux(destination: Destination | null | undefined) {
+  return queryOptions({
+    queryKey: ['lieux', destination?.id],
+    queryFn: () => chargerLieux(destination!),
+    enabled: Boolean(destination),
+    staleTime: (query) => (query.state.data?.enAttente ? 0 : UN_JOUR_MS),
+    refetchInterval: (query) =>
+      query.state.data?.enAttente && query.state.dataUpdateCount < RAPPELS_MAX ? RAPPEL_MS : false,
+  });
 }
 
 /**
@@ -87,16 +123,17 @@ export function fusionner(catalogue: readonly Poi[], osm: readonly Poi[]): Poi[]
  */
 export function lireLieux(donnees: unknown): Lieux {
   if (typeof donnees !== 'object' || donnees === null) return VIDE;
-  const source = donnees as { places?: unknown; quotaExceeded?: unknown };
+  const source = donnees as { places?: unknown; quotaExceeded?: unknown; enAttente?: unknown };
   const quotaExceeded = source.quotaExceeded === true;
-  if (!Array.isArray(source.places)) return { liste: [], quotaExceeded };
+  const attente = source.enAttente === true ? { enAttente: true } : {};
+  if (!Array.isArray(source.places)) return { liste: [], quotaExceeded, ...attente };
 
   const liste: Poi[] = [];
   for (const entree of source.places as LieuBrut[]) {
     const lieu = lireLieu(entree);
     if (lieu) liste.push(lieu);
   }
-  return { liste, quotaExceeded };
+  return { liste, quotaExceeded, ...attente };
 }
 
 function lireLieu(brut: LieuBrut): Poi | null {

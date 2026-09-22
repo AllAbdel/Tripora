@@ -44,3 +44,6 @@ psql_run -q -d "$DB" -f "$ROOT/supabase/tests/trips_ouverts_test.sql"
 
 echo "→ Tests de protection des trips ouverts"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/trips_ouverts_proteger_test.sql"
+
+echo "→ Tests de la récolte des lieux OpenStreetMap"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/lieux_osm_test.sql"

@@ -10,7 +10,7 @@ import {
   type MemberPreference,
   type Poi,
 } from '@tripora/core';
-import { chargerLieux } from '@/lib/places';
+import { requeteDesLieux } from '@/lib/places';
 import { TextInput } from '@/components/ui/Field';
 import { cn } from '@/lib/cn';
 
@@ -42,13 +42,9 @@ export function LieuxSuggeres({
 }) {
   const [recherche, setRecherche] = useState('');
 
-  const lieux = useQuery({
-    // Une destination, une réponse : partagée par tous les écrans et tous les
-    // membres, et déjà mise en cache trente jours côté serveur.
-    queryKey: ['lieux', destination.id],
-    queryFn: () => chargerLieux(destination),
-    staleTime: 24 * 60 * 60 * 1000,
-  });
+  // Une destination, une réponse : partagée par tous les écrans et tous les
+  // membres, et déjà mise en cache trente jours côté serveur.
+  const lieux = useQuery(requeteDesLieux(destination));
 
   const envies = useMemo(() => groupWeights(members), [members]);
 

@@ -161,9 +161,10 @@ moyennes : « on ne sait pas » et « moyen partout » ne veulent pas dire la m�
 chose, et la seconde fausserait un vote de groupe. C'est aussi pourquoi elle
 n'entre dans aucun classement — elle n'aurait rien à y défendre.
 
-Les recommandations, elles, ne demandent aucune note : la fonction `places`
-n'a besoin que d'une latitude et d'une longitude. Une ville découverte reçoit
-donc exactement les mêmes lieux réels qu'une ville du catalogue.
+Les recommandations, elles, ne demandent aucune note : `lieux_osm` n'a besoin
+que d'une latitude et d'une longitude, qu'elle relit dans `destinations` — où
+`geocode` inscrit justement la ville découverte. Elle reçoit donc exactement
+les mêmes lieux réels qu'une ville du catalogue.
 
 Le nom d'une ville ne bougeant pas, le cache dure six mois et une recherche
 déjà faite par quelqu'un ne coûte rien à personne.
@@ -174,6 +175,29 @@ Sans clé pour les trois premiers, 3 000 requêtes par jour pour Geoapify.
 Restaurants, bars, musées, monuments, nature, plus les descriptions et les
 photos libres. La qualité varie selon les villes : c'est le prix du gratuit, et
 Tripora préfère afficher moins de lieux que des lieux inventés.
+
+**Overpass est interrogé depuis la base, pas depuis une Edge Function.** Il
+refuse les adresses de sortie des Edge Functions (HTTP 406, délais dépassés) :
+l'ancienne fonction `places` a échoué pour toutes les villes sauf Lisbonne
+pendant deux semaines. La base sort par une autre adresse, et `pg_net` y passe.
+La fonction SQL `lieux_osm(destination)` :
+
+1. rend le cache s'il a moins de trente jours ;
+2. sinon dépose la requête Overpass (`net.http_get`) et répond « en attente » ;
+3. au rappel suivant — l'application rappelle toutes les quatre secondes,
+   deux minutes au plus — lit la réponse en SQL, la range trente jours dans
+   `api_cache` et la copie dans `places`.
+
+Les coordonnées viennent toujours de `destinations`, jamais de l'appelant. Un
+seul appel sortant par ville à la fois, trente par personne et par jour, et le
+garde-quota `overpass` (120 / 200 par jour) par-dessus. Après un échec
+(Overpass répond volontiers 504 quand il est chargé), on attend quinze minutes
+avant de réessayer, en rendant la copie périmée s'il y en a une.
+
+Limite connue : pour une destination qui est une île ou une région, comme
+Bali, le point du catalogue est le centre géographique, et quatre kilomètres
+autour tombent en pleine campagne. Le carnet d'activités, prioritaire, couvre
+ces destinations ; OpenStreetMap n'y apporte qu'un complément maigre.
 
 ### Photo de couverture — Wikipédia et Wikidata
 

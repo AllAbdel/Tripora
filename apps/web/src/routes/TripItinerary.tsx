@@ -24,7 +24,7 @@ import { getTripRepository } from '@/lib/trips';
 import {
   getItinerary, positionPourHeure, type ItineraryDayView, type ItineraryItem,
 } from '@/lib/itinerary';
-import { chargerLieux } from '@/lib/places';
+import { requeteDesLieux } from '@/lib/places';
 import { chargerMeteo, cleMeteo } from '@/lib/weather';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
@@ -77,12 +77,7 @@ export default function TripItinerary() {
 
   // Les mêmes lieux que le sélecteur « ajouter un vrai lieu » : une seule
   // requête, un seul cache, trente jours côté serveur.
-  const lieux = useQuery({
-    queryKey: ['lieux', destination?.id],
-    queryFn: () => chargerLieux(destination!),
-    staleTime: 24 * 60 * 60 * 1000,
-    enabled: Boolean(destination),
-  });
+  const lieux = useQuery(requeteDesLieux(destination));
 
   /**
    * Les créneaux encore neutres, et le vrai lieu qui leur irait.
