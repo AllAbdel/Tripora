@@ -138,6 +138,9 @@
   --shadow-float: 0 8px 20px -12px rgb(26 95 180 / 0.35);
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  /* La courbe d'une feuille qui se pose : vive au départ, arrêt net à
+     l'arrivée. Elle n'a pas de rebond, parce que le papier n'en a pas. */
+  --ease-pose: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Jetons sémantiques : les composants ne citent jamais une couleur brute. */
@@ -306,7 +309,7 @@
     padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
   }
   .animate-rise {
-    animation: rise 0.35s var(--ease-out-soft) both;
+    animation: rise 0.32s var(--ease-pose) both;
   }
 
   /* Une liste qui apparaît d'un bloc se lit comme un mur. Décalées de quelques
@@ -314,7 +317,7 @@
      la huitième le retard cesse de croître : personne n'attend une seconde
      pour voir le bas d'un écran. */
   .animate-cascade > * {
-    animation: rise 0.4s var(--ease-out-soft) both;
+    animation: rise 0.36s var(--ease-pose) both;
   }
   .animate-cascade > *:nth-child(1) { animation-delay: 0ms; }
   .animate-cascade > *:nth-child(2) { animation-delay: 45ms; }
@@ -325,11 +328,26 @@
   .animate-cascade > *:nth-child(7) { animation-delay: 220ms; }
   .animate-cascade > *:nth-child(n + 8) { animation-delay: 240ms; }
 
-  /* L'écran d'arrivée d'une navigation : un fondu court, sans glissement
-     latéral — un déplacement horizontal donne un sens à la navigation que
-     l'application n'a pas toujours. */
+  /* L'écran d'arrivée d'une navigation.
+  
+     C'était un fondu court, et un fondu ne pèse rien : l'écran ne venait de
+     nulle part, il apparaissait. Ce qu'on veut, c'est **une feuille qu'on pose
+     sur la pile** — et une feuille qui se pose fait trois choses.
+  
+     Elle descend et s'arrête net : d'où `--ease-pose`, vive au départ, sans
+     rebond à l'arrivée. Une courbe qui rebondit dit « ressort », pas « papier ».
+  
+     Elle ne tombe jamais parfaitement droite : un quart de degré de travers
+     au départ, redressé à l'arrivée. C'est sous le seuil de ce qu'on remarque,
+     et c'est exactement pour ça que ça marche — on ne voit pas la rotation, on
+     sent que ce n'est pas une image qui s'allume.
+  
+     Elle porte une ombre au moment du contact, qui disparaît quand la feuille
+     touche. C'est la seule ombre de toute l'interface, et elle ne dure que le
+     temps du geste. */
   .animate-page {
-    animation: page 0.28s var(--ease-out-soft) both;
+    animation: pose 0.34s var(--ease-pose) both;
+    transform-origin: 50% 0;
   }
 
   /* Le squelette d'un contenu qui arrive : une onde lente, pas un clignotement.
@@ -346,19 +364,29 @@
   }
 
   /* Un appui qui s'enfonce : le retour le moins coûteux et le plus universel.
-     Appliqué au conteneur, il évite d'ajouter `active:scale` partout. */
+     Appliqué au conteneur, il évite d'ajouter `active:scale` partout.
+  
+     Le retour à la taille normale est plus lent que l'enfoncement — 0,16 s
+     contre 0,08 s. C'est ce que fait la matière : elle cède vite sous le
+     doigt et se relâche doucement. À durée égale dans les deux sens, l'appui
+     a le comportement d'un bouton de logiciel ; asymétrique, il a celui d'une
+     chose qu'on touche. */
   .pressable {
-    transition: transform 0.16s var(--ease-out-soft);
+    transition: transform 0.16s var(--ease-pose);
   }
   .pressable:active {
     transform: scale(0.975);
+    transition-duration: 0.08s;
   }
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    /* Vers le bas, pas vers le haut. Une carte qui monte flotte ; une carte
+       qui descend se pose sur la page. Le mouvement est court — huit pixels —
+       parce qu'une feuille qu'on lâche ne tombe pas de haut. */
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -366,14 +394,24 @@
   }
 }
 
-@keyframes page {
+@keyframes pose {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.995);
+    transform: translateY(14px) rotate(-0.25deg);
+    box-shadow: 0 14px 28px -18px rgb(26 23 19 / 0.5);
+  }
+  /* Le contact : la feuille est arrivée, l'ombre est à son maximum juste
+     avant de s'écraser. C'est ce palier qui donne la sensation du poids —
+     sans lui, l'ombre se dissout pendant la chute et on ne la voit pas. */
+  70% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+    box-shadow: 0 6px 14px -10px rgb(26 23 19 / 0.4);
   }
   to {
     opacity: 1;
     transform: none;
+    box-shadow: 0 0 0 0 rgb(26 23 19 / 0);
   }
 }
 

@@ -8,7 +8,6 @@ import {
   type PricedValue,
   type TripConstraints,
 } from '@tripora/core';
-import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/lib/cn';
 
 /**
@@ -64,23 +63,33 @@ export function PrevuEtReel({
   const depasse = reference !== null && depenseCents > reference;
 
   return (
-    <Card>
-      <CardBody className="space-y-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="text-muted text-sm font-medium">Dépensé jusqu’ici</span>
-          <span className="text-2xl font-bold tabular-nums">{formatCents(depenseCents)}</span>
+    <section className="space-y-4">
+      <div className="space-y-4">
+        {/* Le chiffre du haut est le sujet de l'écran : il prend la romane et
+            la taille qui va avec, et l'étiquette passe en petites capitales
+            au-dessus. C'était l'inverse — un libellé gris et un chiffre gras
+            de même hauteur que le reste. */}
+        <div className="filet flex items-end justify-between gap-3 border-b-2 pb-2">
+          <span className="etiquette">Dépensé jusqu’ici</span>
+          <span className="titre chiffres text-[2rem] leading-none">
+            {formatCents(depenseCents)}
+          </span>
         </div>
 
         {reference !== null && (
           <div className="space-y-1.5">
+            {/* Une jauge à un pixel, pas une gélule. La barre arrondie de deux
+                millimètres est la forme par défaut de tous les tableaux de
+                bord ; un filet qui se remplit appartient à la même grammaire
+                que le reste de la page. */}
             <div
-              className="h-2 overflow-hidden rounded-full bg-[color:var(--border-subtle)]"
+              className="h-px overflow-hidden bg-[color:var(--border-subtle)]"
               aria-hidden
             >
               <div
                 className={cn(
-                  'h-full rounded-full transition-[width] duration-700',
-                  depasse ? 'bg-gold-500' : 'bg-lagoon-500',
+                  'h-px transition-[width] duration-700',
+                  depasse ? 'bg-gold-600' : 'bg-brand-500',
                 )}
                 style={{ width: `${Math.max(2, part ?? 0)}%` }}
               />
@@ -101,23 +110,26 @@ export function PrevuEtReel({
         )}
 
         {estimation && (
-          <div className="space-y-1.5 border-t border-[color:var(--border-subtle)] pt-3">
+          <div className="space-y-1.5 pt-1">
             <div className="flex items-baseline justify-between gap-3">
-              <p className="text-sm font-semibold">Ce que le voyage devrait coûter</p>
+              <h3 className="etiquette">Ce que le voyage devrait coûter</h3>
               <span className="text-muted text-xs">par personne</span>
             </div>
-            <ul className="space-y-1 text-sm">
+            {/* Un devis : les postes réglés, le total séparé par un filet plus
+                appuyé. C'est la mise en page d'une note de frais, et c'est
+                exactement ce que c'est. */}
+            <ul className="text-sm">
               {costLines(estimation).map((ligne) => (
-                <li key={ligne.key} className="flex justify-between gap-4">
+                <li key={ligne.key} className="filet flex justify-between gap-4 border-b py-1.5">
                   <span className="text-muted">{ligne.label}</span>
-                  <span className="tabular-nums">
+                  <span className="chiffres">
                     {formatCents(ligne.cents, 'EUR', { hideCentimes: true })}
                   </span>
                 </li>
               ))}
-              <li className="flex justify-between gap-4 border-t border-[color:var(--border-subtle)] pt-1 font-semibold">
+              <li className="filet flex justify-between gap-4 border-b-2 py-2 font-semibold">
                 <span>Total estimé</span>
-                <span className="tabular-nums">
+                <span className="chiffres">
                   {formatCents(estimation.totalCents, 'EUR', { hideCentimes: true })}
                 </span>
               </li>
@@ -132,7 +144,7 @@ export function PrevuEtReel({
         )}
 
         {budgetParPersonne !== null && (
-          <p className="text-muted border-t border-[color:var(--border-subtle)] pt-3 text-xs">
+          <p className="text-muted pt-1 text-xs">
             Budget annoncé à la création :{' '}
             <strong className="text-[color:var(--text-strong)]">
               {formatCents(budgetParPersonne, 'EUR', { hideCentimes: true })} par personne
@@ -148,7 +160,7 @@ export function PrevuEtReel({
             )}
           </p>
         )}
-      </CardBody>
-    </Card>
+      </div>
+    </section>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { PALETTES, retouchesPour, roleDeLaCouche } from '@/lib/carteAuTon';
 import {
   LngLatBounds,
   Map as MapLibreMap,
@@ -177,6 +178,10 @@ export function TripMap({
         setTuilesIndisponibles(true);
       }
     });
+    // `styledata` part à chaque chargement de style, y compris au changement
+    // de thème : c'est le seul moment où les couches existent et sont
+    // repeignables.
+    instance.on('styledata', () => repeindre(instance, sombreAuDepart.current));
     carte.current = instance;
 
     return () => {
@@ -185,10 +190,13 @@ export function TripMap({
     };
   }, []);
 
-  // Suivi du thème.
+  // Suivi du thème. On garde la teinte courante dans la référence : le
+  // gestionnaire `styledata` posé à la création la relit à chaque style
+  // rechargé, et sans ça il repeindrait toujours aux couleurs du démarrage.
   useEffect(() => {
     const instance = carte.current;
     if (!instance || tuilesIndisponibles) return;
+    sombreAuDepart.current = sombre;
     instance.setStyle(sombre ? FONDS.sombre : FONDS.clair);
   }, [sombre, tuilesIndisponibles]);
 
@@ -298,10 +306,14 @@ export function TripMap({
         type: 'line',
         source: 'trajet',
         paint: {
-          'line-color': '#0a84ff',
-          'line-width': 2.5,
-          'line-dasharray': [2, 1.5],
-          'line-opacity': 0.8,
+          // Le trait suit l'accent choisi dans l'application plutôt qu'un bleu
+          // figé : sur une carte devenue papier, un bleu d'iOS se voyait comme
+          // une pièce rapportée. Les tirets restent — c'est ainsi qu'on trace
+          // un itinéraire à la main sur une carte.
+          'line-color': accentCourant(),
+          'line-width': 2,
+          'line-dasharray': [1.5, 1.5],
+          'line-opacity': 0.95,
         },
       });
     };
@@ -397,5 +409,67 @@ function classePourRepere(kind: MapMarker['kind']): string {
       return `${base} bg-gold-600 ring-2 ring-gold-300/70`;
     default:
       return `${base} bg-brand-500`;
+  }
+}
+
+/**
+ * L'accent choisi, tel que la feuille de style le définit à cet instant.
+ *
+ * MapLibre dessine dans un canevas : il ne connaît pas les variables CSS, et
+ * `var(--color-brand-500)` y serait ignoré sans le moindre avertissement. On
+ * résout donc la valeur au moment de dessiner — et pas une fois pour toutes,
+ * puisque l'accent se change dans les réglages.
+ */
+function accentCourant(): string {
+  if (typeof document === 'undefined') return '#1a5fb4';
+  const lu = getComputedStyle(document.documentElement)
+    .getPropertyValue('--color-brand-500')
+    .trim();
+  return lu || '#1a5fb4';
+}
+
+/**
+ * Repeindre toutes les couches du style courant.
+ *
+ * Appelée à chaque `styledata`, donc à chaque bascule de thème et à chaque
+ * repli hors ligne. Elle est délibérément tolérante : une couche que MapLibre
+ * refuse de peindre — parce que l'amont a changé son type — ne doit pas
+ * emporter les cent cinquante autres avec elle.
+ */
+function repeindre(instance: MapLibreMap, sombre: boolean): void {
+  const palette = sombre ? PALETTES.sombre : PALETTES.clair;
+  let couches;
+  try {
+    couches = instance.getStyle()?.layers ?? [];
+  } catch {
+    // Le style n'est pas encore là : le prochain `styledata` repassera.
+    return;
+  }
+
+  for (const couche of couches) {
+    // Nos propres couches — le trajet, les repères — sont déjà à la bonne
+    // couleur : les repeindre les effacerait.
+    if (couche.id === 'trajet') continue;
+    for (const { propriete, valeur } of retouchesPour(
+      roleDeLaCouche(couche.id, couche.type),
+      couche.type,
+      palette,
+    )) {
+      try {
+        // Le nom de la propriété est décidé par `retouchesPour`, dont un
+        // test vérifie qu'elle ne produit jamais un nom étranger au type de
+        // la couche. MapLibre, lui, veut une union littérale, qu'on ne peut
+        // pas exprimer ici sans réécrire sa table des propriétés : on élargit
+        // donc la signature à cet endroit précis, et le `catch` reste le
+        // filet si l'amont change quelque chose.
+        (instance.setPaintProperty as (id: string, nom: string, valeur: unknown) => void)(
+          couche.id,
+          propriete,
+          valeur,
+        );
+      } catch {
+        // Une couche qui refuse une propriété n'empêche pas de peindre les autres.
+      }
+    }
   }
 }

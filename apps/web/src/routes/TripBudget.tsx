@@ -174,68 +174,67 @@ export default function TripBudget() {
       {/* Seul, il n'y a personne à qui devoir quoi que ce soit : la carte
           n'aurait qu'une ligne, et elle dirait « à jour ». */}
       {comptes && participants.length > 1 && (
-        <Card>
-          <CardBody className="space-y-4">
-            <div className="space-y-1.5">
-              <p className="text-sm font-semibold">Où en est chacun</p>
-              <ul className="space-y-1 text-sm">
-                {comptes.soldes.map((solde) => (
-                  <li key={solde.userId} className="flex justify-between gap-4">
-                    <span className="truncate">{noms.get(solde.userId) ?? 'Ancien membre'}</span>
-                    <span
-                      className={cn(
-                        'shrink-0 tabular-nums',
-                        solde.cents > 0 && 'text-lagoon-700 dark:text-lagoon-300',
-                        solde.cents < 0 && 'text-gold-700 dark:text-gold-300',
-                        solde.cents === 0 && 'text-muted',
-                      )}
-                    >
-                      {solde.cents === 0
-                        ? 'à jour'
-                        : solde.cents > 0
-                          ? `+${formatCents(solde.cents)}`
-                          : formatCents(solde.cents)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </CardBody>
-        </Card>
+        <section>
+          <h2 className="etiquette etiquette-filet mb-1">Où en est chacun</h2>
+          {/* Un registre, pas une carte : des lignes réglées et une colonne de
+              chiffres alignée à droite. C'est la forme qu'a ce contenu depuis
+              qu'on tient des comptes, et elle se lit d'un coup d'œil là où une
+              liste dans une boîte demande de chercher. */}
+          <ul>
+            {comptes.soldes.map((solde) => (
+              <li
+                key={solde.userId}
+                className="filet flex items-baseline justify-between gap-4 border-b py-2.5 last:border-b-0"
+              >
+                <span className="min-w-0 truncate">{noms.get(solde.userId) ?? 'Ancien membre'}</span>
+                <span
+                  className={cn(
+                    'chiffres shrink-0 font-semibold',
+                    solde.cents > 0 && 'text-brand-600 dark:text-brand-300',
+                    solde.cents < 0 && 'text-gold-700 dark:text-gold-300',
+                    solde.cents === 0 && 'text-muted font-normal',
+                  )}
+                >
+                  {solde.cents === 0
+                    ? 'à jour'
+                    : solde.cents > 0
+                      ? `+${formatCents(solde.cents)}`
+                      : formatCents(solde.cents)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {comptes?.virements && comptes.virements.length > 0 && (
-        <Card className="border-lagoon-500">
-          <CardBody className="space-y-3">
-            <div>
-              <p className="font-semibold">Pour tout remettre à zéro</p>
-              <p className="text-muted text-sm">
-                {comptes.virements.length} virement{comptes.virements.length > 1 ? 's' : ''}{' '}
-                suffi{comptes.virements.length > 1 ? 'sent' : 't'}, au lieu que chacun rembourse
-                chacun.
-              </p>
-            </div>
-            <ul className="space-y-2">
-              {comptes.virements.map((virement, index) => (
-                <li
-                  key={index}
-                  className="flex items-center gap-2 rounded-xl bg-[color:var(--surface-muted)] p-3 text-sm"
-                >
-                  <span className="min-w-0 flex-1 truncate font-medium">
-                    {noms.get(virement.from) ?? 'Quelqu’un'}
-                  </span>
-                  <ArrowRight className="text-muted size-4 shrink-0" aria-hidden />
-                  <span className="min-w-0 flex-1 truncate font-medium">
-                    {noms.get(virement.to) ?? 'Quelqu’un'}
-                  </span>
-                  <span className="shrink-0 font-bold tabular-nums">
-                    {formatCents(virement.cents)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardBody>
-        </Card>
+        <section className="surface-raised rounded-[var(--radius-card)] border-s-2 border-s-[color:var(--color-brand-500)] border-y border-e filet p-4">
+          <h2 className="titre text-base">Pour tout remettre à zéro</h2>
+          <p className="text-muted mt-0.5 text-sm">
+            {comptes.virements.length} virement{comptes.virements.length > 1 ? 's' : ''}{' '}
+            suffi{comptes.virements.length > 1 ? 'sent' : 't'}, au lieu que chacun rembourse
+            chacun.
+          </p>
+          <ul className="mt-3">
+            {comptes.virements.map((virement, index) => (
+              <li
+                key={index}
+                className="filet flex items-center gap-2 border-b py-2.5 text-sm last:border-b-0 last:pb-0"
+              >
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {noms.get(virement.from) ?? 'Quelqu’un'}
+                </span>
+                <ArrowRight className="text-muted size-4 shrink-0" aria-hidden />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {noms.get(virement.to) ?? 'Quelqu’un'}
+                </span>
+                <span className="chiffres shrink-0 font-semibold">
+                  {formatCents(virement.cents)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {comptes && !comptes.virements && (
@@ -275,22 +274,28 @@ export default function TripBudget() {
       )}
 
       {entrees.length > 0 && (
-        <ul className="space-y-2">
+        <section>
+          {/* Pas de total ici : il est déjà en tête d'écran, dans le bloc
+              « prévu et réel ». Le répéter à trois centimètres d'écart ferait
+              douter que ce soit le même chiffre. */}
+          <h2 className="etiquette etiquette-filet mb-1">
+            Le détail — {entrees.length} ligne{entrees.length > 1 ? 's' : ''}
+          </h2>
+          <ul>
           {entrees.map((entree) => {
             const categorie = CATEGORIES.find((c) => c.value === entree.category);
             return (
               <li key={entree.id}>
-                <Card>
-                  <CardBody className="flex items-center gap-3 p-3.5">
-                    <span
-                      aria-hidden
-                      className="bg-brand-50 text-brand-600 dark:bg-brand-900/50 dark:text-brand-300 grid size-9 shrink-0 place-items-center rounded-xl"
-                    >
+                <div className="filet flex items-center gap-3 border-b py-3">
+                    {/* Le pictogramme au trait, dans l'encre du texte : la
+                        pastille colorée faisait une colonne de gommettes, et
+                        la couleur n'apportait rien qu'on ne lise déjà. */}
+                    <span aria-hidden className="text-muted shrink-0">
                       <Icone nom={categorie?.icone ?? 'divers'} className="size-4.5" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">{entree.label}</p>
-                      <p className="text-muted text-sm">
+                      <p className="truncate font-medium">{entree.label}</p>
+                      <p className="text-muted text-xs">
                         {noms.get(entree.paidBy) ?? 'Quelqu’un'} ·{' '}
                         {new Date(`${entree.spentOn}T00:00:00`).toLocaleDateString('fr-FR', {
                           day: 'numeric',
@@ -299,7 +304,7 @@ export default function TripBudget() {
                         {entree.shares.length > 1 && ` · partagé à ${entree.shares.length}`}
                       </p>
                     </div>
-                    <span className="shrink-0 text-right font-bold tabular-nums">
+                    <span className="chiffres shrink-0 text-right font-semibold">
                       {formatCents(entree.amountCents)}
                       {/* Payé dans une autre monnaie : on montre la somme
                           reconnaissable, celle qui est sur le ticket. */}
@@ -313,16 +318,16 @@ export default function TripBudget() {
                       type="button"
                       aria-label={`Supprimer ${entree.label}`}
                       onClick={() => supprimer.mutate(entree.id)}
-                      className="text-muted hover:text-brand-500 grid size-9 shrink-0 place-items-center rounded-lg"
+                      className="text-muted hover:text-red-600 grid size-9 shrink-0 place-items-center rounded-lg"
                     >
                       <Trash2 className="size-4" aria-hidden />
                     </button>
-                  </CardBody>
-                </Card>
+                </div>
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </section>
       )}
     </div>
   );
