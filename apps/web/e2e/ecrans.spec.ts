@@ -22,6 +22,7 @@ const ECRANS = [
   '/voyages/v1/recapitulatif',
   '/voyages/v1/modifier',
   '/voyages/v1/mes-envies',
+  '/voyages/v1/a-faire',
   '/voyages/v1/ouverts',
   '/voyages/v1/publier',
   '/voyages/v1/candidatures',

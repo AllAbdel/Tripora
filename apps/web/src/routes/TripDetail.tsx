@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Lock, LockOpen, MapPin, Pencil, Users, Wallet } from 'lucide-react';
 import {
+  activitesDe,
   estimateTransportOptions,
   findDestination,
   formatCents,
@@ -255,6 +256,9 @@ export default function TripDetail() {
             destinationConnue={Boolean(villeRetenue)}
             estOrganisateur={data.isOwner}
             candidaturesEnAttente={candidatures.data ?? 0}
+            nombreDActivites={
+              data.lockedDestinationId ? activitesDe(data.lockedDestinationId).length : 0
+            }
           />
 
           {data.lockedDestinationId && (

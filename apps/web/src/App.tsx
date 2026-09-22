@@ -27,6 +27,7 @@ import ModerationApps from '@/routes/ModerationApps';
 import TripsOuverts from '@/routes/TripsOuverts';
 import PublierLeTrip from '@/routes/PublierLeTrip';
 import CandidaturesRecues from '@/routes/CandidaturesRecues';
+import AFaire from '@/routes/AFaire';
 
 // MapLibre pèse à lui seul plus que tout le reste de l'application : la carte
 // n'est téléchargée que par les personnes qui l'ouvrent vraiment.
@@ -64,6 +65,7 @@ function TabbedRoutes() {
         <Route path="/voyages/:id/valise" element={<TripValise />} />
         <Route path="/voyages/:id/modifier" element={<TripEdit />} />
         <Route path="/voyages/:id/recapitulatif" element={<TripRecapitulatif />} />
+        <Route path="/voyages/:id/a-faire" element={<AFaire />} />
         <Route path="/voyages/:id/ouverts" element={<TripsOuverts />} />
         <Route path="/voyages/:id/publier" element={<PublierLeTrip />} />
         <Route path="/voyages/:id/candidatures" element={<CandidaturesRecues />} />

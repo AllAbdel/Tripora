@@ -27,6 +27,7 @@ export function OutilsDuVoyage({
   destinationConnue,
   estOrganisateur,
   candidaturesEnAttente,
+  nombreDActivites,
 }: {
   tripId: string;
   destinationVerrouillee: boolean;
@@ -38,7 +39,10 @@ export function OutilsDuVoyage({
   estOrganisateur: boolean;
   /** Combien de gens attendent une réponse. Zéro quand le voyage n'est pas ouvert. */
   candidaturesEnAttente: number;
+  /** Ce que le carnet d'activités connaît de la destination. Zéro : pas de case. */
+  nombreDActivites: number;
 }) {
+  const aDesActivites = nombreDActivites > 0;
   const cases = [
     collaborationActive && {
       to: `/voyages/${tripId}/participants`,
@@ -47,6 +51,17 @@ export function OutilsDuVoyage({
       detail: attente,
       accent: false,
     },
+    // « À faire » avant l'itinéraire : on choisit ce qu'on veut voir, puis on
+    // le range dans les journées. L'ordre inverse demandait de savoir quoi
+    // mettre dans un créneau avant d'avoir vu ce qui existait.
+    destinationVerrouillee &&
+      aDesActivites && {
+        to: `/voyages/${tripId}/a-faire`,
+        pastille: 'meteo' as const,
+        titre: 'À faire',
+        detail: `${nombreDActivites} idées sur place`,
+        accent: false,
+      },
     destinationVerrouillee && {
       to: `/voyages/${tripId}/itineraire`,
       pastille: 'itineraire' as const,
