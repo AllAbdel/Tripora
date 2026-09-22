@@ -32,6 +32,43 @@ const MAX_LIEUX = 120;
  *  de la gratuité, et ça permet de nous joindre plutôt que de nous bloquer. */
 const AGENT = 'Tripora/1.0 (application de voyage entre amis, non commerciale)';
 
+/**
+ * Plusieurs miroirs, essayés dans l'ordre — et une limite de temps serrée.
+ *
+ * Cette fonction a échoué **pour toutes les destinations sauf Lisbonne, du
+ * premier jour au dix-septième**, sans que personne s'en aperçoive. La cause a
+ * été mesurée depuis une Edge Function, miroir par miroir :
+ *
+ *   overpass-api.de        HTTP 406, en 200 ms, en GET comme en POST
+ *   overpass.kumi.systems  délai dépassé
+ *   overpass.private.coffee délai dépassé
+ *   overpass.osm.jp        certificat TLS expiré
+ *
+ * La même requête passe très bien depuis la base de données, qui sort par une
+ * autre adresse. Overpass filtre donc les plages d'adresses des Edge
+ * Functions, partagées entre beaucoup de monde — ce qu'on ne peut pas lui
+ * reprocher : c'est un service communautaire, et il se protège.
+ *
+ * Conséquence assumée : **OpenStreetMap n'est plus la source principale des
+ * lieux.** Le catalogue d'activités, écrit à la main et embarqué dans
+ * l'application, l'est. Cette fonction reste comme complément, parce qu'elle
+ * couvre les six cents destinations que le catalogue ne couvrira jamais
+ * toutes, et parce qu'un miroir peut redevenir joignable.
+ *
+ * D'où les deux réglages ci-dessous. Les délais sont **courts** : un échec
+ * doit coûter quelques secondes, pas deux minutes — l'application a déjà de
+ * quoi remplir l'écran, elle n'attend pas après nous. Et `osm.jp` est retiré
+ * tant que son certificat n'est pas renouvelé : essayer une porte qu'on sait
+ * fermée ne fait que rallonger l'attente.
+ */
+const MIROIRS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+] as const;
+
+/** Court exprès : voir le commentaire ci-dessus. */
+const DELAI_PAR_MIROIR_MS = 8_000;
+
 interface Demande {
   destinationId: string;
   lat: number;
@@ -94,9 +131,12 @@ Deno.serve(async (request) => {
     if (cause instanceof QuotaEpuise) {
       return json({ places: [], quotaExceeded: true, provider: PROVIDER }, 200);
     }
-    console.error('places', cause);
-    // Un écran sans lieux reste utilisable : l'itinéraire garde sa structure.
-    return json({ places: [], failed: true }, 200);
+    const raison = cause instanceof Error ? cause.message : 'cause inconnue';
+    console.error('places: échec pour', destinationId, '—', raison);
+    // Un écran sans lieux reste utilisable : le catalogue d'activités prend le
+    // relais côté application, et l'itinéraire garde sa structure. Mais on dit
+    // pourquoi : c'est ce silence-là qui a caché la panne pendant deux semaines.
+    return json({ places: [], failed: true, raison }, 200);
   }
 });
 
@@ -133,19 +173,29 @@ async function interrogerOverpass(lat: number, lng: number): Promise<ElementOsm[
 );
 out center ${MAX_LIEUX * 3};`;
 
-  const reponse = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    signal: AbortSignal.timeout(50_000),
-    headers: {
-      'content-type': 'application/x-www-form-urlencoded',
-      'user-agent': AGENT,
-    },
-    body: new URLSearchParams({ data: requete }),
-  });
+  const echecs: string[] = [];
 
-  if (!reponse.ok) throw new Error(`Overpass HTTP ${reponse.status}`);
-  const donnees = (await reponse.json()) as { elements?: ElementOsm[] };
-  return donnees.elements ?? [];
+  for (const miroir of MIROIRS) {
+    try {
+      // GET plutôt que POST : la requête passe en paramètre d'URL, ce que tous
+      // les miroirs acceptent, et le cache HTTP intermédiaire peut jouer.
+      const url = `${miroir}?data=${encodeURIComponent(requete)}`;
+      const reponse = await fetch(url, {
+        signal: AbortSignal.timeout(DELAI_PAR_MIROIR_MS),
+        headers: { 'user-agent': AGENT },
+      });
+      if (!reponse.ok) {
+        echecs.push(`${miroir} → HTTP ${reponse.status}`);
+        continue;
+      }
+      const donnees = (await reponse.json()) as { elements?: ElementOsm[] };
+      return donnees.elements ?? [];
+    } catch (cause) {
+      echecs.push(`${miroir} → ${cause instanceof Error ? cause.message : 'échec'}`);
+    }
+  }
+
+  throw new Error(`Aucun miroir Overpass n'a répondu : ${echecs.join(' ; ')}`);
 }
 
 /**

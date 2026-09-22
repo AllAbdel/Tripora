@@ -1,18 +1,29 @@
-import { classifyPoi, type Destination, type Poi } from '@tripora/core';
+import { classifyPoi, fold, poisDeLaDestination, type Destination, type Poi } from '@tripora/core';
 import { supabase } from './supabase';
 
 /**
  * Les lieux réels d'une destination.
  *
- * La fonction serveur ramène la matière brute d'OpenStreetMap ; c'est ici
- * qu'elle devient une liste utilisable, en passant par `classifyPoi` du
- * moteur — le même classement testé, appliqué au même endroit pour tout le
- * monde. Ce que la règle ne reconnaît pas est écarté sans bruit : mieux vaut
- * une liste courte et juste qu'une liste longue et fausse.
+ * Deux sources, dans cet ordre.
  *
- * Tout échec est silencieux, comme pour les prix : sans lieux, l'itinéraire
- * garde sa structure et le champ de saisie libre reste là. Une panne de
- * fournisseur ne doit jamais vider un écran.
+ * **Le catalogue d'activités d'abord**, parce qu'il est écrit à la main, qu'il
+ * connaît la durée et le prix, et qu'il est là hors ligne. C'est lui qui fait
+ * qu'un séjour à Bali parle du mont Batur et de Tanah Lot.
+ *
+ * **OpenStreetMap ensuite**, pour tout ce que le catalogue n'a pas : les six
+ * cent quatre destinations ne seront jamais toutes écrites à la main, et OSM
+ * connaît le musée du quartier que personne n'aurait pensé à citer. La
+ * fonction serveur en ramène la matière brute ; c'est ici qu'elle devient une
+ * liste utilisable, en passant par `classifyPoi` du moteur.
+ *
+ * L'ordre n'est pas cosmétique : c'est lui qui a manqué pendant deux
+ * semaines. La fonction `places` échouait pour toutes les villes sauf
+ * Lisbonne, en silence, et l'écran se contentait d'être vide. Avec le
+ * catalogue en premier, une panne d'OpenStreetMap ne retire plus que le
+ * complément.
+ *
+ * Tout échec reste silencieux, comme pour les prix : une panne de fournisseur
+ * ne doit jamais vider un écran.
  */
 
 export interface Lieux {
@@ -36,17 +47,33 @@ interface LieuBrut {
 }
 
 export async function chargerLieux(destination: Destination): Promise<Lieux> {
-  if (!supabase) return VIDE;
+  const duCatalogue = poisDeLaDestination(destination.id) as Poi[];
+  if (!supabase) return { liste: duCatalogue, quotaExceeded: false };
 
   try {
     const { data, error } = await supabase.functions.invoke('places', {
       body: { destinationId: destination.id, lat: destination.lat, lng: destination.lng },
     });
-    if (error || !data) return VIDE;
-    return lireLieux(data);
+    if (error || !data) return { liste: duCatalogue, quotaExceeded: false };
+    const osm = lireLieux(data);
+    return { ...osm, liste: fusionner(duCatalogue, osm.liste) };
   } catch {
-    return VIDE;
+    return { liste: duCatalogue, quotaExceeded: false };
   }
+}
+
+/**
+ * Le catalogue devant, OpenStreetMap derrière, sans doublon.
+ *
+ * Les deux sources se recoupent forcément : le Sensō-ji est dans le catalogue
+ * et dans OSM. On écarte le doublon sur le nom plié — accents et casse en
+ * moins — parce que les identifiants, eux, ne se ressemblent pas du tout.
+ * C'est l'entrée du catalogue qu'on garde : elle porte une durée, un prix et
+ * une phrase écrite pour être lue.
+ */
+export function fusionner(catalogue: readonly Poi[], osm: readonly Poi[]): Poi[] {
+  const connus = new Set(catalogue.map((lieu) => fold(lieu.name)));
+  return [...catalogue, ...osm.filter((lieu) => !connus.has(fold(lieu.name)))];
 }
 
 /**

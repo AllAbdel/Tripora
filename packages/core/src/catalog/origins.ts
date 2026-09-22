@@ -4,6 +4,48 @@ import { haversineKm } from '../geo.js';
 import type { GeoPoint, Place } from '../types.js';
 
 /**
+ * Les aéroports, quand la ville en a plusieurs.
+ *
+ * « Paris » suffit à un moteur de prix : le code de ville PAR couvre les
+ * trois plateformes, et c'est bien ce qu'on veut interroger pour trouver le
+ * moins cher. Mais ça ne suffit pas à quelqu'un qui part : entre Roissy et
+ * Orly il y a une heure de RER, et pour un habitant du sud de Paris ce n'est
+ * pas le même voyage. Il faut aussi pouvoir dire « je pars d'Orly ».
+ *
+ * Deux raisons de les nommer, donc :
+ *
+ *  - **choisir son aéroport**, et pas seulement sa ville ;
+ *  - **apparier les trips ouverts.** Deux personnes qui publient « Paris →
+ *    Bali » doivent se trouver ; deux personnes dont l'une part d'Orly et
+ *    l'autre de Beauvais doivent le savoir avant de réserver.
+ *
+ * Les coordonnées sont celles de l'aéroport, pas celles de la ville : c'est
+ * de là qu'on part, et c'est cette distance-là qui compte dans un trajet.
+ */
+const AEROPORTS: Place[] = [
+  { name: 'Paris-Charles-de-Gaulle', country: 'France', lat: 49.0097, lng: 2.5479, iata: ['CDG', 'PAR'] },
+  { name: 'Paris-Orly', country: 'France', lat: 48.7233, lng: 2.3794, iata: ['ORY', 'PAR'] },
+  { name: 'Paris-Beauvais', country: 'France', lat: 49.4544, lng: 2.1128, iata: ['BVA'] },
+  { name: 'Londres-Heathrow', country: 'Royaume-Uni', lat: 51.4700, lng: -0.4543, iata: ['LHR', 'LON'] },
+  { name: 'Londres-Gatwick', country: 'Royaume-Uni', lat: 51.1537, lng: -0.1821, iata: ['LGW', 'LON'] },
+  { name: 'Londres-Stansted', country: 'Royaume-Uni', lat: 51.8860, lng: 0.2389, iata: ['STN'] },
+  { name: 'Milan-Malpensa', country: 'Italie', lat: 45.6301, lng: 8.7255, iata: ['MXP', 'MIL'] },
+  { name: 'Milan-Bergame', country: 'Italie', lat: 45.6739, lng: 9.7042, iata: ['BGY'] },
+  { name: 'Rome-Fiumicino', country: 'Italie', lat: 41.8003, lng: 12.2389, iata: ['FCO', 'ROM'] },
+  { name: 'Rome-Ciampino', country: 'Italie', lat: 41.7994, lng: 12.5949, iata: ['CIA'] },
+  { name: 'Bruxelles-Charleroi', country: 'Belgique', lat: 50.4592, lng: 4.4538, iata: ['CRL'] },
+  { name: 'Genève-Aéroport', country: 'Suisse', lat: 46.2381, lng: 6.1090, iata: ['GVA'] },
+  { name: 'Bâle-Mulhouse', country: 'France', lat: 47.5896, lng: 7.5299, iata: ['BSL', 'MLH'] },
+  { name: 'Barcelone-El Prat', country: 'Espagne', lat: 41.2971, lng: 2.0785, iata: ['BCN'] },
+  { name: 'Madrid-Barajas', country: 'Espagne', lat: 40.4719, lng: -3.5626, iata: ['MAD'] },
+  { name: 'Lisbonne-Humberto-Delgado', country: 'Portugal', lat: 38.7742, lng: -9.1342, iata: ['LIS'] },
+  { name: 'Amsterdam-Schiphol', country: 'Pays-Bas', lat: 52.3105, lng: 4.7683, iata: ['AMS'] },
+  { name: 'Francfort-Main', country: 'Allemagne', lat: 50.0379, lng: 8.5622, iata: ['FRA'] },
+  { name: 'Berlin-Brandebourg', country: 'Allemagne', lat: 52.3667, lng: 13.5033, iata: ['BER'] },
+  { name: 'Munich-Franz-Josef-Strauss', country: 'Allemagne', lat: 48.3538, lng: 11.7861, iata: ['MUC'] },
+];
+
+/**
  * Points de départ proposés.
  *
  * Le calcul de distance a besoin de coordonnées : on ne peut donc pas accepter
@@ -57,17 +99,19 @@ const VOISINS: Place[] = [
   { name: 'Luxembourg', country: 'Luxembourg', lat: 49.6116, lng: 6.1319, iata: ['LUX'] },
 ];
 
-/** Villes de départ, sans doublon, triées par ordre alphabétique français. */
+/** Villes et aéroports de départ, sans doublon, triés par ordre alphabétique français. */
 export const ORIGINS: readonly Place[] = [
   ...FRANCE,
   ...VOISINS,
+  ...AEROPORTS,
   // Une ville peut être à la fois un départ et une destination : Toulouse se
   // visite autant qu'on en part. La fiche écrite à la main fait foi — elle
   // porte les codes d'aéroport utiles au départ, pas seulement à l'arrivée.
   ...DESTINATIONS.filter(
     (destination) =>
       !FRANCE.some((city) => city.name === destination.name) &&
-      !VOISINS.some((city) => city.name === destination.name),
+      !VOISINS.some((city) => city.name === destination.name) &&
+      !AEROPORTS.some((airport) => airport.name === destination.name),
   ).map<Place>((destination) => ({
     name: destination.name,
     country: destination.country,
@@ -121,6 +165,10 @@ export function nearestAirports(point: GeoPoint, maxKm = 150): AeroportsProches 
 
   for (const ville of ORIGINS) {
     if (!ville.iata || ville.iata.length === 0) continue;
+    // On rattache à une ville, jamais à un aéroport : dire « vols au départ
+    // de Paris-Orly » à quelqu'un qui habite Colmar n'aurait aucun sens, alors
+    // que « vols au départ de Bâle » se comprend.
+    if (AEROPORTS.some((aeroport) => aeroport.name === ville.name)) continue;
     const km = haversineKm(point, ville);
     if (km > maxKm) continue;
     if (!meilleure || km < meilleure.km) {
