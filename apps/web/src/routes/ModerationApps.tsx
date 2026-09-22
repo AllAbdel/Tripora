@@ -1,3 +1,4 @@
+import { FileDeSignalements } from '@/components/FileDeSignalements';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -69,7 +70,7 @@ export default function ModerationApps() {
         >
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
-        <h1 className="text-lg font-semibold">Propositions d’applications</h1>
+        <h1 className="text-lg font-semibold">Modération</h1>
       </div>
 
       {jeModere.isPending && (
@@ -84,6 +85,8 @@ export default function ModerationApps() {
           pas la charge.
         </Banner>
       )}
+
+      {jeModere.data === true && <FileDeSignalements />}
 
       {jeModere.data === true && attente.data?.length === 0 && (
         <EmptyState

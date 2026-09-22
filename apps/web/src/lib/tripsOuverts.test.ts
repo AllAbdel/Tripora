@@ -87,6 +87,13 @@ describe('trips ouverts', () => {
       'trop-age',
       'deja-candidat',
       'deja-refuse',
+      'indisponible',
+      'suspendu',
+      'trop-en-attente',
+      'trop-aujourdhui',
+      'sans-lien',
+      'trop-de-signalements',
+      'deja-signale',
     ]) {
       const phrase = direLeRefus(code);
       expect(phrase, code).toBeTruthy();
@@ -121,6 +128,13 @@ describe('trips ouverts', () => {
       new Error('Arrêtez d’abord la destination : sans elle, personne ne peut vous trouver'),
     );
     expect(message).toContain('personne ne peut vous trouver');
+  });
+
+  it('ne dit jamais « bloqué » à la personne bloquée', () => {
+    // Le lui dire, c'est lui donner une raison de chercher un autre chemin.
+    const phrase = direLeRefus('indisponible')!;
+    expect(phrase.toLowerCase()).not.toContain('bloqu');
+    expect(phrase.toLowerCase()).not.toContain('signal');
   });
 
   it('valide manuellement par défaut', () => {

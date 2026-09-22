@@ -89,6 +89,18 @@ const MOTIFS: Record<string, string> = {
   'trop-age': 'Vous êtes au-dessus de l’âge demandé pour ce voyage.',
   'deja-candidat': 'Votre candidature est déjà déposée. L’organisateur n’a pas encore répondu.',
   'deja-refuse': 'Votre candidature a été refusée pour ce voyage.',
+  // Neutre à dessein : « indisponible » couvre un blocage sans le dire. Le
+  // révéler, ce serait donner à la personne bloquée une raison de chercher
+  // un autre chemin.
+  indisponible: 'Ce voyage n’est pas accessible.',
+  suspendu:
+    'Votre accès aux trips ouverts est suspendu après un signalement. Vos voyages entre amis ne sont pas concernés.',
+  'trop-en-attente':
+    'Vous avez déjà cinq candidatures en attente. Attendez une réponse, ou retirez-en une, avant d’en déposer une autre.',
+  'trop-aujourdhui': 'Vous avez déposé beaucoup de candidatures aujourd’hui. Réessayez demain.',
+  'sans-lien': 'On ne peut signaler que quelqu’un avec qui on a partagé un voyage ou une candidature.',
+  'trop-de-signalements': 'Vous avez envoyé beaucoup de signalements aujourd’hui. Réessayez demain.',
+  'deja-signale': 'Vous avez déjà signalé cette personne. Le signalement est en cours de lecture.',
 };
 
 export function direLeRefus(code: string | null | undefined): string | null {
@@ -192,6 +204,41 @@ export function placesRestantes(trip: TripOuvert): {
   };
 }
 
+export type MotifDeSignalement =
+  | 'comportement'
+  | 'harcelement'
+  | 'faux-profil'
+  | 'arnaque'
+  | 'contenu'
+  | 'autre';
+
+export const MOTIFS_DE_SIGNALEMENT: { valeur: MotifDeSignalement; libelle: string }[] = [
+  { valeur: 'comportement', libelle: 'Comportement déplacé' },
+  { valeur: 'harcelement', libelle: 'Harcèlement ou insistance' },
+  { valeur: 'faux-profil', libelle: 'Faux profil' },
+  { valeur: 'arnaque', libelle: 'Arnaque ou demande d’argent' },
+  { valeur: 'contenu', libelle: 'Contenu choquant' },
+  { valeur: 'autre', libelle: 'Autre chose' },
+];
+
+export interface PersonneBloquee {
+  userId: string;
+  nom: string;
+  depuis: string;
+}
+
+export interface Signalement {
+  id: string;
+  auteurNom: string;
+  vise: string;
+  viseNom: string;
+  motif: MotifDeSignalement;
+  detail: string | null;
+  creeLe: string;
+  /** Combien de personnes différentes ont déjà signalé la même personne. */
+  dejaSignale: number;
+}
+
 export interface RepertoireDesTripsOuverts {
   chercher(destinationId: string, origineIata: readonly string[]): Promise<TripOuvert[]>;
   voir(tripId: string): Promise<{ trip: TripOuvert; refus: string | null; maCandidature: SuiteCandidature | null } | null>;
@@ -203,6 +250,12 @@ export interface RepertoireDesTripsOuverts {
   candidatures(tripId: string): Promise<Candidature[]>;
   trancher(tripId: string, userId: string, accepter: boolean): Promise<void>;
   exclure(tripId: string, userId: string, motif?: string): Promise<void>;
+  bloquer(userId: string): Promise<void>;
+  debloquer(userId: string): Promise<void>;
+  mesBlocages(): Promise<PersonneBloquee[]>;
+  signaler(userId: string, motif: MotifDeSignalement, detail: string, tripId?: string, bloquer?: boolean): Promise<void>;
+  signalementsATraiter(): Promise<Signalement[]>;
+  trancherLeSignalement(id: string, suspendre: boolean): Promise<void>;
 }
 
 export interface Reglages {
@@ -376,6 +429,75 @@ export function getTripsOuverts(): RepertoireDesTripsOuverts {
         p_trip_id: tripId,
         p_user_id: userId,
         p_motif: motif ?? null,
+      });
+      if (error) throw error;
+    },
+
+    async bloquer(userId) {
+      if (!client) throw SANS_SERVEUR;
+      const { error } = await client.rpc('bloquer', { p_user_id: userId });
+      if (error) throw error;
+    },
+
+    async debloquer(userId) {
+      if (!client) throw SANS_SERVEUR;
+      const { error } = await client.rpc('debloquer', { p_user_id: userId });
+      if (error) throw error;
+    },
+
+    async mesBlocages() {
+      if (!client) return [];
+      const { data, error } = await client.rpc('mes_blocages');
+      if (error) throw error;
+      return ((data ?? []) as { user_id: string; nom: string; depuis: string }[]).map((ligne) => ({
+        userId: ligne.user_id,
+        nom: ligne.nom,
+        depuis: ligne.depuis,
+      }));
+    },
+
+    async signaler(userId, motif, detail, tripId, bloquer = true) {
+      if (!client) throw SANS_SERVEUR;
+      const { error } = await client.rpc('signaler_quelquun', {
+        p_user_id: userId,
+        p_motif: motif,
+        p_detail: detail.trim() || null,
+        p_trip_id: tripId ?? null,
+        p_bloquer: bloquer,
+      });
+      if (error) throw error;
+    },
+
+    async signalementsATraiter() {
+      if (!client) return [];
+      const { data, error } = await client.rpc('signalements_a_traiter');
+      if (error) throw error;
+      return ((data ?? []) as {
+        id: string;
+        auteur_nom: string;
+        vise: string;
+        vise_nom: string;
+        motif: MotifDeSignalement;
+        detail: string | null;
+        cree_le: string;
+        deja_signale: number;
+      }[]).map((ligne) => ({
+        id: ligne.id,
+        auteurNom: ligne.auteur_nom,
+        vise: ligne.vise,
+        viseNom: ligne.vise_nom,
+        motif: ligne.motif,
+        detail: ligne.detail,
+        creeLe: ligne.cree_le,
+        dejaSignale: Number(ligne.deja_signale ?? 0),
+      }));
+    },
+
+    async trancherLeSignalement(id, suspendre) {
+      if (!client) throw SANS_SERVEUR;
+      const { error } = await client.rpc('trancher_le_signalement', {
+        p_id: id,
+        p_suspendre: suspendre,
       });
       if (error) throw error;
     },

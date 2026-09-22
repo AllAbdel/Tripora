@@ -14,6 +14,7 @@ import { getCollaboration, type TripMember } from '@/lib/collaboration';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { signaler } from '@/lib/feedback';
 import { cn } from '@/lib/cn';
+import { SignalerOuBloquer } from '@/components/SignalerOuBloquer';
 import { useAuth } from '@/lib/auth-context';
 import { toFailure } from '@/lib/errors';
 
@@ -142,6 +143,7 @@ export default function TripMembers() {
               <li key={membre.userId}>
                 <CarteMembre
                   membre={membre}
+                  tripId={id}
                   cestMoi={membre.userId === identity?.id}
                   jeSuisOrganisateur={jeSuisOrganisateur}
                   {...(jeSuisOrganisateur && membre.role !== 'owner'
@@ -299,8 +301,10 @@ function CarteMembre({
   cestMoi,
   jeSuisOrganisateur,
   onRetirer,
+  tripId,
 }: {
   membre: TripMember;
+  tripId?: string | undefined;
   cestMoi: boolean;
   jeSuisOrganisateur: boolean;
   /** Absent quand personne n'a le droit de retirer cette personne. */
@@ -310,7 +314,8 @@ function CarteMembre({
 
   return (
     <Card>
-      <CardBody className="flex items-center gap-3 p-4">
+      <CardBody className="space-y-2 p-4">
+      <div className="flex items-center gap-3">
         <span
           aria-hidden
           className="bg-brand-500 grid size-11 shrink-0 place-items-center rounded-full text-base font-bold text-[color:var(--accent-contrast)]"
@@ -367,6 +372,15 @@ function CarteMembre({
           >
             {confirme ? 'Confirmer' : 'Retirer'}
           </button>
+        )}
+      </div>
+        {/* Discret, et présent pour tout le monde sauf soi : depuis qu'un
+            voyage peut se rejoindre entre inconnus, un participant n'est plus
+            forcément un ami. */}
+        {!cestMoi && tripId && (
+          <div className="ps-14">
+            <SignalerOuBloquer userId={membre.userId} nom={membre.displayName} tripId={tripId} />
+          </div>
         )}
       </CardBody>
     </Card>

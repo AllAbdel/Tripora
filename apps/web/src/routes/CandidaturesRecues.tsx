@@ -15,6 +15,7 @@ import {
 } from '@/lib/tripsOuverts';
 import { signaler } from '@/lib/feedback';
 import { cn } from '@/lib/cn';
+import { SignalerOuBloquer } from '@/components/SignalerOuBloquer';
 
 /**
  * Les candidatures reçues, du côté de l'organisateur.
@@ -137,6 +138,7 @@ export default function CandidaturesRecues() {
               <Fiche
                 key={c.userId}
                 candidature={c}
+                {...(id ? { tripId: id } : {})}
                 onAccepter={() => trancher.mutate({ userId: c.userId, accepter: true })}
                 onRefuser={() => trancher.mutate({ userId: c.userId, accepter: false })}
                 occupe={trancher.isPending}
@@ -152,6 +154,7 @@ export default function CandidaturesRecues() {
               <Fiche
                 key={c.userId}
                 candidature={c}
+                {...(id ? { tripId: id } : {})}
                 onExclure={
                   c.suite === 'acceptee' ?
                     () => {
@@ -183,12 +186,14 @@ const SUITES: Record<string, { texte: string; ton: string }> = {
 
 function Fiche({
   candidature,
+  tripId,
   onAccepter,
   onRefuser,
   onExclure,
   occupe,
 }: {
   candidature: Candidature;
+  tripId?: string;
   onAccepter?: () => void;
   onRefuser?: () => void;
   onExclure?: () => void;
@@ -249,6 +254,10 @@ function Fiche({
           </Button>
         </div>
       )}
+
+      <div className="mt-3">
+        <SignalerOuBloquer userId={candidature.userId} nom={candidature.nom} {...(tripId ? { tripId } : {})} />
+      </div>
 
       {onExclure && (
         <button

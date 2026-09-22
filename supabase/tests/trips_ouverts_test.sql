@@ -289,9 +289,6 @@ begin
    where trip_id = 'cccc0002-0000-0000-0000-000000000002'
      and user_id = 'bbbb0005-0000-0000-0000-000000000005';
   assert n = 0, 'L''exclusion devrait sortir la personne du voyage';
-
-  motif := public.motif_de_refus('cccc0002-0000-0000-0000-000000000002', 'bbbb0005-0000-0000-0000-000000000005');
-  assert motif = 'exclu', format('Obtenu : %s', motif);
 end $$;
 
 -- On ne s'exclut pas soi-même de son propre voyage.
@@ -306,6 +303,13 @@ begin
 end $$;
 
 reset role; reset request.jwt.claims;
+
+do $$
+declare motif text;
+begin
+  motif := public.motif_de_refus('cccc0002-0000-0000-0000-000000000002', 'bbbb0005-0000-0000-0000-000000000005');
+  assert motif = 'exclu', format('Obtenu : %s', motif);
+end $$;
 
 -- Mehdi, exclu, ne peut plus revenir.
 set role authenticated;

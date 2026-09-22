@@ -19,6 +19,7 @@ import { ACCENTS_PROPOSES, paletteDepuis } from '@tripora/core';
 import { ScreenHeader } from '@/components/AppShell';
 import { EtatDesServices } from '@/components/EtatDesServices';
 import { MonProfilDeclare } from '@/components/MonProfilDeclare';
+import { PersonnesBloquees } from '@/components/PersonnesBloquees';
 import { ChoixDeLangue } from '@/components/ChoixDeLangue';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -90,6 +91,7 @@ export default function Profile() {
 
         <Section titre="Pour rejoindre des inconnus">
           <MonProfilDeclare />
+          <PersonnesBloquees />
         </Section>
 
         <Section titre="État des services">
