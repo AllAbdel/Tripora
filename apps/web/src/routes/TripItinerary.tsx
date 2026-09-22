@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import {
   awaitsPlace, AXIS_ICON, buildItinerary, dayVerdict, describeDay, fillItinerary,
-  findDestination, formatCents, groupWeights, parseAmountToCents, suggestWeatherSwaps,
+  findDestination, fold, formatCents, groupWeights, parseAmountToCents, suggestWeatherSwaps,
   weatherIcon,
   type NomIcone,
   type DailyWeather, type Destination, type MemberPreference, type Poi,
@@ -91,8 +91,18 @@ export default function TripItinerary() {
    * titre neutre, donc un nom écrit par quelqu'un du groupe est intouchable.
    */
   const aCompleter = useMemo(() => {
-    const disponibles = lieux.data?.liste ?? [];
     const journees = jours.data;
+    // Ce qui est déjà au programme n'est plus disponible. Sans ce filtre, le
+    // calcul ne voyait que les créneaux encore libres, pas les lieux déjà
+    // posés : un second appui mettait les rizières de Tegallalang une
+    // deuxième fois, sur un autre jour. Constaté en regardant l'écran après
+    // un premier remplissage, qui proposait encore « 5 moments » à compléter.
+    const dejaAuProgramme = new Set(
+      (journees ?? []).flatMap((jour) => jour.items.map((item) => fold(item.title))),
+    );
+    const disponibles = (lieux.data?.liste ?? []).filter(
+      (lieu) => !dejaAuProgramme.has(fold(lieu.name)),
+    );
     if (!journees || disponibles.length === 0) return [];
 
     const libres = journees.flatMap((jour) =>
@@ -107,6 +117,9 @@ export default function TripItinerary() {
         dayIndex,
         position: item.position,
         axis: item.axis!,
+        // L'heure permet d'accorder un lieu à son moment : le coucher du
+        // soleil de Tanah Lot ne va pas dans le créneau de neuf heures.
+        startTime: item.startTime,
       })),
       places: disponibles,
       weights: groupWeights(voyage.data?.members ?? []),
@@ -117,7 +130,17 @@ export default function TripItinerary() {
         ({ item, dayIndex }) => dayIndex === rempli.dayIndex && item.position === rempli.position,
       );
       return cible
-        ? [{ itemId: cible.item.id, title: rempli.poi.name, notes: rempli.reason }]
+        ? [
+            {
+              itemId: cible.item.id,
+              title: rempli.poi.name,
+              notes: rempli.reason,
+              // Le prix réel de l'activité remplace l'enveloppe théorique du
+              // créneau, et l'heure suit l'activité quand elle a la sienne.
+              ...(rempli.costCents !== undefined ? { costCents: rempli.costCents } : {}),
+              ...(rempli.heureConseillee ? { startTime: rempli.heureConseillee } : {}),
+            },
+          ]
         : [];
     });
   }, [jours.data, lieux.data, voyage.data?.members]);
@@ -166,13 +189,23 @@ export default function TripItinerary() {
   });
 
   const completer = useMutation({
-    mutationFn: async (choix: { itemId: string; title: string; notes: string }[]) => {
+    mutationFn: async (
+      choix: {
+        itemId: string;
+        title: string;
+        notes: string;
+        costCents?: number;
+        startTime?: string;
+      }[],
+    ) => {
       // Une ligne à la fois : si la connexion lâche au milieu, ce qui est
       // passé reste, et un second clic finira le travail.
       for (const entree of choix) {
         await itineraire.updateItem(entree.itemId, {
           title: entree.title,
           notes: entree.notes,
+          ...(entree.costCents !== undefined ? { costCents: entree.costCents } : {}),
+          ...(entree.startTime ? { startTime: entree.startTime } : {}),
         });
       }
     },
@@ -289,8 +322,9 @@ export default function TripItinerary() {
               <p className="text-muted text-sm leading-relaxed">
                 Tripora propose la structure du séjour — quel type de moment, quel jour, à
                 quelle heure, avec quelle enveloppe — en réservant un créneau à la première
-                envie de chaque participant. <strong>Aucun lieu n’est inventé</strong> : c’est
-                à vous d’y poser les vraies adresses.
+                envie de chaque participant. Puis il propose de vraies activités pour chaque
+                créneau, à leur moment de la journée. <strong>Aucun lieu n’est inventé</strong> :
+                tout vient du carnet d’activités ou d’OpenStreetMap, et vous gardez la main.
               </p>
               {planPropose && !planPropose.everyoneServed && (
                 <p className="text-gold-700 dark:text-gold-300 text-sm">
@@ -315,8 +349,10 @@ export default function TripItinerary() {
             <p className="text-muted text-sm leading-relaxed">
               {aCompleter.length} moment{aCompleter.length > 1 ? 's' : ''} du séjour
               {aCompleter.length > 1 ? ' portent' : ' porte'} encore un titre générique.
-              Tripora peut y poser des endroits qui existent, relevés sur OpenStreetMap et
-              regroupés par quartier pour ne pas traverser la ville quatre fois.
+              Tripora peut y poser des activités qui existent, chacune à son moment — le
+              coucher du soleil le soir, l’excursion à la journée seule dans sa journée — avec
+              son prix réel, et regroupées par quartier pour ne pas traverser la ville quatre
+              fois.
             </p>
             <Button
               block

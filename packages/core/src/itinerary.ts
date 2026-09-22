@@ -220,7 +220,13 @@ function eviterLesRepetitions(plan: EntreePlan[]): EntreePlan[] {
 
 function poidsDuGroupe(members: readonly MemberPreference[], axis: PreferenceAxis): number {
   if (members.length === 0) return 0.5;
-  return members.reduce((somme, membre) => somme + membre.weights[axis], 0) / members.length;
+  // `?? 0` n'est pas une précaution de style. Une seule envie absente de
+  // l'objet donnait `undefined`, la somme devenait `NaN`, `NaN > 0` est faux,
+  // et la répartition par priorités sautait en entier sans rien dire : un
+  // séjour de dix jours ne gardait que ses trois créneaux d'équité, et sept
+  // journées restaient vides. L'application normalise les envies avant
+  // d'arriver ici ; le moteur ne doit pas dépendre de ce qu'on le lui promet.
+  return members.reduce((somme, membre) => somme + (membre.weights[axis] ?? 0), 0) / members.length;
 }
 
 /** La plus forte envie d'une personne, parmi ce que la destination offre vraiment. */
@@ -228,9 +234,10 @@ function premiereEnvie(
   membre: MemberPreference,
   destination: Destination,
 ): PreferenceAxis | null {
+  const poids = (axis: PreferenceAxis) => membre.weights[axis] ?? 0;
   const candidats = PREFERENCE_AXES.filter(
-    (axis) => membre.weights[axis] > 0 && destination.tags[axis] >= PRESENCE_MINIMALE,
-  ).sort((a, b) => membre.weights[b] - membre.weights[a] || a.localeCompare(b));
+    (axis) => poids(axis) > 0 && destination.tags[axis] >= PRESENCE_MINIMALE,
+  ).sort((a, b) => poids(b) - poids(a) || a.localeCompare(b));
   return candidats[0] ?? null;
 }
 

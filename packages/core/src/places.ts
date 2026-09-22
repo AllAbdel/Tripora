@@ -167,6 +167,9 @@ export function classifyPoi(
   return undefined;
 }
 
+/** Quand une activité se fait. `journee` occupe la journée entière. */
+export type MomentDeLaJournee = 'matin' | 'apres-midi' | 'soir' | 'journee';
+
 export interface Poi {
   id: string;
   name: string;
@@ -180,6 +183,15 @@ export interface Poi {
   extract?: string;
   imageUrl?: string;
   externalUrl?: string;
+  /**
+   * Les trois champs qu'OpenStreetMap ne connaît pas et que le carnet
+   * d'activités apporte : ils permettent de ne pas poser un coucher de soleil
+   * à neuf heures du matin, ni quatre visites derrière une excursion de onze
+   * heures.
+   */
+  moment?: MomentDeLaJournee;
+  dureeHeures?: number;
+  prixCents?: number;
 }
 
 /**

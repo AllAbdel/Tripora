@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { direLaDuree } from './duree';
+import { direLaDuree } from './duree.js';
 
 describe('dire une durée', () => {
   it('dit les heures rondes sans minutes', () => {

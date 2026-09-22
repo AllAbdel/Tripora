@@ -1,4 +1,4 @@
-import type { PoiCategory } from '../places.js';
+import type { MomentDeLaJournee, Poi, PoiCategory } from '../places.js';
 import type { PreferenceAxis } from '../preferences.js';
 import { fold } from '../text.js';
 
@@ -40,7 +40,7 @@ import { fold } from '../text.js';
  * profite tout de suite à tous les voyages.
  */
 
-export type MomentDeLaJournee = 'matin' | 'apres-midi' | 'soir' | 'journee';
+export type { MomentDeLaJournee };
 
 export interface Activite {
   id: string;
@@ -1305,17 +1305,7 @@ export function prixMedianCents(destinationId: string): number | null {
  * même liste, avec des identifiants OpenStreetMap : les deux sources
  * cohabitent, et on doit pouvoir dire d'où vient ce qu'on affiche.
  */
-export function poisDeLaDestination(destinationId: string): {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  category: PoiCategory;
-  axis: PreferenceAxis;
-  label: string;
-  extract: string;
-  wikipedia?: string;
-}[] {
+export function poisDeLaDestination(destinationId: string): Poi[] {
   return activitesDe(destinationId).map((activite) => ({
     id: `activite:${activite.id}`,
     name: activite.nom,
@@ -1325,6 +1315,9 @@ export function poisDeLaDestination(destinationId: string): {
     axis: activite.axis,
     label: LIBELLES[activite.category],
     extract: activite.resume,
+    moment: activite.moment,
+    dureeHeures: activite.dureeHeures,
+    prixCents: activite.prixCents,
     ...(activite.wikipedia ? { wikipedia: activite.wikipedia } : {}),
   }));
 }
