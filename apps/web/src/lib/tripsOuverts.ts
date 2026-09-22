@@ -221,6 +221,15 @@ export const MOTIFS_DE_SIGNALEMENT: { valeur: MotifDeSignalement; libelle: strin
   { valeur: 'autre', libelle: 'Autre chose' },
 ];
 
+export interface MaCandidature {
+  tripId: string;
+  titre: string;
+  destinationId: string;
+  origineNom: string;
+  suite: SuiteCandidature;
+  deposeLe: string;
+}
+
 export interface PersonneBloquee {
   userId: string;
   nom: string;
@@ -250,6 +259,7 @@ export interface RepertoireDesTripsOuverts {
   candidatures(tripId: string): Promise<Candidature[]>;
   trancher(tripId: string, userId: string, accepter: boolean): Promise<void>;
   exclure(tripId: string, userId: string, motif?: string): Promise<void>;
+  mesCandidatures(): Promise<MaCandidature[]>;
   bloquer(userId: string): Promise<void>;
   debloquer(userId: string): Promise<void>;
   mesBlocages(): Promise<PersonneBloquee[]>;
@@ -431,6 +441,27 @@ export function getTripsOuverts(): RepertoireDesTripsOuverts {
         p_motif: motif ?? null,
       });
       if (error) throw error;
+    },
+
+    async mesCandidatures() {
+      if (!client) return [];
+      const { data, error } = await client.rpc('mes_candidatures');
+      if (error) throw error;
+      return ((data ?? []) as {
+        trip_id: string;
+        titre: string;
+        destination_id: string;
+        origine_nom: string;
+        suite: SuiteCandidature;
+        depose_le: string;
+      }[]).map((ligne) => ({
+        tripId: ligne.trip_id,
+        titre: ligne.titre,
+        destinationId: ligne.destination_id,
+        origineNom: ligne.origine_nom,
+        suite: ligne.suite,
+        deposeLe: ligne.depose_le,
+      }));
     },
 
     async bloquer(userId) {

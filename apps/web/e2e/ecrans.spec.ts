@@ -26,6 +26,7 @@ const ECRANS = [
   '/voyages/v1/ouverts',
   '/voyages/v1/publier',
   '/voyages/v1/candidatures',
+  '/explorer',
   '/carte',
   '/budget',
   '/profil',

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
 import { ScreenHeader } from '@/components/AppShell';
 import { Button } from '@/components/ui/Button';
 import { useT } from '@/i18n/useT';
+import { Pastille } from '@/components/Pastille';
 import { Banner } from '@/components/ui/Banner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Logo } from '@/components/Logo';
@@ -146,6 +147,10 @@ export default function Trips() {
             </p>
           </>
         )}
+
+        {/* Seulement avec un serveur : sans lui, il n'y a pas d'inconnus à
+            rejoindre, et la porte mènerait à un écran vide. */}
+        {backendReady && data && <PorteDesTripsOuverts />}
       </div>
 
       <ConfirmerSuppression
@@ -155,5 +160,32 @@ export default function Trips() {
         surConfirmer={() => aSupprimer && supprimer.mutate(aSupprimer.id)}
       />
     </>
+  );
+}
+
+/**
+ * L'entrée vers les trips des autres.
+ *
+ * Sous la liste, pas au-dessus : les voyages qu'on organise restent le sujet
+ * de l'écran. Mais sans cette entrée, la seule manière de trouver le trip de
+ * quelqu'un d'autre était de créer d'abord le sien — ce qui n'a aucun sens
+ * pour qui cherche justement à rejoindre.
+ */
+function PorteDesTripsOuverts() {
+  return (
+    <Link
+      to="/explorer"
+      className="pressable filet surface-raised flex items-center gap-3 rounded-[var(--radius-card)]
+                 border p-4"
+    >
+      <Pastille nom="ouvert" taille="sm" />
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">Partir avec d’autres</span>
+        <span className="text-muted block text-sm">
+          Rejoindre un trip publié par des gens qui font le même trajet
+        </span>
+      </span>
+      <ArrowRight className="text-muted size-4 shrink-0 rtl:rotate-180" aria-hidden />
+    </Link>
   );
 }
