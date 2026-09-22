@@ -3,19 +3,21 @@ import { useNavigate, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Clock, ExternalLink, Search } from 'lucide-react';
 import {
-  activitesDe,
   AXIS_LABELS_FR,
-  chercherActivites,
   findDestination,
   formatCents,
   groupWeights,
+  type PreferenceAxis,
+} from '@tripora/core';
+import {
+  activitesDe,
+  chercherActivites,
   libelleActivite,
   rechercherLaSortie,
   seReserve,
   type Activite,
   type MomentDeLaJournee,
-  type PreferenceAxis,
-} from '@tripora/core';
+} from '@tripora/core/activites';
 import { TitreDePage } from '@/components/TitreDePage';
 import { Banner } from '@/components/ui/Banner';
 import { TextInput } from '@/components/ui/Field';

@@ -17,7 +17,10 @@ export * from './catalog/destinations.js';
 export * from './catalog/discovered.js';
 export * from './catalog/candidates.js';
 export * from './catalog/origins.js';
-export * from './catalog/activites.js';
+// Le catalogue d'activités n'est pas réexporté ici : il pèse à lui seul plus
+// que tout le moteur, et seuls deux écrans s'en servent. On l'importe par son
+// propre chemin, `@tripora/core/activites`, là où on en a besoin — ce qui
+// permet à l'application de ne le charger qu'à ce moment-là.
 export * from './transport.js';
 export * from './proposals.js';
 export * from './itinerary.js';

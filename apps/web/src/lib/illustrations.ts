@@ -1,4 +1,4 @@
-import type { Activite } from '@tripora/core';
+import type { Activite } from '@tripora/core/activites';
 
 /**
  * Une photo pour chaque activité, et le crédit qui va avec.

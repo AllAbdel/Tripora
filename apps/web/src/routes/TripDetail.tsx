@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Lock, LockOpen, MapPin, Pencil, Users, Wallet } from 'lucide-react';
 import {
-  activitesDe,
   estimateTransportOptions,
   findDestination,
   formatCents,
@@ -121,6 +120,19 @@ export default function TripDetail() {
       (await getTripsOuverts().candidatures(id!)).filter((c) => c.suite === 'en-attente').length,
     enabled: Boolean(id && data?.isOwner && data?.lockedDestinationId),
     staleTime: 60 * 1000,
+  });
+
+  // Le catalogue d'activités ne vit pas dans le paquet principal : on le fait
+  // venir une fois la destination connue, et la case « À faire » apparaît à
+  // son arrivée — le temps d'un fichier déjà en cache, en pratique.
+  const nombreDActivites = useQuery({
+    queryKey: ['nombre-d-activites', data?.lockedDestinationId ?? null],
+    queryFn: async () => {
+      const { activitesDe } = await import('@tripora/core/activites');
+      return activitesDe(data!.lockedDestinationId!).length;
+    },
+    enabled: Boolean(data?.lockedDestinationId),
+    staleTime: Infinity,
   });
 
   const villeRetenue = data?.lockedDestinationId
@@ -256,9 +268,7 @@ export default function TripDetail() {
             destinationConnue={Boolean(villeRetenue)}
             estOrganisateur={data.isOwner}
             candidaturesEnAttente={candidatures.data ?? 0}
-            nombreDActivites={
-              data.lockedDestinationId ? activitesDe(data.lockedDestinationId).length : 0
-            }
+            nombreDActivites={nombreDActivites.data ?? 0}
           />
 
           {data.lockedDestinationId && (

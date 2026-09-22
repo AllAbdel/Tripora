@@ -378,6 +378,13 @@
     transform-origin: 50% 0;
   }
 
+  /* Un indicateur qui n'apparaît qu'au-delà d'un quart de seconde. En
+     dessous, l'œil ne perçoit pas l'attente — mais il perçoit très bien un
+     indicateur qui s'allume et s'éteint aussitôt. */
+  .apparition-tardive {
+    animation: apparaitre 0.2s ease-out 0.25s both;
+  }
+
   /* Le squelette d'un contenu qui arrive : une onde lente, pas un clignotement.
      Un clignotement attire l'œil sur ce qui n'est pas encore là. */
   .squelette {
@@ -440,6 +447,15 @@
     opacity: 1;
     transform: none;
     box-shadow: 0 0 0 0 rgb(26 23 19 / 0);
+  }
+}
+
+@keyframes apparaitre {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

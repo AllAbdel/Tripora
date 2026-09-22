@@ -6,33 +6,47 @@ import { useAuth } from '@/lib/auth-context';
 import SignIn from '@/routes/SignIn';
 import Trips from '@/routes/Trips';
 import TripDetail from '@/routes/TripDetail';
-import TripMembers from '@/routes/TripMembers';
-import MyPreferences from '@/routes/MyPreferences';
 import JoinTrip from '@/routes/JoinTrip';
-import Profile from '@/routes/Profile';
 import NotFound from '@/routes/NotFound';
-import CreateTrip from '@/routes/create/CreateTrip';
-import MapTab from '@/routes/MapTab';
-import TripItinerary from '@/routes/TripItinerary';
-import TripBudget from '@/routes/TripBudget';
-import BudgetTab from '@/routes/BudgetTab';
-import TripDiscussion from '@/routes/TripDiscussion';
-import TripApps from '@/routes/TripApps';
-import TripValise from '@/routes/TripValise';
-import TripRecapitulatif from '@/routes/TripRecapitulatif';
-import Soutenir from '@/routes/Soutenir';
-import Confidentialite from '@/routes/Confidentialite';
-import TripEdit from '@/routes/TripEdit';
-import ModerationApps from '@/routes/ModerationApps';
-import TripsOuverts from '@/routes/TripsOuverts';
-import PublierLeTrip from '@/routes/PublierLeTrip';
-import CandidaturesRecues from '@/routes/CandidaturesRecues';
-import AFaire from '@/routes/AFaire';
-import Explorer from '@/routes/Explorer';
 
 // MapLibre pèse à lui seul plus que tout le reste de l'application : la carte
 // n'est téléchargée que par les personnes qui l'ouvrent vraiment.
 const TripMapScreen = lazy(() => import('@/routes/TripMapScreen'));
+
+/**
+ * Les écrans secondaires, chargés à la demande.
+ *
+ * Le paquet principal contenait les vingt-cinq écrans de l'application, plus
+ * le catalogue de la valise et celui des activités : 770 Ko, dont l'essentiel
+ * pour des écrans qu'une première visite n'ouvre pas. Restent chargés d'emblée
+ * ceux qui font le premier coup d'œil — l'accueil, un voyage, la connexion,
+ * l'arrivée par un lien d'invitation.
+ *
+ * Hors ligne, rien ne change : le service worker précharge tous les fichiers
+ * JavaScript après la première visite. Ils cessent seulement de retarder le
+ * premier écran.
+ */
+const TripMembers = lazy(() => import('@/routes/TripMembers'));
+const MyPreferences = lazy(() => import('@/routes/MyPreferences'));
+const Profile = lazy(() => import('@/routes/Profile'));
+const CreateTrip = lazy(() => import('@/routes/create/CreateTrip'));
+const MapTab = lazy(() => import('@/routes/MapTab'));
+const TripItinerary = lazy(() => import('@/routes/TripItinerary'));
+const TripBudget = lazy(() => import('@/routes/TripBudget'));
+const BudgetTab = lazy(() => import('@/routes/BudgetTab'));
+const TripDiscussion = lazy(() => import('@/routes/TripDiscussion'));
+const TripApps = lazy(() => import('@/routes/TripApps'));
+const TripValise = lazy(() => import('@/routes/TripValise'));
+const TripRecapitulatif = lazy(() => import('@/routes/TripRecapitulatif'));
+const Soutenir = lazy(() => import('@/routes/Soutenir'));
+const Confidentialite = lazy(() => import('@/routes/Confidentialite'));
+const TripEdit = lazy(() => import('@/routes/TripEdit'));
+const ModerationApps = lazy(() => import('@/routes/ModerationApps'));
+const TripsOuverts = lazy(() => import('@/routes/TripsOuverts'));
+const PublierLeTrip = lazy(() => import('@/routes/PublierLeTrip'));
+const CandidaturesRecues = lazy(() => import('@/routes/CandidaturesRecues'));
+const AFaire = lazy(() => import('@/routes/AFaire'));
+const Explorer = lazy(() => import('@/routes/Explorer'));
 
 function FullScreenLoader() {
   return (
@@ -47,6 +61,7 @@ function FullScreenLoader() {
 function TabbedRoutes() {
   return (
     <AppShell>
+      <Suspense fallback={<EcranEnChargement />}>
       <Routes>
         <Route path="/" element={<Navigate to="/voyages" replace />} />
         <Route path="/voyages" element={<Trips />} />
@@ -80,7 +95,26 @@ function TabbedRoutes() {
         <Route path="/confidentialite" element={<Confidentialite />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </AppShell>
+  );
+}
+
+/**
+ * Le repli pendant qu'un écran arrive.
+ *
+ * Il garde la hauteur d'un écran : sans elle, la barre d'onglets remonterait
+ * au milieu de la page le temps d'un chargement, puis redescendrait. Et il
+ * n'apparaît qu'après un court délai, pour qu'un écran déjà en cache ne fasse
+ * pas clignoter un indicateur de chargement.
+ */
+function EcranEnChargement() {
+  return (
+    <div className="grid min-h-[70dvh] place-items-center">
+      <span className="apparition-tardive">
+        <Loader2 className="text-brand-500 size-6 animate-spin" aria-label="Chargement" />
+      </span>
+    </div>
   );
 }
 
@@ -98,8 +132,22 @@ export default function App() {
 
       {identity ? (
         <>
-          <Route path="/voyages/nouveau" element={<CreateTrip />} />
-          <Route path="/voyages/:id/mes-envies" element={<MyPreferences />} />
+          <Route
+            path="/voyages/nouveau"
+            element={
+              <Suspense fallback={<FullScreenLoader />}>
+                <CreateTrip />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/voyages/:id/mes-envies"
+            element={
+              <Suspense fallback={<FullScreenLoader />}>
+                <MyPreferences />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<TabbedRoutes />} />
         </>
       ) : (

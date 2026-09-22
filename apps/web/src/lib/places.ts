@@ -1,4 +1,4 @@
-import { classifyPoi, fold, poisDeLaDestination, type Destination, type Poi } from '@tripora/core';
+import { classifyPoi, fold, type Destination, type Poi } from '@tripora/core';
 import { supabase } from './supabase';
 
 /**
@@ -47,6 +47,9 @@ interface LieuBrut {
 }
 
 export async function chargerLieux(destination: Destination): Promise<Lieux> {
+  // Chargé ici, à la première recherche de lieux, et pas au démarrage : le
+  // catalogue pèse plus que tout le moteur réuni.
+  const { poisDeLaDestination } = await import('@tripora/core/activites');
   const duCatalogue = poisDeLaDestination(destination.id) as Poi[];
   if (!supabase) return { liste: duCatalogue, quotaExceeded: false };
 
