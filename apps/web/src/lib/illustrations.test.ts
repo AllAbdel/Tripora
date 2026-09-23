@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { estAffichable, lireLEtiquette, lireLesCredits, lireLesImages, texteBrut } from './illustrations';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  chargerIllustrations,
+  enPaquets,
+  estAffichable,
+  lireLEtiquette,
+  lireLesCredits,
+  lireLesImages,
+  texteBrut,
+} from './illustrations';
 
 describe('illustrations des activités', () => {
   it('sépare la langue du titre', () => {
@@ -115,5 +123,81 @@ describe('illustrations des activités', () => {
     expect(estAffichable(undefined)).toBe(false);
     expect(estAffichable({ ...base, auteur: 'Jane', licence: null })).toBe(false);
     expect(estAffichable({ ...base, auteur: null, licence: 'CC BY-SA 4.0' })).toBe(true);
+  });
+});
+
+/**
+ * Une ville d'OpenStreetMap peut compter soixante lieux documentés dans la
+ * même langue. L'API de Wikimedia ignore en silence tout ce qui dépasse
+ * cinquante titres : sans découpage, les derniers restaient sans photo.
+ */
+describe('illustrations par paquets', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('découpe une liste en paquets de cinquante, dans l’ordre', () => {
+    const liste = Array.from({ length: 120 }, (_, i) => i);
+    const paquets = enPaquets(liste);
+    expect(paquets.map((paquet) => paquet.length)).toEqual([50, 50, 20]);
+    expect(paquets.flat()).toEqual(liste);
+    expect(enPaquets([])).toEqual([]);
+  });
+
+  it('illustre et crédite soixante lieux, pas seulement les cinquante premiers', async () => {
+    const lieux = Array.from({ length: 60 }, (_, i) => ({
+      id: `osm:node/${i}`,
+      wikipedia: `pt:Lieu ${i}`,
+    }));
+    const appels: string[] = [];
+
+    vi.stubGlobal('fetch', async (entree: string) => {
+      const url = new URL(entree);
+      appels.push(url.hostname);
+      const titres = (url.searchParams.get('titles') ?? '').split('|');
+      expect(titres.length).toBeLessThanOrEqual(50);
+      const pages = Object.fromEntries(
+        titres.map((titre, i) =>
+          url.hostname === 'commons.wikimedia.org'
+            ? [
+                String(i),
+                {
+                  title: titre,
+                  imageinfo: [
+                    {
+                      extmetadata: {
+                        Artist: { value: 'Quelqu’un' },
+                        LicenseShortName: { value: 'CC BY-SA 4.0' },
+                      },
+                    },
+                  ],
+                },
+              ]
+            : [
+                String(i),
+                {
+                  title: titre,
+                  pageimage: `${titre}.jpg`,
+                  thumbnail: { source: `https://upload.wikimedia.org/${encodeURIComponent(titre)}.jpg` },
+                },
+              ],
+        ),
+      );
+      return new Response(JSON.stringify({ query: { pages } }));
+    });
+
+    const illustrations = await chargerIllustrations(lieux);
+
+    expect(appels.filter((hote) => hote === 'pt.wikipedia.org')).toHaveLength(2);
+    expect(appels.filter((hote) => hote === 'commons.wikimedia.org')).toHaveLength(2);
+    expect(Object.keys(illustrations)).toHaveLength(60);
+    expect(estAffichable(illustrations['osm:node/59'])).toBe(true);
+  });
+
+  it('ignore les lieux sans article, sans rien demander', async () => {
+    const espion = vi.fn();
+    vi.stubGlobal('fetch', espion);
+    expect(await chargerIllustrations([{ id: 'a' }, { id: 'b', wikipedia: 'Sans langue' }])).toEqual(
+      {},
+    );
+    expect(espion).not.toHaveBeenCalled();
   });
 });

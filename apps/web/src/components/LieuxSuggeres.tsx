@@ -11,6 +11,7 @@ import {
   type Poi,
 } from '@tripora/core';
 import { requeteDesLieux } from '@/lib/places';
+import { chargerIllustrations, estAffichable } from '@/lib/illustrations';
 import { TextInput } from '@/components/ui/Field';
 import { cn } from '@/lib/cn';
 
@@ -45,6 +46,21 @@ export function LieuxSuggeres({
   // Une destination, une réponse : partagée par tous les écrans et tous les
   // membres, et déjà mise en cache trente jours côté serveur.
   const lieux = useQuery(requeteDesLieux(destination));
+
+  // Les photos, pour tous les lieux qu'un article décrit : carnet et
+  // OpenStreetMap confondus. La clé suit le nombre de lieux, parce que la
+  // liste s'allonge quand OpenStreetMap arrive après le carnet.
+  const aIllustrer = useMemo(
+    () => (lieux.data?.liste ?? []).filter((lieu) => lieu.wikipedia),
+    [lieux.data],
+  );
+  const images = useQuery({
+    queryKey: ['illustrations', 'lieux', destination.id, aIllustrer.length],
+    queryFn: () => chargerIllustrations(aIllustrer),
+    enabled: aIllustrer.length > 0,
+    staleTime: 30 * 24 * 60 * 60 * 1000,
+    gcTime: 30 * 24 * 60 * 60 * 1000,
+  });
 
   const envies = useMemo(() => groupWeights(members), [members]);
 
@@ -93,51 +109,62 @@ export function LieuxSuggeres({
         </p>
       ) : (
         <ul className="space-y-1.5">
-          {proposes.map((lieu) => (
-            <li key={lieu.id}>
-              <button
-                type="button"
-                onClick={() => onChoisir(lieu)}
-                className={cn(
-                  'flex w-full items-start gap-3 rounded-xl p-2 text-left',
-                  'hover:bg-brand-50 dark:hover:bg-ink-700/40 min-h-11',
-                )}
-              >
-                {lieu.imageUrl ? (
-                  <img
-                    src={lieu.imageUrl}
-                    alt=""
-                    loading="lazy"
-                    className="size-11 shrink-0 rounded-lg object-cover"
-                  />
-                ) : (
-                  <span
-                    aria-hidden
-                    className="bg-brand-50 text-brand-600 dark:bg-brand-900/50 dark:text-brand-300 grid size-11 shrink-0 place-items-center rounded-lg"
-                  >
-                    <MapPin className="size-4" />
-                  </span>
-                )}
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">{lieu.name}</span>
-                  <span className="text-muted block truncate text-xs">
-                    {lieu.label} · {AXIS_LABELS_FR[lieu.axis]}
-                  </span>
-                  {lieu.extract && (
-                    <span className="text-muted mt-0.5 line-clamp-2 block text-xs leading-snug">
-                      {lieu.extract}
+          {proposes.map((lieu) => {
+            const photo = images.data?.[lieu.id];
+            return (
+              <li key={lieu.id}>
+                <button
+                  type="button"
+                  onClick={() => onChoisir(lieu)}
+                  className={cn(
+                    'flex w-full items-start gap-3 rounded-xl p-2 text-left',
+                    'hover:bg-brand-50 dark:hover:bg-ink-700/40 min-h-11',
+                  )}
+                >
+                  {/* Seulement une photo dont on connaît la licence : l'image
+                      brute de l'ancienne fonction serveur arrivait sans auteur,
+                      et une réutilisation sans crédit est une infraction. */}
+                  {photo && estAffichable(photo) ? (
+                    <img
+                      src={photo.url}
+                      alt=""
+                      loading="lazy"
+                      className="size-11 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <span
+                      aria-hidden
+                      className="bg-brand-50 text-brand-600 dark:bg-brand-900/50 dark:text-brand-300 grid size-11 shrink-0 place-items-center rounded-lg"
+                    >
+                      <MapPin className="size-4" />
                     </span>
                   )}
-                </span>
-              </button>
-            </li>
-          ))}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">{lieu.name}</span>
+                    <span className="text-muted block truncate text-xs">
+                      {lieu.label} · {AXIS_LABELS_FR[lieu.axis]}
+                    </span>
+                    {lieu.extract && (
+                      <span className="text-muted mt-0.5 line-clamp-2 block text-xs leading-snug">
+                        {lieu.extract}
+                      </span>
+                    )}
+                    {photo && estAffichable(photo) && (
+                      <span className="text-muted mt-0.5 block truncate text-[0.625rem]">
+                        Photo {photo.auteur ?? 'Wikimedia Commons'} · {photo.licence}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
       <p className="text-muted px-1 text-xs">
-        Lieux d’OpenStreetMap, descriptions de Wikipédia. Rien n’est inventé — et
-        rien n’est noté non plus : à vous de choisir.
+        Lieux du carnet d’activités et d’OpenStreetMap, photos de Wikimedia Commons.
+        Rien n’est inventé — et rien n’est noté non plus : à vous de choisir.
       </p>
     </div>
   );

@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 import { classifyPoi, fold, type Destination, type Poi } from '@tripora/core';
+import { lireLEtiquette } from './illustrations';
 import { supabase } from './supabase';
 
 /**
@@ -147,13 +148,15 @@ function lireLieu(brut: LieuBrut): Poi | null {
   const nom = brut.name.trim();
   if (nom.length === 0) return null;
 
+  const wikipedia = articleDuLieu(brut.wikipedia, brut.tags as Record<string, unknown>);
+
   return {
     id: brut.id,
     name: nom,
     lat: brut.lat,
     lng: brut.lng,
     ...classement,
-    ...(typeof brut.wikipedia === 'string' ? { wikipedia: brut.wikipedia } : {}),
+    ...(wikipedia ? { wikipedia } : {}),
     ...(typeof brut.extract === 'string' ? { extract: brut.extract } : {}),
     ...(typeof brut.imageUrl === 'string' && brut.imageUrl.startsWith('https://')
       ? { imageUrl: brut.imageUrl }
@@ -162,4 +165,25 @@ function lireLieu(brut: LieuBrut): Poi | null {
       ? { externalUrl: brut.externalUrl }
       : {}),
   };
+}
+
+/**
+ * L'article Wikipédia d'un lieu, toujours au format « langue:Titre ».
+ *
+ * Deux provenances, deux formats. L'ancienne fonction serveur rangeait le
+ * titre français nu (« Tour de Belém ») ; OpenStreetMap donne l'étiquette de
+ * la langue du pays (« pt:Torre de Belém »). Le format commun est celui du
+ * carnet d'activités, que l'illustration sait lire.
+ */
+export function articleDuLieu(
+  titreFrancais: unknown,
+  tags: Record<string, unknown>,
+): string | undefined {
+  if (typeof titreFrancais === 'string' && titreFrancais.trim().length > 1) {
+    const titre = titreFrancais.trim().slice(0, 200);
+    return lireLEtiquette(titre) ? titre : `fr:${titre}`;
+  }
+  const etiquette = tags['wikipedia'];
+  if (typeof etiquette === 'string' && lireLEtiquette(etiquette)) return etiquette.slice(0, 200);
+  return undefined;
 }

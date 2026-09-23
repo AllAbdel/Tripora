@@ -41,12 +41,24 @@ for (const ecran of ECRANS) {
     const plantages: string[] = [];
     page.on('pageerror', (erreur) => plantages.push(erreur.message));
 
+    // Un appel refusé par la politique de sécurité ne plante rien : il ne
+    // laisse qu'une ligne dans la console, et une photo qui n'arrive jamais.
+    // C'est ainsi que les images du carnet d'activités sont restées bloquées
+    // en production — Wikipédia manquait à `connect-src`.
+    const refus: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error' && /Content Security Policy/i.test(message.text())) {
+        refus.push(message.text());
+      }
+    });
+
     await poser(page, [BALI], ecran);
     await page.waitForLoadState('networkidle');
 
     const texte = (await page.locator('body').innerText()).trim();
     expect(texte.length, 'un écran blanc n’est jamais une réponse').toBeGreaterThan(0);
     expect(plantages).toEqual([]);
+    expect(refus, 'aucun appel ne doit être bloqué par la CSP').toEqual([]);
 
     // Une application installée en plein écran n'a pas de bouton « page
     // précédente ». Chaque écran doit donc offrir au moins un chemin :
@@ -63,6 +75,11 @@ for (const ecran of ECRANS) {
 }
 
 test('aucun bouton, lien ou champ sans nom accessible', async ({ page }) => {
+  // Vingt-quatre écrans dans un seul test : la limite commune, pensée pour un
+  // écran, ne suffisait plus — 29,4 secondes mesurées pour 30 autorisées,
+  // donc un échec dès que la machine est chargée. Trois secondes par écran.
+  test.setTimeout(ECRANS.length * 3_000);
+
   // Les vingt-huit cases de la valise étaient annoncées « case à cocher, non
   // cochée » vingt-huit fois de suite, sans jamais dire de quoi.
   const anonymes: string[] = [];

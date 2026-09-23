@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lireLieux, requeteDesLieux, type Lieux } from './places';
+import { articleDuLieu, lireLieux, requeteDesLieux, type Lieux } from './places';
 
 function reponse(places: unknown[], reste: Record<string, unknown> = {}) {
   return { places, ...reste };
@@ -119,5 +119,35 @@ describe('rappel tant qu’OpenStreetMap est en attente', () => {
     const fraicheur = requete.staleTime as (query: never) => number;
     expect(fraicheur(etat(attente))).toBe(0);
     expect(fraicheur(etat(arrivee))).toBe(24 * 60 * 60 * 1000);
+  });
+});
+
+/**
+ * Deux formats d'article coexistent : le titre français nu de l'ancienne
+ * fonction serveur, et l'étiquette « langue:Titre » d'OpenStreetMap. Les
+ * photos ne savent lire que le second.
+ */
+describe('article Wikipédia d’un lieu', () => {
+  it('garde l’étiquette d’OpenStreetMap telle quelle', () => {
+    expect(articleDuLieu(undefined, { wikipedia: 'pt:Torre de Belém' })).toBe('pt:Torre de Belém');
+  });
+
+  it('préfixe en français le titre nu de l’ancienne fonction', () => {
+    expect(articleDuLieu('Tour de Belém', { wikipedia: 'pt:Torre de Belém' })).toBe(
+      'fr:Tour de Belém',
+    );
+  });
+
+  it('ignore une étiquette illisible', () => {
+    expect(articleDuLieu(undefined, { wikipedia: 'Torre de Belém' })).toBeUndefined();
+    expect(articleDuLieu(undefined, { wikipedia: 42 })).toBeUndefined();
+    expect(articleDuLieu(' ', {})).toBeUndefined();
+  });
+
+  it('passe jusqu’au lieu lu', () => {
+    const { liste } = lireLieux(
+      reponse([{ ...MUSEE, tags: { ...MUSEE.tags, wikipedia: 'pt:Museu Nacional' } }]),
+    );
+    expect(liste[0]?.wikipedia).toBe('pt:Museu Nacional');
   });
 });

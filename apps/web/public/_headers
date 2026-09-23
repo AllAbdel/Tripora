@@ -13,6 +13,11 @@
 #    fonctions serveur. C'est le seul serveur auquel Tripora parle vraiment.
 #  - `tiles.openfreemap.org` : le fond de carte vectoriel.
 #  - `*.wikimedia.org` : les photos de couverture et les images des lieux.
+#  - `*.wikipedia.org` en `connect-src` : l'API qui dit quelle image illustre
+#    un article. Elle manquait : les photos du carnet d'activités étaient
+#    refusées par le navigateur avant même de partir, sans erreur visible.
+#    Toutes les langues, parce qu'OpenStreetMap nomme l'article dans celle du
+#    pays (`pt:`, `id:`, `ja:`…).
 #  - `blob:` en `worker-src` et `child-src` : MapLibre charge normalement son
 #    ouvrier de rendu comme un fichier voisin — c'est le chemin nominal, et il
 #    ne demande aucune permission particulière depuis qu'on lui donne
@@ -29,7 +34,7 @@
 # Ce qui est refusé sans exception : tout script d'une autre origine, tout
 # cadre, et l'inclusion de Tripora dans un cadre étranger.
 /*
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.wikimedia.org https://*.wikipedia.org https://tiles.openfreemap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://*.wikimedia.org; manifest-src 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.wikimedia.org https://*.wikipedia.org https://tiles.openfreemap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://*.wikimedia.org https://*.wikipedia.org; manifest-src 'self'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

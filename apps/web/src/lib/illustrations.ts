@@ -1,10 +1,8 @@
-import type { Activite } from '@tripora/core/activites';
-
 /**
- * Une photo pour chaque activité, et le crédit qui va avec.
+ * Une photo pour chaque activité ou lieu, et le crédit qui va avec.
  *
  * Le catalogue d'activités nomme un article Wikipédia pour presque chacune de
- * ses entrées. Cet article a, dans la quasi-totalité des cas, une image de
+ * ses entrées, et OpenStreetMap en connaît un pour les lieux notables. Cet article a, dans la quasi-totalité des cas, une image de
  * tête sur Wikimedia Commons — libre de droits, souvent bonne, et gratuite.
  *
  * **Aucune fonction serveur ici, et c'est délibéré.** L'API de Wikimedia
@@ -139,24 +137,48 @@ async function interroger(url: string): Promise<unknown> {
   return await reponse.json();
 }
 
+/** Ce qu'il faut pour illustrer : un identifiant, et l'article qui le décrit. */
+export interface AIllustrer {
+  id: string;
+  /** Format « langue:Titre », celui du carnet comme d'OpenStreetMap. */
+  wikipedia?: string | undefined;
+}
+
+/** L'API de Wikimedia n'accepte pas plus de cinquante titres par appel. */
+const PAR_APPEL = 50;
+
+/** Découpe une liste en paquets, dans l'ordre. */
+export function enPaquets<T>(liste: readonly T[], taille = PAR_APPEL): T[][] {
+  const paquets: T[][] = [];
+  for (let debut = 0; debut < liste.length; debut += taille) {
+    paquets.push(liste.slice(debut, debut + taille));
+  }
+  return paquets;
+}
+
 /**
- * Les illustrations d'un lot d'activités.
+ * Les illustrations d'un lot — activités du carnet ou lieux d'OpenStreetMap.
  *
  * Tout échec est silencieux : sans photo, la fiche garde son nom, sa durée,
  * son prix et sa phrase — c'est-à-dire l'essentiel. Une panne de Wikimedia ne
  * doit pas vider un écran.
+ *
+ * Par paquets de cinquante : une ville d'OpenStreetMap peut compter soixante
+ * lieux documentés dans la même langue, et l'API ignore sans le dire tout ce
+ * qui dépasse. Couper à cinquante laissait donc les derniers sans photo, et
+ * les suivants sans crédit.
  */
 export async function chargerIllustrations(
-  activites: readonly Activite[],
+  entrees: readonly AIllustrer[],
 ): Promise<Illustrations> {
   // Un appel par langue : les titres d'un lot peuvent venir de plusieurs
   // Wikipédias, et chaque édition a son propre point d'entrée.
-  const parLangue = new Map<string, { titre: string; activite: Activite }[]>();
-  for (const activite of activites) {
-    const etiquette = lireLEtiquette(activite.wikipedia);
+  const parLangue = new Map<string, { titre: string; id: string }[]>();
+  for (const entree of entrees) {
+    const etiquette = lireLEtiquette(entree.wikipedia);
     if (!etiquette) continue;
     const lot = parLangue.get(etiquette.langue) ?? [];
-    lot.push({ titre: etiquette.titre, activite });
+    lot.push({ titre: etiquette.titre, id: entree.id });
     parLangue.set(etiquette.langue, lot);
   }
   if (parLangue.size === 0) return {};
@@ -164,10 +186,17 @@ export async function chargerIllustrations(
   const illustrations: Illustrations = {};
   const fichiers = new Map<string, string[]>();
 
+  const demandes = [...parLangue].flatMap(([langue, lot]) =>
+    enPaquets([...new Set(lot.map((entree) => entree.titre))]).map((titres) => ({
+      langue,
+      lot,
+      titres,
+    })),
+  );
+
   await Promise.all(
-    [...parLangue].map(async ([langue, lot]) => {
+    demandes.map(async ({ langue, lot, titres }) => {
       try {
-        const titres = [...new Set(lot.map((entree) => entree.titre))].slice(0, 50);
         const images = lireLesImages(
           await interroger(
             `https://${langue}.wikipedia.org/w/api.php?action=query&format=json&origin=*` +
@@ -175,17 +204,17 @@ export async function chargerIllustrations(
               `&pilimit=50&titles=${encodeURIComponent(titres.join('|'))}`,
           ),
         );
-        for (const { titre, activite } of lot) {
+        for (const { titre, id } of lot) {
           const image = images.get(titre);
-          if (!image) continue;
-          illustrations[activite.id] = {
+          if (!image || illustrations[id]) continue;
+          illustrations[id] = {
             url: image.url,
             auteur: null,
             licence: null,
             page: `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(image.fichier)}`,
           };
           const liste = fichiers.get(image.fichier) ?? [];
-          liste.push(activite.id);
+          liste.push(id);
           fichiers.set(image.fichier, liste);
         }
       } catch {
@@ -194,32 +223,34 @@ export async function chargerIllustrations(
     }),
   );
 
-  // Les crédits, en un seul appel sur Commons pour tous les fichiers trouvés.
-  if (fichiers.size > 0) {
-    try {
-      const noms = [...fichiers.keys()].slice(0, 50).map((nom) => `File:${nom}`);
-      const credits = lireLesCredits(
-        await interroger(
-          'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*' +
-            '&prop=imageinfo&iiprop=extmetadata&iiextmetadatafilter=Artist|LicenseShortName' +
-            `&titles=${encodeURIComponent(noms.join('|'))}`,
-        ),
-      );
-      for (const [fichier, ids] of fichiers) {
-        const credit = credits.get(fichier);
-        if (!credit) continue;
-        for (const id of ids) {
-          const illustration = illustrations[id];
-          if (illustration) {
-            illustration.auteur = credit.auteur;
-            illustration.licence = credit.licence;
+  // Les crédits, sur Commons, cinquante fichiers par appel.
+  await Promise.all(
+    enPaquets([...fichiers.keys()]).map(async (paquet) => {
+      try {
+        const noms = paquet.map((nom) => `File:${nom}`);
+        const credits = lireLesCredits(
+          await interroger(
+            'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*' +
+              '&prop=imageinfo&iiprop=extmetadata&iiextmetadatafilter=Artist|LicenseShortName' +
+              `&titles=${encodeURIComponent(noms.join('|'))}`,
+          ),
+        );
+        for (const fichier of paquet) {
+          const credit = credits.get(fichier);
+          if (!credit) continue;
+          for (const id of fichiers.get(fichier) ?? []) {
+            const illustration = illustrations[id];
+            if (illustration) {
+              illustration.auteur = credit.auteur;
+              illustration.licence = credit.licence;
+            }
           }
         }
+      } catch {
+        // Sans crédit, on n'affiche pas l'image : voir `estAffichable`.
       }
-    } catch {
-      // Sans crédit, on n'affiche pas l'image : voir `estAffichable`.
-    }
-  }
+    }),
+  );
 
   return illustrations;
 }

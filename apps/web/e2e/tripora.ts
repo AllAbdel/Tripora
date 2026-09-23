@@ -40,6 +40,28 @@ export interface VoyagePose {
   draft?: Record<string, unknown>;
 }
 
+const coupees = new WeakSet<Page>();
+
+/**
+ * Internet coupé, sauf l'application elle-même.
+ *
+ * Les écrans appellent Wikipédia pour les photos et OpenFreeMap pour la
+ * carte. Laissés libres, ces appels rendent les tests dépendants d'un réseau
+ * que la machine n'a pas toujours : sur un réseau fermé, ils attendent le
+ * délai de connexion, et le test qui visite vingt-quatre écrans dépassait ses
+ * trente secondes. Coupés net, ils échouent tout de suite — ce que
+ * l'application sait déjà encaisser, puisqu'elle doit marcher hors ligne.
+ *
+ * La politique de sécurité, elle, reste vérifiée : le navigateur l'applique
+ * avant que la requête n'atteigne ce filtre, et un refus laisse toujours sa
+ * ligne dans la console.
+ */
+async function couperInternet(page: Page): Promise<void> {
+  if (coupees.has(page)) return;
+  coupees.add(page);
+  await page.route(/^https?:\/\/(?!localhost[:/])/u, (requete) => requete.abort('internetdisconnected'));
+}
+
 /**
  * Ouvre l'application avec une identité locale et des voyages déjà là.
  *
@@ -52,6 +74,7 @@ export async function poser(
   voyages: readonly VoyagePose[],
   route = '/voyages',
 ): Promise<void> {
+  await couperInternet(page);
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.evaluate((entrees) => {
     localStorage.setItem(
