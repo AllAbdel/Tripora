@@ -97,6 +97,19 @@ describe('catalogue d’activités', () => {
     }
   });
 
+  it('écrit ses titres Wikipédia avec l’apostrophe de Wikipédia', () => {
+    // Wikipédia titre ses articles avec l'apostrophe droite. Vérifiés un par
+    // un le 23 septembre 2026, treize titres introuvables du carnet portaient
+    // une apostrophe typographique, et six l'étaient pour cette seule raison
+    // — « Lac d’Annecy » au lieu de « Lac d'Annecy ». Leurs activités
+    // restaient sans photo. Le reste de l'application veut l'apostrophe
+    // typographique ; les titres, non.
+    for (const activite of ACTIVITES) {
+      if (!activite.wikipedia) continue;
+      expect(activite.wikipedia.includes('’'), activite.id).toBe(false);
+    }
+  });
+
   it('résume chaque activité sans la vendre', () => {
     for (const activite of ACTIVITES) {
       expect(activite.resume.length, activite.id).toBeGreaterThan(20);
