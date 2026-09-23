@@ -45,6 +45,16 @@ describe('catalogue d’activités', () => {
     'reykjavik/cercle-or': 'le Cercle d’or est la boucle d’une journée au départ de Reykjavík',
     'cusco/rainbow': 'Vinicunca demande trois heures de route et un départ avant l’aube',
     'munich/neuschwanstein': 'le château de Louis II se visite à la journée, à deux heures de train de Munich',
+    'delhi/taj-mahal': 'Agra est à trois heures de train rapide, et le Taj Mahal se fait dans la journée',
+    'sri-lanka/kandy': 'Kandy est l’excursion classique depuis Colombo, trois heures de train dans les collines',
+    'sri-lanka/galle': 'le fort de Galle se rejoint en deux heures par l’autoroute du sud',
+    'chengdu/leshan': 'le Bouddha de Leshan est à une heure de train rapide de Chengdu',
+    'santiago/valparaiso': 'Valparaíso est à une heure et demie de bus, l’aller-retour classique depuis Santiago',
+    'cancun/chichen-itza': 'Chichén Itzá se fait à la journée depuis Cancún, trois heures de route',
+    'cancun/tulum': 'Tulum est à deux heures de route au sud, sur la Riviera Maya',
+    'costa-rica/arenal': 'l’Arenal est à trois heures de route de San José, et se fait d’une traite',
+    'las-vegas/grand-canyon': 'la rive ouest du Grand Canyon est l’excursion à la journée depuis Las Vegas',
+    'melbourne/douze-apotres': 'la Great Ocean Road se fait en une longue journée au départ de Melbourne',
   };
 
   it('place chaque activité près de sa destination', () => {
