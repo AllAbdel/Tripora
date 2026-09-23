@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft, ArrowLeftRight, ChevronDown, ChevronUp, Loader2, MapPinned, Plus, RotateCcw,
-  Trash2, X,
+  ArrowLeft, ArrowLeftRight, CalendarPlus, ChevronDown, ChevronUp, Loader2, MapPinned, Plus,
+  RotateCcw, Trash2, X,
 } from 'lucide-react';
 import {
   awaitsPlace, AXIS_ICON, buildItinerary, dayVerdict, describeDay, fillItinerary,
@@ -27,6 +27,7 @@ import {
 import { requeteDesLieux } from '@/lib/places';
 import { avisPourLeRemplissage, cleEnvies, getEnvies } from '@/lib/envies';
 import { useAuth } from '@/lib/auth-context';
+import { programmeDate, telechargerLeProgramme } from '@/lib/calendrier';
 import { chargerMeteo, cleMeteo } from '@/lib/weather';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
@@ -469,6 +470,32 @@ export default function TripItinerary() {
                 onDeplacer={(item, sens) => deplacer.mutate({ item, sens, liste: jour.items })}
               />
             ))}
+
+          {/* Le programme dans le calendrier de chacun : l'alarme du kecak
+              sonne le jour J sans avoir à rouvrir Tripora. Il faut des dates :
+              un séjour « en juillet, dix jours » ne se pose pas sur un agenda. */}
+          <div className="space-y-1.5">
+            <Button
+              variant="secondary"
+              block
+              icon={<CalendarPlus className="size-4" aria-hidden />}
+              disabled={!programmeDate(enregistre)}
+              onClick={() =>
+                telechargerLeProgramme({
+                  titre: voyage.data?.summary.title ?? destination.name,
+                  fuseau: destination.timezone,
+                  journees: enregistre,
+                })
+              }
+            >
+              Ajouter à mon calendrier
+            </Button>
+            <p className="text-muted text-center text-xs">
+              {programmeDate(enregistre)
+                ? `Un fichier pour Google Agenda, Apple ou Outlook, aux heures de ${destination.name}.`
+                : 'Fixez les dates exactes du voyage pour pouvoir l’ajouter à un calendrier.'}
+            </p>
+          </div>
 
           <Button
             variant="ghost"

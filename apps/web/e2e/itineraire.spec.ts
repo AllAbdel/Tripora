@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { BALI, poser } from './tripora';
+import { BALI, brouillon, poser } from './tripora';
 
 /**
  * L'itinéraire de Bali, rempli pour de vrai.
@@ -95,4 +95,32 @@ test('ce que le groupe refuse n’arrive pas au programme, ce qu’il réclame y
 
   expect(tout).not.toContain('Tegallalang');
   expect(tout).toContain('forêt des singes');
+});
+
+/**
+ * Le programme dans le calendrier : un vrai fichier, lisible par un agenda.
+ */
+test('un séjour daté se télécharge en calendrier, à l’heure de Bali', async ({ page }) => {
+  const date = { ...BALI, draft: brouillon({ dateMode: 'exact', startDate: '2026-07-10', endDate: '2026-07-19' }) };
+  await poser(page, [date], '/voyages/v1/itineraire');
+  await page.getByRole('button', { name: /Générer l’itinéraire/ }).click();
+
+  const bouton = page.getByRole('button', { name: /Ajouter à mon calendrier/ });
+  await expect(bouton).toBeEnabled();
+  const [telechargement] = await Promise.all([page.waitForEvent('download'), bouton.click()]);
+  expect(telechargement.suggestedFilename()).toBe('bali-entre-potes.ics');
+
+  const flux = await telechargement.createReadStream();
+  let contenu = '';
+  for await (const morceau of flux) contenu += morceau.toString('utf8');
+  expect(contenu.startsWith('BEGIN:VCALENDAR')).toBe(true);
+  expect(contenu).toContain('TZID:Asia/Makassar');
+  expect(contenu).toContain('DTSTART;TZID=Asia/Makassar:20260710T');
+});
+
+test('un séjour sans dates explique pourquoi le calendrier attend', async ({ page }) => {
+  await poser(page, [BALI], '/voyages/v1/itineraire');
+  await page.getByRole('button', { name: /Générer l’itinéraire/ }).click();
+  await expect(page.getByRole('button', { name: /Ajouter à mon calendrier/ })).toBeDisabled();
+  await expect(page.getByText(/Fixez les dates exactes du voyage/)).toBeVisible();
 });

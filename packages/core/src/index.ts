@@ -32,6 +32,7 @@ export * from './catalog/climate.js';
 export * from './weather.js';
 export * from './replan.js';
 export * from './fill.js';
+export * from './calendrier.js';
 export * from './distinction.js';
 export * from './dates.js';
 export * from './text.js';
