@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Clock, ExternalLink, Search } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Clock, ExternalLink, Heart, Search, X } from 'lucide-react';
 import {
   AXIS_LABELS_FR,
   findDestination,
@@ -25,6 +25,18 @@ import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { chargerIllustrations, estAffichable, type Illustration } from '@/lib/illustrations';
 import { direLaDuree } from '@/lib/duree';
 import { cn } from '@/lib/cn';
+import { useAuth } from '@/lib/auth-context';
+import { getCollaboration } from '@/lib/collaboration';
+import {
+  basculer,
+  cleEnvies,
+  getEnvies,
+  nommer,
+  type Avis,
+  type AvisSurUneActivite,
+  type EnviesDuGroupe,
+} from '@/lib/envies';
+import { signaler } from '@/lib/feedback';
 
 /**
  * Ce qu'il y a à faire sur place.
@@ -49,11 +61,17 @@ const MOMENTS: Record<MomentDeLaJournee, string> = {
   journee: 'À la journée',
 };
 
+/** Le filtre « ce que le groupe a choisi », à côté des envies par axe. */
+const NOS_ENVIES = 'nos-envies';
+
 export default function AFaire() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { identity } = useAuth();
+  const moi = identity?.id ?? 'moi';
   const [recherche, setRecherche] = useState('');
-  const [envie, setEnvie] = useState<PreferenceAxis | null>(null);
+  const [envie, setEnvie] = useState<PreferenceAxis | typeof NOS_ENVIES | null>(null);
 
   const voyage = useQuery({
     queryKey: cleVoyage(id),
@@ -77,18 +95,86 @@ export default function AFaire() {
 
   const envies = useMemo(() => groupWeights(voyage.data?.members ?? []), [voyage.data?.members]);
 
+  // Qui a envie de quoi. La même clé que l'itinéraire, qui s'en sert pour
+  // remplir les journées.
+  const avis = useQuery({
+    queryKey: cleEnvies(id),
+    queryFn: () => getEnvies().lister(id!, moi),
+    enabled: Boolean(id),
+  });
+
+  // Les prénoms, pour dire « Inès et Karim » plutôt que « 2 ». Sans serveur,
+  // il n'y a qu'une personne : « vous ».
+  const collaboration = getCollaboration();
+  const membres = useQuery({
+    queryKey: ['membres', id],
+    queryFn: () => collaboration!.listMembers(id!),
+    enabled: Boolean(id && collaboration),
+  });
+  const noms = useMemo(
+    () => new Map((membres.data ?? []).map((membre) => [membre.userId, membre.displayName])),
+    [membres.data],
+  );
+
+  // Les avis des autres arrivent en direct : on voit le cœur de Karim
+  // s'allumer pendant qu'il fait défiler la même liste à l'autre bout de la table.
+  useEffect(() => {
+    if (!id) return;
+    return getEnvies().ecouter(id, () => {
+      void queryClient.invalidateQueries({ queryKey: cleEnvies(id) });
+    });
+  }, [id, queryClient]);
+
+  const poser = useMutation({
+    mutationFn: ({ activiteId, valeur }: { activiteId: string; valeur: Avis | null }) =>
+      getEnvies().poser(id!, activiteId, valeur),
+    onMutate: async ({ activiteId, valeur }) => {
+      // Le cœur répond au doigt, pas au réseau.
+      await queryClient.cancelQueries({ queryKey: cleEnvies(id) });
+      const avant = queryClient.getQueryData<EnviesDuGroupe>(cleEnvies(id));
+      queryClient.setQueryData(cleEnvies(id), basculer(avant, activiteId, moi, valeur));
+      signaler(valeur === 'envie' ? 'reussite' : 'tape');
+      return { avant };
+    },
+    onError: (_erreur, _variables, contexte) => {
+      queryClient.setQueryData(cleEnvies(id), contexte?.avant);
+      signaler('echec');
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: cleEnvies(id) });
+    },
+  });
+
   const visibles = useMemo(() => {
     const filtrees = destinationId ? chercherActivites(destinationId, recherche) : [];
-    const parEnvie = envie ? filtrees.filter((a) => a.axis === envie) : filtrees;
-    // Les envies du groupe d'abord, puis le prix croissant : à envie égale,
-    // ce qui est gratuit passe devant, parce qu'on peut toujours le faire.
+    const parEnvie =
+      envie === NOS_ENVIES
+        ? filtrees.filter((a) => (avis.data?.parActivite[a.id]?.pour.length ?? 0) > 0)
+        : envie
+          ? filtrees.filter((a) => a.axis === envie)
+          : filtrees;
+    const soldeDe = (activiteId: string): number => {
+      const detail = avis.data?.parActivite[activiteId];
+      return detail ? detail.pour.length - detail.contre.length : 0;
+    };
+    // Ce que le groupe a réclamé d'abord ; puis les envies générales du
+    // groupe ; puis le prix croissant — à envie égale, ce qui est gratuit
+    // passe devant, parce qu'on peut toujours le faire.
     return [...parEnvie].sort(
       (a, b) =>
+        soldeDe(b.id) - soldeDe(a.id) ||
         (envies[b.axis] ?? 0) - (envies[a.axis] ?? 0) ||
         a.prixCents - b.prixCents ||
         a.nom.localeCompare(b.nom, 'fr'),
     );
-  }, [destinationId, recherche, envie, envies]);
+  }, [destinationId, recherche, envie, envies, avis.data]);
+
+  const nombreDEnvies = useMemo(
+    () =>
+      Object.values(avis.data?.parActivite ?? {}).filter((detail) => detail.pour.length > 0)
+        .length,
+    [avis.data],
+  );
 
   /** Les envies réellement représentées ici : un filtre vide ne sert à rien. */
   const enviesPresentes = useMemo(
@@ -149,6 +235,11 @@ export default function AFaire() {
               <Filtre actif={envie === null} onClick={() => setEnvie(null)}>
                 Tout
               </Filtre>
+              {nombreDEnvies > 0 && (
+                <Filtre actif={envie === NOS_ENVIES} onClick={() => setEnvie(NOS_ENVIES)}>
+                  Nos envies · {nombreDEnvies}
+                </Filtre>
+              )}
               {enviesPresentes.map((axe) => (
                 <Filtre key={axe} actif={envie === axe} onClick={() => setEnvie(axe)}>
                   {AXIS_LABELS_FR[axe]}
@@ -169,6 +260,10 @@ export default function AFaire() {
                     activite={activite}
                     ville={ville?.name ?? ''}
                     illustration={images.data?.[activite.id]}
+                    avis={avis.data?.parActivite[activite.id]}
+                    noms={noms}
+                    moi={moi}
+                    surAvis={(valeur) => poser.mutate({ activiteId: activite.id, valeur })}
                   />
                 </li>
               ))}
@@ -183,6 +278,35 @@ export default function AFaire() {
         )}
       </div>
     </div>
+  );
+}
+
+function BoutonDAvis({
+  actif,
+  libelle,
+  onClick,
+  children,
+}: {
+  actif: boolean;
+  libelle: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={actif}
+      aria-label={libelle}
+      className={cn(
+        'pressable inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm transition-colors',
+        actif
+          ? 'border-brand-500 bg-brand-500/10 text-brand-700 dark:text-brand-200 font-semibold'
+          : 'filet text-muted',
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -212,14 +336,29 @@ function Filtre({
   );
 }
 
+/** « Inès et Karim en ont envie », « Vous en avez envie ». */
+function phraseDEnvie(ids: readonly string[], noms: ReadonlyMap<string, string>, moi: string): string {
+  const qui = nommer(ids, noms, moi);
+  const verbe = ids.includes(moi) ? 'en avez' : ids.length > 1 ? 'en ont' : 'en a';
+  return `${qui.charAt(0).toUpperCase()}${qui.slice(1)} ${verbe} envie`;
+}
+
 function FicheDActivite({
   activite,
   ville,
   illustration,
+  avis,
+  noms,
+  moi,
+  surAvis,
 }: {
   activite: Activite;
   ville: string;
   illustration: Illustration | undefined;
+  avis: AvisSurUneActivite | undefined;
+  noms: ReadonlyMap<string, string>;
+  moi: string;
+  surAvis: (valeur: Avis | null) => void;
 }) {
   const montrable = estAffichable(illustration);
 
@@ -257,6 +396,32 @@ function FicheDActivite({
 
         <h2 className="titre text-lg leading-tight">{activite.nom}</h2>
         <p className="text-sm leading-relaxed">{activite.resume}</p>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <BoutonDAvis
+            actif={avis?.moi === 'envie'}
+            libelle={`J’ai envie : ${activite.nom}`}
+            onClick={() => surAvis(avis?.moi === 'envie' ? null : 'envie')}
+          >
+            <Heart className={cn('size-4', avis?.moi === 'envie' && 'fill-current')} aria-hidden />
+            J’ai envie
+          </BoutonDAvis>
+          <BoutonDAvis
+            actif={avis?.moi === 'sans-moi'}
+            libelle={`Sans moi : ${activite.nom}`}
+            onClick={() => surAvis(avis?.moi === 'sans-moi' ? null : 'sans-moi')}
+          >
+            <X className="size-4" aria-hidden />
+            Sans moi
+          </BoutonDAvis>
+        </div>
+        {avis && (avis.pour.length > 0 || avis.contre.length > 0) && (
+          <p className="text-muted text-xs leading-snug">
+            {avis.pour.length > 0 && <span>{phraseDEnvie(avis.pour, noms, moi)}</span>}
+            {avis.pour.length > 0 && avis.contre.length > 0 && <span> · </span>}
+            {avis.contre.length > 0 && <span>Sans {nommer(avis.contre, noms, moi)}</span>}
+          </p>
+        )}
 
         <div className="filet flex items-center gap-4 border-t pt-3 text-sm">
           <span className="text-muted inline-flex items-center gap-1.5">

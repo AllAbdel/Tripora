@@ -54,3 +54,45 @@ test('un séjour à Bali se remplit d’activités de Bali, chacune une seule fo
     expect(Number(heure.slice(0, 2)), `kecak à ${heure}`).toBeGreaterThanOrEqual(17);
   }
 });
+
+/**
+ * Les envies du groupe, de « À faire » jusqu'au programme.
+ *
+ * On refuse les rizières de Tegallalang et on réclame la forêt des singes ;
+ * le remplissage doit en tenir compte. Sans avis, Tegallalang est justement
+ * l'une des premières activités posées : son absence prouve que le refus a
+ * été lu, pas que le hasard l'a oubliée.
+ */
+test('ce que le groupe refuse n’arrive pas au programme, ce qu’il réclame y arrive', async ({ page }) => {
+  await poser(page, [BALI], '/voyages/v1/a-faire');
+
+  const refus = page.getByRole('button', { name: 'Sans moi : Les rizières en terrasses de Tegallalang' });
+  await refus.click();
+  await expect(refus).toHaveAttribute('aria-pressed', 'true');
+
+  const envie = page.getByRole('button', { name: 'J’ai envie : La forêt des singes d’Ubud' });
+  await envie.click();
+  await expect(envie).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('Vous en avez envie')).toBeVisible();
+
+  // Le filtre « Nos envies » apparaît, et ne garde que ce qui a été réclamé.
+  await page.getByRole('button', { name: /Nos envies · 1/ }).click();
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText(['La forêt des singes d’Ubud']);
+
+  await page.goto('/voyages/v1/itineraire');
+  await page.getByRole('button', { name: /Générer l’itinéraire/ }).click();
+  await expect(page.getByText(/Ce que le groupe a réclamé/)).toBeVisible();
+  await page.getByRole('button', { name: /Compléter avec de vrais lieux/ }).click();
+
+  const onglets = page.locator('nav button', { hasText: /^Jour \d+$/ });
+  await expect(onglets.first()).toBeVisible();
+  const textes: string[] = [];
+  for (let index = 0; index < (await onglets.count()); index += 1) {
+    await onglets.nth(index).click();
+    textes.push((await page.locator('ul').first().innerText()).replace(/\s+/g, ' '));
+  }
+  const tout = textes.join(' | ');
+
+  expect(tout).not.toContain('Tegallalang');
+  expect(tout).toContain('forêt des singes');
+});

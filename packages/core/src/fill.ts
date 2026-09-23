@@ -41,7 +41,26 @@ import { direLaDuree } from './duree.js';
  *  5. **la journée entière.** Une excursion « à la journée » — Nusa Penida,
  *     Ayutthaya — prend sa journée pour elle seule : on part tôt, on rentre
  *     tard, et il n'y a rien d'autre à caser.
+ *
+ * Et une dernière, depuis que chacun peut dire ce qui lui fait envie :
+ *
+ *  6. **ce que le groupe a choisi passe devant, ce qu'il refuse ne passe
+ *     pas.** Un lieu que le groupe réclame est posé avant tout autre de la
+ *     même envie, même s'il est moins proche ; un lieu où les « sans moi »
+ *     l'emportent n'est jamais proposé. Le moteur ne décide pas à la place
+ *     des gens quand les gens ont déjà décidé.
  */
+
+/** Ce que le groupe a dit d'un lieu : combien en ont envie, combien s'en passeraient. */
+export interface AvisDuGroupe {
+  pour: number;
+  contre: number;
+}
+
+/** Le solde d'un lieu : positif s'il est réclamé, négatif s'il est refusé. */
+export function soldeDuLieu(avis: AvisDuGroupe | undefined): number {
+  return avis ? avis.pour - avis.contre : 0;
+}
 
 export interface SlotToFill {
   dayIndex: number;
@@ -136,13 +155,21 @@ export function fillItinerary({
   slots,
   places,
   weights = {},
+  avis = {},
 }: {
   slots: readonly SlotToFill[];
   places: readonly Poi[];
   /** Envies du groupe, pour départager deux lieux également proches. */
   weights?: Partial<Record<PreferenceAxis, number>>;
+  /** Ce que le groupe a dit de chaque lieu, par identifiant de lieu. */
+  avis?: Readonly<Record<string, AvisDuGroupe>>;
 }): FilledSlot[] {
-  const classes = rankPois(places, weights);
+  const solde = (lieu: Poi): number => soldeDuLieu(avis[lieu.id]);
+  // Le tri est stable : à solde égal, l'ordre des envies du groupe demeure.
+  const classes = rankPois(
+    places.filter((lieu) => solde(lieu) >= 0),
+    weights,
+  ).sort((a, b) => solde(b) - solde(a));
   const utilises = new Set<string>();
   const remplis: FilledSlot[] = [];
 
@@ -180,7 +207,13 @@ export function fillItinerary({
       );
       if (candidats.length === 0) continue;
 
-      const choisi = ancre ? leplusProche(candidats, ancre) : candidats[0]!;
+      // Ce que le groupe réclame passe avant la proximité : entre deux lieux
+      // voulus, le plus proche ; entre un lieu voulu et un lieu voisin, le
+      // lieu voulu. Les candidats sont déjà triés par solde décroissant.
+      const meilleurSolde = solde(candidats[0]!);
+      const retenus =
+        meilleurSolde > 0 ? candidats.filter((lieu) => solde(lieu) === meilleurSolde) : candidats;
+      const choisi = ancre ? leplusProche(retenus, ancre) : retenus[0]!;
       utilises.add(choisi.id);
       ancre ??= choisi;
       heures += choisi.dureeHeures ?? 0;
@@ -190,7 +223,7 @@ export function fillItinerary({
       remplis.push({
         ...creneau,
         poi: choisi,
-        reason: expliquer(choisi, ancre === choisi ? undefined : ancre),
+        reason: expliquer(choisi, ancre === choisi ? undefined : ancre, avis[choisi.id]),
         ...(choisi.prixCents !== undefined ? { costCents: choisi.prixCents } : {}),
         ...(accord?.heure ? { heureConseillee: accord.heure } : {}),
       });
@@ -238,7 +271,11 @@ function provenance(lieu: Poi): string {
     : `${lieu.label} relevé sur OpenStreetMap`;
 }
 
-function expliquer(lieu: Poi, ancre: Poi | undefined): string {
+function expliquer(lieu: Poi, ancre: Poi | undefined, avis?: AvisDuGroupe): string {
+  return `${situer(lieu, ancre)}${reclame(avis)}`;
+}
+
+function situer(lieu: Poi, ancre: Poi | undefined): string {
   const quoi = provenance(lieu);
   if (lieu.moment === 'journee') return `${quoi}. La journée lui est consacrée.`;
   if (!ancre) return `${quoi}.`;
@@ -249,4 +286,12 @@ function expliquer(lieu: Poi, ancre: Poi | undefined): string {
       : `${quoi}, à ${km.toFixed(1)} km de ${ancre.name}.`;
   }
   return `${quoi}. Pas dans le même quartier que ${ancre.name} — comptez un trajet.`;
+}
+
+/** « Deux personnes du groupe en ont envie. » — seulement quand c'est vrai. */
+function reclame(avis: AvisDuGroupe | undefined): string {
+  if (!avis || avis.pour <= 0 || soldeDuLieu(avis) <= 0) return '';
+  return avis.pour === 1
+    ? ' Quelqu’un du groupe en a envie.'
+    : ` ${avis.pour} personnes du groupe en ont envie.`;
 }

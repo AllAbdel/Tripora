@@ -25,6 +25,8 @@ import {
   getItinerary, positionPourHeure, type ItineraryDayView, type ItineraryItem,
 } from '@/lib/itinerary';
 import { requeteDesLieux } from '@/lib/places';
+import { avisPourLeRemplissage, cleEnvies, getEnvies } from '@/lib/envies';
+import { useAuth } from '@/lib/auth-context';
 import { chargerMeteo, cleMeteo } from '@/lib/weather';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
@@ -85,6 +87,15 @@ export default function TripItinerary() {
    * On ne touche qu'à ce que personne n'a renseigné : `awaitsPlace` compare au
    * titre neutre, donc un nom écrit par quelqu'un du groupe est intouchable.
    */
+  // Ce que le groupe a dit des activités dans « À faire » : le remplissage
+  // pose d'abord ce qui est réclamé, et jamais ce qui est refusé.
+  const { identity } = useAuth();
+  const envies = useQuery({
+    queryKey: cleEnvies(id),
+    queryFn: () => getEnvies().lister(id!, identity?.id ?? 'moi'),
+    enabled: Boolean(id),
+  });
+
   const aCompleter = useMemo(() => {
     const journees = jours.data;
     // Ce qui est déjà au programme n'est plus disponible. Sans ce filtre, le
@@ -118,6 +129,7 @@ export default function TripItinerary() {
       })),
       places: disponibles,
       weights: groupWeights(voyage.data?.members ?? []),
+      avis: avisPourLeRemplissage(envies.data),
     });
 
     return remplis.flatMap((rempli) => {
@@ -138,7 +150,7 @@ export default function TripItinerary() {
           ]
         : [];
     });
-  }, [jours.data, lieux.data, voyage.data?.members]);
+  }, [jours.data, lieux.data, voyage.data?.members, envies.data]);
 
 
   /** La prévision indexée par date, pour que chaque jour trouve la sienne. */
@@ -348,6 +360,25 @@ export default function TripItinerary() {
               coucher du soleil le soir, l’excursion à la journée seule dans sa journée — avec
               son prix réel, et regroupées par quartier pour ne pas traverser la ville quatre
               fois.
+            </p>
+            <p className="text-muted text-sm leading-relaxed">
+              {(envies.data?.votants ?? 0) > 0 ? (
+                <>
+                  Ce que le groupe a réclamé dans{' '}
+                  <Link to={`/voyages/${id}/a-faire`} className="text-brand-600 dark:text-brand-300 underline-offset-2 hover:underline">
+                    À faire
+                  </Link>{' '}
+                  passe en premier ; ce qu’il a refusé n’est jamais proposé.
+                </>
+              ) : (
+                <>
+                  Pour que ce soit vos choix qui passent en premier, marquez vos envies dans{' '}
+                  <Link to={`/voyages/${id}/a-faire`} className="text-brand-600 dark:text-brand-300 underline-offset-2 hover:underline">
+                    À faire
+                  </Link>
+                  .
+                </>
+              )}
             </p>
             <Button
               block
