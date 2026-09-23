@@ -38,9 +38,13 @@
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  # Aucune de ces fonctions n'est utilisée : les refuser évite qu'un script
-  # injecté puisse seulement demander.
-  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()
+  # Rien de tout cela n'est utilisé, sauf la position : les refuser évite
+  # qu'un script injecté puisse seulement demander. La position, elle, sert
+  # au bouton « Ma position » de la création d'un voyage — et à la seule page
+  # elle-même (`self`), jamais à un cadre étranger. Elle était refusée ici
+  # comme le reste : le bouton répondait « position refusée » sans que le
+  # navigateur ait jamais rien demandé à personne.
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()
   Cross-Origin-Opener-Policy: same-origin
   X-Frame-Options: DENY
 

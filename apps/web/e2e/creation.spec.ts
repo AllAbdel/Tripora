@@ -93,3 +93,28 @@ test('l’assistant refuse d’avancer tant qu’il manque le départ', async ({
   await expect(suivant(page)).toBeDisabled();
   await expect(page.getByText(/Choisissez une ville de départ/)).toBeVisible();
 });
+
+test.describe('la position de l’appareil', () => {
+  // Villeurbanne, à deux pas de Lyon : la ville de départ connue la plus proche.
+  test.use({ geolocation: { latitude: 45.771, longitude: 4.88 }, permissions: ['geolocation'] });
+
+  test('choisit la ville de départ la plus proche', async ({ page }) => {
+    // Ce test tourne sous les en-têtes de `public/_headers`, ceux du site en
+    // ligne. Ils refusaient la géolocalisation à la page elle-même : le
+    // bouton répondait « position refusée » même quand la personne l'avait
+    // autorisée, et aucun test ne le voyait.
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
+    await page.getByRole('link', { name: /Créer un trip|Créer/ }).first().click();
+    await suivant(page).click();
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('D’où partez-vous ?');
+    await page.getByRole('button', { name: 'Utiliser ma position' }).click();
+
+    await expect(page.getByText(/Position refusée/)).toHaveCount(0);
+    await expect(
+      page.getByRole('radiogroup', { name: 'Ville de départ' }).getByText('Lyon', { exact: true }),
+    ).toBeVisible();
+    await expect(suivant(page)).toBeEnabled();
+  });
+});
