@@ -44,6 +44,7 @@ describe('catalogue d’activités', () => {
     'sydney/blue-mountains': 'deux heures de train depuis Central',
     'reykjavik/cercle-or': 'le Cercle d’or est la boucle d’une journée au départ de Reykjavík',
     'cusco/rainbow': 'Vinicunca demande trois heures de route et un départ avant l’aube',
+    'munich/neuschwanstein': 'le château de Louis II se visite à la journée, à deux heures de train de Munich',
   };
 
   it('place chaque activité près de sa destination', () => {

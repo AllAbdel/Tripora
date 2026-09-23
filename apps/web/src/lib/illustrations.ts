@@ -70,7 +70,11 @@ export function lireLesImages(donnees: unknown): Map<string, { url: string; fich
   if (typeof donnees !== 'object' || donnees === null) return trouvees;
 
   const source = donnees as {
-    query?: { pages?: Record<string, PageWiki>; normalized?: { from: string; to: string }[] };
+    query?: {
+      pages?: Record<string, PageWiki>;
+      normalized?: { from: string; to: string }[];
+      redirects?: { from: string; to: string }[];
+    };
   };
   const pages = source.query?.pages;
   if (!pages) return trouvees;
@@ -84,8 +88,18 @@ export function lireLesImages(donnees: unknown): Map<string, { url: string; fich
     trouvees.set(titre, { url, fichier });
   }
 
-  // Wikipédia normalise les titres — majuscule initiale, espaces insécables.
-  // Sans ce report, « mont Batur » ne retrouverait pas sa propre image.
+  // Les redirections d'abord : « Cathédrale de Sienne » renvoie vers
+  // « Cathédrale Santa Maria Assunta de Sienne », et la page revient sous ce
+  // second titre. Sans ce report, un titre redirigé ne retrouvait jamais sa
+  // photo — un titre sur sept du carnet, mesuré sur un lot de deux cents.
+  for (const { from, to } of source.query?.redirects ?? []) {
+    const image = trouvees.get(to);
+    if (image) trouvees.set(from, image);
+  }
+
+  // Puis la normalisation, qui s'applique avant la redirection côté
+  // Wikipédia — majuscule initiale, espaces insécables. Sans ce report,
+  // « mont Batur » ne retrouverait pas sa propre image.
   for (const { from, to } of source.query?.normalized ?? []) {
     const image = trouvees.get(to);
     if (image) trouvees.set(from, image);

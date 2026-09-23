@@ -78,6 +78,28 @@ describe('illustrations des activités', () => {
     expect(images.get('mont batur')?.fichier).toBe('b.jpg');
   });
 
+  it('retrouve une image derrière une redirection, même après normalisation', () => {
+    // Le cas réel : le carnet demande « Cathédrale de Sienne », Wikipédia
+    // redirige et rend la page sous son titre complet.
+    const images = lireLesImages({
+      query: {
+        normalized: [{ from: 'cathédrale de Sienne', to: 'Cathédrale de Sienne' }],
+        redirects: [
+          { from: 'Cathédrale de Sienne', to: 'Cathédrale Santa Maria Assunta de Sienne' },
+        ],
+        pages: {
+          '1': {
+            title: 'Cathédrale Santa Maria Assunta de Sienne',
+            thumbnail: { source: 'https://upload.wikimedia.org/x/s.jpg' },
+            pageimage: 's.jpg',
+          },
+        },
+      },
+    });
+    expect(images.get('Cathédrale de Sienne')?.fichier).toBe('s.jpg');
+    expect(images.get('cathédrale de Sienne')?.fichier).toBe('s.jpg');
+  });
+
   it('ne s’effondre devant aucune réponse', () => {
     for (const bancal of [null, undefined, 42, 'texte', {}, { query: {} }, { query: { pages: null } }]) {
       expect(() => lireLesImages(bancal)).not.toThrow();
