@@ -773,4 +773,52 @@ end $$;
 reset role;
 reset request.jwt.claims;
 
+-- ---------------------------------------------------------------------------
+-- L'itinéraire : les membres le lisent et l'écrivent, l'intrus ne voit rien.
+-- La table n'a plus qu'une règle d'accès (« écriture par les membres », pour
+-- toutes les opérations) depuis que la règle de lecture en double a été
+-- retirée : ce bloc garantit que la lecture n'y a rien perdu.
+-- ---------------------------------------------------------------------------
+set role authenticated;
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+insert into public.itineraries (id, trip_id)
+values ('dddddddd-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001');
+do $$
+declare n int;
+begin
+  select count(*) into n from public.itineraries where trip_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  assert n = 1, format('Un membre doit lire l''itinéraire de son voyage (%s visible(s))', n);
+end $$;
+reset role;
+reset request.jwt.claims;
+
+-- Thomas a quitté le voyage plus haut : partir retire aussi l'accès.
+set role authenticated;
+set request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare n int;
+begin
+  select count(*) into n from public.itineraries where trip_id = 'aaaaaaaa-0000-0000-0000-000000000001';
+  assert n = 0, format('FAILLE : un ancien membre voit encore l''itinéraire (%s)', n);
+end $$;
+reset role;
+reset request.jwt.claims;
+
+set role authenticated;
+set request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
+do $$
+declare n int;
+begin
+  select count(*) into n from public.itineraries;
+  assert n = 0, format('FAILLE : l''intrus voit %s itinéraire(s)', n);
+  begin
+    insert into public.itineraries (trip_id, version)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', 2);
+    assert false, 'FAILLE : l''intrus a pu créer un itinéraire dans un voyage qui n''est pas le sien';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+reset role;
+reset request.jwt.claims;
+
 select '✅ Tous les tests RLS sont passés' as resultat;
