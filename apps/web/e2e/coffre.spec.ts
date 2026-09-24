@@ -70,7 +70,7 @@ test('ranger un code, un wifi et un contact, puis s’en servir', async ({ page 
  * Les documents : les billets, en PDF, rangés dans le coffre. En mode local,
  * le fichier vit dans le navigateur (IndexedDB) : le parcours est le même.
  */
-test('ranger un billet en PDF, l’ouvrir, le renommer, le retirer', async ({ page }) => {
+test('ranger un billet en PDF, une photo, les ouvrir, renommer, retirer', async ({ page }) => {
   await poser(page, [BALI], '/voyages/v1/coffre');
 
   // Un format que le coffre ne garde pas : refusé tout de suite, avec la raison.
@@ -92,10 +92,22 @@ test('ranger un billet en PDF, l’ouvrir, le renommer, le retirer', async ({ pa
   await page.getByRole('button', { name: 'Ranger le document' }).click();
   await expect(page.getByText('PDF · 1 Ko · visible par vous seulement')).toBeVisible();
 
-  // Il s'ouvre dans un nouvel onglet.
+  // Un document s'ouvre dans un nouvel onglet. Vérifié avec une photo : le
+  // navigateur sans interface de l'intégration continue n'a pas de lecteur
+  // PDF : il télécharge le fichier au lieu de l'afficher, et l'onglet reste
+  // vide.
+  await page.getByLabel('Choisir un document').setInputFiles({
+    name: 'carte_embarquement.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  });
+  await page.getByRole('button', { name: 'Ranger le document' }).click();
   const [onglet] = await Promise.all([
     page.waitForEvent('popup'),
-    page.getByRole('button', { name: 'Ouvrir « E-ticket GA-881 »' }).click(),
+    page.getByRole('button', { name: 'Ouvrir « Carte embarquement »' }).click(),
   ]);
   await expect.poll(() => onglet.url()).toMatch(/^blob:/u);
   await onglet.close();
@@ -113,7 +125,7 @@ test('ranger un billet en PDF, l’ouvrir, le renommer, le retirer', async ({ pa
   await expect(page.getByRole('button', { name: 'Ouvrir « Vol aller Garuda »' })).toBeVisible();
   await page.screenshot({ path: 'test-results/coffre-documents.png', fullPage: true });
   await page.getByRole('link', { name: 'Retour au voyage' }).click();
-  await expect(page.getByRole('link', { name: /Coffre.*1 document/u }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /Coffre.*2 documents/u }).first()).toBeVisible();
   await page.goBack();
 
   await page.getByRole('button', { name: 'Retirer « Vol aller Garuda »' }).click();
