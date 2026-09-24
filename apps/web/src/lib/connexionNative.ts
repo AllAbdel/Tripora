@@ -1,5 +1,5 @@
 import { requireSupabase } from './supabase';
-import { fermerLeNavigateur, ouvrirDansLeNavigateur, RETOUR_CONNEXION, type LienEntrant } from './natif';
+import { fermerLeNavigateur, ouvrirDansLeNavigateur, RETOUR_GOOGLE, type LienEntrant } from './natif';
 
 /**
  * La connexion Google, depuis l'application mobile.
@@ -12,15 +12,15 @@ import { fermerLeNavigateur, ouvrirDansLeNavigateur, RETOUR_CONNEXION, type Lien
  *   1. Supabase prépare l'adresse de Google, sans y aller lui-même, et range
  *      la preuve PKCE dans le stockage de l'app ;
  *   2. le navigateur système l'ouvre ; on choisit son compte ;
- *   3. Supabase renvoie vers `tripora://connexion?code=…`, que le téléphone
- *      confie à Tripora ;
+ *   3. Supabase renvoie vers la page `/retour-app/` du site, qui rouvre
+ *      `tripora://connexion?code=…` : le téléphone le confie à Tripora ;
  *   4. l'app échange ce code contre une session, avec la preuve restée chez
  *      elle. Intercepté par une autre application, le code seul ne vaut rien.
  */
 export async function commencerLaConnexionGoogle(): Promise<void> {
   const { data, error } = await requireSupabase().auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: RETOUR_CONNEXION, skipBrowserRedirect: true },
+    options: { redirectTo: RETOUR_GOOGLE, skipBrowserRedirect: true },
   });
   if (error) throw error;
   if (!data.url) throw new Error('Le serveur n’a pas fourni l’adresse de connexion Google.');

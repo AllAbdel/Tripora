@@ -112,8 +112,12 @@ export default defineConfig(({ mode }) => {
             '**/icons/icon-512.png',
             '**/icons/icon-maskable-512.png',
             '**/*.jpg',
+            '**/retour-app/**',
           ],
-          navigateFallbackDenylist: [/^\/api\//],
+          // La page de retour de connexion de l'application mobile ne doit
+          // jamais être remplacée par Tripora : le site, voyant un code sans
+          // sa preuve PKCE, relancerait la connexion dans le navigateur.
+          navigateFallbackDenylist: [/^\/api\//, /^\/retour-app\//],
           runtimeCaching: [
             {
               // Tuiles de carte : réutilisées agressivement, elles ne changent
@@ -198,6 +202,12 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: mobile ? 'dist-mobile' : 'dist',
       rollupOptions: {
+        // Deux pages : l'application, et la page de passage qui rend la main à
+        // l'application mobile après la connexion Google (voir lib/retourApp).
+        input: {
+          index: fileURLToPath(new URL('./index.html', import.meta.url)),
+          retour: fileURLToPath(new URL('./retour-app/index.html', import.meta.url)),
+        },
         output: {
           /**
            * Les dépendances changent rarement, le code de Tripora souvent.

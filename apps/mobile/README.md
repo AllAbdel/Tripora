@@ -68,11 +68,20 @@ En attendant, le site s'installe sur iPhone comme une app : dans Safari,
 
 ## Une étape à faire côté Supabase
 
-La connexion Google revient dans l'application par l'adresse
-`tripora://connexion`. Supabase ne renvoie que vers les adresses qu'il connaît :
-ajoutez-la dans **Authentication → URL Configuration → Redirect URLs**.
-Sans elle, la connexion Google se termine sur le site au lieu de l'app. Le
-compte invité, lui, marche sans rien configurer.
+La connexion Google s'ouvre dans le navigateur du téléphone (Google refuse
+les vues web embarquées), puis revient par la page
+`https://tripora-3rg.pages.dev/retour-app/` du site, qui rouvre l'application
+sur `tripora://connexion?code=…`. Rien à configurer : Supabase accepte
+toujours une adresse du domaine de son *Site URL*, alors qu'il refusait
+`tripora://connexion` tant qu'elle n'était pas dans sa liste — la connexion se
+terminait sur le site au lieu de l'app.
+
+Si le *Site URL* du projet Supabase change de domaine, changer
+`VITE_RETOUR_APP` dans `apps/web/.env.mobile` en même temps.
+
+Sur un téléphone où le site a déjà été ouvert dans Chrome, la toute première
+tentative après cette mise à jour peut encore passer par l'ancienne version du
+site gardée en cache : elle se met à jour d'elle-même, et la suivante aboutit.
 
 ## Construire soi-même
 

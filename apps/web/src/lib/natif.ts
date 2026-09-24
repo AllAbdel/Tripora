@@ -11,7 +11,8 @@
  *
  * — **la connexion Google** : Google refuse d'afficher sa page de connexion
  *   dans une vue web embarquée. Elle s'ouvre donc dans le vrai navigateur, et
- *   revient dans l'application par une adresse `tripora://connexion` ;
+ *   revient dans l'application par la page `/retour-app/` du site, qui la
+ *   rouvre sur `tripora://connexion` ;
  * — **les liens qu'on donne aux autres** : la page est servie depuis le
  *   téléphone lui-même (`https://localhost`), une adresse qui n'ouvre rien
  *   chez personne. Les invitations partent de l'adresse publique du site ;
@@ -37,14 +38,21 @@ export const estNatif: boolean =
 /** Le schéma d'adresse de l'application : un lien `tripora://…` la rouvre. */
 export const SCHEMA = 'tripora';
 
-/**
- * Où Google renvoie après la connexion, dans l'application.
- *
- * Doit figurer dans Supabase → Authentication → URL Configuration → Redirect
- * URLs. Sans cela, Supabase renvoie vers l'adresse par défaut du projet — le
- * site — et la connexion se termine dans le navigateur au lieu de l'app.
- */
+/** L'adresse qui rouvre l'application à la fin de la connexion Google. */
 export const RETOUR_CONNEXION = `${SCHEMA}://connexion`;
+
+/**
+ * Où Supabase renvoie après Google, pour l'application.
+ *
+ * Pas directement `tripora://connexion` : Supabase ne renvoie que vers une
+ * adresse de sa liste, et retombe sinon sur celle du site — la connexion
+ * partie de l'APK se terminait alors dans le navigateur. On passe par la page
+ * `/retour-app/` du site principal du projet, toujours acceptée, qui rouvre
+ * l'application avec le code (voir `lib/retourApp.ts`). Sans page configurée,
+ * on garde l'adresse directe : elle marche dès qu'elle est dans la liste.
+ */
+export const RETOUR_GOOGLE: string =
+  (import.meta.env.VITE_RETOUR_APP ?? '').trim() || RETOUR_CONNEXION;
 
 const ORIGINE_PUBLIQUE = (import.meta.env.VITE_SITE_ORIGIN ?? '').trim().replace(/\/+$/u, '');
 

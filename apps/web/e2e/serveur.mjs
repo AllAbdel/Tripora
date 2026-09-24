@@ -54,6 +54,11 @@ const GLOBAUX = enTetesDuSite();
 createServer((requete, reponse) => {
   const chemin = decodeURIComponent((requete.url ?? '/').split('?')[0]);
   let fichier = join(RACINE, normalize(chemin));
+  // Un dossier sert son index.html, comme chez les deux hébergeurs : c'est
+  // ainsi que /retour-app/ sert sa propre page, et non l'application.
+  if (fichier.startsWith(RACINE) && existsSync(join(fichier, 'index.html'))) {
+    fichier = join(fichier, 'index.html');
+  }
   // Repli page unique : /voyages/abc/carte doit ouvrir l'application, pas une
   // erreur 404 — c'est tout l'intérêt d'un lien d'invitation partagé.
   if (!fichier.startsWith(RACINE) || !existsSync(fichier) || statSync(fichier).isDirectory()) {

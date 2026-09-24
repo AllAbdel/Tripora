@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#0b1220" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <title>Tripora</title>
+    <!-- Une page de passage, vue une seconde : pas de feuille de style de
+         l'application (des dizaines de kilo-octets pour un bouton), juste de
+         quoi la rendre lisible dans les deux thèmes. -->
+    <style>
+      :root {
+        color-scheme: light dark;
+        --fond: #f5f8fc;
+        --texte: #0f1b2d;
+        --discret: #5b6b82;
+        --marque: #0a84ff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fond: #0b1220;
+          --texte: #e8eef7;
+          --discret: #93a3ba;
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        background: var(--fond);
+        color: var(--texte);
+        font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        max-width: 22rem;
+        padding: 2rem 1rem;
+        text-align: center;
+      }
+      h1 {
+        margin: 1rem 0 0.5rem;
+        font-size: 1.25rem;
+      }
+      p {
+        margin: 0 0 1.5rem;
+        color: var(--discret);
+      }
+      .bouton {
+        display: inline-block;
+        min-width: 14rem;
+        padding: 0.875rem 1.5rem;
+        border-radius: 999px;
+        background: var(--marque);
+        color: #fff;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .bouton:focus-visible {
+        outline: 3px solid var(--texte);
+        outline-offset: 3px;
+      }
+      #aide {
+        margin-top: 1.5rem;
+        font-size: 0.875rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/favicon.svg" width="56" height="56" alt="" />
+      <h1 id="titre">Retour dans Tripora…</h1>
+      <p id="message">Un instant, l’application va se rouvrir.</p>
+      <a id="ouvrir" class="bouton" href="/">Ouvrir Tripora</a>
+      <p id="aide"></p>
+    </main>
+    <script type="module" src="/src/retour-app.ts"></script>
+  </body>
+</html>
