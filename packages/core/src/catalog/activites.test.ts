@@ -56,6 +56,8 @@ describe('catalogue d’activités', () => {
     'las-vegas/grand-canyon': 'la rive ouest du Grand Canyon est l’excursion à la journée depuis Las Vegas',
     'melbourne/douze-apotres': 'la Great Ocean Road se fait en une longue journée au départ de Melbourne',
     'palawan/el-nido': 'Palawan est une île de quatre cents kilomètres : El Nido se rejoint en cinq heures de route depuis Puerto Princesa',
+    'belfast/chaussee-des-geants': 'la Chaussée des Géants est l’excursion classique à la journée depuis Belfast, par la route côtière d’Antrim',
+    'bergen/naeroyfjord': 'le Nærøyfjord se fait à la journée depuis Bergen, par le train de Flåm et le bateau',
   };
 
   it('place chaque activité près de sa destination', () => {
