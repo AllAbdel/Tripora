@@ -33,7 +33,7 @@ chose que la page de confidentialité, sinon Google refuse la publication.
 > voit ce qui plaît, sans savoir qui a dit non.
 >
 > UN PROGRAMME JOUR PAR JOUR
-> 1 700 activités dans plus de 300 destinations, avec leur durée, leur prix et
+> 2 100 activités dans près de 400 destinations, avec leur durée, leur prix et
 > le meilleur moment de la journée. Tripora compose les journées, vous les
 > ajustez, et tout s'affiche sur la carte.
 >
@@ -103,8 +103,9 @@ une déclaration faite en ton nom.
 
 Déjà en place dans le code :
 
-- 311 pages publiques « Que faire à … » (`/destinations/<id>`) et leur
-  sommaire (`/destinations`), écrites en HTML au moment du build ;
+- 389 pages publiques « Que faire à … » (`/destinations/<id>`), leur
+  sommaire (`/destinations`) et 12 pages « Où partir en <mois> ? »
+  (`/ou-partir-en/octobre`…), écrites en HTML au moment du build ;
 - `sitemap.xml` et `robots.txt` à la racine du site ;
 - liens canoniques vers https://tripora-3rg.pages.dev (le même site servi par
   Vercel ne fait pas doublon) ;
