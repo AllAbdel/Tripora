@@ -1,4 +1,6 @@
 import { Link } from 'react-router';
+import { PropositionDeRappels } from '@/components/ReglageDesRappels';
+import { rappelsPossibles } from '@/lib/rappels';
 import { BedDouble, CalendarClock, Check, HandCoins, KeyRound, Plus, Sun } from 'lucide-react';
 import {
   dateDuJour,
@@ -103,6 +105,7 @@ export function LeVoyageAuPresent({
             Ajouter un hébergement
           </Link>
         )}
+        {rappelsPossibles && <PropositionDeRappels />}
       </Cadre>
     );
   }

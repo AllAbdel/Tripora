@@ -42,6 +42,7 @@ export * from './sondages.js';
 export * from './taches.js';
 export * from './paiement.js';
 export * from './coffre.js';
+export * from './rappels.js';
 export * from './decouverte.js';
 export * from './confirmation.js';
 export * from './distinction.js';

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="true"
@@ -51,4 +52,9 @@
          proche. Demandée au moment du geste, jamais au lancement. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Les rappels n'ont pas besoin d'être à la minute près : le greffon des
+         notifications déclare les alarmes exactes, on les retire (un rappel
+         peut arriver quelques minutes plus tard, et aucun écran de réglage ne
+         s'ouvre pour les demander). -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
 </manifest>

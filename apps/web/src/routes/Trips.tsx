@@ -18,6 +18,7 @@ import { LigneGlissante } from '@/components/LigneGlissante';
 import { ConfirmerSuppression } from '@/components/ConfirmerSuppression';
 import { basculerFavori, favorisEnTete, listerFavoris } from '@/lib/favoris';
 import { signaler } from '@/lib/feedback';
+import { useRappelsDesVoyages } from '@/lib/rappels';
 
 export default function Trips() {
   const { identity, backendReady } = useAuth();
@@ -30,6 +31,8 @@ export default function Trips() {
     queryKey: ['trips', repository.kind],
     queryFn: () => repository.list(),
   });
+  // Sur le téléphone : la veille de chaque départ, le lendemain de chaque retour.
+  useRappelsDesVoyages(data);
 
   const favoris = useQuery({
     queryKey: ['favoris', repository.kind],

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { estNatif, lireLienEntrant } from '@/lib/natif';
 import { conclureLaConnexion } from '@/lib/connexionNative';
+import { suivreLesAppuis } from '@/lib/rappels';
 
 /**
  * Ce que le téléphone dit à l'application, traduit pour le routeur.
@@ -17,7 +18,8 @@ import { conclureLaConnexion } from '@/lib/connexionNative';
  *   Tripora, pas seulement celui du téléphone — sinon une heure blanche
  *   disparaît sur le fond clair du thème clair choisi la nuit ;
  * — **l'écran de lancement**, retiré quand la première page est dessinée
- *   plutôt qu'au bout d'un délai arbitraire.
+ *   plutôt qu'au bout d'un délai arbitraire ;
+ * — **les rappels** : un appui sur la notification ouvre l'écran concerné.
  */
 export function PontNatif() {
   const navigate = useNavigate();
@@ -80,6 +82,9 @@ export function PontNatif() {
     const observateur = new MutationObserver(suivreLeTheme);
     observateur.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     retraits.push(() => observateur.disconnect());
+
+    // Un appui sur un rappel ouvre l'écran dont il parle.
+    retraits.push(suivreLesAppuis((lien) => navigate(lien)));
 
     return () => {
       actif = false;

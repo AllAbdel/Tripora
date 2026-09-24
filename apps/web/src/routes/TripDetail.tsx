@@ -26,6 +26,7 @@ import { requeteDesSondages } from '@/lib/sondages';
 import { requeteDesTaches } from '@/lib/taches';
 import { requeteDuCoffre } from '@/lib/coffre';
 import { requeteDesDocuments } from '@/lib/documents';
+import { useRappelsDuVoyage } from '@/lib/rappels';
 import { requeteDesEnvies } from '@/lib/envies';
 import { supabase } from '@/lib/supabase';
 import { getCollaboration } from '@/lib/collaboration';
@@ -162,6 +163,24 @@ export default function TripDetail() {
   const villeRetenue = data?.lockedDestinationId
     ? findDestination(data.lockedDestinationId)
     : undefined;
+
+  // Les rappels sur le téléphone : la veille du départ, les vols et les
+  // visites réservés, les tâches qui me reviennent.
+  const datesExactes = data?.constraints.dateMode === 'exact';
+  const voyageARappeler = useMemo(
+    () =>
+      data
+        ? {
+            id: data.summary.id,
+            ville: villeRetenue?.name ?? null,
+            debut: datesExactes ? (data.constraints.startDate ?? null) : null,
+            fin: datesExactes ? (data.constraints.endDate ?? null) : null,
+            fuseau: villeRetenue?.timezone ?? null,
+          }
+        : null,
+    [data, villeRetenue, datesExactes],
+  );
+  useRappelsDuVoyage(voyageARappeler, { moi: moiIci, taches: taches.data, reservations: reservations.data });
 
   /**
    * Les étapes choisies à la création, quand il y en a plusieurs.

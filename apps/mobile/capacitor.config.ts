@@ -31,6 +31,12 @@ const config: CapacitorConfig = {
       insetsHandling: 'css',
       initialViewportFitValueHint: 'cover',
     },
+    LocalNotifications: {
+      // La silhouette du repère de carte (res/drawable/ic_stat_tripora.xml),
+      // teintée du bleu de Tripora. Sans elle, Android affiche un « i ».
+      smallIcon: 'ic_stat_tripora',
+      iconColor: '#0A84FF',
+    },
   },
 };
 

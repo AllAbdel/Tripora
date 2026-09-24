@@ -23,6 +23,8 @@ import { PersonnesBloquees } from '@/components/PersonnesBloquees';
 import { ChoixDeLangue } from '@/components/ChoixDeLangue';
 import { ApercuDuPasseport } from '@/components/ApercuDuPasseport';
 import { MesMoyensDePaiement } from '@/components/MesMoyensDePaiement';
+import { ReglageDesRappels } from '@/components/ReglageDesRappels';
+import { rappelsPossibles } from '@/lib/rappels';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -105,6 +107,12 @@ export default function Profile() {
         <Section titre="État des services">
           <EtatDesServices />
         </Section>
+
+        {rappelsPossibles && (
+          <Section titre="Rappels">
+            <ReglageDesRappels />
+          </Section>
+        )}
 
         <Section titre="Langue">
           <ChoixDeLangue />
