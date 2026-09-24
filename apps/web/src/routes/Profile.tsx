@@ -22,6 +22,7 @@ import { MonProfilDeclare } from '@/components/MonProfilDeclare';
 import { PersonnesBloquees } from '@/components/PersonnesBloquees';
 import { ChoixDeLangue } from '@/components/ChoixDeLangue';
 import { ApercuDuPasseport } from '@/components/ApercuDuPasseport';
+import { MesMoyensDePaiement } from '@/components/MesMoyensDePaiement';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -91,6 +92,10 @@ export default function Profile() {
         </Card>
 
         <ApercuDuPasseport />
+
+        <Section titre="Pour être remboursé">
+          <MesMoyensDePaiement />
+        </Section>
 
         <Section titre="Pour rejoindre des inconnus">
           <MonProfilDeclare />

@@ -23,6 +23,9 @@ import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
 import { Icone } from '@/components/Icone';
 import { PrevuEtReel } from '@/components/PrevuEtReel';
+import { IndiquerMesMoyens, PayerCeVirement } from '@/components/PayerCeVirement';
+import { getPaiements } from '@/lib/paiements';
+import { supabase } from '@/lib/supabase';
 import { useProposals } from '@/lib/useProposals';
 
 export default function TripBudget() {
@@ -78,6 +81,17 @@ export default function TripBudget() {
   const { prix } = useProposals(voyage.data);
 
   const participants = useMemo(() => [...noms.keys()], [noms]);
+
+  // Sans serveur, « moi » est le seul membre local.
+  const moi = supabase ? (identity?.id ?? null) : 'moi';
+
+  // Comment chacun veut être remboursé : pour ouvrir le paiement d'un geste.
+  const moyens = useQuery({
+    queryKey: ['moyens-de-paiement', id, participants],
+    queryFn: () => getPaiements().deCesPersonnes(participants),
+    enabled: participants.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
 
   /**
    * Combien de personnes partagent la note.
@@ -222,7 +236,7 @@ export default function TripBudget() {
             {comptes.virements.map((virement, index) => (
               <li
                 key={index}
-                className="filet flex items-center gap-2 border-b py-2.5 text-sm last:border-b-0 last:pb-0"
+                className="filet flex flex-wrap items-center gap-2 border-b py-2.5 text-sm last:border-b-0 last:pb-0"
               >
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {noms.get(virement.from) ?? 'Quelqu’un'}
@@ -234,6 +248,22 @@ export default function TripBudget() {
                 <span className="chiffres shrink-0 font-semibold">
                   {formatCents(virement.cents)}
                 </span>
+                {/* Celui qui doit payer a de quoi le faire tout de suite ; celui
+                    qu'on doit rembourser, de quoi le rendre possible. */}
+                {virement.from === moi && (
+                  <div className="w-full basis-full pt-1.5">
+                    <PayerCeVirement
+                      moyens={moyens.data?.get(virement.to)}
+                      montantCents={virement.cents}
+                      nom={noms.get(virement.to) ?? 'Cette personne'}
+                    />
+                  </div>
+                )}
+                {virement.to === moi && moyens.isSuccess && !moyens.data.get(moi) && (
+                  <div className="w-full basis-full pt-1.5">
+                    <IndiquerMesMoyens />
+                  </div>
+                )}
               </li>
             ))}
           </ul>
