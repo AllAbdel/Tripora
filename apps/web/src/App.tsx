@@ -49,6 +49,7 @@ const AFaire = lazy(() => import('@/routes/AFaire'));
 const TripReservations = lazy(() => import('@/routes/TripReservations'));
 const TripSondages = lazy(() => import('@/routes/TripSondages'));
 const TripTaches = lazy(() => import('@/routes/TripTaches'));
+const TripCoffre = lazy(() => import('@/routes/TripCoffre'));
 const Decouvrir = lazy(() => import('@/routes/Decouvrir'));
 const Explorer = lazy(() => import('@/routes/Explorer'));
 const Passeport = lazy(() => import('@/routes/Passeport'));
@@ -91,6 +92,7 @@ function TabbedRoutes() {
         <Route path="/voyages/:id/reservations" element={<TripReservations />} />
         <Route path="/voyages/:id/sondages" element={<TripSondages />} />
         <Route path="/voyages/:id/qui-fait-quoi" element={<TripTaches />} />
+        <Route path="/voyages/:id/coffre" element={<TripCoffre />} />
         <Route path="/voyages/:id/ouverts" element={<TripsOuverts />} />
         <Route path="/voyages/:id/publier" element={<PublierLeTrip />} />
         <Route path="/voyages/:id/candidatures" element={<CandidaturesRecues />} />

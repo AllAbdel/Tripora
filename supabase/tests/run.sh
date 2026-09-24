@@ -48,6 +48,9 @@ psql_run -q -d "$DB" -f "$ROOT/supabase/tests/taches_test.sql"
 echo "→ Tests des moyens de paiement"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/paiement_test.sql"
 
+echo "→ Tests du coffre"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/coffre_test.sql"
+
 echo "→ Tests des trips ouverts"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/trips_ouverts_test.sql"
 

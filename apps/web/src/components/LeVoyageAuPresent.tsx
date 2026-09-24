@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { BedDouble, CalendarClock, Check, HandCoins, Plus, Sun } from 'lucide-react';
+import { BedDouble, CalendarClock, Check, HandCoins, KeyRound, Plus, Sun } from 'lucide-react';
 import {
   dateDuJour,
   heureLisible,
@@ -39,6 +39,7 @@ export function LeVoyageAuPresent({
   fuseau,
   reservations,
   itineraire,
+  infosDuCoffre,
   maintenant,
 }: {
   tripId: string;
@@ -49,6 +50,8 @@ export function LeVoyageAuPresent({
   fuseau?: string | undefined;
   reservations: readonly Reservation[] | undefined;
   itineraire: readonly ItineraryDayView[] | undefined;
+  /** Combien d'infos dans le coffre ; `undefined` tant qu'on ne sait pas. */
+  infosDuCoffre?: number | undefined;
   /** Pour les tests : l'instant présent. */
   maintenant?: Date;
 }) {
@@ -82,6 +85,17 @@ export function LeVoyageAuPresent({
               ))
             )}
           </ul>
+        )}
+        {/* Les derniers jours : le code de la boîte à clés arrive par
+            message, c'est le moment de le ranger là où on le retrouvera. */}
+        {moment.dansJours <= 3 && infosDuCoffre === 0 && (
+          <p className="text-muted text-sm">
+            Le code d’accès, le wifi, le numéro de l’hôte ?{' '}
+            <Link to={`/voyages/${tripId}/coffre`} className="text-brand-600 dark:text-brand-300 font-medium underline">
+              Rangez-les dans le coffre
+            </Link>{' '}
+            pour les retrouver sans réseau.
+          </p>
         )}
         {reservations && nuits > 0 && (
           <Link to={`/voyages/${tripId}/reservations`} className={LIEN}>
@@ -144,6 +158,12 @@ export function LeVoyageAuPresent({
             <Plus className="size-4" aria-hidden />
             Une dépense
           </Link>
+          {Boolean(infosDuCoffre) && (
+            <Link to={`/voyages/${tripId}/coffre`} className={LIEN}>
+              <KeyRound className="size-4" aria-hidden />
+              Codes et wifi
+            </Link>
+          )}
         </div>
       </Cadre>
     );

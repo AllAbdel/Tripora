@@ -33,6 +33,7 @@ export function OutilsDuVoyage({
   sondagesAVoter = 0,
   taches,
   aDecouvrir = 0,
+  coffre = null,
 }: {
   tripId: string;
   destinationVerrouillee: boolean;
@@ -55,6 +56,8 @@ export function OutilsDuVoyage({
   taches?: { aFaire: number; pourMoi: number; enRetard: number; total: number };
   /** Les idées du carnet que je n'ai pas encore jugées. */
   aDecouvrir?: number;
+  /** « 2 codes · 1 wifi », ou `null` quand le coffre est vide. */
+  coffre?: string | null;
 }) {
   const aDesActivites = nombreDActivites > 0;
   const cases = [
@@ -103,6 +106,13 @@ export function OutilsDuVoyage({
         nombreDeReservations > 0
           ? `${nombreDeReservations} réservation${nombreDeReservations > 1 ? 's' : ''}`
           : 'Hôtels, visites, trajets',
+      accent: false,
+    },
+    {
+      to: `/voyages/${tripId}/coffre`,
+      pastille: 'coffre' as const,
+      titre: 'Coffre',
+      detail: coffre ?? 'Codes, wifi, adresses',
       accent: false,
     },
     {

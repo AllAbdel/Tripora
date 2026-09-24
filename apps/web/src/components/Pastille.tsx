@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   FileText,
   Globe2,
+  KeyRound,
   Layers,
   MessagesSquare,
   Smartphone,
@@ -70,7 +71,8 @@ export type NomDePastille =
   | 'passeport'
   | 'sondages'
   | 'taches'
-  | 'decouvrir';
+  | 'decouvrir'
+  | 'coffre';
 
 /** Un pictogramme dessiné (`PageGlyphs`) ou un pictogramme de bibliothèque. */
 type IconePastille = ComponentType<SVGProps<SVGSVGElement>> | LucideIcon;
@@ -123,6 +125,9 @@ const PASTILLES: Readonly<Record<NomDePastille, Pastille>> = {
   // Découvrir : un paquet de cartes, dans le dégradé chaud des écrans de
   // vidéos courtes — c'est le geste qu'il emprunte.
   decouvrir: { icone: Layers, degrade: ['#ff8a65', '#e8457a'], auTrait: true },
+  // Le coffre : une clé, dans un bronze de serrure — ni l'or du passeport,
+  // ni l'orange de la valise.
+  coffre: { icone: KeyRound, degrade: ['#c49a6c', '#9a6a3a'], auTrait: true },
 };
 
 const TAILLES = {
