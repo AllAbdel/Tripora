@@ -30,27 +30,59 @@ function tactile(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches === true;
 }
 
+/**
+ * L'état partagé, et le délai au retour.
+ *
+ * La barre se retire dès qu'un champ prend le focus, mais ne revient qu'un
+ * instant après qu'il l'a perdu. Revenir tout de suite volait le geste : en
+ * touchant « Envoyer » clavier ouvert, le focus quitte le champ à l'appui du
+ * doigt, la barre réapparaît à l'endroit même où il se pose, et le relâcher
+ * tombe sur elle — le bouton ne reçoit jamais le clic. Le délai couvre aussi
+ * le passage d'un champ au suivant, sans clignotement entre les deux.
+ */
+const DELAI_DE_RETOUR_MS = 300;
+let ouvert = false;
+let attente: ReturnType<typeof setTimeout> | undefined;
+const abonnes = new Set<() => void>();
+
+function recalculer(): void {
+  const suivant = typeof document !== 'undefined' && tactile() && ouvreLeClavier(document.activeElement);
+  if (suivant === ouvert) return;
+  ouvert = suivant;
+  for (const rappel of abonnes) rappel();
+}
+
+function surFocus(): void {
+  clearTimeout(attente);
+  if (tactile() && ouvreLeClavier(document.activeElement)) recalculer();
+  else attente = setTimeout(recalculer, DELAI_DE_RETOUR_MS);
+}
+
+function surPerte(): void {
+  clearTimeout(attente);
+  attente = setTimeout(recalculer, DELAI_DE_RETOUR_MS);
+}
+
 function abonner(rappel: () => void): () => void {
   if (typeof document === 'undefined') return () => {};
-  // En passant d'un champ au suivant, le focus quitte le premier avant
-  // d'arriver au second : sans ce délai, la barre réapparaîtrait le temps
-  // d'une image, entre les deux.
-  let attente: ReturnType<typeof setTimeout> | undefined;
-  const differe = () => {
-    clearTimeout(attente);
-    attente = setTimeout(rappel, 50);
-  };
-  document.addEventListener('focusin', rappel);
-  document.addEventListener('focusout', differe);
+  if (abonnes.size === 0) {
+    document.addEventListener('focusin', surFocus);
+    document.addEventListener('focusout', surPerte);
+    recalculer();
+  }
+  abonnes.add(rappel);
   return () => {
-    clearTimeout(attente);
-    document.removeEventListener('focusin', rappel);
-    document.removeEventListener('focusout', differe);
+    abonnes.delete(rappel);
+    if (abonnes.size === 0) {
+      clearTimeout(attente);
+      document.removeEventListener('focusin', surFocus);
+      document.removeEventListener('focusout', surPerte);
+    }
   };
 }
 
 function lire(): boolean {
-  return typeof document !== 'undefined' && tactile() && ouvreLeClavier(document.activeElement);
+  return ouvert;
 }
 
 export function useClavierOuvert(): boolean {

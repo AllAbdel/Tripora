@@ -52,6 +52,26 @@ describe('le clavier ouvert', () => {
     expect(screen.getByText('clavier')).toBeInTheDocument();
   });
 
+  it('ne revient qu’un instant après, pour ne pas voler le geste en cours', () => {
+    vi.useFakeTimers();
+    ecranTactile(true);
+    render(
+      <>
+        <Temoin />
+        <input aria-label="Nom" />
+        <button>Envoyer</button>
+      </>,
+    );
+    act(() => screen.getByLabelText('Nom').focus());
+    expect(screen.getByText('clavier')).toBeInTheDocument();
+    // Le doigt se pose sur « Envoyer » : le focus y passe, la barre attend.
+    act(() => screen.getByRole('button', { name: 'Envoyer' }).focus());
+    expect(screen.getByText('clavier')).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(400));
+    expect(screen.getByText('onglets')).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
   it('ne change rien à la souris', () => {
     ecranTactile(false);
     render(

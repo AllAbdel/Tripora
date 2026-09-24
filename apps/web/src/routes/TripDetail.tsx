@@ -8,6 +8,7 @@ import {
   formatCents,
   hasAnswered,
   MONTHS_FR,
+  sondagesEnAttente,
   targetMonth,
   tripReadiness,
 } from '@tripora/core';
@@ -17,6 +18,8 @@ import { Button } from '@/components/ui/Button';
 import { ProposalCard } from '@/components/ProposalCard';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { requeteDesReservations } from '@/lib/reservations';
+import { requeteDesSondages } from '@/lib/sondages';
+import { supabase } from '@/lib/supabase';
 import { getCollaboration } from '@/lib/collaboration';
 import { getVoting, groupChoice, type VoteValue } from '@/lib/votes';
 import { useProposals } from '@/lib/useProposals';
@@ -106,6 +109,7 @@ export default function TripDetail() {
   // L'itinéraire n'est chargé que si la destination est arrêtée : avant, il
   // n'existe pas, et l'appel serait un aller-retour pour un tableau vide.
   const reservations = useQuery(requeteDesReservations(id));
+  const sondages = useQuery(requeteDesSondages(id));
 
   const itineraire = useQuery({
     queryKey: ['itineraire', id],
@@ -285,6 +289,8 @@ export default function TripDetail() {
             candidaturesEnAttente={candidatures.data ?? 0}
             nombreDActivites={nombreDActivites.data ?? 0}
             nombreDeReservations={reservations.data?.length ?? 0}
+            nombreDeSondages={sondages.data?.length ?? 0}
+            sondagesAVoter={sondagesEnAttente(sondages.data ?? [], supabase ? identity?.id : 'moi')}
           />
 
           {data.lockedDestinationId && (

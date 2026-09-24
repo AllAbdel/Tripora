@@ -244,3 +244,14 @@ export function phraseDeReservation(moment: MomentDeReservation): string {
     }
   }
 }
+
+/** Le fournisseur d'un lien collé : « airbnb.fr/rooms/… » est Airbnb. */
+export function trouverFournisseurParLien(lien: string): Fournisseur | undefined {
+  let hote: string;
+  try {
+    hote = new URL(lien).hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
+  return FOURNISSEURS.find((fournisseur) => fournisseur.indices.some((indice) => hote.includes(indice)));
+}

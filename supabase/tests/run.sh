@@ -39,6 +39,9 @@ done
 echo "→ Tests RLS"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/rls_test.sql"
 
+echo "→ Tests des sondages"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/sondages_test.sql"
+
 echo "→ Tests des trips ouverts"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/trips_ouverts_test.sql"
 

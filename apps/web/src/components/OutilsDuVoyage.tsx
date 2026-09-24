@@ -29,6 +29,8 @@ export function OutilsDuVoyage({
   candidaturesEnAttente,
   nombreDActivites,
   nombreDeReservations = 0,
+  nombreDeSondages = 0,
+  sondagesAVoter = 0,
 }: {
   tripId: string;
   destinationVerrouillee: boolean;
@@ -44,6 +46,9 @@ export function OutilsDuVoyage({
   nombreDActivites: number;
   /** Ce que le groupe a déjà réservé. */
   nombreDeReservations?: number;
+  /** Les sondages du voyage, et ceux qui attendent mon vote. */
+  nombreDeSondages?: number;
+  sondagesAVoter?: number;
 }) {
   const aDesActivites = nombreDActivites > 0;
   const cases = [
@@ -83,6 +88,17 @@ export function OutilsDuVoyage({
           ? `${nombreDeReservations} réservation${nombreDeReservations > 1 ? 's' : ''}`
           : 'Hôtels, visites, trajets',
       accent: false,
+    },
+    {
+      to: `/voyages/${tripId}/sondages`,
+      pastille: 'sondages' as const,
+      titre: 'Sondages',
+      detail:
+        sondagesAVoter > 0 ? `${sondagesAVoter} à voter`
+        : nombreDeSondages > 0 ? `${nombreDeSondages} sondage${nombreDeSondages > 1 ? 's' : ''}`
+        : 'Dates, logement, resto',
+      // Un vote attendu, c'est le groupe qui attend : ça se remarque.
+      accent: sondagesAVoter > 0,
     },
     {
       to: `/voyages/${tripId}/discussion`,
