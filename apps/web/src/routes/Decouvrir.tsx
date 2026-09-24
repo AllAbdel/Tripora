@@ -14,12 +14,21 @@ import {
   type ComptesDAvis,
   type PreferenceAxis,
 } from '@tripora/core';
-import { activitesDe, rechercherLaSortie, seReserve, type Activite } from '@tripora/core/activites';
+import {
+  activitesDe,
+  libelleActivite,
+  rechercherLaSortie,
+  seReserve,
+  type Activite,
+  type MomentDeLaJournee,
+} from '@tripora/core/activites';
 import { CarteQuiGlisse, type CarteQuiGlisseRef, type Decision } from '@/components/decouvrir/CarteQuiGlisse';
 import { Icone } from '@/components/Icone';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { chargerIllustrations, estAffichable, type Illustration } from '@/lib/illustrations';
 import { comptesDesEnvies, requeteDesEnvies, usePoserUneEnvie } from '@/lib/envies';
+import { requeteDesLieux } from '@/lib/places';
+import { chargerLeResume } from '@/lib/resumeWikipedia';
 import { useAuth } from '@/lib/auth-context';
 import { direLaDuree } from '@/lib/duree';
 import { cn } from '@/lib/cn';
@@ -39,7 +48,45 @@ import { cn } from '@/lib/cn';
 
 type Vue = 'decouvrir' | 'classement';
 
-const MOMENTS: Record<Activite['moment'], string> = {
+/**
+ * Une idée à découvrir : une activité du carnet, écrite à la main, ou — là où
+ * le carnet n'est pas encore passé — un lieu d'OpenStreetMap qu'un article
+ * Wikipédia décrit, et donc qu'on peut montrer et raconter.
+ */
+interface Idee {
+  id: string;
+  nom: string;
+  axis: PreferenceAxis;
+  prixCents: number;
+  /** « Temple », « Point de vue ». */
+  libelle: string;
+  resume?: string | undefined;
+  dureeHeures?: number | undefined;
+  moment?: MomentDeLaJournee | undefined;
+  wikipedia?: string | undefined;
+  /** L'activité du carnet, quand l'idée en vient : elle connaît son prix et où la réserver. */
+  activite?: Activite | undefined;
+}
+
+function depuisLeCarnet(activite: Activite): Idee {
+  return {
+    id: activite.id,
+    nom: activite.nom,
+    axis: activite.axis,
+    prixCents: activite.prixCents,
+    libelle: libelleActivite(activite),
+    resume: activite.resume,
+    dureeHeures: activite.dureeHeures,
+    moment: activite.moment,
+    wikipedia: activite.wikipedia,
+    activite,
+  };
+}
+
+/** Assez pour un vrai paquet, pas au point de noyer le classement. */
+const LIEUX_MAX = 40;
+
+const MOMENTS: Record<MomentDeLaJournee, string> = {
   matin: 'Le matin',
   'apres-midi': 'L’après-midi',
   soir: 'Le soir',
@@ -78,8 +125,31 @@ export default function Decouvrir() {
   });
   const destinationId = voyage.data?.lockedDestinationId ?? null;
   const ville = destinationId ? findDestination(destinationId) : undefined;
-  const toutes = useMemo(() => (destinationId ? activitesDe(destinationId) : []), [destinationId]);
-  const parId = useMemo(() => new Map(toutes.map((activite) => [activite.id, activite])), [toutes]);
+  const duCarnet = useMemo(
+    () => (destinationId ? activitesDe(destinationId).map(depuisLeCarnet) : []),
+    [destinationId],
+  );
+
+  // Là où le carnet n'est pas encore passé, les lieux d'OpenStreetMap qu'un
+  // article décrit : il y a de quoi les montrer et les raconter.
+  const lieux = useQuery({ ...requeteDesLieux(ville), enabled: Boolean(ville) && duCarnet.length === 0 });
+  const toutes = useMemo<Idee[]>(() => {
+    if (duCarnet.length > 0) return duCarnet;
+    return (lieux.data?.liste ?? [])
+      .filter((lieu) => lieu.wikipedia && !lieu.id.startsWith('activite:'))
+      .slice(0, LIEUX_MAX)
+      .map((lieu) => ({
+        id: lieu.id,
+        nom: lieu.name,
+        axis: lieu.axis,
+        prixCents: 0,
+        libelle: lieu.label,
+        resume: lieu.extract,
+        wikipedia: lieu.wikipedia,
+      }));
+  }, [duCarnet, lieux.data]);
+  const chercheDesLieux = duCarnet.length === 0 && (lieux.isLoading || Boolean(lieux.data?.enAttente));
+  const parId = useMemo(() => new Map(toutes.map((idee) => [idee.id, idee])), [toutes]);
 
   // La même requête qu'« À faire » : les photos sont déjà là si on en vient.
   const images = useQuery({
@@ -102,9 +172,9 @@ export default function Decouvrir() {
     [toutes, comptes, envies, filtre, revoirLesRefus],
   );
 
-  const courante: Activite | undefined =
+  const courante: Idee | undefined =
     enRevue !== null ? parId.get(pile[enRevue]!) : (paquet[0] ?? undefined);
-  const suivante: Activite | undefined = enRevue !== null ? undefined : paquet[1];
+  const suivante: Idee | undefined = enRevue !== null ? undefined : paquet[1];
   const jugees = Object.values(comptes).filter((compte) => compte.moi !== null).length;
   const refusees = Object.values(comptes).filter((compte) => compte.moi === 'sans-moi').length;
 
@@ -155,7 +225,7 @@ export default function Decouvrir() {
     }
   }, [paquet, images.data]);
 
-  const axesPresents = useMemo(() => [...new Set(toutes.map((activite) => activite.axis))], [toutes]);
+  const axesPresents = useMemo(() => [...new Set(toutes.map((idee) => idee.axis))], [toutes]);
 
   return (
     <div className="fixed inset-0 z-30 flex flex-col bg-[#0b0f17] text-white lg:left-64">
@@ -210,16 +280,22 @@ export default function Decouvrir() {
                 Arrêtez d’abord la destination : c’est elle qui décide de ce qu’il y a à découvrir.
               </Message>
             )}
-            {destinationId && toutes.length === 0 && (
+            {destinationId && toutes.length === 0 && chercheDesLieux && (
+              <Message titre={`Recherche des lieux de ${ville?.name ?? 'la destination'}…`}>
+                Les idées arrivent d’OpenStreetMap et de Wikipédia, quelques secondes.
+              </Message>
+            )}
+            {destinationId && toutes.length === 0 && !chercheDesLieux && (
               <Message titre="Rien à découvrir ici pour l’instant">
-                {ville?.name} n’est pas encore dans le carnet d’activités.
+                {ville?.name} n’est pas encore dans le carnet d’activités, et aucun lieu documenté n’a
+                été trouvé autour.
               </Message>
             )}
 
             {/* La carte suivante, déjà là derrière : on sent qu'il y en a d'autres. */}
             {suivante && (
               <div aria-hidden className="absolute inset-x-3 inset-y-0 scale-[0.95] opacity-60">
-                <FaceDeLIdee activite={suivante} illustration={images.data?.[suivante.id]} ville="" compte={undefined} statique />
+                <FaceDeLIdee idee={suivante} illustration={images.data?.[suivante.id]} ville="" compte={undefined} statique />
               </div>
             )}
 
@@ -234,7 +310,7 @@ export default function Decouvrir() {
                   surRetour={revenir}
                 >
                   <FaceDeLIdee
-                    activite={courante}
+                    idee={courante}
                     illustration={images.data?.[courante.id]}
                     ville={ville?.name ?? ''}
                     compte={comptes[courante.id]}
@@ -305,22 +381,33 @@ export default function Decouvrir() {
 /* --------------------------------------------------------------- La carte -- */
 
 function FaceDeLIdee({
-  activite,
+  idee,
   illustration,
   ville,
   compte,
   statique = false,
 }: {
-  activite: Activite;
+  idee: Idee;
   illustration: Illustration | undefined;
   ville: string;
   compte: ComptesDAvis | undefined;
   statique?: boolean;
 }) {
   const montrable = estAffichable(illustration);
+  const { activite } = idee;
+  // Un lieu d'OpenStreetMap n'a pas de phrase écrite pour lui : on prend deux
+  // phrases de son article, le temps qu'il est à l'écran.
+  const resume = useQuery({
+    queryKey: ['resume-wikipedia', idee.wikipedia],
+    queryFn: () => chargerLeResume(idee.wikipedia),
+    enabled: !statique && !idee.resume && Boolean(idee.wikipedia),
+    staleTime: 30 * 24 * 60 * 60 * 1000,
+    gcTime: 30 * 24 * 60 * 60 * 1000,
+  });
+  const texte = idee.resume ?? resume.data?.extrait;
   // Le sens du mouvement de caméra change d'une carte à l'autre, sans hasard :
   // la même carte bouge toujours de la même façon.
-  const graine = [...activite.id].reduce((somme, lettre) => somme + lettre.charCodeAt(0), 0);
+  const graine = [...idee.id].reduce((somme, lettre) => somme + lettre.charCodeAt(0), 0);
   const camera = {
     '--camera-x': `${graine % 2 === 0 ? -3 : 3}%`,
     '--camera-y': `${graine % 3 === 0 ? 2 : -2}%`,
@@ -338,15 +425,15 @@ function FaceDeLIdee({
           style={camera}
         />
       ) : (
-        <div className={cn('absolute inset-0 grid place-items-center bg-gradient-to-br', FONDS[activite.axis])}>
-          <Icone nom={AXIS_ICON[activite.axis]} className="size-24 text-white/30" />
+        <div className={cn('absolute inset-0 grid place-items-center bg-gradient-to-br', FONDS[idee.axis])}>
+          <Icone nom={AXIS_ICON[idee.axis]} className="size-24 text-white/30" />
         </div>
       )}
 
       {/* Le haut : l'envie que ça sert, et si d'autres l'ont déjà gardée. */}
       <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/50 to-transparent p-4 pb-10">
         <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-semibold backdrop-blur">
-          {AXIS_LABELS_FR[activite.axis]}
+          {activite ? AXIS_LABELS_FR[idee.axis] : idee.libelle}
         </span>
         {autres > 0 && (
           <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold backdrop-blur">
@@ -358,16 +445,32 @@ function FaceDeLIdee({
 
       {/* Le bas : le nom, ce qu'on y vit, ce que ça prend. */}
       <div className="absolute inset-x-0 bottom-0 space-y-3 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-5 pt-24">
-        <h2 className="titre text-3xl leading-tight">{activite.nom}</h2>
-        <p className="text-base leading-snug text-white/90">{activite.resume}</p>
+        <h2 className="titre text-3xl leading-tight">{idee.nom}</h2>
+        {texte && <p className="text-base leading-snug text-white/90">{texte}</p>}
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <Puce>
-            <Clock className="size-3.5" aria-hidden />
-            {direLaDuree(activite.dureeHeures)}
-          </Puce>
-          <Puce>{activite.prixCents === 0 ? 'Gratuit' : formatCents(activite.prixCents, 'EUR', { hideCentimes: true })}</Puce>
-          <Puce>{MOMENTS[activite.moment]}</Puce>
-          {!statique && seReserve(activite) && (
+          {idee.dureeHeures !== undefined && (
+            <Puce>
+              <Clock className="size-3.5" aria-hidden />
+              {direLaDuree(idee.dureeHeures)}
+            </Puce>
+          )}
+          {/* Le prix n'est connu que du carnet : un lieu d'OpenStreetMap n'en dit rien. */}
+          {activite && (
+            <Puce>{activite.prixCents === 0 ? 'Gratuit' : formatCents(activite.prixCents, 'EUR', { hideCentimes: true })}</Puce>
+          )}
+          {idee.moment && <Puce>{MOMENTS[idee.moment]}</Puce>}
+          {!statique && !activite && resume.data && (
+            <a
+              href={resume.data.url}
+              target="_blank"
+              rel="noreferrer"
+              className="ms-auto inline-flex items-center gap-1 font-semibold underline underline-offset-2"
+            >
+              En savoir plus
+              <ExternalLink className="size-3.5" aria-hidden />
+            </a>
+          )}
+          {!statique && activite && seReserve(activite) && (
             <a
               href={rechercherLaSortie(activite, ville)}
               target="_blank"
@@ -398,7 +501,7 @@ function Classement({
   images,
   surDecouvrir,
 }: {
-  toutes: readonly Activite[];
+  toutes: readonly Idee[];
   comptes: Record<string, ComptesDAvis>;
   votants: number;
   images: Record<string, Illustration> | undefined;
