@@ -37,6 +37,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Field, TextInput } from '@/components/ui/Field';
 import { ListeFantome } from '@/components/ui/Squelette';
 import { TitreDePage } from '@/components/TitreDePage';
+import { DocumentsDuCoffre } from '@/components/coffre/DocumentsDuCoffre';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
@@ -131,8 +132,8 @@ export default function TripCoffre() {
 
       <TitreDePage pastille="coffre">Coffre</TitreDePage>
       <p className="text-muted -mt-2 text-sm">
-        Codes, wifi, adresses, contacts : ce qu’on s’envoie d’habitude en capture d’écran. Seuls les membres du voyage
-        le voient, et il reste lisible sans réseau une fois ouvert.
+        Codes, wifi, adresses, billets : ce qu’on s’envoie d’habitude en capture d’écran. Seuls les membres du voyage
+        le voient, et les infos restent lisibles sans réseau une fois ouvertes.
       </p>
 
       {erreur && <Banner tone="warning">{toFailure(erreur).message}</Banner>}
@@ -194,6 +195,12 @@ export default function TripCoffre() {
             Ajouter une info
           </Button>
         )
+      )}
+
+      {id && (
+        <div className="border-t border-[color:var(--border-subtle)] pt-5">
+          <DocumentsDuCoffre tripId={id} moi={moi} estOrganisateur={estOrganisateur} />
+        </div>
       )}
     </div>
   );

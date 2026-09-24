@@ -29,6 +29,7 @@ psql_run -q -d postgres -c "create database $DB"
 echo "→ Doublure de la plateforme Supabase"
 psql_run -q -d "$DB" -c 'create extension if not exists pgcrypto'
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/shim_auth.sql"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/shim_storage.sql"
 
 echo "→ Migrations"
 for file in "$ROOT"/supabase/migrations/*.sql; do
@@ -50,6 +51,9 @@ psql_run -q -d "$DB" -f "$ROOT/supabase/tests/paiement_test.sql"
 
 echo "→ Tests du coffre"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/coffre_test.sql"
+
+echo "→ Tests des documents du coffre"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/documents_test.sql"
 
 echo "→ Tests des trips ouverts"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/trips_ouverts_test.sql"

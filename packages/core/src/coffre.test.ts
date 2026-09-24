@@ -3,11 +3,15 @@ import {
   lienDAppel,
   lienDeLAdresse,
   lienWhatsApp,
+  nomDuFichier,
   numeroAppelable,
   problemeDeLInfo,
+  problemeDuFichier,
   qrDuWifi,
   resumerLeCoffre,
+  tailleLisible,
   trierLesInfos,
+  typeDuFichier,
   type InfoDuVoyage,
 } from './coffre.js';
 
@@ -100,5 +104,34 @@ describe('rangement et résumé', () => {
     expect(lienDeLAdresse(' 12 rua da Rosa, Lisboa ')).toBe(
       'https://www.google.com/maps/search/?api=1&query=12%20rua%20da%20Rosa%2C%20Lisboa',
     );
+  });
+});
+
+describe('documents', () => {
+  it('dit la taille comme on la lit', () => {
+    expect(tailleLisible(300)).toBe('1 Ko');
+    expect(tailleLisible(850 * 1024)).toBe('850 Ko');
+    expect(tailleLisible(1.25 * 1024 * 1024)).toBe('1,3 Mo');
+    expect(tailleLisible(12 * 1024 * 1024)).toBe('12 Mo');
+  });
+
+  it('tire un nom lisible du nom du fichier', () => {
+    expect(nomDuFichier('e-ticket_FR1234.pdf')).toBe('E-ticket FR1234');
+    expect(nomDuFichier('IMG_2041.HEIC')).toBe('IMG 2041');
+    expect(nomDuFichier('.pdf')).toBe('Document');
+  });
+
+  it('devine le type d’une photo HEIC sans type', () => {
+    expect(typeDuFichier('IMG_2041.HEIC', '')).toBe('image/heic');
+    expect(typeDuFichier('photo.jpeg', '')).toBe('image/jpeg');
+    expect(typeDuFichier('billet.pdf', 'application/pdf')).toBe('application/pdf');
+    expect(typeDuFichier('archive.zip', '')).toBe('');
+  });
+
+  it('refuse ce que le coffre ne sait pas garder', () => {
+    expect(problemeDuFichier({ type: 'application/pdf', size: 200_000 })).toBeNull();
+    expect(problemeDuFichier({ type: 'application/zip', size: 10 })).toMatch(/PDF et les photos/u);
+    expect(problemeDuFichier({ type: 'image/jpeg', size: 12 * 1024 * 1024 })).toBe('Ce fichier pèse 12 Mo : 10 Mo au plus.');
+    expect(problemeDuFichier({ type: 'image/png', size: 0 })).toBe('Ce fichier est vide.');
   });
 });

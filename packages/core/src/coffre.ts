@@ -187,3 +187,73 @@ export function resumerLeCoffre(infos: readonly InfoDuVoyage[], documents = 0): 
   if (documents > 0) parties.push(`${documents} document${documents > 1 ? 's' : ''}`);
   return parties.length > 0 ? parties.join(' · ') : null;
 }
+
+/* ------------------------------------------------------------- Documents -- */
+
+/** Un billet, une confirmation, un scan : un fichier rangé dans le coffre. */
+export interface DocumentDuVoyage {
+  id: string;
+  tripId: string;
+  nom: string;
+  /** Où le fichier est rangé : « <voyage>/<fichier> ». */
+  chemin: string;
+  typeMime: string | null;
+  /** En octets. */
+  taille: number | null;
+  /** Visible par la seule personne qui l'a déposé. */
+  prive: boolean;
+  ajoutePar?: string | null;
+  ajouteLe: string;
+}
+
+/** Ce que le coffre accepte : les PDF et les photos. Les mêmes que l'espace de stockage. */
+export const TYPES_DE_DOCUMENTS: Readonly<Record<string, string>> = {
+  'application/pdf': 'pdf',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+};
+
+export const TAILLE_MAX_D_UN_DOCUMENT = 10 * 1024 * 1024;
+
+/** « 850 Ko », « 1,2 Mo ». */
+export function tailleLisible(octets: number): string {
+  if (octets < 1024 * 1024) return `${Math.max(1, Math.round(octets / 1024))} Ko`;
+  const mo = octets / (1024 * 1024);
+  return `${mo < 10 ? mo.toFixed(1).replace('.', ',') : Math.round(mo)} Mo`;
+}
+
+/**
+ * Un nom lisible tiré du nom du fichier : « e-ticket_FR1234.pdf » devient
+ * « E-ticket FR1234 ». On le propose, la personne le corrige si elle veut.
+ */
+export function nomDuFichier(nomDeFichier: string): string {
+  const sansExtension = nomDeFichier.replace(/\.[a-z0-9]{2,5}$/iu, '');
+  const lisible = sansExtension.replace(/[_]+/gu, ' ').replace(/\s+/gu, ' ').trim().slice(0, 120);
+  if (!lisible) return 'Document';
+  return lisible.charAt(0).toLocaleUpperCase('fr') + lisible.slice(1);
+}
+
+/**
+ * Le type d'un fichier, déduit de son extension quand le navigateur n'en
+ * donne pas — c'est le cas des photos HEIC sur plusieurs navigateurs.
+ */
+export function typeDuFichier(nom: string, type: string): string {
+  if (type) return type;
+  const extension = /\.([a-z0-9]+)$/iu.exec(nom)?.[1]?.toLowerCase();
+  if (extension === 'jpeg') return 'image/jpeg';
+  const trouve = Object.entries(TYPES_DE_DOCUMENTS).find(([, ext]) => ext === extension);
+  return trouve?.[0] ?? '';
+}
+
+/** Ce qui empêche de déposer ce fichier, ou `null`. */
+export function problemeDuFichier(fichier: { type: string; size: number }): string | null {
+  if (!(fichier.type in TYPES_DE_DOCUMENTS)) return 'Seuls les PDF et les photos (JPEG, PNG, WebP, HEIC) vont dans le coffre.';
+  if (fichier.size > TAILLE_MAX_D_UN_DOCUMENT) {
+    return `Ce fichier pèse ${tailleLisible(fichier.size)} : 10 Mo au plus.`;
+  }
+  if (fichier.size === 0) return 'Ce fichier est vide.';
+  return null;
+}

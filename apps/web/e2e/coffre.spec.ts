@@ -65,3 +65,57 @@ test('ranger un code, un wifi et un contact, puis s’en servir', async ({ page 
   await page.getByRole('link', { name: 'Retour au voyage' }).click();
   await expect(page.getByRole('link', { name: /Coffre.*1 code · 1 contact/u }).first()).toBeVisible();
 });
+
+/**
+ * Les documents : les billets, en PDF, rangés dans le coffre. En mode local,
+ * le fichier vit dans le navigateur (IndexedDB) : le parcours est le même.
+ */
+test('ranger un billet en PDF, l’ouvrir, le renommer, le retirer', async ({ page }) => {
+  await poser(page, [BALI], '/voyages/v1/coffre');
+
+  // Un format que le coffre ne garde pas : refusé tout de suite, avec la raison.
+  await page.getByLabel('Choisir un document').setInputFiles({
+    name: 'archive.zip',
+    mimeType: 'application/zip',
+    buffer: Buffer.from('PK'),
+  });
+  await expect(page.getByText(/Seuls les PDF et les photos/u)).toBeVisible();
+
+  // Le billet : un nom lisible est proposé, qu'on garde pour soi.
+  await page.getByLabel('Choisir un document').setInputFiles({
+    name: 'e-ticket_GA-881.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4\n%billet de test\n'),
+  });
+  await expect(page.getByRole('textbox', { name: 'Nom du document' })).toHaveValue('E-ticket GA-881');
+  await page.getByRole('checkbox', { name: /Visible par moi seulement/u }).check();
+  await page.getByRole('button', { name: 'Ranger le document' }).click();
+  await expect(page.getByText('PDF · 1 Ko · visible par vous seulement')).toBeVisible();
+
+  // Il s'ouvre dans un nouvel onglet.
+  const [onglet] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.getByRole('button', { name: 'Ouvrir « E-ticket GA-881 »' }).click(),
+  ]);
+  await expect.poll(() => onglet.url()).toMatch(/^blob:/u);
+  await onglet.close();
+
+  // Partagé avec le groupe, puis renommé.
+  await page.getByRole('button', { name: 'Partager « E-ticket GA-881 » avec le groupe' }).click();
+  await expect(page.getByText('PDF · 1 Ko', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Renommer « E-ticket GA-881 »' }).click();
+  await page.getByRole('textbox', { name: 'Nouveau nom' }).fill('Vol aller Garuda');
+  await page.getByRole('button', { name: 'Enregistrer le nom' }).click();
+  await expect(page.getByRole('button', { name: 'Ouvrir « Vol aller Garuda »' })).toBeVisible();
+
+  // Il survit au rechargement, et compte sur l'accueil du voyage.
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Ouvrir « Vol aller Garuda »' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/coffre-documents.png', fullPage: true });
+  await page.getByRole('link', { name: 'Retour au voyage' }).click();
+  await expect(page.getByRole('link', { name: /Coffre.*1 document/u }).first()).toBeVisible();
+  await page.goBack();
+
+  await page.getByRole('button', { name: 'Retirer « Vol aller Garuda »' }).click();
+  await expect(page.getByRole('button', { name: 'Ouvrir « Vol aller Garuda »' })).toHaveCount(0);
+});

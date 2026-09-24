@@ -25,6 +25,7 @@ import { requeteDesReservations } from '@/lib/reservations';
 import { requeteDesSondages } from '@/lib/sondages';
 import { requeteDesTaches } from '@/lib/taches';
 import { requeteDuCoffre } from '@/lib/coffre';
+import { requeteDesDocuments } from '@/lib/documents';
 import { requeteDesEnvies } from '@/lib/envies';
 import { supabase } from '@/lib/supabase';
 import { getCollaboration } from '@/lib/collaboration';
@@ -120,6 +121,7 @@ export default function TripDetail() {
   const sondages = useQuery(requeteDesSondages(id));
   const taches = useQuery(requeteDesTaches(id));
   const coffre = useQuery(requeteDuCoffre(id));
+  const documents = useQuery(requeteDesDocuments(id));
   // Mes avis sur le carnet : combien d'idées il me reste à juger dans « Découvrir ».
   const envies = useQuery({ ...requeteDesEnvies(id, identity?.id ?? 'moi'), enabled: Boolean(id && data?.lockedDestinationId) });
   const mesAvis = Object.values(envies.data?.parActivite ?? {}).filter((avis) => avis.moi !== null).length;
@@ -307,7 +309,7 @@ export default function TripDetail() {
             nombreDeSondages={sondages.data?.length ?? 0}
             sondagesAVoter={sondagesEnAttente(sondages.data ?? [], moiIci)}
             aDecouvrir={Math.max(0, (nombreDActivites.data ?? 0) - mesAvis)}
-            coffre={resumerLeCoffre(coffre.data ?? [])}
+            coffre={resumerLeCoffre(coffre.data ?? [], documents.data?.length ?? 0)}
             taches={{
               ...resumerLesTaches(taches.data ?? [], moiIci, dateDuJour()),
               total: taches.data?.length ?? 0,
