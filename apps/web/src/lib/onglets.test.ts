@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ecranDeConversation, ongletActif, sectionsDuVoyage, voyageDeLAdresse } from './onglets';
+import { ecranDeConversation, ecranSansOnglets, ongletActif, sectionsDuVoyage, voyageDeLAdresse } from './onglets';
 
 /**
  * L'onglet actif de la barre de navigation.
@@ -83,5 +83,13 @@ describe('les écrans ouverts depuis le profil', () => {
     expect(ongletActif('/profil', '/passeport')).toBe(true);
     expect(ongletActif('/profil', '/soutenir')).toBe(true);
     expect(ongletActif('/voyages', '/passeport')).toBe(false);
+  });
+});
+
+describe('« Découvrir » prend tout l’écran', () => {
+  it('sans onglets, comme la discussion', () => {
+    expect(ecranSansOnglets('/voyages/v1/decouvrir')).toBe(true);
+    expect(ecranSansOnglets('/voyages/v1/discussion')).toBe(true);
+    expect(ecranSansOnglets('/voyages/v1/a-faire')).toBe(false);
   });
 });

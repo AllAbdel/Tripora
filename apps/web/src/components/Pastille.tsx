@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   FileText,
   Globe2,
+  Layers,
   MessagesSquare,
   Smartphone,
   Stamp,
@@ -68,7 +69,8 @@ export type NomDePastille =
   | 'ouvert'
   | 'passeport'
   | 'sondages'
-  | 'taches';
+  | 'taches'
+  | 'decouvrir';
 
 /** Un pictogramme dessiné (`PageGlyphs`) ou un pictogramme de bibliothèque. */
 type IconePastille = ComponentType<SVGProps<SVGSVGElement>> | LucideIcon;
@@ -118,6 +120,9 @@ const PASTILLES: Readonly<Record<NomDePastille, Pastille>> = {
   // Qui fait quoi : la liste cochée, dans un vert tilleul qui ne se confond
   // pas avec le vert des voyages ni celui des dépenses.
   taches: { icone: ClipboardCheck, degrade: ['#a9cf55', '#7fa82f'], auTrait: true },
+  // Découvrir : un paquet de cartes, dans le dégradé chaud des écrans de
+  // vidéos courtes — c'est le geste qu'il emprunte.
+  decouvrir: { icone: Layers, degrade: ['#ff8a65', '#e8457a'], auTrait: true },
 };
 
 const TAILLES = {

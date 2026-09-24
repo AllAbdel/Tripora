@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Clock, ExternalLink, Heart, Search, X } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, ArrowRight, Clock, ExternalLink, Heart, Layers, Search, X } from 'lucide-react';
 import {
   AXIS_LABELS_FR,
   findDestination,
   formatCents,
   groupWeights,
+  phraseDesEnvies,
   type PreferenceAxis,
 } from '@tripora/core';
 import {
@@ -26,18 +27,14 @@ import { chargerIllustrations, estAffichable, type Illustration } from '@/lib/il
 import { direLaDuree } from '@/lib/duree';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/lib/auth-context';
-import { getCollaboration } from '@/lib/collaboration';
 import {
-  basculer,
   cleEnvies,
   getEnvies,
-  nommer,
   requeteDesEnvies,
+  usePoserUneEnvie,
   type Avis,
   type AvisSurUneActivite,
-  type EnviesDuGroupe,
 } from '@/lib/envies';
-import { signaler } from '@/lib/feedback';
 
 /**
  * Ce qu'il y a à faire sur place.
@@ -100,19 +97,6 @@ export default function AFaire() {
   // remplir les journées.
   const avis = useQuery(requeteDesEnvies(id, moi));
 
-  // Les prénoms, pour dire « Inès et Karim » plutôt que « 2 ». Sans serveur,
-  // il n'y a qu'une personne : « vous ».
-  const collaboration = getCollaboration();
-  const membres = useQuery({
-    queryKey: ['membres', id],
-    queryFn: () => collaboration!.listMembers(id!),
-    enabled: Boolean(id && collaboration),
-  });
-  const noms = useMemo(
-    () => new Map((membres.data ?? []).map((membre) => [membre.userId, membre.displayName])),
-    [membres.data],
-  );
-
   // Les avis des autres arrivent en direct : on voit le cœur de Karim
   // s'allumer pendant qu'il fait défiler la même liste à l'autre bout de la table.
   useEffect(() => {
@@ -122,25 +106,7 @@ export default function AFaire() {
     });
   }, [id, queryClient]);
 
-  const poser = useMutation({
-    mutationFn: ({ activiteId, valeur }: { activiteId: string; valeur: Avis | null }) =>
-      getEnvies().poser(id!, activiteId, valeur),
-    onMutate: async ({ activiteId, valeur }) => {
-      // Le cœur répond au doigt, pas au réseau.
-      await queryClient.cancelQueries({ queryKey: cleEnvies(id) });
-      const avant = queryClient.getQueryData<EnviesDuGroupe>(cleEnvies(id));
-      queryClient.setQueryData(cleEnvies(id), basculer(avant, activiteId, moi, valeur));
-      signaler(valeur === 'envie' ? 'reussite' : 'tape');
-      return { avant };
-    },
-    onError: (_erreur, _variables, contexte) => {
-      queryClient.setQueryData(cleEnvies(id), contexte?.avant);
-      signaler('echec');
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: cleEnvies(id) });
-    },
-  });
+  const poser = usePoserUneEnvie(id, moi);
 
   const visibles = useMemo(() => {
     const filtrees = destinationId ? chercherActivites(destinationId, recherche) : [];
@@ -172,6 +138,9 @@ export default function AFaire() {
         .length,
     [avis.data],
   );
+
+  /** Ce que je n'ai pas encore jugé : ce que « Découvrir » me fera passer. */
+  const aJuger = toutes.filter((activite) => !avis.data?.parActivite[activite.id]?.moi).length;
 
   /** Les envies réellement représentées ici : un filtre vide ne sert à rien. */
   const enviesPresentes = useMemo(
@@ -214,6 +183,24 @@ export default function AFaire() {
 
         {toutes.length > 0 && (
           <>
+            {/* Une idée à la fois, plein écran, qu'on garde d'un glissement :
+                plus rapide que cette liste, et c'est ce qui fait le classement. */}
+            <Link
+              to={`/voyages/${id}/decouvrir`}
+              className="pressable flex items-center gap-3 rounded-[var(--radius-card)] bg-gradient-to-br from-[#ff8a65] to-[#e8457a] p-4 text-white shadow-[var(--shadow-float)]"
+            >
+              <Layers className="size-7 shrink-0" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold">Découvrir en glissant</span>
+                <span className="block text-sm text-white/90">
+                  {aJuger > 0
+                    ? `${aJuger} idée${aJuger > 1 ? 's' : ''} à juger d’un geste, et le classement du groupe`
+                    : 'Tout est jugé : voir le classement du groupe'}
+                </span>
+              </span>
+              <ArrowRight className="size-5 shrink-0" aria-hidden />
+            </Link>
+
             <label className="relative block">
               <Search
                 className="text-muted pointer-events-none absolute start-3.5 top-1/2 size-4 -translate-y-1/2"
@@ -258,8 +245,6 @@ export default function AFaire() {
                     ville={ville?.name ?? ''}
                     illustration={images.data?.[activite.id]}
                     avis={avis.data?.parActivite[activite.id]}
-                    noms={noms}
-                    moi={moi}
                     surAvis={(valeur) => poser.mutate({ activiteId: activite.id, valeur })}
                   />
                 </li>
@@ -333,28 +318,17 @@ function Filtre({
   );
 }
 
-/** « Inès et Karim en ont envie », « Vous en avez envie ». */
-function phraseDEnvie(ids: readonly string[], noms: ReadonlyMap<string, string>, moi: string): string {
-  const qui = nommer(ids, noms, moi);
-  const verbe = ids.includes(moi) ? 'en avez' : ids.length > 1 ? 'en ont' : 'en a';
-  return `${qui.charAt(0).toUpperCase()}${qui.slice(1)} ${verbe} envie`;
-}
-
 function FicheDActivite({
   activite,
   ville,
   illustration,
   avis,
-  noms,
-  moi,
   surAvis,
 }: {
   activite: Activite;
   ville: string;
   illustration: Illustration | undefined;
   avis: AvisSurUneActivite | undefined;
-  noms: ReadonlyMap<string, string>;
-  moi: string;
   surAvis: (valeur: Avis | null) => void;
 }) {
   const montrable = estAffichable(illustration);
@@ -412,11 +386,17 @@ function FicheDActivite({
             Sans moi
           </BoutonDAvis>
         </div>
+        {/* Combien, jamais qui : chacun garde ce qui lui plaît sans avoir à
+            s'en justifier devant le groupe. */}
         {avis && (avis.pour.length > 0 || avis.contre.length > 0) && (
           <p className="text-muted text-xs leading-snug">
-            {avis.pour.length > 0 && <span>{phraseDEnvie(avis.pour, noms, moi)}</span>}
+            {avis.pour.length > 0 && <span>{phraseDesEnvies(avis.pour.length, avis.moi === 'envie')}</span>}
             {avis.pour.length > 0 && avis.contre.length > 0 && <span> · </span>}
-            {avis.contre.length > 0 && <span>Sans {nommer(avis.contre, noms, moi)}</span>}
+            {avis.contre.length > 0 && (
+              <span>
+                {avis.contre.length} s’en passerai{avis.contre.length > 1 ? 'ent' : 't'}
+              </span>
+            )}
           </p>
         )}
 

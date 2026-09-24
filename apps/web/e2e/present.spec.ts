@@ -8,10 +8,21 @@ import { brouillon, poser, type VoyagePose } from './tripora';
  * la veille du départ et pendant le séjour. Les dates sont calculées depuis
  * aujourd'hui, pour que le test ne vieillisse pas.
  */
+/**
+ * Une date comptée depuis aujourd'hui **à Bali** : l'application compte en
+ * jours du lieu, et le test échouait tous les soirs après 16 h UTC, quand il
+ * est déjà demain là-bas.
+ */
 function dansJours(jours: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + jours);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const aujourdhui = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Makassar',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  const date = new Date(`${aujourdhui}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + jours);
+  return date.toISOString().slice(0, 10);
 }
 
 function voyageDaté(debut: number, fin: number): VoyagePose {

@@ -32,6 +32,7 @@ export function OutilsDuVoyage({
   nombreDeSondages = 0,
   sondagesAVoter = 0,
   taches,
+  aDecouvrir = 0,
 }: {
   tripId: string;
   destinationVerrouillee: boolean;
@@ -52,6 +53,8 @@ export function OutilsDuVoyage({
   sondagesAVoter?: number;
   /** Ce qui reste à faire avant de partir, et ce qui m'est confié. */
   taches?: { aFaire: number; pourMoi: number; enRetard: number; total: number };
+  /** Les idées du carnet que je n'ai pas encore jugées. */
+  aDecouvrir?: number;
 }) {
   const aDesActivites = nombreDActivites > 0;
   const cases = [
@@ -65,6 +68,16 @@ export function OutilsDuVoyage({
     // « À faire » avant l'itinéraire : on choisit ce qu'on veut voir, puis on
     // le range dans les journées. L'ordre inverse demandait de savoir quoi
     // mettre dans un créneau avant d'avoir vu ce qui existait.
+    // Découvrir d'abord : une idée à la fois, plein écran, qu'on garde d'un
+    // glissement. C'est le plus rapide pour dire ce qui nous tente.
+    destinationVerrouillee &&
+      aDesActivites && {
+        to: `/voyages/${tripId}/decouvrir`,
+        pastille: 'decouvrir' as const,
+        titre: 'Découvrir',
+        detail: aDecouvrir > 0 ? `${aDecouvrir} idée${aDecouvrir > 1 ? 's' : ''} à glisser` : 'Le classement du groupe',
+        accent: false,
+      },
     destinationVerrouillee &&
       aDesActivites && {
         to: `/voyages/${tripId}/a-faire`,

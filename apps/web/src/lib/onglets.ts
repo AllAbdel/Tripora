@@ -51,6 +51,14 @@ export function ecranDeConversation(pathname: string): boolean {
   return /^\/voyages\/[^/]+\/discussion\/?$/u.test(pathname);
 }
 
+/**
+ * Les écrans sans onglets en bas : la discussion, et « Découvrir », qui prend
+ * tout l'écran — ses boutons occupent le bas, là où vivent les onglets.
+ */
+export function ecranSansOnglets(pathname: string): boolean {
+  return ecranDeConversation(pathname) || /^\/voyages\/[^/]+\/decouvrir\/?$/u.test(pathname);
+}
+
 export interface SectionDuVoyage {
   to: string;
   titre: string;
@@ -68,6 +76,7 @@ export function sectionsDuVoyage(id: string, destinationVerrouillee: boolean): S
   const base = `/voyages/${encodeURIComponent(id)}`;
   const sections: (SectionDuVoyage | false)[] = [
     { to: base, titre: 'Aperçu', pastille: 'accueil' },
+    destinationVerrouillee && { to: `${base}/decouvrir`, titre: 'Découvrir', pastille: 'decouvrir' },
     destinationVerrouillee && { to: `${base}/a-faire`, titre: 'À faire', pastille: 'meteo' },
     destinationVerrouillee && { to: `${base}/itineraire`, titre: 'Itinéraire', pastille: 'itineraire' },
     { to: `${base}/reservations`, titre: 'Réservations', pastille: 'hebergements' },

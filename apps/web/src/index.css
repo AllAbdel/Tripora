@@ -554,3 +554,44 @@
     margin: 14mm;
   }
 }
+
+/* Découvrir : la photo bouge lentement, comme une vidéo courte qui ne coûte
+   rien. Un zoom et un glissement de quelques pour cent, aller et retour ; le
+   sens change d'une carte à l'autre (variables posées par la carte). La
+   préférence « moins de mouvement » l'arrête, comme toute animation. */
+@keyframes plan-de-camera {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.18) translate3d(var(--camera-x, -3%), var(--camera-y, -2%), 0);
+  }
+}
+
+@layer utilities {
+  .plan-de-camera {
+    animation: plan-de-camera 14s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+}
+
+@keyframes coeur-qui-jaillit {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  100% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@layer utilities {
+  .coeur-qui-jaillit {
+    animation: coeur-qui-jaillit 380ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+}

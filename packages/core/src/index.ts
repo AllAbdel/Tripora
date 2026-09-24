@@ -41,6 +41,7 @@ export * from './passeport.js';
 export * from './sondages.js';
 export * from './taches.js';
 export * from './paiement.js';
+export * from './decouverte.js';
 export * from './confirmation.js';
 export * from './distinction.js';
 export * from './dates.js';

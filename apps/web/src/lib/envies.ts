@@ -1,5 +1,6 @@
-import { queryOptions } from '@tanstack/react-query';
-import type { AvisDuGroupe } from '@tripora/core';
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AvisDuGroupe, ComptesDAvis } from '@tripora/core';
+import { signaler } from './feedback';
 import { supabase } from './supabase';
 
 /**
@@ -264,5 +265,45 @@ export function requeteDesEnvies(tripId: string | undefined, userId: string) {
     queryFn: () => getEnvies().lister(tripId!, userId),
     enabled: Boolean(tripId),
     staleTime: 0,
+  });
+}
+
+/**
+ * Les avis en simples comptes, sans les identifiants : ce que « Découvrir »
+ * et son classement affichent — combien, jamais qui.
+ */
+export function comptesDesEnvies(envies: EnviesDuGroupe | undefined): Record<string, ComptesDAvis> {
+  const comptes: Record<string, ComptesDAvis> = {};
+  for (const [activiteId, detail] of Object.entries(envies?.parActivite ?? {})) {
+    comptes[activiteId] = { pour: detail.pour.length, contre: detail.contre.length, moi: detail.moi };
+  }
+  return comptes;
+}
+
+/**
+ * Poser son avis sur une activité, le même geste partout.
+ *
+ * Le cœur répond au doigt, pas au réseau : l'avis est posé dans le cache
+ * aussitôt, et retiré si le serveur le refuse.
+ */
+export function usePoserUneEnvie(tripId: string | undefined, moi: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ activiteId, valeur }: { activiteId: string; valeur: Avis | null }) =>
+      getEnvies().poser(tripId!, activiteId, valeur),
+    onMutate: async ({ activiteId, valeur }) => {
+      await queryClient.cancelQueries({ queryKey: cleEnvies(tripId) });
+      const avant = queryClient.getQueryData<EnviesDuGroupe>(cleEnvies(tripId));
+      queryClient.setQueryData(cleEnvies(tripId), basculer(avant, activiteId, moi, valeur));
+      signaler(valeur === 'envie' ? 'reussite' : 'tape');
+      return { avant };
+    },
+    onError: (_erreur, _variables, contexte) => {
+      queryClient.setQueryData(cleEnvies(tripId), contexte?.avant);
+      signaler('echec');
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: cleEnvies(tripId) });
+    },
   });
 }
