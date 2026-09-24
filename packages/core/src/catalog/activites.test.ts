@@ -62,6 +62,9 @@ describe('catalogue d’activités', () => {
     'kilimandjaro/ngorongoro': 'le cratère du Ngorongoro est le safari à la journée classique depuis Arusha',
     'madagascar/andasibe': 'Andasibe se rejoint en trois à quatre heures de route depuis Antananarivo',
     'nouvelle-caledonie/ile-des-pins': 'l’île des Pins se fait à la journée depuis Nouméa, en bateau rapide ou en vingt minutes d’avion',
+    'sumatra/toba': 'le lac Toba est à quatre heures de route de Medan : on y passe au moins une nuit',
+    'leh-ladakh/pangong': 'le lac Pangong se fait depuis Leh en une longue journée, ou avec une nuit sur place',
+    'almaty/charyn': 'le canyon de Charyn est l’excursion d’une journée classique depuis Almaty, à trois heures de route',
   };
 
   it('place chaque activité près de sa destination', () => {
