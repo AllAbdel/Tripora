@@ -13,9 +13,16 @@
     "icons": "node scripts/generate-icons.mjs",
     "flags": "tsx scripts/generate-flags.mjs",
     "lint": "eslint src scripts e2e --max-warnings 0",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "build:mobile": "tsc --noEmit && vite build --mode mobile"
   },
   "dependencies": {
+    "@capacitor/app": "catalog:",
+    "@capacitor/browser": "catalog:",
+    "@capacitor/core": "catalog:",
+    "@capacitor/filesystem": "catalog:",
+    "@capacitor/share": "catalog:",
+    "@capacitor/splash-screen": "catalog:",
     "@supabase/supabase-js": "^2.58.0",
     "@tanstack/query-sync-storage-persister": "^5.102.8",
     "@tanstack/react-query": "^5.90.2",

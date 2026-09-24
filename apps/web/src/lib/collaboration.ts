@@ -6,6 +6,7 @@ import {
   type PreferenceWeights,
 } from '@tripora/core';
 import { supabase } from './supabase';
+import { adressePublique } from './natif';
 
 /**
  * Tout ce qui n'a de sens qu'à plusieurs.
@@ -61,8 +62,9 @@ export function generateInviteCode(): string {
   return Array.from(bytes, (byte) => ALPHABET[byte % ALPHABET.length]).join('');
 }
 
+/** Depuis l'application mobile aussi, le lien mène au site : c'est lui que les autres ouvriront. */
 export function inviteUrl(code: string): string {
-  return `${window.location.origin}/rejoindre/${code}`;
+  return adressePublique(`/rejoindre/${code}`);
 }
 
 export function getCollaboration(): CollaborationApi | null {

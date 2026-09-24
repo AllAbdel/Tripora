@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { LogIn, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
@@ -14,6 +14,10 @@ export default function SignIn() {
   const [busy, setBusy] = useState<'google' | 'guest' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  // Dans l'application mobile, le retour de Google n'arrive pas par l'adresse
+  // de cette page mais par le pont natif, qui nous ramène ici avec la raison.
+  const erreurNative = (useLocation().state as { erreurDeConnexion?: string } | null)
+    ?.erreurDeConnexion;
 
   // Revenir de Google sans session est la seule panne totalement muette de
   // Tripora : l'écran de connexion réapparaît, identique. On dit ce qui s'est
@@ -95,7 +99,7 @@ export default function SignIn() {
           </Banner>
         )}
 
-        {!error && diagnostic && (
+        {!error && !erreurNative && diagnostic && (
           <Banner tone="warning" title={diagnostic.titre}>
             {diagnostic.message}
             {diagnostic.aFaire && (
@@ -106,9 +110,9 @@ export default function SignIn() {
           </Banner>
         )}
 
-        {error && (
+        {(error ?? erreurNative) && (
           <Banner tone="warning" title="Connexion impossible">
-            {error}
+            {error ?? erreurNative}
           </Banner>
         )}
 

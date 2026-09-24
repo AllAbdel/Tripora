@@ -481,7 +481,7 @@ export default function TripItinerary() {
               icon={<CalendarPlus className="size-4" aria-hidden />}
               disabled={!programmeDate(enregistre)}
               onClick={() =>
-                telechargerLeProgramme({
+                void telechargerLeProgramme({
                   titre: voyage.data?.summary.title ?? destination.name,
                   fuseau: destination.timezone,
                   journees: enregistre,

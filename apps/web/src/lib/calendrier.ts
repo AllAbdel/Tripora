@@ -1,5 +1,6 @@
 import { calendrierDuVoyage, formatCents, fold, type EvenementDuProgramme } from '@tripora/core';
 import type { ItineraryDayView } from './itinerary';
+import { partagerUnFichier } from './natif';
 
 /**
  * Du programme affiché au fichier téléchargé.
@@ -7,7 +8,9 @@ import type { ItineraryDayView } from './itinerary';
  * Le format lui-même vit dans le moteur, où il est testé ; ici on ne fait que
  * traduire les journées de l'écran en événements, et déclencher le
  * téléchargement. Sur téléphone, ouvrir le fichier propose directement
- * d'ajouter les événements au calendrier.
+ * d'ajouter les événements au calendrier. Dans l'application mobile, où un
+ * lien de téléchargement ne fait rien, il passe par la feuille de partage :
+ * on choisit son agenda, ou on l'envoie au groupe.
  */
 
 /** Les journées sans date ne peuvent pas aller dans un calendrier. */
@@ -50,7 +53,7 @@ export function nomDuFichier(titre: string): string {
   return `${base || 'voyage'}.ics`;
 }
 
-export function telechargerLeProgramme({
+export async function telechargerLeProgramme({
   titre,
   fuseau,
   journees,
@@ -58,13 +61,15 @@ export function telechargerLeProgramme({
   titre: string;
   fuseau: string | undefined;
   journees: readonly ItineraryDayView[];
-}): void {
+}): Promise<void> {
   const contenu = calendrierDuVoyage({
     titre,
     fuseau,
     evenements: evenementsDuProgramme(journees),
     maintenant: new Date(),
   });
+  if (await partagerUnFichier({ nom: nomDuFichier(titre), contenu, titre })) return;
+
   const url = URL.createObjectURL(new Blob([contenu], { type: 'text/calendar;charset=utf-8' }));
   const lien = document.createElement('a');
   lien.href = url;

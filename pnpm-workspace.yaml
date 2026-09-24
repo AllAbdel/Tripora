@@ -1,3 +1,18 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Capacitor se déclare à deux endroits : le site importe les greffons pour les
+# appeler, l'application mobile les liste pour que leur code natif soit
+# compilé. Une seule version pour les deux, sinon le JavaScript parle à un
+# greffon natif qui ne comprend plus ses messages.
+catalog:
+  "@capacitor/android": 8.5.2
+  "@capacitor/app": 8.1.1
+  "@capacitor/browser": 8.0.4
+  "@capacitor/cli": 8.5.2
+  "@capacitor/core": 8.5.2
+  "@capacitor/filesystem": 8.1.3
+  "@capacitor/ios": 8.5.2
+  "@capacitor/share": 8.0.2
+  "@capacitor/splash-screen": 8.0.2

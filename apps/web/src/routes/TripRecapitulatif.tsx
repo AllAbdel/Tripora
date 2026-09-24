@@ -23,6 +23,7 @@ import { getValise } from '@/lib/packing';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { useAuth } from '@/lib/auth-context';
 import { signaler } from '@/lib/feedback';
+import { adressePublique, estNatif, partager as partagerNatif } from '@/lib/natif';
 
 /**
  * Le voyage sur une page, à emporter.
@@ -123,14 +124,14 @@ export default function TripRecapitulatif() {
   }, [data, destination, valise.data, identity?.id]);
 
   async function partager() {
-    const url = window.location.href.replace('/recapitulatif', '');
+    // L'adresse du site, même depuis l'application : c'est elle que le
+    // groupe ouvrira.
+    const url = adressePublique(window.location.pathname.replace('/recapitulatif', ''));
     const titre = data?.summary.title ?? 'Mon voyage';
     signaler('tape');
     try {
-      if (navigator.share) {
-        await navigator.share({ title: titre, text: `${titre} — organisé avec Tripora`, url });
-        return;
-      }
+      const issue = await partagerNatif({ titre, texte: `${titre} — organisé avec Tripora`, url });
+      if (issue !== 'indisponible') return;
       await navigator.clipboard.writeText(url);
       signaler('reussite');
     } catch {
@@ -174,17 +175,21 @@ export default function TripRecapitulatif() {
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2 print:hidden">
+        {/* Les vues web d'Android et d'iOS ignorent `window.print()` : dans
+            l'application, le bouton ne ferait rien. */}
+        {!estNatif && (
+          <Button
+            icon={<Printer className="size-4" aria-hidden />}
+            onClick={() => {
+              signaler('tape');
+              window.print();
+            }}
+          >
+            Enregistrer en PDF
+          </Button>
+        )}
         <Button
-          icon={<Printer className="size-4" aria-hidden />}
-          onClick={() => {
-            signaler('tape');
-            window.print();
-          }}
-        >
-          Enregistrer en PDF
-        </Button>
-        <Button
-          variant="secondary"
+          variant={estNatif ? 'primary' : 'secondary'}
           icon={<Share2 className="size-4" aria-hidden />}
           onClick={() => void partager()}
         >
@@ -193,9 +198,9 @@ export default function TripRecapitulatif() {
       </div>
 
       <p className="text-muted mb-6 text-sm leading-relaxed print:hidden">
-        « Enregistrer en PDF » passe par l’impression de votre navigateur : choisissez
-        « Enregistrer au format PDF » plutôt qu’une imprimante. Le fichier obtenu contient du vrai
-        texte, se lit hors ligne et pèse quelques dizaines de kilo-octets.
+        {estNatif
+          ? 'Pour en faire un PDF, ouvrez ce récapitulatif sur le site depuis un navigateur : l’application ne sait pas imprimer.'
+          : '« Enregistrer en PDF » passe par l’impression de votre navigateur : choisissez « Enregistrer au format PDF » plutôt qu’une imprimante. Le fichier obtenu contient du vrai texte, se lit hors ligne et pèse quelques dizaines de kilo-octets.'}
       </p>
 
       <article className="space-y-6 print:space-y-4 print:text-[11pt]">

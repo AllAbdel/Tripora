@@ -1,0 +1,26 @@
+{
+  "name": "@tripora/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tripora sur Android et iOS : le site, emballé par Capacitor, avec le même serveur Supabase",
+  "scripts": {
+    "web": "pnpm --filter @tripora/web build:mobile",
+    "android": "pnpm web && cap sync android",
+    "ios": "pnpm web && cap sync ios",
+    "ressources": "node scripts/generer-ressources.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "catalog:",
+    "@capacitor/app": "catalog:",
+    "@capacitor/browser": "catalog:",
+    "@capacitor/core": "catalog:",
+    "@capacitor/filesystem": "catalog:",
+    "@capacitor/ios": "catalog:",
+    "@capacitor/share": "catalog:",
+    "@capacitor/splash-screen": "catalog:"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "catalog:"
+  }
+}

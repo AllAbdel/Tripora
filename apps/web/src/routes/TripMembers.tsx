@@ -13,6 +13,7 @@ const QrCode = lazy(() => import('@/components/QrCode'));
 import { getCollaboration, type TripMember } from '@/lib/collaboration';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { signaler } from '@/lib/feedback';
+import { partager as partagerNatif } from '@/lib/natif';
 import { cn } from '@/lib/cn';
 import { SignalerOuBloquer } from '@/components/SignalerOuBloquer';
 import { useAuth } from '@/lib/auth-context';
@@ -94,17 +95,12 @@ export default function TripMembers() {
   async function partager() {
     if (!invite) return;
     const texte = `Rejoins notre voyage sur Tripora : ${invite.url}`;
-    // Feuille de partage native quand le navigateur la propose (mobile),
-    // presse-papiers sinon. Les deux échouent silencieusement si l'utilisateur
-    // annule, ce qui n'est pas une erreur.
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Tripora', text: texte, url: invite.url });
-        return;
-      } catch {
-        /* partage annulé */
-      }
-    }
+    // Feuille de partage du téléphone quand elle existe — dans l'application
+    // comme dans un navigateur mobile —, presse-papiers sinon. Annuler n'est
+    // pas une erreur : on ne copie pas derrière le dos de quelqu'un qui a
+    // changé d'avis.
+    const issue = await partagerNatif({ titre: 'Tripora', texte, url: invite.url });
+    if (issue !== 'indisponible') return;
     try {
       await navigator.clipboard.writeText(invite.url);
       setCopied(true);

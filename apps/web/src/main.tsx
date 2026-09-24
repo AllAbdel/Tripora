@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import App from './App';
 import { AuthProvider } from '@/lib/auth';
+import { PontNatif } from '@/components/PontNatif';
 import { persister, queryClient } from '@/lib/cache';
 import { applyTheme, useTheme, watchSystemTheme } from '@/stores/theme';
 import { appliquerLaLangue, useLangue } from '@/stores/langue';
@@ -34,6 +35,7 @@ createRoot(container).render(
     >
       <AuthProvider>
         <BrowserRouter>
+          <PontNatif />
           <App />
         </BrowserRouter>
       </AuthProvider>

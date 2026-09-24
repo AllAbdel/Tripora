@@ -4,6 +4,8 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { isSupabaseConfigured } from './env';
 import { RETOUR_OAUTH } from './oauthReturn';
+import { estNatif } from './natif';
+import { commencerLaConnexionGoogle } from './connexionNative';
 import { oublierApresDeconnexion } from './stockage';
 import { viderLeCache } from './cache';
 import { AuthContext, type AuthContextValue, type Identity } from './auth-context';
@@ -144,6 +146,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) throw new Error('Aucun serveur configuré');
+
+    // Dans l'application mobile, pas de domaine à choisir ni de page à
+    // quitter : Google s'ouvre dans le navigateur du téléphone et revient
+    // par `tripora://connexion`, que le pont natif conclut.
+    if (estNatif) {
+      await commencerLaConnexionGoogle();
+      return;
+    }
 
     // Une seule adresse détient les sessions : si on n'y est pas, on y va
     // d'abord. Le paramètre demande à l'écran d'arrivée de reprendre tout seul.

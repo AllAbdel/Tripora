@@ -1,0 +1,150 @@
+name: Applications mobiles
+
+# L'application Android et iOS, c'est le site emballé par Capacitor : elle
+# change dès que le site change. On la reconstruit donc à chaque modification
+# du site, du moteur ou du projet mobile.
+on:
+  push:
+    branches: ['main', 'claude/tripora-travel-planning-app-r3pv5t']
+    paths:
+      - 'apps/web/**'
+      - 'apps/mobile/**'
+      - 'packages/core/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/mobile.yml'
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'apps/mobile/**'
+      - 'packages/core/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/mobile.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android (APK)
+    runs-on: ubuntu-latest
+    permissions:
+      # Pour publier l'APK en téléchargement direct, sur la page des versions.
+      contents: write
+    env:
+      # Les secrets ne se lisent pas dans une condition : on en dérive un drapeau.
+      A_UNE_CLE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sans `version` : elle vient de `packageManager` dans le package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Capacitor 8 compile avec Java 21 ; le SDK Android est déjà sur la machine.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Site en mode mobile, copié dans le projet Android
+        run: pnpm --filter @tripora/mobile android
+
+      # Une clé stable permet d'installer chaque nouvelle version par-dessus la
+      # précédente. Sans elle, l'APK reste installable, avec la clé de test de
+      # cette machine — différente à chaque construction.
+      - name: Clé de signature
+        if: env.A_UNE_CLE == 'true'
+        env:
+          CLE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$CLE" | base64 --decode > "$RUNNER_TEMP/tripora.jks"
+          echo "TRIPORA_KEYSTORE=$RUNNER_TEMP/tripora.jks" >> "$GITHUB_ENV"
+
+      - name: APK
+        working-directory: apps/mobile/android
+        env:
+          TRIPORA_VERSION_CODE: ${{ github.run_number }}
+          TRIPORA_VERSION_NAME: 0.1.${{ github.run_number }}
+          TRIPORA_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/tripora.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tripora-android
+          path: ${{ runner.temp }}/tripora.apk
+          retention-days: 30
+
+      # Une adresse qui ne change jamais, à ouvrir depuis le téléphone :
+      # https://github.com/AllAbdel/Tripora/releases/download/android/tripora.apk
+      - name: Publier l'APK
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNATURE: ${{ env.A_UNE_CLE == 'true' && 'clé Tripora (les mises à jour s''installent par-dessus)' || 'clé de test (désinstallez la version précédente avant d''installer celle-ci)' }}
+        run: |
+          gh release delete android --yes --cleanup-tag || true
+          gh release create android "$RUNNER_TEMP/tripora.apk" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Tripora pour Android — version de test 0.1.${{ github.run_number }}" \
+            --notes "Construite depuis ${GITHUB_SHA::7} sur ${GITHUB_REF_NAME}. Signature : ${SIGNATURE}.
+
+          Sur le téléphone : ouvrez ce lien, téléchargez tripora.apk, puis autorisez l'installation depuis votre navigateur quand Android le demande. L'application utilise le même compte et les mêmes voyages que le site."
+
+  ios:
+    name: iOS (compilation pour simulateur)
+    # Compiler sans signer : on vérifie que le projet iOS se construit à chaque
+    # changement. L'installer sur un iPhone demande un Mac, ou un compte
+    # développeur Apple — voir apps/mobile/README.md.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Site en mode mobile, copié dans le projet iOS
+        run: pnpm --filter @tripora/mobile ios
+
+      # Capacitor 8 demande Xcode 26 : on prend le plus récent installé.
+      - name: Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE"; fi
+          xcodebuild -version
+
+      - name: Compilation
+        working-directory: apps/mobile/ios/App
+        run: |
+          xcodebuild build \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+          cd build/Build/Products/Debug-iphonesimulator && zip -qr "$RUNNER_TEMP/Tripora-simulateur.zip" App.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tripora-ios-simulateur
+          path: ${{ runner.temp }}/Tripora-simulateur.zip
+          retention-days: 14
