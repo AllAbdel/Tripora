@@ -7,7 +7,9 @@ import {
   findDestination,
   formatCents,
   hasAnswered,
+  dateDuJour,
   MONTHS_FR,
+  resumerLesTaches,
   sondagesEnAttente,
   targetMonth,
   tripReadiness,
@@ -19,6 +21,7 @@ import { ProposalCard } from '@/components/ProposalCard';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { requeteDesReservations } from '@/lib/reservations';
 import { requeteDesSondages } from '@/lib/sondages';
+import { requeteDesTaches } from '@/lib/taches';
 import { supabase } from '@/lib/supabase';
 import { getCollaboration } from '@/lib/collaboration';
 import { getVoting, groupChoice, type VoteValue } from '@/lib/votes';
@@ -110,6 +113,8 @@ export default function TripDetail() {
   // n'existe pas, et l'appel serait un aller-retour pour un tableau vide.
   const reservations = useQuery(requeteDesReservations(id));
   const sondages = useQuery(requeteDesSondages(id));
+  const taches = useQuery(requeteDesTaches(id));
+  const moiIci = supabase ? identity?.id : 'moi';
 
   const itineraire = useQuery({
     queryKey: ['itineraire', id],
@@ -290,7 +295,11 @@ export default function TripDetail() {
             nombreDActivites={nombreDActivites.data ?? 0}
             nombreDeReservations={reservations.data?.length ?? 0}
             nombreDeSondages={sondages.data?.length ?? 0}
-            sondagesAVoter={sondagesEnAttente(sondages.data ?? [], supabase ? identity?.id : 'moi')}
+            sondagesAVoter={sondagesEnAttente(sondages.data ?? [], moiIci)}
+            taches={{
+              ...resumerLesTaches(taches.data ?? [], moiIci, dateDuJour()),
+              total: taches.data?.length ?? 0,
+            }}
           />
 
           {data.lockedDestinationId && (

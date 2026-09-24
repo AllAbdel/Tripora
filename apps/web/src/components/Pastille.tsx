@@ -1,4 +1,14 @@
-import { Backpack, FileText, Globe2, MessagesSquare, Smartphone, Stamp, Vote, type LucideIcon } from 'lucide-react';
+import {
+  Backpack,
+  ClipboardCheck,
+  FileText,
+  Globe2,
+  MessagesSquare,
+  Smartphone,
+  Stamp,
+  Vote,
+  type LucideIcon,
+} from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 import {
   GlypheAccueil,
@@ -57,7 +67,8 @@ export type NomDePastille =
   | 'applications'
   | 'ouvert'
   | 'passeport'
-  | 'sondages';
+  | 'sondages'
+  | 'taches';
 
 /** Un pictogramme dessiné (`PageGlyphs`) ou un pictogramme de bibliothèque. */
 type IconePastille = ComponentType<SVGProps<SVGSVGElement>> | LucideIcon;
@@ -104,6 +115,9 @@ const PASTILLES: Readonly<Record<NomDePastille, Pastille>> = {
   // Les sondages : l'urne, dans un rose qui ne se confond ni avec les votes
   // sur la destination (rouge corail) ni avec la discussion (bleu ciel).
   sondages: { icone: Vote, degrade: ['#f08fc0', '#d9589a'], auTrait: true },
+  // Qui fait quoi : la liste cochée, dans un vert tilleul qui ne se confond
+  // pas avec le vert des voyages ni celui des dépenses.
+  taches: { icone: ClipboardCheck, degrade: ['#a9cf55', '#7fa82f'], auTrait: true },
 };
 
 const TAILLES = {

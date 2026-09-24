@@ -31,6 +31,7 @@ export function OutilsDuVoyage({
   nombreDeReservations = 0,
   nombreDeSondages = 0,
   sondagesAVoter = 0,
+  taches,
 }: {
   tripId: string;
   destinationVerrouillee: boolean;
@@ -49,6 +50,8 @@ export function OutilsDuVoyage({
   /** Les sondages du voyage, et ceux qui attendent mon vote. */
   nombreDeSondages?: number;
   sondagesAVoter?: number;
+  /** Ce qui reste à faire avant de partir, et ce qui m'est confié. */
+  taches?: { aFaire: number; pourMoi: number; enRetard: number; total: number };
 }) {
   const aDesActivites = nombreDActivites > 0;
   const cases = [
@@ -88,6 +91,18 @@ export function OutilsDuVoyage({
           ? `${nombreDeReservations} réservation${nombreDeReservations > 1 ? 's' : ''}`
           : 'Hôtels, visites, trajets',
       accent: false,
+    },
+    {
+      to: `/voyages/${tripId}/qui-fait-quoi`,
+      pastille: 'taches' as const,
+      titre: 'Qui fait quoi',
+      detail:
+        !taches || taches.total === 0 ? 'Qui réserve quoi'
+        : taches.enRetard > 0 ? `${taches.enRetard} en retard`
+        : taches.pourMoi > 0 ? `${taches.pourMoi} pour vous`
+        : taches.aFaire > 0 ? `${taches.aFaire} à faire`
+        : 'Tout est fait',
+      accent: Boolean(taches && (taches.enRetard > 0 || taches.pourMoi > 0)),
     },
     {
       to: `/voyages/${tripId}/sondages`,
