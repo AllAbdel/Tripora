@@ -6,10 +6,11 @@ import type { SVGProps } from 'react';
 import { GlypheCarte, GlypheDepenses, GlypheProfil, GlypheVoyages } from '@/components/PageGlyphs';
 import { Pastille, type NomDePastille } from '@/components/Pastille';
 import { Logo } from '@/components/Logo';
-import { ongletActif, sectionsDuVoyage, voyageDeLAdresse } from '@/lib/onglets';
+import { ecranDeConversation, ongletActif, sectionsDuVoyage, voyageDeLAdresse } from '@/lib/onglets';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { useEnLigne } from '@/lib/useEnLigne';
 import { useEcranLarge } from '@/lib/useEcranLarge';
+import { useClavierOuvert } from '@/lib/useClavierOuvert';
 import { cn } from '@/lib/cn';
 import { useT } from '@/i18n/useT';
 import type { CleDeTexte } from '@/i18n/textes';
@@ -51,7 +52,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const enLigne = useEnLigne();
   const ecranLarge = useEcranLarge();
+  const clavierOuvert = useClavierOuvert();
   const t = useT();
+  // Les onglets du bas : ni sur un ordinateur (la barre latérale les
+  // remplace), ni dans la discussion (sa saisie occupe le bas), ni pendant
+  // qu'on écrit (le clavier les ferait remonter sur le champ).
+  const onglets = !ecranLarge && !clavierOuvert && !ecranDeConversation(pathname);
 
   return (
     <div className="min-h-dvh lg:flex">
@@ -84,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
 
-        {!ecranLarge && (
+        {onglets && (
           <nav
             aria-label="Navigation principale"
             className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-2xl lg:hidden print:hidden

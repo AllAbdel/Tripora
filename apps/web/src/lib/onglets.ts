@@ -35,6 +35,18 @@ export function voyageDeLAdresse(pathname: string): string | null {
   return decodeURIComponent(trouve[1]);
 }
 
+/**
+ * Un écran où l'on écrit en continu, et où la barre d'onglets n'a pas sa
+ * place : la discussion du groupe.
+ *
+ * Sa barre de saisie est fixée en bas, là même où vivent les onglets — ils la
+ * recouvraient, et l'on ne pouvait plus écrire. Comme dans toute messagerie,
+ * la conversation prend le bas de l'écran ; on en sort par le retour, en haut.
+ */
+export function ecranDeConversation(pathname: string): boolean {
+  return /^\/voyages\/[^/]+\/discussion\/?$/u.test(pathname);
+}
+
 export interface SectionDuVoyage {
   to: string;
   titre: string;

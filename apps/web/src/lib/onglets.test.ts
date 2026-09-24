@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ongletActif, sectionsDuVoyage, voyageDeLAdresse } from './onglets';
+import { ecranDeConversation, ongletActif, sectionsDuVoyage, voyageDeLAdresse } from './onglets';
 
 /**
  * L'onglet actif de la barre de navigation.
@@ -64,5 +64,16 @@ describe('le voyage ouvert, pour la barre latérale', () => {
     expect(apres).toContain('Itinéraire');
     expect(apres[0]).toBe('Aperçu');
     expect(sectionsDuVoyage('v1', true)[0]?.to).toBe('/voyages/v1');
+  });
+});
+
+describe('les écrans sans onglets en bas', () => {
+  it('la discussion d’un voyage, et elle seule', () => {
+    // Sa saisie est fixée en bas, là où les onglets la recouvraient.
+    expect(ecranDeConversation('/voyages/v1/discussion')).toBe(true);
+    expect(ecranDeConversation('/voyages/v1/discussion/')).toBe(true);
+    expect(ecranDeConversation('/voyages/v1')).toBe(false);
+    expect(ecranDeConversation('/voyages/v1/itineraire')).toBe(false);
+    expect(ecranDeConversation('/voyages/discussion')).toBe(false);
   });
 });

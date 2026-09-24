@@ -50,3 +50,19 @@ test('sur un téléphone, les onglets restent en bas et la barre latérale n’e
   // Collée au bas de l'écran, là où le pouce arrive.
   expect(boite!.y + boite!.height).toBeGreaterThan(hauteur - 2);
 });
+
+test('pendant qu’on écrit, les onglets ne remontent pas sur le champ', async ({ page }) => {
+  // Le clavier réduit la page de moitié, et la barre d'onglets, fixée en bas,
+  // remontait avec lui jusque sur le champ qu'on remplissait.
+  await poser(page, [BALI], '/voyages/v1/reservations');
+  const onglets = page.getByRole('navigation', { name: 'Navigation principale' });
+  await expect(onglets).toHaveCount(1);
+
+  await page.getByRole('button', { name: /Ajouter une réservation/ }).first().click();
+  const champ = page.getByRole('textbox').first();
+  await champ.focus();
+  await expect(onglets).toHaveCount(0);
+
+  await champ.blur();
+  await expect(onglets).toHaveCount(1);
+});
