@@ -16,6 +16,7 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProposalCard } from '@/components/ProposalCard';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
+import { requeteDesReservations } from '@/lib/reservations';
 import { getCollaboration } from '@/lib/collaboration';
 import { getVoting, groupChoice, type VoteValue } from '@/lib/votes';
 import { useProposals } from '@/lib/useProposals';
@@ -103,6 +104,8 @@ export default function TripDetail() {
 
   // L'itinéraire n'est chargé que si la destination est arrêtée : avant, il
   // n'existe pas, et l'appel serait un aller-retour pour un tableau vide.
+  const reservations = useQuery(requeteDesReservations(id));
+
   const itineraire = useQuery({
     queryKey: ['itineraire', id],
     queryFn: () => getItinerary().load(id!),
@@ -269,6 +272,7 @@ export default function TripDetail() {
             estOrganisateur={data.isOwner}
             candidaturesEnAttente={candidatures.data ?? 0}
             nombreDActivites={nombreDActivites.data ?? 0}
+            nombreDeReservations={reservations.data?.length ?? 0}
           />
 
           {data.lockedDestinationId && (

@@ -54,6 +54,7 @@ export function sectionsDuVoyage(id: string, destinationVerrouillee: boolean): S
     { to: base, titre: 'Aperçu', pastille: 'accueil' },
     destinationVerrouillee && { to: `${base}/a-faire`, titre: 'À faire', pastille: 'meteo' },
     destinationVerrouillee && { to: `${base}/itineraire`, titre: 'Itinéraire', pastille: 'itineraire' },
+    { to: `${base}/reservations`, titre: 'Réservations', pastille: 'hebergements' },
     { to: `${base}/carte`, titre: 'Carte', pastille: 'carte' },
     { to: `${base}/budget`, titre: 'Dépenses', pastille: 'depenses' },
     { to: `${base}/discussion`, titre: 'Discussion', pastille: 'discussion' },

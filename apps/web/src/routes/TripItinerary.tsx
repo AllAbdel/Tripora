@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft, ArrowLeftRight, CalendarPlus, ChevronDown, ChevronUp, Loader2, MapPinned, Plus,
-  RotateCcw, Trash2, X,
+  ArrowLeft, ArrowLeftRight, BedDouble, CalendarPlus, ChevronDown, ChevronUp, Loader2, MapPinned,
+  Plus, RotateCcw, Ticket, Trash2, X,
 } from 'lucide-react';
 import {
   awaitsPlace, AXIS_ICON, buildItinerary, dayVerdict, describeDay, fillItinerary,
   findDestination, fold, formatCents, groupWeights, parseAmountToCents, suggestWeatherSwaps,
-  weatherIcon,
+  heureLisible, reservationsDuJour, trouverFournisseur, weatherIcon,
+  type MomentDeReservation,
   type NomIcone,
   type DailyWeather, type Destination, type MemberPreference, type Poi,
 } from '@tripora/core';
@@ -26,6 +27,7 @@ import {
 } from '@/lib/itinerary';
 import { requeteDesLieux } from '@/lib/places';
 import { avisPourLeRemplissage, requeteDesEnvies } from '@/lib/envies';
+import { requeteDesReservations } from '@/lib/reservations';
 import { useAuth } from '@/lib/auth-context';
 import { programmeDate, telechargerLeProgramme } from '@/lib/calendrier';
 import { chargerMeteo, cleMeteo } from '@/lib/weather';
@@ -92,6 +94,9 @@ export default function TripItinerary() {
   // pose d'abord ce qui est réclamé, et jamais ce qui est refusé.
   const { identity } = useAuth();
   const envies = useQuery(requeteDesEnvies(id, identity?.id ?? 'moi'));
+  // Ce qui est réservé se rappelle dans la journée où ça se passe : l'hôtel
+  // du soir, la visite de 2 h du matin.
+  const reservations = useQuery(requeteDesReservations(id));
 
   const aCompleter = useMemo(() => {
     const journees = jours.data;
@@ -455,6 +460,7 @@ export default function TripItinerary() {
                 tripId={id!}
                 destination={destination}
                 meteo={jour.date ? meteoParJour.get(jour.date) : undefined}
+                reservations={jour.date ? reservationsDuJour(reservations.data ?? [], jour.date) : []}
                 members={voyage.data?.members ?? []}
                 enAjout={ajoutSur === jour.id}
                 onOuvrirAjout={() => setAjoutSur(ajoutSur === jour.id ? null : jour.id)}
@@ -481,6 +487,7 @@ export default function TripItinerary() {
                   titre: voyage.data?.summary.title ?? destination.name,
                   fuseau: destination.timezone,
                   journees: enregistre,
+                  reservations: reservations.data ?? [],
                 })
               }
             >
@@ -517,6 +524,7 @@ function Journee({
   tripId,
   destination,
   meteo,
+  reservations,
   members,
   enAjout,
   onOuvrirAjout,
@@ -531,6 +539,8 @@ function Journee({
   destination: Destination | undefined;
   /** La prévision de ce jour-là, si le départ est assez proche. */
   meteo: DailyWeather | undefined;
+  /** Ce qui est réservé ce jour-là : arrivée, nuit, départ, visite. */
+  reservations: readonly MomentDeReservation[];
   members: readonly MemberPreference[];
   enAjout: boolean;
   onOuvrirAjout: () => void;
@@ -586,6 +596,25 @@ function Journee({
           {formatCents(total, 'EUR', { hideCentimes: true })}
         </span>
       </header>
+
+      {reservations.length > 0 && (
+        <Link
+          to={`/voyages/${tripId}/reservations`}
+          className="surface-raised block space-y-1 rounded-2xl border border-[color:var(--border-subtle)] px-4 py-3 text-sm"
+          aria-label="Réservé ce jour-là — voir les réservations"
+        >
+          {reservations.map((moment) => (
+            <p key={`${moment.quoi}-${moment.reservation.id}`} className="flex items-center gap-2">
+              {moment.reservation.type === 'hebergement' ? (
+                <BedDouble className="text-brand-600 size-4 shrink-0" aria-hidden />
+              ) : (
+                <Ticket className="text-brand-600 size-4 shrink-0" aria-hidden />
+              )}
+              <span className="min-w-0 truncate">{phraseDeReservation(moment)}</span>
+            </p>
+          ))}
+        </Link>
+      )}
 
       {/* Une journée est une suite, pas un tas. Chaque créneau était une carte
           flottante : six boîtes empilées, six ombres, et aucun lien visible
@@ -783,4 +812,24 @@ function Retour({ id }: { id: string | undefined }) {
       Retour au voyage
     </Link>
   );
+}
+
+/** « Arrivée à Ubud Tropical Villas, 14 h », « 2 h · Mont Batur (GetYourGuide) ». */
+function phraseDeReservation(moment: MomentDeReservation): string {
+  const { reservation } = moment;
+  const heure = heureLisible;
+  switch (moment.quoi) {
+    case 'arrivee':
+      return [`Arrivée à ${reservation.titre}`, heure(reservation.debutA)].filter(Boolean).join(', ');
+    case 'depart':
+      return [`Départ de ${reservation.titre}`, heure(reservation.finA)].filter(Boolean).join(', ');
+    case 'nuit':
+      return `Nuit à ${reservation.titre}`;
+    default: {
+      const fournisseur = trouverFournisseur(reservation.fournisseur)?.nom;
+      return [heure(reservation.debutA), `${reservation.titre}${fournisseur ? ` (${fournisseur})` : ''}`]
+        .filter(Boolean)
+        .join(' · ');
+    }
+  }
 }

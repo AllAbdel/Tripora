@@ -1,4 +1,11 @@
-import { calendrierDuVoyage, formatCents, fold, type EvenementDuProgramme } from '@tripora/core';
+import {
+  calendrierDuVoyage,
+  evenementsDesReservations,
+  formatCents,
+  fold,
+  type EvenementDuProgramme,
+  type Reservation,
+} from '@tripora/core';
 import type { ItineraryDayView } from './itinerary';
 import { partagerUnFichier } from './natif';
 
@@ -57,15 +64,18 @@ export async function telechargerLeProgramme({
   titre,
   fuseau,
   journees,
+  reservations = [],
 }: {
   titre: string;
   fuseau: string | undefined;
   journees: readonly ItineraryDayView[];
+  /** L'hôtel, les visites réservées : dans l'agenda avec le reste. */
+  reservations?: readonly Reservation[];
 }): Promise<void> {
   const contenu = calendrierDuVoyage({
     titre,
     fuseau,
-    evenements: evenementsDuProgramme(journees),
+    evenements: [...evenementsDuProgramme(journees), ...evenementsDesReservations(reservations)],
     maintenant: new Date(),
   });
   if (await partagerUnFichier({ nom: nomDuFichier(titre), contenu, titre })) return;

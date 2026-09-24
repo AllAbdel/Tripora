@@ -26,14 +26,48 @@ export function ConfirmerSuppression({
   surAnnuler: () => void;
   surConfirmer: () => void;
 }) {
+  return (
+    <BoiteDeConfirmation
+      ouverte={Boolean(voyage)}
+      titre={voyage ? `Supprimer « ${voyage.title} » ?` : ''}
+      message={
+        voyage?.localOnly
+          ? 'Ce voyage ne vit que sur cet appareil : rien ne permettra de le retrouver.'
+          : 'Le voyage disparaît pour tout le groupe, avec ses votes, son itinéraire et ses dépenses. Cette action ne s’annule pas.'
+      }
+      enCours={enCours}
+      surAnnuler={surAnnuler}
+      surConfirmer={surConfirmer}
+    />
+  );
+}
+
+/** La même boîte, pour tout ce qui s'efface : un voyage, une réservation. */
+export function BoiteDeConfirmation({
+  ouverte,
+  titre,
+  message,
+  action = 'Supprimer',
+  enCours,
+  surAnnuler,
+  surConfirmer,
+}: {
+  ouverte: boolean;
+  titre: string;
+  message: string;
+  action?: string;
+  enCours: boolean;
+  surAnnuler: () => void;
+  surConfirmer: () => void;
+}) {
   const boite = useRef<HTMLDialogElement | null>(null);
 
   useEffect(() => {
     const element = boite.current;
     if (!element) return;
-    if (voyage && !element.open) element.showModal();
-    if (!voyage && element.open) element.close();
-  }, [voyage]);
+    if (ouverte && !element.open) element.showModal();
+    if (!ouverte && element.open) element.close();
+  }, [ouverte]);
 
   return (
     <dialog
@@ -45,19 +79,15 @@ export function ConfirmerSuppression({
       onClose={surAnnuler}
       className="bg-surface text-ink w-[min(26rem,calc(100vw-2.5rem))] rounded-[var(--radius-card)] p-0 backdrop:bg-black/50 backdrop:backdrop-blur-sm"
     >
-      {voyage && (
+      {ouverte && (
         <div className="space-y-4 p-5">
           <div className="flex items-start gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-300">
               <AlertTriangle className="size-5" aria-hidden />
             </span>
             <div className="min-w-0">
-              <h2 className="text-lg font-bold">Supprimer « {voyage.title} » ?</h2>
-              <p className="text-muted mt-1 text-sm">
-                {voyage.localOnly
-                  ? 'Ce voyage ne vit que sur cet appareil : rien ne permettra de le retrouver.'
-                  : 'Le voyage disparaît pour tout le groupe, avec ses votes, son itinéraire et ses dépenses. Cette action ne s’annule pas.'}
-              </p>
+              <h2 className="text-lg font-bold">{titre}</h2>
+              <p className="text-muted mt-1 text-sm">{message}</p>
             </div>
           </div>
 
@@ -65,13 +95,8 @@ export function ConfirmerSuppression({
             <Button variant="ghost" className="flex-1" onClick={surAnnuler} disabled={enCours}>
               Annuler
             </Button>
-            <Button
-              variant="danger"
-              className="flex-1"
-              onClick={surConfirmer}
-              disabled={enCours}
-            >
-              {enCours ? 'Suppression…' : 'Supprimer'}
+            <Button variant="danger" className="flex-1" onClick={surConfirmer} disabled={enCours}>
+              {enCours ? 'Suppression…' : action}
             </Button>
           </div>
         </div>

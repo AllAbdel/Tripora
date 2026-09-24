@@ -821,4 +821,118 @@ end $$;
 reset role;
 reset request.jwt.claims;
 
+-- ============================================================================
+-- Réservations : tout le groupe lit, chacun écrit les siennes.
+-- Voyage 2 : Abdel l'organise, Thomas en est membre ; l'intrus n'en est pas.
+-- ============================================================================
+
+set role authenticated;
+set request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare n int;
+begin
+  insert into public.reservations (id, trip_id, type, fournisseur, titre, debut_le, debut_a, fin_le, reference, lien)
+  values ('eeeeeeee-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000002',
+          'hebergement', 'booking', 'Hôtel du Capitole', '2026-10-10', '15:00', '2026-10-13',
+          '1234.567.890', 'https://secure.booking.com/myreservations.html');
+  select count(*) into n from public.reservations where trip_id = 'aaaaaaaa-0000-0000-0000-000000000002';
+  assert n = 1, format('Thomas doit lire la réservation qu''il vient d''ajouter (%s)', n);
+
+  -- Au nom d'un autre : refusé.
+  begin
+    insert into public.reservations (trip_id, type, titre, debut_le, cree_par)
+    values ('aaaaaaaa-0000-0000-0000-000000000002', 'activite', 'Visite', '2026-10-11',
+            '11111111-1111-1111-1111-111111111111');
+    assert false, 'FAILLE : Thomas a pu ajouter une réservation au nom d''Abdel';
+  exception when insufficient_privilege then null;
+  end;
+
+  -- Un lien qui n'est pas en https : refusé, il sera cliqué par tout le groupe.
+  begin
+    insert into public.reservations (trip_id, type, titre, debut_le, lien)
+    values ('aaaaaaaa-0000-0000-0000-000000000002', 'activite', 'Visite', '2026-10-11',
+            'javascript:alert(1)');
+    assert false, 'FAILLE : un lien non https a été accepté';
+  exception when check_violation then null;
+  end;
+
+  -- Corriger sa réservation ne permet ni de la donner à un autre, ni de la
+  -- glisser dans un voyage dont on n'est plus.
+  update public.reservations
+     set cree_par = '11111111-1111-1111-1111-111111111111',
+         trip_id = 'aaaaaaaa-0000-0000-0000-000000000001',
+         titre = 'Hôtel du Capitole, Toulouse'
+   where id = 'eeeeeeee-0000-0000-0000-000000000001';
+  select count(*) into n from public.reservations
+   where id = 'eeeeeeee-0000-0000-0000-000000000001'
+     and cree_par = '22222222-2222-2222-2222-222222222222'
+     and trip_id = 'aaaaaaaa-0000-0000-0000-000000000002'
+     and titre = 'Hôtel du Capitole, Toulouse';
+  assert n = 1, 'FAILLE : l''auteur ou le voyage d''une réservation a pu être changé';
+end $$;
+reset role;
+reset request.jwt.claims;
+
+-- L'organisateur lit, corrige, et ajoute la sienne.
+set role authenticated;
+set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+do $$
+declare n int;
+begin
+  update public.reservations set reference = '1234567890'
+   where id = 'eeeeeeee-0000-0000-0000-000000000001';
+  get diagnostics n = row_count;
+  assert n = 1, format('L''organisateur doit pouvoir corriger une réservation du groupe (%s)', n);
+
+  insert into public.reservations (id, trip_id, type, fournisseur, titre, debut_le, debut_a)
+  values ('eeeeeeee-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000002',
+          'activite', 'getyourguide', 'Visite de la Cité de l''espace', '2026-10-11', '10:00');
+end $$;
+reset role;
+reset request.jwt.claims;
+
+-- Thomas ne touche pas à celle d'Abdel, mais retire la sienne.
+set role authenticated;
+set request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare n int;
+begin
+  select count(*) into n from public.reservations where trip_id = 'aaaaaaaa-0000-0000-0000-000000000002';
+  assert n = 2, format('Thomas doit lire toutes les réservations du groupe (%s)', n);
+
+  update public.reservations set titre = 'Autre chose' where id = 'eeeeeeee-0000-0000-0000-000000000002';
+  get diagnostics n = row_count;
+  assert n = 0, 'FAILLE : Thomas a pu modifier la réservation d''Abdel';
+  delete from public.reservations where id = 'eeeeeeee-0000-0000-0000-000000000002';
+  get diagnostics n = row_count;
+  assert n = 0, 'FAILLE : Thomas a pu supprimer la réservation d''Abdel';
+
+  delete from public.reservations where id = 'eeeeeeee-0000-0000-0000-000000000001';
+  get diagnostics n = row_count;
+  assert n = 1, format('Thomas doit pouvoir retirer sa propre réservation (%s)', n);
+end $$;
+reset role;
+reset request.jwt.claims;
+
+-- L'intrus ne voit rien, n'écrit rien.
+set role authenticated;
+set request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
+do $$
+declare n int;
+begin
+  select count(*) into n from public.reservations;
+  assert n = 0, format('FUITE : l''intrus voit %s réservation(s)', n);
+  update public.reservations set titre = 'Piraté';
+  get diagnostics n = row_count;
+  assert n = 0, 'FAILLE : l''intrus a pu modifier une réservation';
+  begin
+    insert into public.reservations (trip_id, type, titre, debut_le)
+    values ('aaaaaaaa-0000-0000-0000-000000000002', 'autre', 'Intrusion', '2026-10-10');
+    assert false, 'FAILLE : l''intrus a pu ajouter une réservation';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+reset role;
+reset request.jwt.claims;
+
 select '✅ Tous les tests RLS sont passés' as resultat;

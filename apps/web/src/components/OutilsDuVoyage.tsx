@@ -28,6 +28,7 @@ export function OutilsDuVoyage({
   estOrganisateur,
   candidaturesEnAttente,
   nombreDActivites,
+  nombreDeReservations = 0,
 }: {
   tripId: string;
   destinationVerrouillee: boolean;
@@ -41,6 +42,8 @@ export function OutilsDuVoyage({
   candidaturesEnAttente: number;
   /** Ce que le carnet d'activités connaît de la destination. Zéro : pas de case. */
   nombreDActivites: number;
+  /** Ce que le groupe a déjà réservé. */
+  nombreDeReservations?: number;
 }) {
   const aDesActivites = nombreDActivites > 0;
   const cases = [
@@ -68,6 +71,18 @@ export function OutilsDuVoyage({
       titre: 'Itinéraire',
       detail: 'Jour par jour',
       accent: true,
+    },
+    // Les réservations dès le départ : on réserve parfois le vol avant que
+    // le groupe ait fini de choisir le reste.
+    {
+      to: `/voyages/${tripId}/reservations`,
+      pastille: 'hebergements' as const,
+      titre: 'Réservations',
+      detail:
+        nombreDeReservations > 0
+          ? `${nombreDeReservations} réservation${nombreDeReservations > 1 ? 's' : ''}`
+          : 'Hôtels, visites, trajets',
+      accent: false,
     },
     {
       to: `/voyages/${tripId}/discussion`,
