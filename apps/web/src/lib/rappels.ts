@@ -89,6 +89,15 @@ export async function activerLesRappels(): Promise<boolean> {
 /** Plus de rappels : on retire tous ceux de Tripora déjà posés. */
 export async function desactiverLesRappels(): Promise<void> {
   retenir('refuses');
+  await retirerTousLesRappels();
+}
+
+/**
+ * Retire tous les rappels posés, sans changer le choix. À la déconnexion :
+ * « Départ demain pour Lisbonne » n'a pas à s'afficher chez la personne
+ * suivante.
+ */
+export async function retirerTousLesRappels(): Promise<void> {
   if (!rappelsPossibles) return;
   try {
     const notifications = await greffon();

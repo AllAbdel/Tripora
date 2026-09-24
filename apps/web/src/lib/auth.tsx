@@ -8,6 +8,7 @@ import { estNatif } from './natif';
 import { commencerLaConnexionGoogle } from './connexionNative';
 import { oublierApresDeconnexion } from './stockage';
 import { viderLeCache } from './cache';
+import { retirerTousLesRappels } from './rappels';
 import { AuthContext, type AuthContextValue, type Identity } from './auth-context';
 
 const LOCAL_KEY = 'tripora.local-identity';
@@ -202,6 +203,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Sans serveur, les voyages n'existent que dans ce navigateur : les
     // effacer serait détruire le travail de quelqu'un sans le lui demander.
     oublierApresDeconnexion({ gardeLesDonneesLocales: !supabase });
+    // Les rappels posés sur le téléphone parlent des voyages du compte qu'on
+    // quitte : ils partent avec lui.
+    if (supabase) await retirerTousLesRappels();
 
     // Le cache en mémoire survit au vidage du stockage : sans cela, le compte
     // suivant verrait s'afficher les voyages du précédent le temps que les

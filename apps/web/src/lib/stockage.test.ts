@@ -10,6 +10,7 @@ function remplirLeStockage(): void {
   localStorage.setItem('tripora.local-identity', '{"id":"abc"}');
   localStorage.setItem('tripora.local-trips', '[{"id":"t1"}]');
   localStorage.setItem('tripora.local-expenses', '[]');
+  localStorage.setItem('tripora.local-coffre', '[{"code":"4521B"}]');
   localStorage.setItem('tripora.favoris', '["t1"]');
   localStorage.setItem('tripora.trip-draft', '{}');
   localStorage.setItem('sb-abcdefgh-auth-token', '{"access_token":"secret"}');
@@ -42,6 +43,7 @@ describe('effacement à la déconnexion', () => {
   it('avec un serveur, emporte les copies locales', () => {
     oublierApresDeconnexion({ gardeLesDonneesLocales: false });
     expect(localStorage.getItem('tripora.local-trips')).toBeNull();
+    expect(localStorage.getItem('tripora.local-coffre')).toBeNull();
     expect(localStorage.getItem('tripora.favoris')).toBeNull();
     expect(localStorage.getItem('tripora.local-identity')).toBeNull();
   });
@@ -51,6 +53,8 @@ describe('effacement à la déconnexion', () => {
     expect(localStorage.getItem('tripora.local-trips')).toBe('[{"id":"t1"}]');
     expect(localStorage.getItem('tripora.local-expenses')).toBe('[]');
     expect(localStorage.getItem('tripora.favoris')).toBe('["t1"]');
+    // Y compris ce qui est arrivé après la liste : le coffre, les tâches…
+    expect(localStorage.getItem('tripora.local-coffre')).toBe('[{"code":"4521B"}]');
     // L'identité, elle, part dans les deux cas : c'est ce qu'on quitte.
     expect(localStorage.getItem('tripora.local-identity')).toBeNull();
     // Et le cache aussi : il se reconstruit tout seul à la lecture.

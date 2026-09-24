@@ -29,19 +29,21 @@ const A_GARDER: ReadonlySet<string> = new Set(['tripora.theme']);
  * Ce qui n'existe qu'ici, et qu'une déconnexion ne doit donc pas emporter.
  *
  * En mode local — sans serveur configuré — ces clés ne sont pas un cache :
- * elles sont les seules copies des voyages, des dépenses et des votes.
- * Quelqu'un qui découvre Tripora hors ligne et appuie sur « Se déconnecter »
- * ne s'attend pas à perdre son travail.
+ * elles sont les seules copies des voyages, des dépenses, des votes, des
+ * tâches, du coffre… Quelqu'un qui découvre Tripora hors ligne et appuie sur
+ * « Se déconnecter » ne s'attend pas à perdre son travail.
+ *
+ * Une règle plutôt qu'une liste : toute clé `tripora.local-…` en fait partie,
+ * sauf l'identité (c'est elle qu'on quitte). La liste tenue à la main avait
+ * oublié les sept fonctions arrivées après elle.
  */
-const DONNEES_LOCALES: readonly string[] = [
-  'tripora.local-trips',
-  'tripora.local-expenses',
-  'tripora.local-itineraries',
-  'tripora.local-votes',
-  'tripora.local-locked',
-  'tripora.trip-draft',
-  'tripora.favoris',
-];
+const PREFIXE_LOCAL = 'tripora.local-';
+const IDENTITE_LOCALE = 'tripora.local-identity';
+const AUTRES_DONNEES_LOCALES: ReadonlySet<string> = new Set(['tripora.trip-draft', 'tripora.favoris']);
+
+function estUneDonneeLocale(cle: string): boolean {
+  return (cle.startsWith(PREFIXE_LOCAL) && cle !== IDENTITE_LOCALE) || AUTRES_DONNEES_LOCALES.has(cle);
+}
 
 function cles(): string[] {
   const trouvees: string[] = [];
@@ -77,13 +79,10 @@ export function oublierApresDeconnexion({
 }: {
   gardeLesDonneesLocales: boolean;
 }): void {
-  const epargnees = new Set(A_GARDER);
-  if (gardeLesDonneesLocales) {
-    for (const cle of DONNEES_LOCALES) epargnees.add(cle);
-  }
-
   for (const cle of cles()) {
-    if (!epargnees.has(cle)) effacer(cle);
+    if (A_GARDER.has(cle)) continue;
+    if (gardeLesDonneesLocales && estUneDonneeLocale(cle)) continue;
+    effacer(cle);
   }
 
   // Le jeton de session de Supabase ne porte pas notre préfixe. `signOut` le
