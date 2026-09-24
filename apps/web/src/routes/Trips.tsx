@@ -125,7 +125,9 @@ export default function Trips() {
 
         {listeTriee && listeTriee.length > 0 && (
           <>
-            <ul className="animate-cascade space-y-3">
+            {/* Sur un ordinateur, deux colonnes : une carte de voyage étirée sur
+                toute la largeur d'un écran large n'est plus qu'un bandeau vide. */}
+            <ul className="animate-cascade space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
               {listeTriee.map((trip) => (
                 <li key={trip.id}>
                   <LigneGlissante
@@ -141,7 +143,9 @@ export default function Trips() {
                 </li>
               ))}
             </ul>
-            <p className="text-muted pb-2 text-center text-xs">
+            {/* Le geste se découvre au doigt ; à la souris, les boutons de
+                chaque carte suffisent et la phrase ne ferait que du bruit. */}
+            <p className="text-muted pb-2 text-center text-xs lg:hidden">
               Glissez une carte vers la gauche pour la supprimer, vers la droite pour
               l’épingler.
             </p>

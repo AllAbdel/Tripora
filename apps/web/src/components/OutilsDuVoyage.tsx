@@ -129,7 +129,7 @@ export function OutilsDuVoyage({
   ].filter((entree): entree is Exclude<typeof entree, false> => entree !== false);
 
   return (
-    <div className="animate-cascade grid grid-cols-2 gap-2.5">
+    <div className="animate-cascade grid grid-cols-2 gap-2.5 sm:grid-cols-3">
       {cases.map(({ to, pastille, titre, detail, accent }) => (
         <Link
           key={to}

@@ -100,6 +100,7 @@ const PASTILLES: Readonly<Record<NomDePastille, Pastille>> = {
 };
 
 const TAILLES = {
+  xs: { boite: 'size-7 rounded-lg', icone: 'size-3.5' },
   sm: { boite: 'size-9 rounded-xl', icone: 'size-4.5' },
   md: { boite: 'size-11 rounded-2xl', icone: 'size-5.5' },
   lg: { boite: 'size-14 rounded-2xl', icone: 'size-7' },

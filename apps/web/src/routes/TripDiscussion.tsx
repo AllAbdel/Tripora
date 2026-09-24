@@ -147,7 +147,7 @@ export default function TripDiscussion() {
         <div ref={finDuFil} />
       </div>
 
-      <div className="pb-safe fixed inset-x-0 bottom-0 mx-auto w-full max-w-2xl border-t border-[color:var(--border-subtle)] bg-[color:var(--surface)]/95 px-5 py-3 backdrop-blur-xl">
+      <div className="pb-safe fixed inset-x-0 bottom-0 mx-auto w-full max-w-2xl border-t border-[color:var(--border-subtle)] bg-[color:var(--surface)]/95 px-5 py-3 backdrop-blur-xl lg:left-64">
         <form
           className="flex items-end gap-2"
           onSubmit={(event) => {

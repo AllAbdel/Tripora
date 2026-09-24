@@ -1,11 +1,15 @@
 import type { ReactNode } from 'react';
-import { NavLink, useLocation } from 'react-router';
-import { CloudOff } from 'lucide-react';
+import { Link, NavLink, useLocation } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import { CloudOff, Plus } from 'lucide-react';
 import type { SVGProps } from 'react';
 import { GlypheCarte, GlypheDepenses, GlypheProfil, GlypheVoyages } from '@/components/PageGlyphs';
 import { Pastille, type NomDePastille } from '@/components/Pastille';
-import { ongletActif } from '@/lib/onglets';
+import { Logo } from '@/components/Logo';
+import { ongletActif, sectionsDuVoyage, voyageDeLAdresse } from '@/lib/onglets';
+import { cleVoyage, getTripRepository } from '@/lib/trips';
 import { useEnLigne } from '@/lib/useEnLigne';
+import { useEcranLarge } from '@/lib/useEcranLarge';
 import { cn } from '@/lib/cn';
 import { useT } from '@/i18n/useT';
 import type { CleDeTexte } from '@/i18n/textes';
@@ -34,70 +38,157 @@ const TABS: Tab[] = [
   { to: '/profil', cle: 'nav.profil', icon: GlypheProfil },
 ];
 
+/**
+ * Deux mises en page, selon l'écran.
+ *
+ * Sur un téléphone ou une tablette, les onglets en bas : c'est là que le pouce
+ * arrive. Sur un ordinateur, cette barre n'a plus de raison d'être — on vise à
+ * la souris, et une colonne de téléphone perdue au milieu d'un écran large
+ * gaspillait les deux tiers de la place. À partir de `lg` (1 024 px), la
+ * navigation passe dans une barre latérale, et le contenu s'élargit.
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const enLigne = useEnLigne();
+  const ecranLarge = useEcranLarge();
   const t = useT();
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col">
-      {/*
-        Un bandeau plutôt qu'un écran d'erreur : hors réseau, Tripora affiche
-        ce qu'il sait déjà du voyage, et c'est utilisable. Ce qui manque, c'est
-        la fraîcheur — il faut le dire, pas bloquer.
-      */}
-      {!enLigne && (
-        <p
-          role="status"
-          className="bg-gold-500/15 text-gold-800 dark:text-gold-200 flex items-center
-                     justify-center gap-2 px-4 py-2 text-xs font-medium"
+    <div className="min-h-dvh lg:flex">
+      {ecranLarge && <BarreLaterale pathname={pathname} />}
+      <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col lg:mx-0 lg:max-w-none lg:min-w-0 lg:flex-1">
+        {/*
+          Un bandeau plutôt qu'un écran d'erreur : hors réseau, Tripora affiche
+          ce qu'il sait déjà du voyage, et c'est utilisable. Ce qui manque, c'est
+          la fraîcheur — il faut le dire, pas bloquer.
+        */}
+        {!enLigne && (
+          <p
+            role="status"
+            className="bg-gold-500/15 text-gold-800 dark:text-gold-200 flex items-center
+                       justify-center gap-2 px-4 py-2 text-xs font-medium"
+          >
+            <CloudOff className="size-3.5 shrink-0" aria-hidden />
+            {t('etat.horsreseau')}
+          </p>
+        )}
+
+        {/* La clé force React à remonter le contenu à chaque changement d'écran :
+            sans elle, l'animation d'entrée ne rejouerait qu'une fois. Un fondu
+            court et vertical, jamais un glissement latéral — un déplacement
+            horizontal raconte un sens de navigation que l'application n'a pas. */}
+        <main
+          key={pathname}
+          className="animate-page flex-1 pb-24 lg:mx-auto lg:w-full lg:max-w-4xl lg:px-6 lg:pb-12 print:pb-0"
         >
-          <CloudOff className="size-3.5 shrink-0" aria-hidden />
-          {t('etat.horsreseau')}
-        </p>
-      )}
+          {children}
+        </main>
 
-      {/* La clé force React à remonter le contenu à chaque changement d'écran :
-          sans elle, l'animation d'entrée ne rejouerait qu'une fois. Un fondu
-          court et vertical, jamais un glissement latéral — un déplacement
-          horizontal raconte un sens de navigation que l'application n'a pas. */}
-      <main key={pathname} className="animate-page flex-1 pb-24 print:pb-0">
-        {children}
-      </main>
+        {!ecranLarge && (
+          <nav
+            aria-label="Navigation principale"
+            className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-2xl lg:hidden print:hidden
+                       border-t border-[color:var(--border-subtle)]
+                       bg-[color:var(--surface)]/85 px-2 pt-1.5 backdrop-blur-xl"
+          >
+            <ul className="flex items-stretch justify-around">
+              {TABS.map(({ to, cle, icon: Icon }) => {
+                const active = ongletActif(to, pathname);
+                return (
+                  <li key={to} className="flex-1">
+                    <NavLink
+                      to={to}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'relative flex min-h-12 flex-col items-center justify-center gap-1 py-1.5',
+                        'text-[0.6875rem] tracking-[0.06em] uppercase transition-colors',
+                        active
+                          ? 'text-brand-600 dark:text-brand-300 font-semibold'
+                          : 'text-muted font-medium',
+                      )}
+                    >
+                      {/* L'onglet actif se signale par un filet posé au-dessus,
+                          pas seulement par une couleur. Un trait se voit sans
+                          distinguer les teintes, et il appartient à la même
+                          grammaire que le reste de la page. */}
+                      <span
+                        aria-hidden
+                        className={cn(
+                          'absolute inset-x-4 top-0 h-px transition-opacity',
+                          active ? 'bg-current opacity-100' : 'opacity-0',
+                        )}
+                      />
+                      <Icon className="size-5" aria-hidden />
+                      {t(cle)}
+                    </NavLink>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        )}
+      </div>
+    </div>
+  );
+}
 
-      <nav
-        aria-label="Navigation principale"
-        className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-2xl
-                   border-t border-[color:var(--border-subtle)]
-                   bg-[color:var(--surface)]/85 px-2 pt-1.5 backdrop-blur-xl"
+/**
+ * La navigation d'un grand écran : une colonne à gauche, toujours visible.
+ *
+ * En haut, les quatre destinations de toujours — les mêmes que les onglets du
+ * téléphone, dans le même ordre. Dessous, quand un voyage est ouvert, tous ses
+ * écrans : sur un ordinateur on passe de l'itinéraire aux dépenses d'un clic,
+ * sans remonter à l'aperçu à chaque fois.
+ */
+function BarreLaterale({ pathname }: { pathname: string }) {
+  const t = useT();
+  const idVoyage = voyageDeLAdresse(pathname);
+  // Même clé que l'aperçu : le voyage vient du cache, sans nouvelle requête.
+  const voyage = useQuery({
+    queryKey: cleVoyage(idVoyage ?? undefined),
+    queryFn: () => getTripRepository().get(idVoyage!),
+    enabled: Boolean(idVoyage),
+  });
+  const sections = idVoyage
+    ? sectionsDuVoyage(idVoyage, Boolean(voyage.data?.lockedDestinationId))
+    : [];
+
+  return (
+    <aside
+      className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 overflow-y-auto
+                 border-r border-[color:var(--border-subtle)] bg-[color:var(--surface)] px-4 py-6
+                 lg:flex print:hidden"
+    >
+      <Link to="/voyages" className="flex items-center gap-2.5 px-2">
+        <Logo className="size-8" />
+        <span className="titre-lieu text-2xl leading-none">Tripora</span>
+      </Link>
+
+      <Link
+        to="/voyages/nouveau"
+        className="bg-brand-600 hover:bg-brand-700 flex items-center justify-center gap-2 rounded-xl
+                   px-3 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-card)] transition-colors"
       >
-        <ul className="flex items-stretch justify-around">
+        <Plus className="size-4" aria-hidden />
+        Nouveau trip
+      </Link>
+
+      <nav aria-label="Navigation principale">
+        <ul className="space-y-0.5">
           {TABS.map(({ to, cle, icon: Icon }) => {
             const active = ongletActif(to, pathname);
             return (
-              <li key={to} className="flex-1">
+              <li key={to}>
                 <NavLink
                   to={to}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'relative flex min-h-12 flex-col items-center justify-center gap-1 py-1.5',
-                    'text-[0.6875rem] tracking-[0.06em] uppercase transition-colors',
+                    'flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors',
                     active
-                      ? 'text-brand-600 dark:text-brand-300 font-semibold'
-                      : 'text-muted font-medium',
+                      ? 'bg-brand-500/10 text-brand-700 dark:text-brand-200 font-semibold'
+                      : 'text-muted hover:bg-[color:var(--surface-muted)] font-medium',
                   )}
                 >
-                  {/* L'onglet actif se signale par un filet posé au-dessus,
-                      pas seulement par une couleur. Un trait se voit sans
-                      distinguer les teintes, et il appartient à la même
-                      grammaire que le reste de la page. */}
-                  <span
-                    aria-hidden
-                    className={cn(
-                      'absolute inset-x-4 top-0 h-px transition-opacity',
-                      active ? 'bg-current opacity-100' : 'opacity-0',
-                    )}
-                  />
                   <Icon className="size-5" aria-hidden />
                   {t(cle)}
                 </NavLink>
@@ -106,7 +197,40 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </ul>
       </nav>
-    </div>
+
+      {idVoyage && (
+        <nav aria-label="Écrans du voyage" className="space-y-2">
+          <div className="px-3">
+            <p className="etiquette">Ce voyage</p>
+            <p className="mt-1 truncate text-sm font-semibold">
+              {voyage.data?.summary.title ?? '…'}
+            </p>
+          </div>
+          <ul className="space-y-0.5">
+            {sections.map(({ to, titre, pastille }) => {
+              const active = pathname === to;
+              return (
+                <li key={to}>
+                  <Link
+                    to={to}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      'flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-sm transition-colors',
+                      active
+                        ? 'bg-brand-500/10 text-brand-700 dark:text-brand-200 font-semibold'
+                        : 'hover:bg-[color:var(--surface-muted)]',
+                    )}
+                  >
+                    <Pastille nom={pastille} taille="xs" />
+                    {titre}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
+    </aside>
   );
 }
 

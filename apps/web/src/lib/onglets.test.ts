@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ongletActif } from './onglets';
+import { ongletActif, sectionsDuVoyage, voyageDeLAdresse } from './onglets';
 
 /**
  * L'onglet actif de la barre de navigation.
@@ -40,5 +40,29 @@ describe('onglet actif de la barre de navigation', () => {
     expect(ongletActif('/carte', '/budget')).toBe(false);
     expect(ongletActif('/budget', '/carte')).toBe(false);
     expect(ongletActif('/profil', '/voyages/v1')).toBe(false);
+  });
+});
+
+describe('le voyage ouvert, pour la barre latérale', () => {
+  it('se lit sur toutes les adresses d’un voyage', () => {
+    expect(voyageDeLAdresse('/voyages/v1')).toBe('v1');
+    expect(voyageDeLAdresse('/voyages/v1/itineraire')).toBe('v1');
+    expect(voyageDeLAdresse('/voyages/a%20b/carte')).toBe('a b');
+  });
+
+  it('ne prend pas l’assistant de création, ni les autres écrans, pour un voyage', () => {
+    expect(voyageDeLAdresse('/voyages/nouveau')).toBeNull();
+    expect(voyageDeLAdresse('/voyages')).toBeNull();
+    expect(voyageDeLAdresse('/carte')).toBeNull();
+  });
+
+  it('ne propose ce qui suppose une destination qu’une fois celle-ci arrêtée', () => {
+    const avant = sectionsDuVoyage('v1', false).map((section) => section.titre);
+    const apres = sectionsDuVoyage('v1', true).map((section) => section.titre);
+    expect(avant).not.toContain('Itinéraire');
+    expect(avant).not.toContain('Ma valise');
+    expect(apres).toContain('Itinéraire');
+    expect(apres[0]).toBe('Aperçu');
+    expect(sectionsDuVoyage('v1', true)[0]?.to).toBe('/voyages/v1');
   });
 });
