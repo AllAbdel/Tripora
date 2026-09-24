@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Lock, Stamp } from 'lucide-react';
 import { NOMS_DES_CONTINENTS, type Tampon } from '@tripora/core';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Drapeau } from '@/components/Drapeau';
+import { CarteDuMonde } from '@/components/CarteDuMonde';
 import { TitreDePage } from '@/components/TitreDePage';
 import { usePasseport } from '@/lib/passeport';
 import { cn } from '@/lib/cn';
@@ -69,6 +70,25 @@ export default function Passeport() {
         <Chiffre valeur={p.jours} libelle={p.jours > 1 ? 'jours sur la route' : 'jour sur la route'} />
         <Chiffre valeur={p.kilometres} libelle="km parcourus" />
       </dl>
+
+      <Card>
+        <CardBody className="space-y-2">
+          <CarteDuMonde
+            paysVisites={p.pays}
+            voyages={p.faits.map((voyage) => ({
+              id: voyage.id,
+              nom: voyage.ville ?? voyage.titre,
+              destination: voyage.destination ?? null,
+              origine: voyage.origine ?? null,
+            }))}
+          />
+          <p className="text-muted text-xs">
+            {vierge
+              ? 'Les pays visités s’allumeront ici, avec un arc depuis chez vous.'
+              : 'Les pays visités s’allument en or ; chaque arc part de la ville de départ du voyage.'}
+          </p>
+        </CardBody>
+      </Card>
 
       {p.prochain && (
         <Link

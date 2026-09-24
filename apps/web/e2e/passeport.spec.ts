@@ -44,6 +44,10 @@ test('le passeport compte le voyage vécu, pas celui qu’on rêve', async ({ pa
   await expect(page.getByText(/Premier départ — obtenu/u)).toBeAttached();
   await expect(page.getByText(/Long-courrier — obtenu/u)).toBeAttached();
   await expect(page.getByText(/Cinq pays — à gagner/u)).toBeAttached();
+  // Sur la carte : l'Indonésie s'allume, le Portugal rêvé non.
+  const carte = page.getByRole('img', { name: 'Carte du monde : 1 pays visité — Indonésie.' });
+  await expect(carte).toBeVisible();
+  await carte.screenshot({ path: 'test-results/carte-du-monde.png' });
   await page.screenshot({ path: 'test-results/passeport.png', fullPage: true });
 });
 
