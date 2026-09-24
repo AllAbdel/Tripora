@@ -58,6 +58,10 @@ describe('catalogue d’activités', () => {
     'palawan/el-nido': 'Palawan est une île de quatre cents kilomètres : El Nido se rejoint en cinq heures de route depuis Puerto Princesa',
     'belfast/chaussee-des-geants': 'la Chaussée des Géants est l’excursion classique à la journée depuis Belfast, par la route côtière d’Antrim',
     'bergen/naeroyfjord': 'le Nærøyfjord se fait à la journée depuis Bergen, par le train de Flåm et le bateau',
+    'kilimandjaro/tarangire': 'le parc de Tarangire se fait en safari d’une journée depuis Arusha, à deux heures de route',
+    'kilimandjaro/ngorongoro': 'le cratère du Ngorongoro est le safari à la journée classique depuis Arusha',
+    'madagascar/andasibe': 'Andasibe se rejoint en trois à quatre heures de route depuis Antananarivo',
+    'nouvelle-caledonie/ile-des-pins': 'l’île des Pins se fait à la journée depuis Nouméa, en bateau rapide ou en vingt minutes d’avion',
   };
 
   it('place chaque activité près de sa destination', () => {
