@@ -55,6 +55,7 @@ describe('catalogue d’activités', () => {
     'costa-rica/arenal': 'l’Arenal est à trois heures de route de San José, et se fait d’une traite',
     'las-vegas/grand-canyon': 'la rive ouest du Grand Canyon est l’excursion à la journée depuis Las Vegas',
     'melbourne/douze-apotres': 'la Great Ocean Road se fait en une longue journée au départ de Melbourne',
+    'palawan/el-nido': 'Palawan est une île de quatre cents kilomètres : El Nido se rejoint en cinq heures de route depuis Puerto Princesa',
   };
 
   it('place chaque activité près de sa destination', () => {
