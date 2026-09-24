@@ -22,11 +22,13 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? '';
  * reste côté Edge Functions : lui sert à interroger l'API de prix.
  */
 const marker = import.meta.env.VITE_TRAVELPAYOUTS_MARKER?.trim() ?? '';
+/** Le projet Travelpayouts (« trs ») : public au même titre, dans les mêmes liens. */
+const projet = import.meta.env.VITE_TRAVELPAYOUTS_PROJET?.trim() ?? '';
 
 export const env = {
   supabaseUrl: url,
   supabaseAnonKey: anonKey,
-  travelpayoutsMarker: marker,
+  travelpayouts: { marker, projet },
   appName: 'Tripora',
 } as const;
 

@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import {
+  activityLinks,
   sejourDe,
   affilierLiens,
   stayLinks,
@@ -32,12 +33,13 @@ export function Reserver({
   destination: Destination;
 }) {
   const sejour = sejourDe(constraints);
-  const dormir = affilierLiens(stayLinks(destination, sejour), env.travelpayoutsMarker);
+  const dormir = affilierLiens(stayLinks(destination, sejour), env.travelpayouts);
   const aller = affilierLiens(
     travelLinks(constraints.origin, destination, sejour),
-    env.travelpayoutsMarker,
+    env.travelpayouts,
   );
-  const commissionne = [...dormir, ...aller].some((lien) => lien.affilie);
+  const faire = affilierLiens(activityLinks(destination), env.travelpayouts);
+  const commissionne = [...dormir, ...aller, ...faire].some((lien) => lien.affilie);
 
   return (
     <Card>
@@ -53,6 +55,7 @@ export function Reserver({
 
         <Groupe titre="Où dormir" pastille="hebergements" liens={dormir} />
         <Groupe titre="Comment y aller" pastille="transport" liens={aller} />
+        <Groupe titre="Que faire sur place" pastille="decouvrir" liens={faire} />
 
         {/* La phrase change avec la réalité. Affirmer « on ne touche rien »
             alors qu'un lien est affilié serait le genre de détail qui, une fois

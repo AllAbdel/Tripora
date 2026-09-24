@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { affilierLiens, ajouterJours, sejourDe, stayLinks, travelLinks } from './booking.js';
+import {
+  activityLinks,
+  affilierLiens,
+  ajouterJours,
+  sejourDe,
+  stayLinks,
+  travelLinks,
+} from './booking.js';
 import { findDestination } from './catalog/destinations.js';
 import type { TripConstraints } from './types.js';
 
@@ -124,8 +131,21 @@ describe('liens de transport', () => {
   });
 });
 
+describe('que faire sur place', () => {
+  it('cherche les activités sur le nom court de la ville', () => {
+    const bergen = activityLinks(findDestination('bergen')!)[0]!;
+    expect(bergen.kind).toBe('activity');
+    expect(new URL(bergen.url).searchParams.get('query')).toBe('Bergen');
+    const canee = activityLinks(findDestination('crete-la-canee')!)[0]!;
+    expect(new URL(canee.url).searchParams.get('query')).toBe('La Canée');
+    const lisbonne = activityLinks(LISBONNE)[0]!;
+    expect(new URL(lisbonne.url).searchParams.get('query')).toBe(LISBONNE.name);
+  });
+});
+
 describe('affiliation', () => {
   const SEJOUR = { checkIn: '2026-07-04', checkOut: '2026-07-11', guests: 3 };
+  const TRIPORA = { marker: '654321', projet: '570857' };
 
   function liensDeVoyage() {
     return travelLinks(PARIS, findDestination('istanbul')!, SEJOUR);
@@ -135,14 +155,14 @@ describe('affiliation', () => {
     // Un écran qui réordonnerait ses liens selon ce qu'ils rapportent ne serait
     // plus un service. C'est la garantie la plus importante du module.
     const avant = liensDeVoyage();
-    const apres = affilierLiens(avant, '123456');
+    const apres = affilierLiens(avant, TRIPORA);
     expect(apres.map((lien) => lien.id)).toEqual(avant.map((lien) => lien.id));
     expect(apres).toHaveLength(avant.length);
   });
 
-  it('ne touche à rien sans identifiant', () => {
+  it('ne touche à rien sans identité complète', () => {
     const avant = liensDeVoyage();
-    for (const rien of [undefined, '', '   ']) {
+    for (const rien of [undefined, {}, { marker: '', projet: '   ' }, { marker: '654321' }, { projet: '570857' }]) {
       expect(affilierLiens(avant, rien)).toEqual(avant);
     }
   });
@@ -151,34 +171,43 @@ describe('affiliation', () => {
     // Poser une faute de saisie dans une URL ne rapporte rien et abîme le lien.
     const avant = liensDeVoyage();
     for (const faux of ['mon-marker', '12', 'abc123', '1234567890123']) {
-      expect(affilierLiens(avant, faux)).toEqual(avant);
+      expect(affilierLiens(avant, { marker: faux, projet: '570857' })).toEqual(avant);
+      expect(affilierLiens(avant, { marker: '654321', projet: faux })).toEqual(avant);
     }
   });
 
-  it('décore le partenaire connu, et lui seul', () => {
-    const apres = affilierLiens(liensDeVoyage(), '654321');
-    const vol = apres.find((lien) => lien.id === 'aviasales')!;
-    expect(new URL(vol.url).searchParams.get('marker')).toBe('654321');
-    expect(vol.affilie).toBe(true);
-
-    const train = apres.find((lien) => lien.id === 'omio')!;
-    expect(train.url).not.toContain('marker');
-    expect(train.affilie).toBeUndefined();
-  });
-
-  it('laisse les liens d’hébergement intacts, faute de forme établie', () => {
-    // Inventer une forme de lien ne produit pas un lien qui rapporte : ça
-    // produit un lien qui ne rapporte rien, ou qui casse.
-    const dormir = stayLinks(findDestination('istanbul')!, SEJOUR);
-    expect(affilierLiens(dormir, '654321')).toEqual(dormir);
-  });
-
-  it('garde le reste de l’URL identique', () => {
+  it('passe les vols par Travelpayouts, sous la forme du tableau de bord', () => {
     const avant = liensDeVoyage().find((lien) => lien.id === 'aviasales')!;
-    const apres = affilierLiens([avant], '654321')[0]!;
-    const params = new URL(apres.url).searchParams;
-    for (const [cle, valeur] of new URL(avant.url).searchParams) {
-      expect(params.get(cle)).toBe(valeur);
-    }
+    const vol = affilierLiens(liensDeVoyage(), TRIPORA).find((lien) => lien.id === 'aviasales')!;
+    const url = new URL(vol.url);
+    expect(url.origin + url.pathname).toBe('https://tp.media/r');
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      campaign_id: '100',
+      marker: '654321',
+      p: '4114',
+      trs: '570857',
+      // La recherche préremplie arrive intacte au bout du lien.
+      u: avant.url,
+    });
+    expect(vol.affilie).toBe(true);
+  });
+
+  it('passe les activités par Travelpayouts', () => {
+    const avant = activityLinks(findDestination('istanbul')!)[0]!;
+    const klook = affilierLiens([avant], TRIPORA)[0]!;
+    const url = new URL(klook.url);
+    expect(url.searchParams.get('p')).toBe('4110');
+    expect(url.searchParams.get('campaign_id')).toBe('137');
+    expect(url.searchParams.get('u')).toBe(avant.url);
+    expect(klook.affilie).toBe(true);
+  });
+
+  it('ne décore que les programmes rejoints', () => {
+    const train = affilierLiens(liensDeVoyage(), TRIPORA).find((lien) => lien.id === 'omio')!;
+    expect(train.url).not.toContain('tp.media');
+    expect(train.affilie).toBeUndefined();
+    // Booking, Airbnb, Hostelworld : pas de programme rejoint, pas de numéros.
+    const dormir = stayLinks(findDestination('istanbul')!, SEJOUR);
+    expect(affilierLiens(dormir, TRIPORA)).toEqual(dormir);
   });
 });

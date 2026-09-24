@@ -22,7 +22,7 @@ import type { Destination, Place, TripConstraints } from './types.js';
  * Tout est construit ici, sans réseau et sans clé, et testé.
  */
 
-export type BookingKind = 'stay' | 'flight' | 'train' | 'bus';
+export type BookingKind = 'stay' | 'flight' | 'train' | 'bus' | 'activity';
 
 export interface BookingLink {
   id: string;
@@ -166,34 +166,80 @@ export function travelLinks(
   return liens;
 }
 
+/**
+ * Que faire sur place : les visites, billets et excursions à réserver.
+ *
+ * Une recherche sur la ville, pas une activité précise : le carnet propose
+ * déjà les idées, ce lien sert au moment de payer un billet. La recherche se
+ * fait sur le nom court (« Bergen et les fjords » cherche « Bergen ») : le
+ * moteur du site ne connaît que les villes.
+ */
+export function activityLinks(destination: Destination): BookingLink[] {
+  const klook = new URL('https://www.klook.com/search/result/');
+  klook.searchParams.set('query', nomCourt(destination.name));
+  return [
+    {
+      id: 'klook',
+      label: 'Klook',
+      kind: 'activity',
+      url: klook.toString(),
+      note: 'Visites, billets coupe-file et excursions',
+    },
+  ];
+}
+
+/** « Bergen et les fjords » → « Bergen » ; « Crète — La Canée » → « La Canée ». */
+function nomCourt(nom: string): string {
+  const apresLeTiret = nom.split(' — ').at(-1) ?? nom;
+  return (apresLeTiret.split(' et ')[0] ?? apresLeTiret).trim() || nom;
+}
+
 // ---------------------------------------------------------------------------
 // Affiliation
 // ---------------------------------------------------------------------------
 
 /**
- * Les partenaires dont on connaît la façon d'attribuer une réservation.
- *
- * Volontairement court. Travelpayouts distribue des dizaines de programmes,
- * chacun avec sa propre forme de lien, et **inventer une forme ne produit pas
- * un lien qui rapporte : ça produit un lien qui ne rapporte rien, ou pire, qui
- * casse**. On ne décore donc que ce dont la forme est établie de longue date —
- * le paramètre `marker` sur Aviasales — et on laisse les autres intacts.
- *
- * Ajouter un partenaire se fait ici, en copiant la forme exacte depuis le
- * tableau de bord Travelpayouts, jamais de mémoire.
+ * L'identité de partenaire Travelpayouts. **Publique** : les deux nombres
+ * figurent en clair dans chaque lien affilié.
  */
-const AFFILIABLES: Readonly<Record<string, (url: URL, marker: string) => void>> = {
-  aviasales: (url, marker) => url.searchParams.set('marker', marker),
+export interface Partenaire {
+  /** L'identifiant de partenaire (« marker »), à qui revient la commission. */
+  marker?: string;
+  /** Le projet (« trs ») auquel le tableau de bord rattache les clics. */
+  projet?: string;
+}
+
+/**
+ * Les programmes Travelpayouts rejoints, et leurs numéros.
+ *
+ * Volontairement court. Chaque programme a son numéro, et **inventer un numéro
+ * ne produit pas un lien qui rapporte : ça produit un lien qui ne rapporte
+ * rien, ou pire, qui casse**. Ceux-ci sont relevés sur les liens générés par
+ * le tableau de bord de Tripora (le 24 septembre 2026) :
+ *
+ *   https://tp.media/r?campaign_id=100&marker=…&p=4114&trs=…&u=https://aviasales.com
+ *   https://tp.media/r?campaign_id=137&marker=…&p=4110&trs=…&u=https://klook.com
+ *
+ * Ajouter un partenaire se fait ici, en relevant ses numéros sur un lien du
+ * tableau de bord, jamais de mémoire.
+ */
+const PROGRAMMES: Readonly<Record<string, { programme: string; campagne: string }>> = {
+  aviasales: { programme: '4114', campagne: '100' },
+  klook: { programme: '4110', campagne: '137' },
 };
 
 /**
- * Ajoute l'identifiant de partenaire aux liens qui savent l'exploiter.
+ * Fait passer par Travelpayouts les liens des partenaires rejoints.
+ *
+ * Le lien d'origine — la recherche préremplie — devient la destination (`u`)
+ * d'un lien `tp.media`, la forme exacte que produit le tableau de bord : le
+ * clic y est compté, puis la personne arrive sur la même page qu'avant.
  *
  * Trois garanties, et ce sont elles qui comptent plus que le code :
  *
  *  1. **la liste et son ordre ne changent pas.** Un écran qui réordonnerait
  *     ses liens selon ce qu'ils rapportent ne serait plus un service ;
- *  2. **sans identifiant, rien ne bouge** — pas même un paramètre vide ;
+ *  2. **sans identité complète, rien ne bouge** — pas même un paramètre vide ;
  *  3. **ce qui est décoré est marqué `affilie`**, pour que l'interface
  *     l'annonce plutôt que de le taire.
  *
@@ -202,19 +248,26 @@ const AFFILIABLES: Readonly<Record<string, (url: URL, marker: string) => void>> 
  */
 export function affilierLiens(
   liens: readonly BookingLink[],
-  marker: string | undefined,
+  partenaire: Partenaire | undefined,
 ): BookingLink[] {
-  const propre = (marker ?? '').trim();
-  // Un identifiant de partenaire est un nombre. Tout le reste est une faute de
-  // saisie, et poser une faute de saisie dans une URL ne rapporte rien.
-  if (!/^[0-9]{3,12}$/.test(propre)) return [...liens];
+  const marker = (partenaire?.marker ?? '').trim();
+  const projet = (partenaire?.projet ?? '').trim();
+  // Ce sont des nombres. Tout le reste est une faute de saisie, et poser une
+  // faute de saisie dans une URL ne rapporte rien.
+  if (!/^[0-9]{3,12}$/.test(marker) || !/^[0-9]{3,12}$/.test(projet)) return [...liens];
 
   return liens.map((lien) => {
-    const decorer = AFFILIABLES[lien.id];
-    if (!decorer) return lien;
+    const numeros = PROGRAMMES[lien.id];
+    if (!numeros) return lien;
     try {
-      const url = new URL(lien.url);
-      decorer(url, propre);
+      // Relire l'URL d'origine écarte ce qui n'en est pas une.
+      const destination = new URL(lien.url).toString();
+      const url = new URL('https://tp.media/r');
+      url.searchParams.set('campaign_id', numeros.campagne);
+      url.searchParams.set('marker', marker);
+      url.searchParams.set('p', numeros.programme);
+      url.searchParams.set('trs', projet);
+      url.searchParams.set('u', destination);
       return { ...lien, url: url.toString(), affilie: true };
     } catch {
       // Une URL illisible reste telle quelle : mieux vaut un lien qui marche
