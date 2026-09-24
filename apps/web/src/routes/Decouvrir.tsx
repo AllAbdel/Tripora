@@ -162,7 +162,7 @@ export default function Decouvrir() {
 
   const avis = useQuery(requeteDesEnvies(id, moi));
   const comptes = useMemo(() => comptesDesEnvies(avis.data), [avis.data]);
-  const poser = usePoserUneEnvie(id, moi);
+  const poser = usePoserUneEnvie(id);
 
   const envies = useMemo(() => groupWeights(voyage.data?.members ?? []), [voyage.data?.members]);
   const paquet = useMemo(

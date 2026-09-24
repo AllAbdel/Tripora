@@ -76,7 +76,7 @@ export default function TripBilan() {
     const participants = Math.max(data.members.length, data.constraints.participants ?? 1, 1);
     const libelle = (categorie: string) => CATEGORIES.find((c) => c.value === categorie)?.label ?? 'Divers';
     const favoris = Object.entries(envies.data?.parActivite ?? {})
-      .map(([activiteId, avis]) => ({ titre: titres.data?.[activiteId], pour: avis.pour.length, contre: avis.contre.length }))
+      .map(([activiteId, avis]) => ({ titre: titres.data?.[activiteId], pour: avis.pour, contre: avis.contre }))
       .filter((ligne): ligne is { titre: string; pour: number; contre: number } => Boolean(ligne.titre) && ligne.pour > 0)
       .sort((a, b) => b.pour - a.pour || a.contre - b.contre);
     return bilanDuVoyage({

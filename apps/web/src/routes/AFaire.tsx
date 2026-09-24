@@ -106,19 +106,19 @@ export default function AFaire() {
     });
   }, [id, queryClient]);
 
-  const poser = usePoserUneEnvie(id, moi);
+  const poser = usePoserUneEnvie(id);
 
   const visibles = useMemo(() => {
     const filtrees = destinationId ? chercherActivites(destinationId, recherche) : [];
     const parEnvie =
       envie === NOS_ENVIES
-        ? filtrees.filter((a) => (avis.data?.parActivite[a.id]?.pour.length ?? 0) > 0)
+        ? filtrees.filter((a) => (avis.data?.parActivite[a.id]?.pour ?? 0) > 0)
         : envie
           ? filtrees.filter((a) => a.axis === envie)
           : filtrees;
     const soldeDe = (activiteId: string): number => {
       const detail = avis.data?.parActivite[activiteId];
-      return detail ? detail.pour.length - detail.contre.length : 0;
+      return detail ? detail.pour - detail.contre : 0;
     };
     // Ce que le groupe a réclamé d'abord ; puis les envies générales du
     // groupe ; puis le prix croissant — à envie égale, ce qui est gratuit
@@ -134,7 +134,7 @@ export default function AFaire() {
 
   const nombreDEnvies = useMemo(
     () =>
-      Object.values(avis.data?.parActivite ?? {}).filter((detail) => detail.pour.length > 0)
+      Object.values(avis.data?.parActivite ?? {}).filter((detail) => detail.pour > 0)
         .length,
     [avis.data],
   );
@@ -388,13 +388,13 @@ function FicheDActivite({
         </div>
         {/* Combien, jamais qui : chacun garde ce qui lui plaît sans avoir à
             s'en justifier devant le groupe. */}
-        {avis && (avis.pour.length > 0 || avis.contre.length > 0) && (
+        {avis && (avis.pour > 0 || avis.contre > 0) && (
           <p className="text-muted text-xs leading-snug">
-            {avis.pour.length > 0 && <span>{phraseDesEnvies(avis.pour.length, avis.moi === 'envie')}</span>}
-            {avis.pour.length > 0 && avis.contre.length > 0 && <span> · </span>}
-            {avis.contre.length > 0 && (
+            {avis.pour > 0 && <span>{phraseDesEnvies(avis.pour, avis.moi === 'envie')}</span>}
+            {avis.pour > 0 && avis.contre > 0 && <span> · </span>}
+            {avis.contre > 0 && (
               <span>
-                {avis.contre.length} s’en passerai{avis.contre.length > 1 ? 'ent' : 't'}
+                {avis.contre} s’en passerai{avis.contre > 1 ? 'ent' : 't'}
               </span>
             )}
           </p>

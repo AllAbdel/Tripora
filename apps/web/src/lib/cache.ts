@@ -51,7 +51,8 @@ const CLE_DU_CACHE = 'tripora.cache';
  * une mise à jour de Tripora ne doit pas relire des données qu'elle ne
  * comprend plus.
  */
-export const VERSION_DU_CACHE = 'v1';
+// v2 : les envies ne portent plus d'identifiants, seulement des comptes.
+export const VERSION_DU_CACHE = 'v2';
 
 export const persister = createSyncStoragePersister({
   storage: typeof window === 'undefined' ? undefined : window.localStorage,

@@ -16,18 +16,21 @@ import { supabase } from './supabase';
  * sur cinq, pas de classement à faire : on veut savoir ce qui rassemble et ce
  * qui divise, pas mesurer l'enthousiasme au dixième.
  *
- * Les avis vivent dans la table `votes`, avec le sujet `place` que le schéma
- * prévoyait depuis le premier jour. Les règles de sécurité y sont déjà les
- * bonnes : chacun lit les avis de son groupe, et n'écrit que les siens.
+ * Les avis vivent dans la table `votes`, avec le sujet `place`. **Ils sont
+ * anonymes pour de bon** : chacun ne lit que les siens, et le groupe n'obtient
+ * que des comptes, par la fonction `envies_du_voyage` — combien, jamais qui
+ * (testé dans `supabase/tests/envies_test.sql`). Le temps réel passe par un
+ * signal sans contenu, `envies_modifiees` : quelqu'un a changé d'avis, on
+ * recompte.
  */
 
 export type Avis = 'envie' | 'sans-moi';
 
 export interface AvisSurUneActivite {
-  /** Les identifiants des membres qui en ont envie. */
-  pour: string[];
-  /** Ceux qui s'en passeraient. */
-  contre: string[];
+  /** Combien de membres en ont envie. */
+  pour: number;
+  /** Combien s'en passeraient. */
+  contre: number;
   /** Ce que la personne connectée a dit, s'il y a lieu. */
   moi: Avis | null;
 }
@@ -58,10 +61,9 @@ interface LigneDeVote {
 }
 
 /**
- * Le dépouillement.
+ * Le dépouillement, pour le mode local (sans serveur, qui compte lui-même).
  *
- * Exporté pour être testé : c'est la frontière entre ce que la base renvoie et
- * ce que l'écran affiche. Un « favori » laissé par une version future compte
+ * Exporté pour être testé. Un « favori » laissé par une version future compte
  * comme une envie ; toute autre valeur est ignorée plutôt que devinée.
  */
 export function depouiller(lignes: readonly LigneDeVote[], moi: string): EnviesDuGroupe {
@@ -70,23 +72,48 @@ export function depouiller(lignes: readonly LigneDeVote[], moi: string): EnviesD
 
   for (const ligne of lignes) {
     if (typeof ligne.subject_id !== 'string' || typeof ligne.user_id !== 'string') continue;
-    const avis: Avis | null =
-      ligne.value === 'like' || ligne.value === 'favorite'
-        ? 'envie'
-        : ligne.value === 'dislike'
-          ? 'sans-moi'
-          : null;
+    const avis = lireLAvis(ligne.value);
     if (!avis) continue;
 
-    const actuel = parActivite[ligne.subject_id] ?? { pour: [], contre: [], moi: null };
-    if (avis === 'envie') actuel.pour.push(ligne.user_id);
-    else actuel.contre.push(ligne.user_id);
+    const actuel = parActivite[ligne.subject_id] ?? { pour: 0, contre: 0, moi: null };
+    if (avis === 'envie') actuel.pour += 1;
+    else actuel.contre += 1;
     if (ligne.user_id === moi) actuel.moi = avis;
     parActivite[ligne.subject_id] = actuel;
     votants.add(ligne.user_id);
   }
 
   return { parActivite, votants: votants.size };
+}
+
+function lireLAvis(valeur: unknown): Avis | null {
+  if (valeur === 'like' || valeur === 'favorite') return 'envie';
+  if (valeur === 'dislike') return 'sans-moi';
+  return null;
+}
+
+/** Une ligne de `envies_du_voyage`, lue sans lui faire confiance. */
+interface LigneDeComptes {
+  subject_id?: unknown;
+  pour?: unknown;
+  contre?: unknown;
+  moi?: unknown;
+  votants?: unknown;
+}
+
+/** Les comptes du serveur, sous la forme de l'écran. Exporté pour être testé. */
+export function lireLesComptes(lignes: readonly LigneDeComptes[]): EnviesDuGroupe {
+  const parActivite: Record<string, AvisSurUneActivite> = {};
+  let votants = 0;
+  for (const ligne of lignes) {
+    if (typeof ligne.subject_id !== 'string') continue;
+    const pour = Math.max(0, Number(ligne.pour) || 0);
+    const contre = Math.max(0, Number(ligne.contre) || 0);
+    if (pour === 0 && contre === 0) continue;
+    parActivite[ligne.subject_id] = { pour, contre, moi: lireLAvis(ligne.moi) };
+    votants = Math.max(votants, Number(ligne.votants) || 0);
+  }
+  return { parActivite, votants };
 }
 
 /**
@@ -98,24 +125,9 @@ export function avisPourLeRemplissage(
 ): Record<string, AvisDuGroupe> {
   const avis: Record<string, AvisDuGroupe> = {};
   for (const [activiteId, detail] of Object.entries(envies?.parActivite ?? {})) {
-    avis[`activite:${activiteId}`] = { pour: detail.pour.length, contre: detail.contre.length };
+    avis[`activite:${activiteId}`] = { pour: detail.pour, contre: detail.contre };
   }
   return avis;
-}
-
-/**
- * « Inès et Karim », « Inès, Karim et 2 autres ».
- *
- * Les prénoms plutôt qu'un chiffre : dans un groupe d'amis, savoir *qui* veut
- * aller au spectacle décide souvent plus que savoir *combien*.
- */
-export function nommer(ids: readonly string[], noms: ReadonlyMap<string, string>, moi: string): string {
-  const prenoms = ids.map((id) => (id === moi ? 'vous' : (noms.get(id) ?? 'quelqu’un')));
-  // « vous » d'abord : c'est la première chose qu'on cherche des yeux.
-  prenoms.sort((a, b) => (a === 'vous' ? -1 : b === 'vous' ? 1 : 0));
-  if (prenoms.length <= 2) return prenoms.join(' et ');
-  const reste = prenoms.length - 2;
-  return `${prenoms[0]}, ${prenoms[1]} et ${reste} autre${reste > 1 ? 's' : ''}`;
 }
 
 /**
@@ -128,22 +140,19 @@ export function nommer(ids: readonly string[], noms: ReadonlyMap<string, string>
 export function basculer(
   envies: EnviesDuGroupe | undefined,
   activiteId: string,
-  moi: string,
   valeur: Avis | null,
 ): EnviesDuGroupe {
   const parActivite = { ...(envies?.parActivite ?? {}) };
-  const actuel = parActivite[activiteId] ?? { pour: [], contre: [], moi: null };
-  const sansMoi = {
-    pour: actuel.pour.filter((qui) => qui !== moi),
-    contre: actuel.contre.filter((qui) => qui !== moi),
-  };
-  parActivite[activiteId] = {
-    pour: valeur === 'envie' ? [...sansMoi.pour, moi] : sansMoi.pour,
-    contre: valeur === 'sans-moi' ? [...sansMoi.contre, moi] : sansMoi.contre,
-    moi: valeur,
-  };
-  const votants = new Set(Object.values(parActivite).flatMap((d) => [...d.pour, ...d.contre]));
-  return { parActivite, votants: votants.size };
+  const avaisDejaVote = Object.values(parActivite).some((detail) => detail.moi !== null);
+  const actuel = parActivite[activiteId] ?? { pour: 0, contre: 0, moi: null };
+  // Mon ancien avis sort des comptes, le nouveau y entre.
+  const pour = actuel.pour - (actuel.moi === 'envie' ? 1 : 0) + (valeur === 'envie' ? 1 : 0);
+  const contre = actuel.contre - (actuel.moi === 'sans-moi' ? 1 : 0) + (valeur === 'sans-moi' ? 1 : 0);
+  if (pour <= 0 && contre <= 0) delete parActivite[activiteId];
+  else parActivite[activiteId] = { pour: Math.max(0, pour), contre: Math.max(0, contre), moi: valeur };
+  const voteEncore = Object.values(parActivite).some((detail) => detail.moi !== null);
+  const votants = Math.max(0, (envies?.votants ?? 0) - (avaisDejaVote ? 1 : 0) + (voteEncore ? 1 : 0));
+  return { parActivite, votants };
 }
 
 /* ------------------------------------------------------------ Mode local -- */
@@ -196,14 +205,11 @@ export function getEnvies(): EnviesApi {
   if (!client) return enviesLocales;
 
   return {
-    async lister(tripId, userId) {
-      const { data, error } = await client
-        .from('votes')
-        .select('subject_id, user_id, value')
-        .eq('trip_id', tripId)
-        .eq('subject_type', 'place');
+    async lister(tripId) {
+      // Des comptes, jamais les votes des autres : la base ne les rend plus.
+      const { data, error } = await client.rpc('envies_du_voyage', { p_trip_id: tripId });
       if (error) throw error;
-      return depouiller(data ?? [], userId);
+      return lireLesComptes((data as LigneDeComptes[] | null) ?? []);
     },
 
     async poser(tripId, activiteId, avis) {
@@ -234,9 +240,10 @@ export function getEnvies(): EnviesApi {
     ecouter(tripId, surChangement) {
       const canal = client
         .channel(`envies:${tripId}`)
+        // Le signal ne dit ni qui ni quoi : seulement qu'il faut recompter.
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'votes', filter: `trip_id=eq.${tripId}` },
+          { event: '*', schema: 'public', table: 'envies_modifiees', filter: `trip_id=eq.${tripId}` },
           surChangement,
         )
         .subscribe();
@@ -275,7 +282,7 @@ export function requeteDesEnvies(tripId: string | undefined, userId: string) {
 export function comptesDesEnvies(envies: EnviesDuGroupe | undefined): Record<string, ComptesDAvis> {
   const comptes: Record<string, ComptesDAvis> = {};
   for (const [activiteId, detail] of Object.entries(envies?.parActivite ?? {})) {
-    comptes[activiteId] = { pour: detail.pour.length, contre: detail.contre.length, moi: detail.moi };
+    comptes[activiteId] = { pour: detail.pour, contre: detail.contre, moi: detail.moi };
   }
   return comptes;
 }
@@ -286,7 +293,7 @@ export function comptesDesEnvies(envies: EnviesDuGroupe | undefined): Record<str
  * Le cœur répond au doigt, pas au réseau : l'avis est posé dans le cache
  * aussitôt, et retiré si le serveur le refuse.
  */
-export function usePoserUneEnvie(tripId: string | undefined, moi: string) {
+export function usePoserUneEnvie(tripId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ activiteId, valeur }: { activiteId: string; valeur: Avis | null }) =>
@@ -294,7 +301,7 @@ export function usePoserUneEnvie(tripId: string | undefined, moi: string) {
     onMutate: async ({ activiteId, valeur }) => {
       await queryClient.cancelQueries({ queryKey: cleEnvies(tripId) });
       const avant = queryClient.getQueryData<EnviesDuGroupe>(cleEnvies(tripId));
-      queryClient.setQueryData(cleEnvies(tripId), basculer(avant, activiteId, moi, valeur));
+      queryClient.setQueryData(cleEnvies(tripId), basculer(avant, activiteId, valeur));
       signaler(valeur === 'envie' ? 'reussite' : 'tape');
       return { avant };
     },

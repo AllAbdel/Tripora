@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { avisPourLeRemplissage, basculer, depouiller, getEnvies, nommer } from './envies';
+import { avisPourLeRemplissage, basculer, depouiller, getEnvies, lireLesComptes } from './envies';
 
-describe('dépouillement des envies', () => {
-  it('compte qui a envie, qui s’en passe, et ce que j’ai dit', () => {
+describe('dépouillement des envies (mode local)', () => {
+  it('compte les envies, les refus, et ce que j’ai dit — sans garder qui', () => {
     const envies = depouiller(
       [
         { subject_id: 'bali/batur', user_id: 'ines', value: 'like' },
@@ -12,13 +12,9 @@ describe('dépouillement des envies', () => {
       ],
       'moi',
     );
-    expect(envies.parActivite['bali/batur']).toEqual({
-      pour: ['ines', 'karim'],
-      contre: ['moi'],
-      moi: 'sans-moi',
-    });
+    expect(envies.parActivite['bali/batur']).toEqual({ pour: 2, contre: 1, moi: 'sans-moi' });
     // Un favori laissé par une version future compte comme une envie.
-    expect(envies.parActivite['bali/tanah-lot']?.pour).toEqual(['karim']);
+    expect(envies.parActivite['bali/tanah-lot']?.pour).toBe(1);
     expect(envies.votants).toBe(3);
   });
 
@@ -42,33 +38,33 @@ describe('dépouillement des envies', () => {
       ],
       'moi',
     );
-    expect(avisPourLeRemplissage(envies)).toEqual({
-      'activite:bali/batur': { pour: 1, contre: 1 },
-    });
+    expect(avisPourLeRemplissage(envies)).toEqual({ 'activite:bali/batur': { pour: 1, contre: 1 } });
     expect(avisPourLeRemplissage(undefined)).toEqual({});
   });
 });
 
-describe('les prénoms plutôt qu’un chiffre', () => {
-  const noms = new Map([
-    ['ines', 'Inès'],
-    ['karim', 'Karim'],
-    ['lea', 'Léa'],
-    ['tom', 'Tom'],
-  ]);
-
-  it('nomme une ou deux personnes, et met « vous » devant', () => {
-    expect(nommer(['ines'], noms, 'moi')).toBe('Inès');
-    expect(nommer(['ines', 'moi'], noms, 'moi')).toBe('vous et Inès');
+describe('les comptes du serveur', () => {
+  it('se lisent tels quels : combien, et mon avis', () => {
+    const envies = lireLesComptes([
+      { subject_id: 'bali/batur', pour: 3, contre: 1, moi: 'like', votants: 4 },
+      { subject_id: 'bali/kecak', pour: 0, contre: 2, moi: null, votants: 4 },
+    ]);
+    expect(envies).toEqual({
+      parActivite: {
+        'bali/batur': { pour: 3, contre: 1, moi: 'envie' },
+        'bali/kecak': { pour: 0, contre: 2, moi: null },
+      },
+      votants: 4,
+    });
   });
 
-  it('résume au-delà de deux', () => {
-    expect(nommer(['ines', 'karim', 'lea'], noms, 'moi')).toBe('Inès, Karim et 1 autre');
-    expect(nommer(['ines', 'karim', 'lea', 'tom'], noms, 'moi')).toBe('Inès, Karim et 2 autres');
-  });
-
-  it('ne met pas de nom sur quelqu’un qu’il ne connaît pas', () => {
-    expect(nommer(['inconnu'], noms, 'moi')).toBe('quelqu’un');
+  it('écarte ce qui ne ressemble pas à un compte', () => {
+    expect(
+      lireLesComptes([
+        { subject_id: null, pour: 3 },
+        { subject_id: 'bali/batur', pour: 'beaucoup', contre: -2, moi: 'peut-être' },
+      ]),
+    ).toEqual({ parActivite: {}, votants: 0 });
   });
 });
 
@@ -83,11 +79,7 @@ describe('les envies sans serveur', () => {
     await envies.poser('v2', 'bali/batur', 'sans-moi');
 
     const lues = await envies.lister('v1', 'voyageur-local');
-    expect(lues.parActivite['bali/batur']).toEqual({
-      pour: ['voyageur-local'],
-      contre: [],
-      moi: 'envie',
-    });
+    expect(lues.parActivite['bali/batur']).toEqual({ pour: 1, contre: 0, moi: 'envie' });
     expect(lues.parActivite['bali/uluwatu']?.moi).toBe('sans-moi');
     expect(lues.votants).toBe(1);
 
@@ -99,37 +91,31 @@ describe('les envies sans serveur', () => {
 });
 
 describe('la mise à jour optimiste', () => {
-  const depart = depouiller(
-    [
-      { subject_id: 'bali/batur', user_id: 'ines', value: 'like' },
-      { subject_id: 'bali/batur', user_id: 'moi', value: 'dislike' },
-    ],
-    'moi',
-  );
+  // Inès a envie du Batur ; moi, non.
+  const depart = lireLesComptes([{ subject_id: 'bali/batur', pour: 1, contre: 1, moi: 'dislike', votants: 2 }]);
 
   it('remplace mon avis sans toucher à celui des autres', () => {
-    const apres = basculer(depart, 'bali/batur', 'moi', 'envie');
-    expect(apres.parActivite['bali/batur']).toEqual({
-      pour: ['ines', 'moi'],
-      contre: [],
-      moi: 'envie',
-    });
+    const apres = basculer(depart, 'bali/batur', 'envie');
+    expect(apres.parActivite['bali/batur']).toEqual({ pour: 2, contre: 0, moi: 'envie' });
     expect(apres.votants).toBe(2);
   });
 
   it('retire mon avis, sans jamais le compter deux fois', () => {
-    const deuxFois = basculer(basculer(depart, 'bali/batur', 'moi', 'envie'), 'bali/batur', 'moi', 'envie');
-    expect(deuxFois.parActivite['bali/batur']?.pour).toEqual(['ines', 'moi']);
-    const retire = basculer(deuxFois, 'bali/batur', 'moi', null);
-    expect(retire.parActivite['bali/batur']).toEqual({ pour: ['ines'], contre: [], moi: null });
+    const deuxFois = basculer(basculer(depart, 'bali/batur', 'envie'), 'bali/batur', 'envie');
+    expect(deuxFois.parActivite['bali/batur']?.pour).toBe(2);
+    const retire = basculer(deuxFois, 'bali/batur', null);
+    expect(retire.parActivite['bali/batur']).toEqual({ pour: 1, contre: 0, moi: null });
     expect(retire.votants).toBe(1);
   });
 
   it('part d’un cache vide', () => {
-    expect(basculer(undefined, 'bali/batur', 'moi', 'sans-moi').parActivite['bali/batur']).toEqual({
-      pour: [],
-      contre: ['moi'],
-      moi: 'sans-moi',
-    });
+    const apres = basculer(undefined, 'bali/batur', 'sans-moi');
+    expect(apres.parActivite['bali/batur']).toEqual({ pour: 0, contre: 1, moi: 'sans-moi' });
+    expect(apres.votants).toBe(1);
+  });
+
+  it('efface l’activité quand plus personne n’en dit rien', () => {
+    const seul = basculer(undefined, 'bali/batur', 'envie');
+    expect(basculer(seul, 'bali/batur', null)).toEqual({ parActivite: {}, votants: 0 });
   });
 });
