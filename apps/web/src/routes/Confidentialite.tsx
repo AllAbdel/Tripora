@@ -44,16 +44,38 @@ export default function Confidentialite() {
           Selon la façon dont vous vous connectez : soit un compte invité, qui ne contient qu’un
           identifiant aléatoire et un nom d’affichage, soit un compte Google, dont Tripora reçoit
           l’adresse e-mail, le prénom et la photo de profil. Rien d’autre — ni contacts, ni
-          agenda, ni fichiers.
+          agenda, ni fichiers. Facultatifs : votre genre et votre année de naissance, si vous les
+          indiquez pour rejoindre un trip ouvert réservé (mixité, tranche d’âge). Ils ne sont
+          montrés à personne et ne servent qu’à vérifier ces conditions.
         </Definition>
         <Definition terme="Vos voyages">
           Le titre, la ville de départ, les dates, le budget, les envies de chacun, les votes,
-          l’itinéraire, les messages de la discussion, les endroits épinglés, les dépenses et les
-          listes de bagage.
+          l’itinéraire, les messages de la discussion, les endroits épinglés, les dépenses, les
+          listes de bagage, les sondages, les tâches et les réservations notées. Vos envies sur
+          les activités : les autres membres n’en voient que le total, jamais qui a dit quoi.
         </Definition>
-        <Definition terme="Vos réglages">
-          Le thème, la couleur choisie et les retours sonores restent dans le navigateur, sur
-          votre appareil. Ils ne partent jamais sur le serveur.
+        <Definition terme="Le coffre du voyage">
+          Ce que le groupe y range : adresses, codes, wifi, contacts, et les documents déposés
+          (billets, confirmations — PDF ou photos, 10 Mo au plus chacun). Visibles des membres
+          du voyage seulement ; un document marqué « privé » n’est visible que de la personne
+          qui l’a déposé.
+        </Definition>
+        <Definition terme="Vos moyens de remboursement">
+          Si vous les renseignez : votre identifiant PayPal.me, Revolut ou Wise, votre IBAN et le
+          nom du titulaire. Seules les personnes avec qui vous partagez un voyage les voient,
+          pour pouvoir vous rembourser.
+        </Definition>
+        <Definition terme="Les trips ouverts">
+          Si vous publiez un voyage en trip ouvert, sa fiche (destination, dates, budget, places,
+          mixité, tranche d’âge, rythme) est visible des personnes connectées qui cherchent un
+          voyage — ni les membres, ni l’itinéraire, ni la discussion. Une candidature transmet
+          votre présentation à l’organisateur.
+        </Definition>
+        <Definition terme="Sur votre appareil seulement">
+          Le thème, la couleur choisie et les retours sonores restent dans le navigateur. Les
+          rappels de l’application Android sont programmés sur le téléphone lui-même, et les
+          copies de documents gardées pour une consultation hors ligne restent dans l’appareil —
+          effacées à la déconnexion. Rien de tout cela ne part sur le serveur.
         </Definition>
         <Definition terme="Ce que Tripora ne conserve pas">
           Aucune position GPS, aucun historique de navigation, aucun identifiant publicitaire,
@@ -88,11 +110,17 @@ export default function Confidentialite() {
           autorisent souvent la réutilisation des textes envoyés pour améliorer leurs modèles.
           C’est pour ça que tout le reste de Tripora fonctionne sans eux.
         </Definition>
+        <Definition terme="Travelpayouts (prix des vols)">
+          Le code de l’aéroport de départ et le mois visé, depuis nos serveurs, pour relever les
+          prix des vols. Rien sur vous ni sur votre groupe.
+        </Definition>
         <Definition terme="Les services que vous ouvrez vous-même">
-          Cliquer sur un lien vers une application recommandée, un site de réservation ou un lien
-          de parrainage vous emmène chez eux, avec ce que votre navigateur transmet
-          habituellement. Tripora ne leur envoie rien de plus, et ne sait pas si vous avez
-          cliqué.
+          Cliquer sur un lien vers une application recommandée ou un site de réservation vous
+          emmène chez eux, avec ce que votre navigateur transmet habituellement. Les liens marqués
+          « lien partenaire » passent d’abord par Travelpayouts, qui compte le clic avant de vous
+          emmener sur le site. Tripora ne leur envoie rien sur vous — ni nom, ni voyage — et ne
+          sait pas qui a cliqué ; ces sites appliquent ensuite leur propre politique, cookies
+          compris.
         </Definition>
       </Bloc>
 
@@ -106,13 +134,18 @@ export default function Confidentialite() {
         </p>
       </Bloc>
 
-      <Bloc titre="Liens de parrainage">
+      <Bloc titre="Liens partenaires et parrainage">
         <p>
-          Deux applications recommandées portent un lien de parrainage, signalé comme tel sur leur
-          fiche, avec le lien direct affiché juste au-dessus. Tripora peut recevoir une
-          contrepartie si vous ouvrez un compte par ce chemin. Le classement des recommandations
-          ne dépend jamais de ces liens — c’est vérifié par un test automatique à chaque
-          modification du code.{' '}
+          Certains liens de réservation — les vols sur Aviasales, les activités sur Klook — sont
+          des liens partenaires, marqués comme tels : si vous réservez par eux, Tripora peut
+          toucher une commission, sans rien changer à votre prix. Ils ne changent ni la liste
+          ni son ordre, et c’est vérifié par un test automatique.
+        </p>
+        <p>
+          Certaines applications recommandées portent aussi un lien de parrainage, signalé comme
+          tel sur leur fiche, avec le lien direct affiché juste au-dessus. Le classement des
+          recommandations ne dépend jamais de ces liens — là aussi, un test automatique le
+          vérifie à chaque modification du code.{' '}
           <Link to="/soutenir" className="text-brand-600 dark:text-brand-300 underline">
             Le détail est ici.
           </Link>
@@ -122,7 +155,9 @@ export default function Confidentialite() {
       <Bloc titre="Combien de temps">
         <p>
           Vos voyages restent tant que vous les gardez. Un voyage supprimé disparaît de
-          l’application immédiatement et de la base sous trente jours. Un compte supprimé emporte
+          l’application immédiatement, puis il est effacé pour de bon trente jours plus tard,
+          documents du coffre compris — le temps de revenir sur une fausse manœuvre. Un compte
+          supprimé emporte
           avec lui vos préférences, vos votes, vos messages et vos dépenses ; les voyages dont
           vous étiez l’organisateur sont supprimés entièrement.
         </p>
@@ -140,8 +175,13 @@ export default function Confidentialite() {
             imprimable en donne une copie complète.
           </li>
           <li>
-            <strong className="text-[color:var(--text-strong)]">Les effacer</strong> — écrivez à
-            l’adresse ci-dessous ; la suppression est faite sous trente jours.
+            <strong id="supprimer-mon-compte" className="text-[color:var(--text-strong)]">
+              Les effacer
+            </strong>{' '}
+            — dans l’application : Profil, puis « Supprimer mon compte ». L’effacement est
+            immédiat, et les fichiers déposés quittent le stockage dans la nuit. Sans accès à
+            l’application, écrivez à l’adresse ci-dessous : la suppression est faite sous trente
+            jours.
           </li>
           <li>
             <strong className="text-[color:var(--text-strong)]">Réclamer</strong> — auprès de la
@@ -152,7 +192,8 @@ export default function Confidentialite() {
 
       <Bloc titre="Mentions légales">
         <Definition terme="Éditeur">
-          Tripora est un projet personnel et non commercial, édité par un particulier. Contact :{' '}
+          Tripora est un projet personnel, édité par un particulier ; les liens partenaires
+          peuvent lui rapporter des commissions. Contact :{' '}
           <a
             href="mailto:abdelslam.allaouat.pro@gmail.com"
             className="text-brand-600 dark:text-brand-300 underline"
@@ -177,7 +218,7 @@ export default function Confidentialite() {
       </Bloc>
 
       <p className="text-muted px-1 text-xs">
-        Dernière mise à jour : 8 septembre 2026.
+        Dernière mise à jour : 24 septembre 2026.
       </p>
     </div>
   );

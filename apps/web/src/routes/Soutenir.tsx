@@ -38,8 +38,15 @@ export default function Soutenir() {
           </p>
           <p className="text-muted text-sm leading-relaxed">
             Il reste un nom de domaine à payer, et l’envie de continuer. C’est là qu’un coup de
-            main sert, et il n’y en a qu’une forme : quelques liens de parrainage sur des
-            services que Tripora recommanderait de toute façon.
+            main sert, sous deux formes seulement : quelques liens de parrainage sur des services
+            que Tripora recommanderait de toute façon, et des liens partenaires de réservation.
+          </p>
+          <p className="text-muted text-sm leading-relaxed">
+            Les liens partenaires, ce sont certaines recherches de l’écran « Réserver » — les vols
+            sur Aviasales, les activités sur Klook — marquées « lien partenaire ». Si vous
+            réservez par elles, Tripora peut toucher une commission, payée par le site, sans rien
+            changer à votre prix. Elles ne changent ni la liste des sites proposés ni son ordre :
+            un test le vérifie.
           </p>
         </CardBody>
       </Card>

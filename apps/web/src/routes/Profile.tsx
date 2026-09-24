@@ -24,6 +24,7 @@ import { ChoixDeLangue } from '@/components/ChoixDeLangue';
 import { ApercuDuPasseport } from '@/components/ApercuDuPasseport';
 import { MesMoyensDePaiement } from '@/components/MesMoyensDePaiement';
 import { ReglageDesRappels } from '@/components/ReglageDesRappels';
+import { SupprimerMonCompte } from '@/components/SupprimerMonCompte';
 import { rappelsPossibles } from '@/lib/rappels';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -132,7 +133,8 @@ export default function Profile() {
             <CardBody className="space-y-2">
               <p className="text-muted text-sm leading-relaxed">
                 Gratuit, sans compte payant, sans publicité et sans revente de données. Ce qui le
-                finance tient en deux liens de parrainage, et c’est écrit en entier.
+                finance : des liens partenaires signalés comme tels, et des liens de parrainage.
+                C’est écrit en entier.
               </p>
               <div className="flex flex-wrap gap-x-5">
                 <Link
@@ -182,6 +184,12 @@ export default function Profile() {
         >
           Se déconnecter
         </Button>
+
+        {backendReady && (
+          <Section titre="Quitter Tripora">
+            <SupprimerMonCompte />
+          </Section>
+        )}
       </div>
     </>
   );

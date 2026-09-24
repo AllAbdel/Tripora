@@ -66,3 +66,12 @@ psql_run -q -d "$DB" -f "$ROOT/supabase/tests/trips_ouverts_proteger_test.sql"
 
 echo "→ Tests de la récolte des lieux OpenStreetMap"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/lieux_osm_test.sql"
+
+# En dernier : la purge efface le voyage dont tous les tests précédents se
+# servent.
+echo "→ Tests de la purge des voyages supprimés"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/purge_test.sql"
+
+# Tout à la fin : ce test supprime les comptes des tests précédents.
+echo "→ Tests de la suppression de compte"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/compte_test.sql"
