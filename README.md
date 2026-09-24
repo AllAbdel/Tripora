@@ -53,13 +53,18 @@ Un prix affiché est toujours dans l'un de ces trois états, jamais autre chose 
 - **Privé.** Aucun nom, aucune adresse électronique, aucune position n'est
   transmis à un service d'intelligence artificielle.
 
-## Application web, pas APK
+## Un site, et la même chose en application
 
-Tripora est une **PWA** : une application web installable. Un seul code, une
+Tripora est d'abord une **PWA** : une application web installable. Un seul code, une
 seule URL, et elle s'installe sur iPhone, Android, Mac, Windows et Linux, avec
-icône, plein écran, fonctionnement hors ligne et notifications. Un APK aurait
-laissé de côté les amis sous iPhone et tout usage sur ordinateur.
+icône, plein écran, fonctionnement hors ligne et notifications.
 [Le détail du choix](docs/ARCHITECTURE.md#pwa-plutôt-quapk).
+
+Le même code existe aussi en **application Android et iOS**, emballé par
+Capacitor, avec **le même serveur** : un voyage créé sur le téléphone apparaît
+sur le site, et l'inverse. L'APK se télécharge toujours à la même adresse :
+https://github.com/AllAbdel/Tripora/releases/download/android/tripora.apk —
+[installer, signer, et le cas de l'iPhone](apps/mobile/README.md).
 
 ## Démarrer
 
@@ -103,6 +108,7 @@ téléphone. Chaque test correspond à un défaut réellement survenu, et chacun
 
 ```
 apps/web/          Application PWA (React, TypeScript, Tailwind, MapLibre)
+apps/mobile/       Le même site en application Android et iOS (Capacitor)
 packages/core/     Logique métier pure : coût, scoring, argent, schémas — testée
 supabase/          Schéma SQL, politiques RLS, Edge Functions, tests hors ligne
 docs/              Architecture, APIs, mise en place
