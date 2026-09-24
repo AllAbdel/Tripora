@@ -10,8 +10,12 @@ import type { NomDePastille } from '@/components/Pastille';
  * gardait « Voyages » allumé quoi qu'on ouvre : on pouvait taper sur Carte ou
  * sur Budget, l'onglet actif ne bougeait jamais.
  */
+/** Les écrans qu'on ouvre depuis le profil, et qui en gardent l'onglet. */
+const ECRANS_DU_PROFIL = ['/passeport', '/soutenir', '/confidentialite'];
+
 export function ongletActif(chemin: string, pathname: string): boolean {
   if (pathname === chemin) return true;
+  if (chemin === '/profil' && ECRANS_DU_PROFIL.includes(pathname)) return true;
   if (chemin === '/voyages') {
     return (
       pathname.startsWith('/voyages/') &&

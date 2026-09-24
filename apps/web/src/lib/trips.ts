@@ -32,6 +32,16 @@ export interface TripSummary {
   createdAt: string;
   /** Vrai quand le voyage ne vit que sur cet appareil. */
   localOnly: boolean;
+  /**
+   * De quoi situer le voyage dans le temps et l'espace, pour le passeport :
+   * la destination retenue, les dates exactes s'il y en a, la ville de
+   * départ, et qui l'organise.
+   */
+  destinationId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  origin?: { lat: number; lng: number } | null;
+  isOwner?: boolean;
 }
 
 /** Un voyage complet : de quoi recalculer des propositions sans rien inventer. */
@@ -167,6 +177,11 @@ function ficheLocale(trip: LocalTrip): TripSummary {
     coverImageUrl: null,
     createdAt: trip.createdAt,
     localOnly: true,
+    destinationId: retenue,
+    startDate: trip.draft.dateMode === 'exact' ? (trip.draft.startDate ?? null) : null,
+    endDate: trip.draft.dateMode === 'exact' ? (trip.draft.endDate ?? null) : null,
+    origin: trip.draft.origin ? { lat: trip.draft.origin.lat, lng: trip.draft.origin.lng } : null,
+    isOwner: true,
   };
 }
 
@@ -318,10 +333,16 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
     async list() {
       const { data, error } = await client
         .from('trips')
-        .select('id, title, status, participants, cover_image_url, created_at, destination_locked_id')
+        // Une seule chaîne littérale : le client en déduit le type des lignes,
+        // ce qu'une concaténation l'empêcherait de faire.
+        .select(
+          'id, title, status, participants, cover_image_url, created_at, destination_locked_id, owner_id, date_mode, start_date, end_date, origin_lat, origin_lng',
+        )
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
       if (error) throw error;
+      // Lue dans le stockage de la session, sans aller-retour au serveur.
+      const moi = (await client.auth.getSession()).data.session?.user.id ?? null;
 
       await hydraterDecouvertes(
         client,
@@ -341,6 +362,14 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
         coverImageUrl: (row.cover_image_url as string | null) ?? null,
         createdAt: row.created_at as string,
         localOnly: false,
+        destinationId: lockedId,
+        startDate: row.date_mode === 'exact' ? ((row.start_date as string | null) ?? null) : null,
+        endDate: row.date_mode === 'exact' ? ((row.end_date as string | null) ?? null) : null,
+        origin:
+          typeof row.origin_lat === 'number' && typeof row.origin_lng === 'number'
+            ? { lat: row.origin_lat, lng: row.origin_lng }
+            : null,
+        isOwner: moi !== null && row.owner_id === moi,
         };
       });
     },

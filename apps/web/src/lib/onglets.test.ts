@@ -77,3 +77,11 @@ describe('les écrans sans onglets en bas', () => {
     expect(ecranDeConversation('/voyages/discussion')).toBe(false);
   });
 });
+
+describe('les écrans ouverts depuis le profil', () => {
+  it('gardent l’onglet Profil allumé', () => {
+    expect(ongletActif('/profil', '/passeport')).toBe(true);
+    expect(ongletActif('/profil', '/soutenir')).toBe(true);
+    expect(ongletActif('/voyages', '/passeport')).toBe(false);
+  });
+});

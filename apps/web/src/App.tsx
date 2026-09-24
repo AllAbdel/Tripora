@@ -48,6 +48,7 @@ const CandidaturesRecues = lazy(() => import('@/routes/CandidaturesRecues'));
 const AFaire = lazy(() => import('@/routes/AFaire'));
 const TripReservations = lazy(() => import('@/routes/TripReservations'));
 const Explorer = lazy(() => import('@/routes/Explorer'));
+const Passeport = lazy(() => import('@/routes/Passeport'));
 
 function FullScreenLoader() {
   return (
@@ -93,6 +94,7 @@ function TabbedRoutes() {
         <Route path="/voyages/:id/budget" element={<TripBudget />} />
         <Route path="/budget" element={<BudgetTab />} />
         <Route path="/profil" element={<Profile />} />
+        <Route path="/passeport" element={<Passeport />} />
         <Route path="/soutenir" element={<Soutenir />} />
         <Route path="/confidentialite" element={<Confidentialite />} />
         <Route path="*" element={<NotFound />} />

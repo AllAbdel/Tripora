@@ -21,6 +21,7 @@ import { EtatDesServices } from '@/components/EtatDesServices';
 import { MonProfilDeclare } from '@/components/MonProfilDeclare';
 import { PersonnesBloquees } from '@/components/PersonnesBloquees';
 import { ChoixDeLangue } from '@/components/ChoixDeLangue';
+import { ApercuDuPasseport } from '@/components/ApercuDuPasseport';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -88,6 +89,8 @@ export default function Profile() {
             </div>
           </CardBody>
         </Card>
+
+        <ApercuDuPasseport />
 
         <Section titre="Pour rejoindre des inconnus">
           <MonProfilDeclare />

@@ -35,6 +35,8 @@ export * from './fill.js';
 export * from './calendrier.js';
 export * from './reservations.js';
 export * from './presentDuVoyage.js';
+export * from './continents.js';
+export * from './passeport.js';
 export * from './confirmation.js';
 export * from './distinction.js';
 export * from './dates.js';
