@@ -1,4 +1,6 @@
 import { climateFor } from './catalog/climate.js';
+import { besoinDAdaptateur, codeDuPays, infosPratiques } from './catalog/pays.js';
+import { paysDuPoint } from './catalog/origins.js';
 import { targetMonth } from './dates.js';
 import type { NomIcone } from './icons.js';
 import type { PreferenceAxis, PreferenceWeights } from './preferences.js';
@@ -453,15 +455,25 @@ export function preparerLaValise({
     quantite: 1,
     pourquoi: 'Le seul objet dont l’oubli se paie dès le premier soir.',
   });
+  // Un adaptateur seulement s'il sert : de Paris à Berlin, les prises sont
+  // les mêmes, et l'ajouter faisait acheter un objet inutile. Quand on ne
+  // connaît pas le pays de départ, on le propose par prudence.
   const prise = typeDePrise(destination.countryCode);
-  if (prise && !memePays) {
+  const besoin = besoinDAdaptateur(
+    codeDuPays(constraints.origin.country ?? paysDuPoint(constraints.origin)),
+    destination.countryCode,
+  );
+  if (prise && !memePays && besoin !== 'aucun') {
     poser(articles, {
       id: 'adaptateur',
       label: `Adaptateur de prise (type ${prise})`,
       rubrique: 'electronique',
       quantite: 1,
-      pourquoi: `Les prises y sont de type ${prise}. Un adaptateur universel suffit pour tout le groupe.`,
-        partageable: true,
+      pourquoi:
+        besoin === 'fiches-plates'
+          ? `Les prises y sont de type ${prise} : les chargeurs à fiche plate passent, pas les fiches rondes épaisses. Un adaptateur universel suffit pour tout le groupe.`
+          : `Les prises y sont de type ${prise}. Un adaptateur universel suffit pour tout le groupe.`,
+      partageable: true,
     });
   }
   poser(articles, {
@@ -864,24 +876,12 @@ function memePaysQueLeDepart(constraints: TripConstraints, destination: Destinat
 }
 
 /**
- * Le type de prise électrique d'un pays.
+ * Le type de prise électrique d'un pays, « C/F ».
  *
- * Liste volontairement partielle : on ne nomme un type que là où il est net et
- * vérifiable. Ailleurs, on ne dit rien plutôt que d'affirmer — se retrouver
- * avec le mauvais adaptateur à cause de nous serait pire que de l'avoir oublié.
+ * Tiré des infos pratiques par pays (voir `catalog/pays.ts`). Là où le pays
+ * n'est pas couvert, on ne dit rien plutôt que d'affirmer : se retrouver avec
+ * le mauvais adaptateur à cause de nous serait pire que de l'avoir oublié.
  */
-const PRISES: Readonly<Record<string, string>> = {
-  GB: 'G', IE: 'G', MT: 'G', CY: 'G', HK: 'G', SG: 'G', MY: 'G', AE: 'G', QA: 'G',
-  US: 'A/B', CA: 'A/B', MX: 'A/B', JP: 'A/B', TW: 'A/B', PH: 'A/B', CO: 'A/B', PE: 'A/B',
-  CH: 'J', IT: 'F/L', DK: 'K', ZA: 'M/N', IN: 'D/M', LK: 'D/M', NP: 'D/M',
-  AU: 'I', NZ: 'I', CN: 'I/A', AR: 'I', FJ: 'I',
-  BR: 'N', TH: 'A/B/C', VN: 'A/C', ID: 'C/F', KR: 'C/F', TR: 'C/F', MA: 'C/E', EG: 'C/F',
-  FR: 'E', BE: 'E', PL: 'E', CZ: 'E', SK: 'E',
-  DE: 'F', ES: 'F', PT: 'F', NL: 'F', AT: 'F', SE: 'F', NO: 'F', FI: 'F', GR: 'F',
-  HR: 'F', HU: 'F', RO: 'F', BG: 'F', RS: 'F', SI: 'F', EE: 'F', LV: 'F', LT: 'F',
-  IS: 'F', LU: 'F', GE: 'F', AM: 'F', AZ: 'F', KZ: 'F', UZ: 'F', MZ: 'F', KE: 'G',
-};
-
 export function typeDePrise(codePays: string): string | undefined {
-  return PRISES[codePays.toUpperCase()];
+  return infosPratiques(codePays)?.prises.join('/');
 }

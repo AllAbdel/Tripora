@@ -204,9 +204,20 @@ describe('papiers et électricité', () => {
     expect(ids(valise)).not.toContain('adaptateur');
   });
 
+  it('ne propose un adaptateur que s’il sert', () => {
+    const valise = (id: string) => tout(preparerLaValise({ destination: findDestination(id)!, constraints: contraintes() }));
+    // Les prises turques prennent les fiches françaises : rien à acheter.
+    expect(valise('istanbul').map((entree) => entree.id)).not.toContain('adaptateur');
+    // Rien ne rentre au Japon.
+    expect(valise('tokyo').find((entree) => entree.id === 'adaptateur')?.label).toBe('Adaptateur de prise (type A/B)');
+    // En Suisse, les chargeurs passent, pas les fiches épaisses : on le dit.
+    expect(valise('zurich').find((entree) => entree.id === 'adaptateur')?.pourquoi).toMatch(/fiche plate/u);
+  });
+
   it('nomme le type de prise là où il est connu', () => {
     expect(typeDePrise('gb')).toBe('G');
     expect(typeDePrise('JP')).toBe('A/B');
+    expect(typeDePrise('ID')).toBe('C/F');
     // Là où ce serait un pari, on ne dit rien plutôt que de se tromper.
     expect(typeDePrise('ZZ')).toBeUndefined();
   });
@@ -241,7 +252,7 @@ describe('forme de la liste', () => {
   });
 
   it('marque ce qu’un seul du groupe peut emporter', () => {
-    const valise = tout(preparerLaValise({ destination: ISTANBUL, constraints: contraintes() }));
+    const valise = tout(preparerLaValise({ destination: findDestination('londres')!, constraints: contraintes() }));
     const partages = valise.filter((entree) => entree.partageable).map((entree) => entree.id);
     expect(partages).toContain('pharmacie');
     expect(partages).toContain('adaptateur');

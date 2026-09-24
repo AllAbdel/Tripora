@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { dateDuJour, momentDuVoyage, nuitsSansHebergement, periodeLisible } from './presentDuVoyage.js';
+import {
+  dateDuJour,
+  decalageLisible,
+  ecartAvecUtc,
+  momentDuVoyage,
+  nuitsSansHebergement,
+  periodeLisible,
+} from './presentDuVoyage.js';
 
 describe('le jour qu’il est là-bas', () => {
   // 23 h 30 à Paris le 9 juillet : déjà le 10 à Bali, encore le 9 à New York.
@@ -118,5 +125,20 @@ describe('une période, dite comme on la dit', () => {
     expect(periodeLisible('2026-07-01', '2026-07-01')).toBe('le 1er juillet');
     expect(periodeLisible('2026-07-01', '2026-07-03')).toBe('du 1er au 3 juillet');
     expect(periodeLisible('2026-07-11', '2026-07-21')).toBe('du 11 au 21 juillet');
+  });
+});
+
+describe('le décalage horaire', () => {
+  it('suit l’heure d’été', () => {
+    expect(ecartAvecUtc('Europe/Paris', new Date('2026-07-01T12:00:00Z'))).toBe(120);
+    expect(ecartAvecUtc('Europe/Paris', new Date('2026-01-15T12:00:00Z'))).toBe(60);
+    expect(ecartAvecUtc('Asia/Kolkata', new Date('2026-07-01T12:00:00Z'))).toBe(330);
+    expect(ecartAvecUtc('Pas/UnFuseau')).toBeUndefined();
+  });
+
+  it('se dit simplement', () => {
+    expect(decalageLisible(360)).toBe('+6 h');
+    expect(decalageLisible(-90)).toBe('−1 h 30');
+    expect(decalageLisible(0)).toBe('même heure');
   });
 });

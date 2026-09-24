@@ -47,3 +47,15 @@ test('pendant le séjour : le jour, et la dépense à noter d’un geste', async
   // La saisie est ouverte : pas besoin de chercher le bouton.
   await expect(page.getByRole('button', { name: 'Ajouter une dépense' })).toHaveCount(0);
 });
+
+test('les infos pratiques de la destination : adaptateur, urgences, côté de la route', async ({ page }) => {
+  await poser(page, [voyageDaté(30, 37)], '/voyages/v1');
+  const carte = page.getByRole('heading', { name: /Infos pratiques · Indonésie/u });
+  await expect(carte).toBeVisible();
+  // De Paris à Bali, les prises C/F prennent les fiches françaises.
+  await expect(page.getByText('Pas besoin d’adaptateur.')).toBeVisible();
+  await expect(page.getByText('On roule à gauche.')).toBeVisible();
+  await expect(page.getByRole('link', { name: '112' })).toHaveAttribute('href', 'tel:112');
+  await carte.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'test-results/infos-pratiques.png' });
+});

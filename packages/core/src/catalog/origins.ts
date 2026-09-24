@@ -177,3 +177,19 @@ export function nearestAirports(point: GeoPoint, maxKm = 150): AeroportsProches 
   }
   return meilleure;
 }
+
+/**
+ * Le pays d'un point de départ qui ne le dit pas — une position prise au
+ * téléphone, une ville trouvée par géocodage : celui de la ville connue la
+ * plus proche, dans un rayon court. Au-delà, rien : on ne devine pas un pays
+ * à cent kilomètres d'une frontière.
+ */
+export function paysDuPoint(point: GeoPoint, maxKm = 60): string | undefined {
+  let meilleure: { pays: string; km: number } | undefined;
+  for (const ville of ORIGINS) {
+    if (!ville.country) continue;
+    const km = haversineKm(point, ville);
+    if (km <= maxKm && (!meilleure || km < meilleure.km)) meilleure = { pays: ville.country, km };
+  }
+  return meilleure?.pays;
+}

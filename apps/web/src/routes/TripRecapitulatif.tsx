@@ -7,6 +7,7 @@ import {
   computeBalances,
   findDestination,
   formatCents,
+  infosPratiques,
   preparerLaValise,
   simplifyDebts,
   targetMonth,
@@ -275,6 +276,12 @@ export default function TripRecapitulatif() {
           )}
         </Section>
 
+        <Section titre="Sur place" vide="Les infos pratiques apparaîtront une fois la destination arrêtée.">
+          {destination && infosPratiques(destination.countryCode) && (
+            <InfosSurPlace codePays={destination.countryCode} />
+          )}
+        </Section>
+
         <Section titre="Ma valise" vide="La liste apparaîtra une fois la destination arrêtée.">
           {maValise.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2 print:grid-cols-2">
@@ -359,5 +366,36 @@ function Section({
       <h3 className="text-base font-bold">{titre}</h3>
       {rempli ? children : <p className="text-muted text-sm">{vide}</p>}
     </section>
+  );
+}
+
+/**
+ * Les infos pratiques, version papier : les numéros d'urgence d'abord — c'est
+ * pour eux qu'on imprime —, puis les prises et le côté de la route.
+ */
+function InfosSurPlace({ codePays }: { codePays: string }) {
+  const infos = infosPratiques(codePays)!;
+  const services: Record<string, string> = {
+    police: 'police',
+    ambulance: 'ambulance',
+    pompiers: 'pompiers',
+    'police touristique': 'police touristique',
+  };
+  const urgences = infos.urgences
+    .map((urgence) => (urgence.service ? `${urgence.numero} (${services[urgence.service]})` : urgence.numero))
+    .join(' · ');
+  return (
+    <ul className="space-y-1 text-sm">
+      <li>
+        <span className="font-medium">Urgences :</span>{' '}
+        {urgences || 'à vérifier dans les conseils aux voyageurs (diplomatie.gouv.fr)'}
+      </li>
+      <li>
+        <span className="font-medium">Prises :</span> type {infos.prises.join(', ')}, {infos.tension} V
+      </li>
+      <li>
+        <span className="font-medium">Route :</span> on roule à {infos.conduite}
+      </li>
+    </ul>
   );
 }

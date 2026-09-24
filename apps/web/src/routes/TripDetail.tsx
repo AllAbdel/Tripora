@@ -9,6 +9,7 @@ import {
   hasAnswered,
   dateDuJour,
   MONTHS_FR,
+  paysDuPoint,
   resumerLesTaches,
   sondagesEnAttente,
   targetMonth,
@@ -33,6 +34,7 @@ import { Reserver } from '@/components/Reserver';
 import { ApplicationsUtiles } from '@/components/ApplicationsUtiles';
 import { MeteoPrevue } from '@/components/MeteoPrevue';
 import { LeVoyageAuPresent } from '@/components/LeVoyageAuPresent';
+import { InfosPratiques } from '@/components/InfosPratiques';
 import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
 import { Assistant } from '@/components/Assistant';
 import { toFailure } from '@/lib/errors';
@@ -340,6 +342,13 @@ export default function TripDetail() {
 
           {villeRetenue && (
             <MeteoPrevue constraints={data.constraints} destination={villeRetenue} />
+          )}
+
+          {villeRetenue && (
+            <InfosPratiques
+              destination={villeRetenue}
+              paysDeDepart={data.constraints.origin.country ?? paysDuPoint(data.constraints.origin)}
+            />
           )}
 
           {villeRetenue && (

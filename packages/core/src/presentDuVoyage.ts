@@ -137,3 +137,37 @@ export function periodeLisible(de: string, a: string): string {
   const memeMois = de.slice(0, 7) === a.slice(0, 7);
   return `du ${lue(de, memeMois ? JOUR_SEUL : JOUR_ET_MOIS)} au ${lue(a, JOUR_ET_MOIS)}`;
 }
+
+/**
+ * L'écart d'un fuseau avec le temps universel, en minutes, à un instant donné
+ * (l'heure d'été compte). `undefined` pour un fuseau inconnu.
+ */
+export function ecartAvecUtc(fuseau: string, maintenant: Date = new Date()): number | undefined {
+  try {
+    const parties = new Intl.DateTimeFormat('en-US', {
+      timeZone: fuseau,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).formatToParts(maintenant);
+    const valeur = (type: string) => Number(parties.find((partie) => partie.type === type)?.value);
+    const local = Date.UTC(valeur('year'), valeur('month') - 1, valeur('day'), valeur('hour'), valeur('minute'));
+    const utc = Math.floor(maintenant.getTime() / 60_000) * 60_000;
+    return Math.round((local - utc) / 60_000);
+  } catch {
+    return undefined;
+  }
+}
+
+/** « +6 h », « −1 h 30 », « même heure ». */
+export function decalageLisible(minutes: number): string {
+  if (minutes === 0) return 'même heure';
+  const signe = minutes > 0 ? '+' : '−';
+  const absolu = Math.abs(minutes);
+  const heures = Math.floor(absolu / 60);
+  const reste = absolu % 60;
+  return `${signe}${heures} h${reste ? ` ${String(reste).padStart(2, '0')}` : ''}`;
+}
