@@ -34,6 +34,7 @@ export function OutilsDuVoyage({
   taches,
   aDecouvrir = 0,
   coffre = null,
+  termine = false,
 }: {
   tripId: string;
   destinationVerrouillee: boolean;
@@ -58,9 +59,19 @@ export function OutilsDuVoyage({
   aDecouvrir?: number;
   /** « 2 codes · 1 wifi », ou `null` quand le coffre est vide. */
   coffre?: string | null;
+  /** Le séjour est fini : place au bilan. */
+  termine?: boolean;
 }) {
   const aDesActivites = nombreDActivites > 0;
   const cases = [
+    // Rentré : le bilan passe en tête, c'est ce qu'on vient chercher.
+    termine && {
+      to: `/voyages/${tripId}/bilan`,
+      pastille: 'bilan' as const,
+      titre: 'Bilan',
+      detail: 'Le voyage en chiffres',
+      accent: true,
+    },
     collaborationActive && {
       to: `/voyages/${tripId}/participants`,
       pastille: 'participants' as const,

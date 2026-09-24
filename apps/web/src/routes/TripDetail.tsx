@@ -329,6 +329,9 @@ export default function TripDetail() {
             sondagesAVoter={sondagesEnAttente(sondages.data ?? [], moiIci)}
             aDecouvrir={Math.max(0, (nombreDActivites.data ?? 0) - mesAvis)}
             coffre={resumerLeCoffre(coffre.data ?? [], documents.data?.length ?? 0)}
+            termine={Boolean(
+              datesExactes && data.constraints.endDate && data.constraints.endDate < dateDuJour(villeRetenue?.timezone),
+            )}
             taches={{
               ...resumerLesTaches(taches.data ?? [], moiIci, dateDuJour()),
               total: taches.data?.length ?? 0,

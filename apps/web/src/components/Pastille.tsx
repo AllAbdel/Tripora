@@ -6,6 +6,7 @@ import {
   KeyRound,
   Layers,
   MessagesSquare,
+  PartyPopper,
   Smartphone,
   Stamp,
   Vote,
@@ -72,7 +73,8 @@ export type NomDePastille =
   | 'sondages'
   | 'taches'
   | 'decouvrir'
-  | 'coffre';
+  | 'coffre'
+  | 'bilan';
 
 /** Un pictogramme dessiné (`PageGlyphs`) ou un pictogramme de bibliothèque. */
 type IconePastille = ComponentType<SVGProps<SVGSVGElement>> | LucideIcon;
@@ -128,6 +130,9 @@ const PASTILLES: Readonly<Record<NomDePastille, Pastille>> = {
   // Le coffre : une clé, dans un bronze de serrure — ni l'or du passeport,
   // ni l'orange de la valise.
   coffre: { icone: KeyRound, degrade: ['#c49a6c', '#9a6a3a'], auTrait: true },
+  // Le bilan : les cotillons du retour, dans un mauve de fête qu'aucune
+  // autre case ne porte.
+  bilan: { icone: PartyPopper, degrade: ['#c471f5', '#9b4fd8'], auTrait: true },
 };
 
 const TAILLES = {

@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { PropositionDeRappels } from '@/components/ReglageDesRappels';
 import { rappelsPossibles } from '@/lib/rappels';
-import { BedDouble, CalendarClock, Check, HandCoins, KeyRound, Plus, Sun } from 'lucide-react';
+import { BedDouble, CalendarClock, Check, HandCoins, KeyRound, PartyPopper, Plus, Sun } from 'lucide-react';
 import {
   dateDuJour,
   heureLisible,
@@ -178,9 +178,15 @@ export function LeVoyageAuPresent({
       titre={moment.depuisJours === 1 ? 'De retour depuis hier' : `De retour depuis ${moment.depuisJours} jours`}
       detail="Il reste peut-être des comptes à solder."
     >
-      <Link to={`/voyages/${tripId}/budget`} className={LIEN}>
-        Qui doit quoi
-      </Link>
+      <div className="flex flex-wrap gap-2">
+        <Link to={`/voyages/${tripId}/bilan`} className={LIEN}>
+          <PartyPopper className="size-4" aria-hidden />
+          Le bilan du voyage
+        </Link>
+        <Link to={`/voyages/${tripId}/budget`} className={LIEN}>
+          Qui doit quoi
+        </Link>
+      </div>
     </Cadre>
   );
 }
