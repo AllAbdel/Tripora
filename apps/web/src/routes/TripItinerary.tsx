@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, ArrowLeftRight, BedDouble, CalendarPlus, ChevronDown, ChevronUp, Loader2, MapPinned,
@@ -8,7 +8,7 @@ import {
 import {
   awaitsPlace, AXIS_ICON, buildItinerary, dayVerdict, describeDay, fillItinerary,
   findDestination, fold, formatCents, groupWeights, parseAmountToCents, suggestWeatherSwaps,
-  heureLisible, reservationsDuJour, trouverFournisseur, weatherIcon,
+  phraseDeReservation, reservationsDuJour, weatherIcon,
   type MomentDeReservation,
   type NomIcone,
   type DailyWeather, type Destination, type MemberPreference, type Poi,
@@ -49,7 +49,13 @@ export default function TripItinerary() {
   const repository = getTripRepository();
   const itineraire = getItinerary();
   const queryClient = useQueryClient();
-  const [jourActif, setJourActif] = useState(1);
+  // `?jour=3` ouvre directement ce jour-là : l'accueil du voyage y mène
+  // pendant le séjour, sur le programme d'aujourd'hui.
+  const [parametres] = useSearchParams();
+  const [jourActif, setJourActif] = useState(() => {
+    const demande = Number(parametres.get('jour'));
+    return Number.isInteger(demande) && demande > 0 ? demande : 1;
+  });
   const [ajoutSur, setAjoutSur] = useState<string | null>(null);
 
   const voyage = useQuery({
@@ -814,22 +820,3 @@ function Retour({ id }: { id: string | undefined }) {
   );
 }
 
-/** « Arrivée à Ubud Tropical Villas, 14 h », « 2 h · Mont Batur (GetYourGuide) ». */
-function phraseDeReservation(moment: MomentDeReservation): string {
-  const { reservation } = moment;
-  const heure = heureLisible;
-  switch (moment.quoi) {
-    case 'arrivee':
-      return [`Arrivée à ${reservation.titre}`, heure(reservation.debutA)].filter(Boolean).join(', ');
-    case 'depart':
-      return [`Départ de ${reservation.titre}`, heure(reservation.finA)].filter(Boolean).join(', ');
-    case 'nuit':
-      return `Nuit à ${reservation.titre}`;
-    default: {
-      const fournisseur = trouverFournisseur(reservation.fournisseur)?.nom;
-      return [heure(reservation.debutA), `${reservation.titre}${fournisseur ? ` (${fournisseur})` : ''}`]
-        .filter(Boolean)
-        .join(' · ');
-    }
-  }
-}

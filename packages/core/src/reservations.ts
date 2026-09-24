@@ -225,3 +225,22 @@ export function heureLisible(heure: string | null | undefined): string | null {
   const heures = Number(trouvee[1]);
   return trouvee[2] === '00' ? `${heures} h` : `${heures} h ${trouvee[2]}`;
 }
+
+/** « Arrivée à Ubud Tropical Villas, 14 h », « 2 h · Mont Batur (GetYourGuide) ». */
+export function phraseDeReservation(moment: MomentDeReservation): string {
+  const { reservation } = moment;
+  switch (moment.quoi) {
+    case 'arrivee':
+      return [`Arrivée à ${reservation.titre}`, heureLisible(reservation.debutA)].filter(Boolean).join(', ');
+    case 'depart':
+      return [`Départ de ${reservation.titre}`, heureLisible(reservation.finA)].filter(Boolean).join(', ');
+    case 'nuit':
+      return `Nuit à ${reservation.titre}`;
+    default: {
+      const fournisseur = trouverFournisseur(reservation.fournisseur)?.nom;
+      return [heureLisible(reservation.debutA), `${reservation.titre}${fournisseur ? ` (${fournisseur})` : ''}`]
+        .filter(Boolean)
+        .join(' · ');
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import { CalendarDays, CalendarRange, CalendarSearch, Sun } from 'lucide-react';
-import type { DateMode } from '@tripora/core';
+import { dateDuJour, type DateMode } from '@tripora/core';
 import { OptionCard } from '@/components/ui/OptionCard';
 import { Chip } from '@/components/ui/Chip';
 import { Field, TextInput } from '@/components/ui/Field';
@@ -36,7 +36,7 @@ const MODES: { value: DateMode; label: string; description: string; icon: typeof
 export function StepDates() {
   const draft = useTripDraft();
   const { dateMode, month, startDate, endDate, windowStart, windowEnd, durationDays, patch } = draft;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dateDuJour();
 
   return (
     <div className="space-y-5">

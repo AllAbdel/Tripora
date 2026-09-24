@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Loader2, Plus, Trash2, X } from 'lucide-react';
 import {
-  computeBalances, currencyForCountry, currencyName, describeRate, DESTINATIONS,
+  computeBalances, currencyForCountry, currencyName, dateDuJour, describeRate, DESTINATIONS,
   findDestination, formatCents, isConvertible, parseAmountToCents, referenceRate,
   simplifyDebts, toReferenceCents, totalSpent, type FxRates,
 } from '@tripora/core';
@@ -32,7 +32,10 @@ export default function TripBudget() {
   const depenses = getExpenses();
   const { identity } = useAuth();
   const queryClient = useQueryClient();
-  const [enSaisie, setEnSaisie] = useState(false);
+  // `?ajouter=1` ouvre directement la saisie : pendant le voyage, l'accueil
+  // y mène d'un geste, la note encore à la main.
+  const [parametres] = useSearchParams();
+  const [enSaisie, setEnSaisie] = useState(() => parametres.get('ajouter') === '1');
 
   const voyage = useQuery({
     queryKey: ['trip', repository.kind, id],
@@ -366,7 +369,9 @@ function Formulaire({
   const [montant, setMontant] = useState('');
   const [paidBy, setPaidBy] = useState(moi);
   const [categorie, setCategorie] = useState<ExpenseCategory>('food');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  // La date du jour ici, pas celle de Greenwich : `toISOString` donnait la
+  // veille à toute dépense saisie entre minuit et deux heures du matin.
+  const [date, setDate] = useState(() => dateDuJour());
   const [partage, setPartage] = useState<string[]>(participants);
 
   // Sur place, on paie en monnaie locale : c'est elle qu'on présente d'abord,

@@ -26,6 +26,7 @@ import { VoteBar } from '@/components/VoteBar';
 import { Reserver } from '@/components/Reserver';
 import { ApplicationsUtiles } from '@/components/ApplicationsUtiles';
 import { MeteoPrevue } from '@/components/MeteoPrevue';
+import { LeVoyageAuPresent } from '@/components/LeVoyageAuPresent';
 import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
 import { Assistant } from '@/components/Assistant';
 import { toFailure } from '@/lib/errors';
@@ -236,6 +237,17 @@ export default function TripDetail() {
               <p className="text-muted text-sm">{describePeriod(data.constraints)}</p>
             )}
           </header>
+
+          {data.constraints.dateMode === 'exact' && (
+            <LeVoyageAuPresent
+              tripId={data.summary.id}
+              debut={data.constraints.startDate ?? null}
+              fin={data.constraints.endDate ?? null}
+              fuseau={villeRetenue?.timezone}
+              reservations={reservations.data}
+              itineraire={itineraire.data ?? undefined}
+            />
+          )}
 
           <ProchainGeste
             tripId={data.summary.id}
