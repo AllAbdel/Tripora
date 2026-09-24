@@ -4,6 +4,7 @@
   "installCommand": "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 pnpm install --frozen-lockfile",
   "outputDirectory": "apps/web/dist",
   "framework": null,
+  "cleanUrls": true,
   "redirects": [
     {
       "source": "/go/boursobank",

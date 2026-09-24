@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router';
+import { lazy, Suspense, useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { useAuth } from '@/lib/auth-context';
@@ -8,6 +8,7 @@ import Trips from '@/routes/Trips';
 import TripDetail from '@/routes/TripDetail';
 import JoinTrip from '@/routes/JoinTrip';
 import NotFound from '@/routes/NotFound';
+import { retenirLaDestinationDemandee } from '@/lib/destinationDemandee';
 
 // MapLibre pèse à lui seul plus que tout le reste de l'application : la carte
 // n'est téléchargée que par les personnes qui l'ouvrent vraiment.
@@ -134,6 +135,15 @@ function EcranEnChargement() {
 
 export default function App() {
   const { identity, loading } = useAuth();
+  const { search } = useLocation();
+  const connecte = Boolean(identity);
+
+  // « Organiser ce voyage » depuis une page publique du carnet : la destination
+  // entre dans le brouillon, connexion faite ou pas.
+  useEffect(() => {
+    if (loading) return;
+    retenirLaDestinationDemandee(search, { apresConnexion: !connecte });
+  }, [search, loading, connecte]);
 
   if (loading) return <FullScreenLoader />;
 
@@ -143,6 +153,19 @@ export default function App() {
           jamais ouvert Tripora. L'écran ouvre lui-même une session invité. */}
       <Route path="/rejoindre" element={<JoinTrip />} />
       <Route path="/rejoindre/:code" element={<JoinTrip />} />
+      {/* Public aussi : ce que Tripora conserve doit pouvoir se lire avant de
+          créer un compte. Le lien de l'écran de connexion y renvoyait, et on
+          retombait sur la connexion. */}
+      {!identity && (
+        <Route
+          path="/confidentialite"
+          element={
+            <Suspense fallback={<FullScreenLoader />}>
+              <Confidentialite />
+            </Suspense>
+          }
+        />
+      )}
 
       {identity ? (
         <>

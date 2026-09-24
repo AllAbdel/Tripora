@@ -28,10 +28,14 @@ createServer((requete, reponse) => {
   const chemin = new URL(requete.url ?? '/', 'http://localhost').pathname;
   // normalize + le préfixe vérifié : on ne sort pas de dist/.
   const candidat = join(RACINE, normalize(chemin));
+  // Comme Cloudflare Pages : /destinations/bergen sert destinations/bergen.html.
+  const page = `${candidat}.html`;
   const fichier =
     candidat.startsWith(RACINE) && existsSync(candidat) && statSync(candidat).isFile()
       ? candidat
-      : join(RACINE, 'index.html');
+      : candidat.startsWith(RACINE) && !extname(candidat) && existsSync(page)
+        ? page
+        : join(RACINE, 'index.html');
 
   reponse.writeHead(200, {
     'content-type': TYPES[extname(fichier)] ?? 'application/octet-stream',

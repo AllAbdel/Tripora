@@ -59,6 +59,12 @@ createServer((requete, reponse) => {
   if (fichier.startsWith(RACINE) && existsSync(join(fichier, 'index.html'))) {
     fichier = join(fichier, 'index.html');
   }
+  // Une adresse sans extension sert le fichier .html du même nom, comme
+  // Cloudflare Pages (et Vercel avec cleanUrls) : /destinations/bergen sert
+  // destinations/bergen.html, la page publique du carnet.
+  if (fichier.startsWith(RACINE) && !extname(fichier) && existsSync(`${fichier}.html`)) {
+    fichier = `${fichier}.html`;
+  }
   // Repli page unique : /voyages/abc/carte doit ouvrir l'application, pas une
   // erreur 404 — c'est tout l'intérêt d'un lien d'invitation partagé.
   if (!fichier.startsWith(RACINE) || !existsSync(fichier) || statSync(fichier).isDirectory()) {

@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context';
 import { diagnosticConnexion, RETOUR_OAUTH } from '@/lib/oauthReturn';
 import { tableauDesDeparts } from '@/lib/tableauDesDeparts';
 import { env } from '@/lib/env';
+import { estNatif } from '@/lib/natif';
 
 export default function SignIn() {
   const { signInWithGoogle, continueAsGuest, backendReady } = useAuth();
@@ -149,6 +150,17 @@ export default function SignIn() {
         </Link>
         .
       </p>
+
+      {/* Les pages publiques du carnet sont de vrais fichiers du site : un
+          lien ordinaire, pas une navigation de l'application. Absentes de
+          l'APK, qui n'embarque que l'application. */}
+      {!estNatif && (
+        <p className="mt-4 text-sm">
+          <a href="/destinations" className="text-brand-600 dark:text-brand-300 font-semibold underline-offset-2 hover:underline">
+            Pas encore d’idée ? Parcourir les destinations et leurs activités
+          </a>
+        </p>
+      )}
     </div>
   );
 }

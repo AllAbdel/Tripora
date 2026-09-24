@@ -1,5 +1,5 @@
 import { fileURLToPath, URL } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -14,11 +14,13 @@ import type { Plugin } from 'vite';
  * même que celle de l'authentification quand elle est renseignée — et à
  * défaut on retombe sur le chemin relatif, qui marche chez la plupart.
  */
-function origineDuSite(): Plugin {
+function origineDuSite(mode: string): Plugin {
+  // Le fichier .env compte aussi : c'est là que l'adresse du site est déclarée.
+  const env = { ...loadEnv(mode, process.cwd(), 'VITE_'), ...process.env };
   return {
     name: 'tripora-origine-du-site',
     transformIndexHtml(html) {
-      const brute = process.env['VITE_SITE_ORIGIN'] ?? process.env['VITE_AUTH_ORIGIN'] ?? '';
+      const brute = env['VITE_SITE_ORIGIN'] ?? env['VITE_AUTH_ORIGIN'] ?? '';
       const origine = brute.trim().replace(/\/+$/u, '');
       return html.replaceAll('%ORIGINE_DU_SITE%', origine);
     },
@@ -39,7 +41,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
-      origineDuSite(),
+      origineDuSite(mode),
       VitePWA({
         disable: mobile,
         registerType: 'autoUpdate',
@@ -113,11 +115,23 @@ export default defineConfig(({ mode }) => {
             '**/icons/icon-maskable-512.png',
             '**/*.jpg',
             '**/retour-app/**',
+            // La feuille de style des pages publiques du carnet : l'application
+            // ne s'en sert jamais.
+            '**/pages.css',
           ],
           // La page de retour de connexion de l'application mobile ne doit
           // jamais être remplacée par Tripora : le site, voyant un code sans
           // sa preuve PKCE, relancerait la connexion dans le navigateur.
-          navigateFallbackDenylist: [/^\/api\//, /^\/retour-app\//],
+          //
+          // Les pages publiques du carnet (/destinations…) et les fichiers pour
+          // les robots sont de vrais fichiers : l'application ne doit pas les
+          // remplacer par son propre écran.
+          navigateFallbackDenylist: [
+            /^\/api\//,
+            /^\/retour-app\//,
+            /^\/destinations(\/|$)/,
+            /^\/(sitemap\.xml|robots\.txt)$/,
+          ],
           runtimeCaching: [
             {
               // Tuiles de carte : réutilisées agressivement, elles ne changent

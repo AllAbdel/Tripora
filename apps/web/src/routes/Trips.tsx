@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Plus } from 'lucide-react';
 import { ScreenHeader } from '@/components/AppShell';
@@ -19,6 +19,7 @@ import { ConfirmerSuppression } from '@/components/ConfirmerSuppression';
 import { basculerFavori, favorisEnTete, listerFavoris } from '@/lib/favoris';
 import { signaler } from '@/lib/feedback';
 import { useRappelsDesVoyages } from '@/lib/rappels';
+import { prendreLaCreationEnAttente } from '@/lib/destinationDemandee';
 
 export default function Trips() {
   const { identity, backendReady } = useAuth();
@@ -26,6 +27,13 @@ export default function Trips() {
   const repository = getTripRepository();
   const queryClient = useQueryClient();
   const [aSupprimer, setASupprimer] = useState<TripSummary | null>(null);
+  const navigate = useNavigate();
+
+  // Arrivé ici après la connexion, depuis « Organiser ce voyage » d'une page
+  // du carnet : la création reprend là où elle a été demandée.
+  useEffect(() => {
+    if (prendreLaCreationEnAttente()) navigate('/voyages/nouveau');
+  }, [navigate]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['trips', repository.kind],

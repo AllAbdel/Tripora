@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
+import { useAuth } from '@/lib/auth-context';
 
 /**
  * La politique de confidentialité et les mentions légales.
@@ -16,12 +17,13 @@ import { Card, CardBody } from '@/components/ui/Card';
  * débarrasse.
  */
 export default function Confidentialite() {
+  const { identity } = useAuth();
   return (
     <div className="mx-auto w-full max-w-2xl space-y-5 px-4 pt-4 pb-28">
       <div className="flex items-center gap-2">
         <Link
-          to="/profil"
-          aria-label="Retour au profil"
+          to={identity ? '/profil' : '/'}
+          aria-label={identity ? 'Retour au profil' : 'Retour à l’accueil'}
           className="hover:bg-brand-50 dark:hover:bg-ink-700/40 -ml-2 grid size-11 place-items-center rounded-full"
         >
           <ArrowLeft className="size-5" aria-hidden />

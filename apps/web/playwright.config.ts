@@ -78,6 +78,7 @@ export default defineConfig({
     // et les voyages vivent dans le navigateur du test.
     command:
       'VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= vite build --outDir dist-e2e --emptyOutDir' +
+      ' && tsx scripts/generer-pages-publiques.ts dist-e2e' +
       ' && node e2e/serveur.mjs',
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env['CI'],
