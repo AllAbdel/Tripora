@@ -98,6 +98,29 @@ test('ce que le groupe refuse n’arrive pas au programme, ce qu’il réclame y
 });
 
 /**
+ * Une envie posée juste avant de recharger n'est pas perdue.
+ *
+ * Le cache n'était rangé qu'une seconde après le dernier changement. Une page
+ * restée ouverte plus d'une seconde avait déjà rangé l'état « sans avis » ;
+ * le « j'ai envie » suivi d'un rechargement immédiat ramenait cet état-là, tenu
+ * pour frais une minute, et l'itinéraire se remplissait sans l'envie. Le
+ * parcours précédent échouait ainsi par intermittence en intégration continue.
+ */
+test('une envie posée juste avant un rechargement arrive quand même au programme', async ({ page }) => {
+  await poser(page, [BALI], '/voyages/v1/a-faire');
+  const envie = page.getByRole('button', { name: 'J’ai envie : La forêt des singes d’Ubud' });
+  await expect(envie).toBeVisible();
+  // Le temps que le cache soit rangé une première fois, sans aucun avis.
+  await page.waitForTimeout(1_500);
+  await envie.click();
+  await expect(envie).toHaveAttribute('aria-pressed', 'true');
+
+  await page.goto('/voyages/v1/itineraire');
+  await page.getByRole('button', { name: /Générer l’itinéraire/ }).click();
+  await expect(page.getByText(/Ce que le groupe a réclamé/)).toBeVisible();
+});
+
+/**
  * Le programme dans le calendrier : un vrai fichier, lisible par un agenda.
  */
 test('un séjour daté se télécharge en calendrier, à l’heure de Bali', async ({ page }) => {

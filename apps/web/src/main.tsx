@@ -5,7 +5,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import App from './App';
 import { AuthProvider } from '@/lib/auth';
 import { PontNatif } from '@/components/PontNatif';
-import { persister, queryClient } from '@/lib/cache';
+import { persister, queryClient, VERSION_DU_CACHE } from '@/lib/cache';
 import { applyTheme, useTheme, watchSystemTheme } from '@/stores/theme';
 import { appliquerLaLangue, useLangue } from '@/stores/langue';
 import './index.css';
@@ -30,7 +30,7 @@ createRoot(container).render(
         maxAge: 7 * 24 * 60 * 60 * 1000,
         // La version change avec le format du cache : une mise à jour de
         // Tripora ne doit pas relire des données qu'elle ne comprend plus.
-        buster: 'v1',
+        buster: VERSION_DU_CACHE,
       }}
     >
       <AuthProvider>

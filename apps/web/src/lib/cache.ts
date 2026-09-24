@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { dehydrate, QueryClient } from '@tanstack/react-query';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 
 /**
@@ -41,16 +41,62 @@ export const queryClient = new QueryClient({
  * revient.
  *
  * `localStorage` et pas IndexedDB : quelques dizaines de kilo-octets suffisent
- * pour des voyages, l'écriture est synchrone donc rien ne se perd à la
- * fermeture, et un navigateur qui la refuse (navigation privée stricte)
+ * pour des voyages, et un navigateur qui le refuse (navigation privée stricte)
  * retombe simplement sur l'ancien comportement.
  */
+const CLE_DU_CACHE = 'tripora.cache';
+
+/**
+ * La version du format rangé. À changer quand ce qu'on range change de forme :
+ * une mise à jour de Tripora ne doit pas relire des données qu'elle ne
+ * comprend plus.
+ */
+export const VERSION_DU_CACHE = 'v1';
+
 export const persister = createSyncStoragePersister({
   storage: typeof window === 'undefined' ? undefined : window.localStorage,
-  key: 'tripora.cache',
+  key: CLE_DU_CACHE,
   // Une écriture par seconde au plus : inutile de sérialiser à chaque frappe.
   throttleTime: 1000,
 });
+
+/**
+ * Ranger le cache tout de suite, sans attendre la fin de la seconde.
+ *
+ * L'écriture limitée à une par seconde a un prix : elle part *après* le
+ * dernier changement. Ce qu'on vient de faire — un « j'ai envie », un vote,
+ * une dépense — n'est rangé qu'une seconde plus tard. Qu'on recharge la page,
+ * ou que le téléphone ferme l'application, dans cette seconde-là, et c'est
+ * l'état d'avant qui revient au prochain lancement. Il est alors tenu pour
+ * frais une minute entière : l'itinéraire se remplissait sans l'envie qu'on
+ * venait d'exprimer.
+ *
+ * On range donc tout, immédiatement, quand la page s'en va ou passe à
+ * l'arrière-plan — sur un téléphone, c'est souvent le dernier signe de vie
+ * avant que le système ne ferme l'application. Même format que la
+ * sauvegarde ordinaire, pour que la restauration n'y voie aucune différence.
+ */
+export function sauverLeCacheMaintenant(): void {
+  try {
+    window.localStorage.setItem(
+      CLE_DU_CACHE,
+      JSON.stringify({
+        buster: VERSION_DU_CACHE,
+        timestamp: Date.now(),
+        clientState: dehydrate(queryClient),
+      }),
+    );
+  } catch {
+    // Stockage plein ou refusé : la sauvegarde ordinaire fera ce qu'elle peut.
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', sauverLeCacheMaintenant);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') sauverLeCacheMaintenant();
+  });
+}
 
 /** Oublie tout ce qui est en mémoire. Appelé à la déconnexion. */
 export function viderLeCache(): void {

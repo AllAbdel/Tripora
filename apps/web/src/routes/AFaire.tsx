@@ -32,6 +32,7 @@ import {
   cleEnvies,
   getEnvies,
   nommer,
+  requeteDesEnvies,
   type Avis,
   type AvisSurUneActivite,
   type EnviesDuGroupe,
@@ -97,11 +98,7 @@ export default function AFaire() {
 
   // Qui a envie de quoi. La même clé que l'itinéraire, qui s'en sert pour
   // remplir les journées.
-  const avis = useQuery({
-    queryKey: cleEnvies(id),
-    queryFn: () => getEnvies().lister(id!, moi),
-    enabled: Boolean(id),
-  });
+  const avis = useQuery(requeteDesEnvies(id, moi));
 
   // Les prénoms, pour dire « Inès et Karim » plutôt que « 2 ». Sans serveur,
   // il n'y a qu'une personne : « vous ».

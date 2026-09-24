@@ -25,7 +25,7 @@ import {
   getItinerary, positionPourHeure, type ItineraryDayView, type ItineraryItem,
 } from '@/lib/itinerary';
 import { requeteDesLieux } from '@/lib/places';
-import { avisPourLeRemplissage, cleEnvies, getEnvies } from '@/lib/envies';
+import { avisPourLeRemplissage, requeteDesEnvies } from '@/lib/envies';
 import { useAuth } from '@/lib/auth-context';
 import { programmeDate, telechargerLeProgramme } from '@/lib/calendrier';
 import { chargerMeteo, cleMeteo } from '@/lib/weather';
@@ -91,11 +91,7 @@ export default function TripItinerary() {
   // Ce que le groupe a dit des activités dans « À faire » : le remplissage
   // pose d'abord ce qui est réclamé, et jamais ce qui est refusé.
   const { identity } = useAuth();
-  const envies = useQuery({
-    queryKey: cleEnvies(id),
-    queryFn: () => getEnvies().lister(id!, identity?.id ?? 'moi'),
-    enabled: Boolean(id),
-  });
+  const envies = useQuery(requeteDesEnvies(id, identity?.id ?? 'moi'));
 
   const aCompleter = useMemo(() => {
     const journees = jours.data;

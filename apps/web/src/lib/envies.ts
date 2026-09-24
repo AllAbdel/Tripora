@@ -1,3 +1,4 @@
+import { queryOptions } from '@tanstack/react-query';
 import type { AvisDuGroupe } from '@tripora/core';
 import { supabase } from './supabase';
 
@@ -247,3 +248,21 @@ export function getEnvies(): EnviesApi {
 
 /** La clé de cache, partagée par « À faire » et l'itinéraire. */
 export const cleEnvies = (tripId: string | undefined) => ['envies', tripId] as const;
+
+/**
+ * La requête des envies, la même pour « À faire » et pour l'itinéraire.
+ *
+ * Relue à chaque ouverture d'écran, contrairement au reste du cache, tenu pour
+ * frais une minute. Les envies des autres arrivent en direct tant que l'écran
+ * est ouvert ; mais celles posées pendant qu'on était ailleurs n'arrivent par
+ * aucun canal, et l'itinéraire se remplirait sans elles. Une lecture de plus
+ * à l'ouverture, légère, contre un programme qui ignore l'avis du groupe.
+ */
+export function requeteDesEnvies(tripId: string | undefined, userId: string) {
+  return queryOptions({
+    queryKey: cleEnvies(tripId),
+    queryFn: () => getEnvies().lister(tripId!, userId),
+    enabled: Boolean(tripId),
+    staleTime: 0,
+  });
+}
