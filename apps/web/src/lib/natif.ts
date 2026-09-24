@@ -201,6 +201,49 @@ export async function partagerUnFichier({
   return true;
 }
 
+/** Le contenu d'un fichier en base64, comme l'attend le greffon des fichiers. */
+function enBase64(fichier: Blob): Promise<string> {
+  return new Promise((resoudre, rejeter) => {
+    const lecteur = new FileReader();
+    lecteur.onload = () => resoudre(String(lecteur.result).replace(/^data:[^,]*,/u, ''));
+    lecteur.onerror = () => rejeter(lecteur.error ?? new Error('Lecture impossible'));
+    lecteur.readAsDataURL(fichier);
+  });
+}
+
+/**
+ * Ouvrir un fichier gardé dans l'application (un billet en PDF) avec les
+ * applications du téléphone : il est écrit dans le cache, puis confié à la
+ * feuille « Ouvrir avec » / « Partager ». Sans réseau. Renvoie `false` hors
+ * de l'application.
+ */
+export async function ouvrirUnFichier({
+  nom,
+  fichier,
+  titre,
+}: {
+  nom: string;
+  fichier: Blob;
+  titre: string;
+}): Promise<boolean> {
+  if (!estNatif) return false;
+  const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+    import('@capacitor/filesystem'),
+    import('@capacitor/share'),
+  ]);
+  const { uri } = await Filesystem.writeFile({
+    path: nom,
+    data: await enBase64(fichier),
+    directory: Directory.Cache,
+  });
+  try {
+    await Share.share({ title: titre, files: [uri], dialogTitle: titre });
+  } catch {
+    // Feuille refermée sans choisir : rien d'autre à faire.
+  }
+  return true;
+}
+
 /** Une page extérieure, dans l'onglet du navigateur système posé sur l'app. */
 export async function ouvrirDansLeNavigateur(url: string): Promise<void> {
   const { Browser } = await import('@capacitor/browser');

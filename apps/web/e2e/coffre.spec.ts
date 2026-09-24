@@ -92,10 +92,8 @@ test('ranger un billet en PDF, une photo, les ouvrir, renommer, retirer', async 
   await page.getByRole('button', { name: 'Ranger le document' }).click();
   await expect(page.getByText('PDF · 1 Ko · visible par vous seulement')).toBeVisible();
 
-  // Un document s'ouvre dans un nouvel onglet. Vérifié avec une photo : le
-  // navigateur sans interface de l'intégration continue n'a pas de lecteur
-  // PDF : il télécharge le fichier au lieu de l'afficher, et l'onglet reste
-  // vide.
+  // Une photo (la carte d'embarquement qu'on tend au comptoir) s'ouvre en
+  // plein écran dans l'application, et se referme d'une touche.
   await page.getByLabel('Choisir un document').setInputFiles({
     name: 'carte_embarquement.png',
     mimeType: 'image/png',
@@ -105,12 +103,11 @@ test('ranger un billet en PDF, une photo, les ouvrir, renommer, retirer', async 
     ),
   });
   await page.getByRole('button', { name: 'Ranger le document' }).click();
-  const [onglet] = await Promise.all([
-    page.waitForEvent('popup'),
-    page.getByRole('button', { name: 'Ouvrir « Carte embarquement »' }).click(),
-  ]);
-  await expect.poll(() => onglet.url()).toMatch(/^blob:/u);
-  await onglet.close();
+  await page.getByRole('button', { name: 'Ouvrir « Carte embarquement »' }).click();
+  const visionneuse = page.getByRole('dialog', { name: 'Carte embarquement' });
+  await expect(visionneuse.getByRole('img', { name: 'Carte embarquement' })).toHaveAttribute('src', /^blob:/u);
+  await page.keyboard.press('Escape');
+  await expect(visionneuse).toHaveCount(0);
 
   // Partagé avec le groupe, puis renommé.
   await page.getByRole('button', { name: 'Partager « E-ticket GA-881 » avec le groupe' }).click();

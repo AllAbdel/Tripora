@@ -9,6 +9,7 @@ import { commencerLaConnexionGoogle } from './connexionNative';
 import { oublierApresDeconnexion } from './stockage';
 import { viderLeCache } from './cache';
 import { retirerTousLesRappels } from './rappels';
+import { oublierToutesLesCopies } from './documentsHorsLigne';
 import { AuthContext, type AuthContextValue, type Identity } from './auth-context';
 
 const LOCAL_KEY = 'tripora.local-identity';
@@ -205,7 +206,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     oublierApresDeconnexion({ gardeLesDonneesLocales: !supabase });
     // Les rappels posés sur le téléphone parlent des voyages du compte qu'on
     // quitte : ils partent avec lui.
-    if (supabase) await retirerTousLesRappels();
+    if (supabase) {
+      await retirerTousLesRappels();
+      // Les documents gardés sur l'appareil aussi : un scan de passeport n'a
+      // pas à rester sur un téléphone prêté.
+      await oublierToutesLesCopies();
+    }
 
     // Le cache en mémoire survit au vidage du stockage : sans cela, le compte
     // suivant verrait s'afficher les voyages du précédent le temps que les

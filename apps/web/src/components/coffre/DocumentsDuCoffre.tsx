@@ -1,6 +1,19 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ExternalLink, FileText, Image as IconeImage, Lock, LockOpen, Pencil, Plus, Trash2, X } from 'lucide-react';
+import {
+  Check,
+  CircleCheck,
+  Download,
+  ExternalLink,
+  FileText,
+  Image as IconeImage,
+  Lock,
+  LockOpen,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react';
 import {
   nomDuFichier,
   problemeDuFichier,
@@ -14,17 +27,49 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Field, TextInput } from '@/components/ui/Field';
 import { cleDocuments, ErreurDeDocument, getDocuments, requeteDesDocuments } from '@/lib/documents';
-import { estNatif, ouvrirDansLeNavigateur } from '@/lib/natif';
+import {
+  copieDe,
+  copiesDuVoyage,
+  garderUneCopie,
+  oublierLaCopie,
+  oublierLesCopiesDisparues,
+} from '@/lib/documentsHorsLigne';
+import { estNatif, ouvrirDansLeNavigateur, ouvrirUnFichier } from '@/lib/natif';
 import { supabase } from '@/lib/supabase';
 import { toFailure } from '@/lib/errors';
 import { signaler } from '@/lib/feedback';
 import { Banner } from '@/components/ui/Banner';
+import { VisionneuseDePhoto } from './VisionneuseDePhoto';
 
 const ACCEPTES = Object.keys(TYPES_DE_DOCUMENTS).join(',');
 
 function messageDe(erreur: unknown): string {
   return erreur instanceof ErreurDeDocument ? erreur.message : toFailure(erreur).message;
 }
+
+/** Une photo que le navigateur sait afficher (le HEIC, seul Safari le lit). */
+function estAffichable(document: DocumentDuVoyage): boolean {
+  const type = document.typeMime ?? '';
+  return type.startsWith('image/') && !/heic|heif/u.test(type);
+}
+
+/** Le nom du fichier quand on le confie aux applications du téléphone. */
+function nomDeFichier(document: DocumentDuVoyage): string {
+  const extension = TYPES_DE_DOCUMENTS[document.typeMime ?? ''] ?? 'pdf';
+  return `${document.nom.replace(/[^\p{L}\p{N} ._-]+/gu, '_').slice(0, 80)}.${extension}`;
+}
+
+/** Une adresse dans la fenêtre ouverte pendant le geste, ou dans celle-ci. */
+function naviguer(fenetre: Window | null, adresse: string): void {
+  if (fenetre) {
+    fenetre.opener = null;
+    fenetre.location.href = adresse;
+  } else {
+    window.location.assign(adresse);
+  }
+}
+
+const CLE_DES_COPIES = (tripId: string) => ['documents-hors-ligne', tripId] as const;
 
 /**
  * Les documents du coffre : les billets du vol, la confirmation de l'hôtel,
@@ -44,8 +89,15 @@ export function DocumentsDuCoffre({
   const selecteur = useRef<HTMLInputElement>(null);
   const [enAttente, setEnAttente] = useState<File | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [visionneuse, setVisionneuse] = useState<{ adresse: string; nom: string } | null>(null);
 
   const documents = useQuery(requeteDesDocuments(tripId));
+  // Les copies gardées sur cet appareil. Sans serveur, tout est déjà ici.
+  const copies = useQuery({
+    queryKey: CLE_DES_COPIES(tripId),
+    queryFn: () => copiesDuVoyage(tripId),
+    enabled: Boolean(supabase),
+  });
   const espace = useQuery({
     queryKey: ['espace-documents'],
     queryFn: () => getDocuments().espace(),
@@ -59,6 +111,17 @@ export function DocumentsDuCoffre({
       }),
     [tripId, queryClient],
   );
+
+  // Un document retiré du coffre (par soi ou par un autre) emporte sa copie.
+  // Seulement d'après une liste fraîche : celle du cache, hors ligne, peut
+  // ignorer un document ajouté depuis — et gardé.
+  const listeFraiche = documents.isFetchedAfterMount && documents.isSuccess && !documents.isFetching;
+  useEffect(() => {
+    if (!supabase || !listeFraiche || !documents.data) return;
+    void oublierLesCopiesDisparues(tripId, new Set(documents.data.map((document) => document.chemin))).then(() =>
+      queryClient.invalidateQueries({ queryKey: CLE_DES_COPIES(tripId) }),
+    );
+  }, [listeFraiche, documents.data, tripId, queryClient]);
 
   const rafraichir = async () => {
     await queryClient.invalidateQueries({ queryKey: cleDocuments(tripId) });
@@ -84,8 +147,29 @@ export function DocumentsDuCoffre({
   });
 
   const supprimer = useMutation({
-    mutationFn: (document: DocumentDuVoyage) => getDocuments().supprimer(document),
-    onSuccess: rafraichir,
+    mutationFn: async (document: DocumentDuVoyage) => {
+      await getDocuments().supprimer(document);
+      await oublierLaCopie(document.chemin);
+    },
+    onSuccess: async () => {
+      await rafraichir();
+      await queryClient.invalidateQueries({ queryKey: CLE_DES_COPIES(tripId) });
+    },
+    onError: (raison) => setErreur(messageDe(raison)),
+  });
+
+  const garder = useMutation({
+    mutationFn: async (document: DocumentDuVoyage) => {
+      if (copies.data?.[document.chemin] !== undefined) {
+        await oublierLaCopie(document.chemin);
+        return;
+      }
+      await garderUneCopie(document, await getDocuments().telecharger(document));
+    },
+    onSuccess: async () => {
+      signaler('tape');
+      await queryClient.invalidateQueries({ queryKey: CLE_DES_COPIES(tripId) });
+    },
     onError: (raison) => setErreur(messageDe(raison)),
   });
 
@@ -113,19 +197,26 @@ export function DocumentsDuCoffre({
 
   async function ouvrir(document: DocumentDuVoyage) {
     setErreur(null);
-    // Ouverte tout de suite, pendant le geste : ouverte après l'attente de
-    // l'adresse, la fenêtre serait prise pour une publicité et bloquée.
-    const fenetre = estNatif ? null : window.open('', '_blank');
+    const photo = estAffichable(document);
+    // Une page ouverte tout de suite, pendant le geste : ouverte après une
+    // attente, elle serait prise pour une publicité et bloquée. Une photo,
+    // elle, s'affiche dans l'application.
+    const fenetre = estNatif || photo ? null : window.open('', '_blank');
     try {
-      const adresse = await getDocuments().adresse(document);
-      if (estNatif) {
-        await ouvrirDansLeNavigateur(adresse);
-      } else if (fenetre) {
-        fenetre.opener = null;
-        fenetre.location.href = adresse;
-      } else {
-        window.location.assign(adresse);
+      // Gardé sur cet appareil : on l'ouvre d'ici, réseau ou pas.
+      const copie = supabase ? await copieDe(document.chemin) : undefined;
+      if (photo) {
+        const fichier = copie ?? (await getDocuments().telecharger(document));
+        setVisionneuse({ adresse: URL.createObjectURL(fichier), nom: document.nom });
+        return;
       }
+      if (copie && estNatif) {
+        await ouvrirUnFichier({ nom: nomDeFichier(document), fichier: copie, titre: document.nom });
+        return;
+      }
+      const adresse = copie ? URL.createObjectURL(copie) : await getDocuments().adresse(document);
+      if (estNatif) await ouvrirDansLeNavigateur(adresse);
+      else naviguer(fenetre, adresse);
       if (adresse.startsWith('blob:')) window.setTimeout(() => URL.revokeObjectURL(adresse), 60_000);
     } catch (raison) {
       fenetre?.close();
@@ -133,7 +224,15 @@ export function DocumentsDuCoffre({
     }
   }
 
+  function fermerLaVisionneuse() {
+    if (visionneuse) URL.revokeObjectURL(visionneuse.adresse);
+    setVisionneuse(null);
+  }
+
   const liste = documents.data ?? [];
+  const gardes = copies.data ?? {};
+  const cheminsGardes = liste.filter((document) => gardes[document.chemin] !== undefined);
+  const placeGardee = cheminsGardes.reduce((total, document) => total + (gardes[document.chemin] ?? 0), 0);
 
   return (
     <section className="space-y-3" aria-labelledby="titre-documents">
@@ -153,6 +252,14 @@ export function DocumentsDuCoffre({
 
       {erreur && <Banner tone="warning">{erreur}</Banner>}
 
+      {cheminsGardes.length > 0 && (
+        <p className="text-muted text-xs">
+          {cheminsGardes.length === 1
+            ? `1 document gardé sur cet appareil (${tailleLisible(placeGardee)}) : il s’ouvre sans réseau.`
+            : `${cheminsGardes.length} documents gardés sur cet appareil (${tailleLisible(placeGardee)}) : ils s’ouvrent sans réseau.`}
+        </p>
+      )}
+
       {liste.length > 0 && (
         <ul className="space-y-2">
           {liste.map((document) => (
@@ -165,6 +272,9 @@ export function DocumentsDuCoffre({
                 surRenommer={(nom) => modifier.mutate({ id: document.id, nom })}
                 surBasculer={() => modifier.mutate({ id: document.id, prive: !document.prive })}
                 surRetirer={() => supprimer.mutate(document)}
+                {...(supabase
+                  ? { garde: gardes[document.chemin] !== undefined, surGarder: () => garder.mutate(document) }
+                  : {})}
               />
             </li>
           ))}
@@ -198,6 +308,10 @@ export function DocumentsDuCoffre({
             Ajouter un document
           </Button>
         </>
+      )}
+
+      {visionneuse && (
+        <VisionneuseDePhoto adresse={visionneuse.adresse} nom={visionneuse.nom} surFermer={fermerLaVisionneuse} />
       )}
     </section>
   );
@@ -267,6 +381,8 @@ function LigneDeDocument({
   surRenommer,
   surBasculer,
   surRetirer,
+  garde,
+  surGarder,
 }: {
   document: DocumentDuVoyage;
   aMoi: boolean;
@@ -275,6 +391,9 @@ function LigneDeDocument({
   surRenommer: (nom: string) => void;
   surBasculer: () => void;
   surRetirer: () => void;
+  /** Gardé sur cet appareil ? Absent sans serveur : tout y est déjà. */
+  garde?: boolean;
+  surGarder?: () => void;
 }) {
   const [renommage, setRenommage] = useState<string | null>(null);
   const estUneImage = document.typeMime?.startsWith('image/') ?? false;
@@ -283,6 +402,7 @@ function LigneDeDocument({
     estUneImage ? 'Photo' : 'PDF',
     document.taille ? tailleLisible(document.taille) : null,
     document.prive ? 'visible par vous seulement' : null,
+    garde ? 'sur cet appareil' : null,
   ].filter(Boolean);
 
   if (renommage !== null) {
@@ -335,6 +455,21 @@ function LigneDeDocument({
         </span>
         <ExternalLink className="text-muted size-4 shrink-0" aria-hidden />
       </button>
+      {surGarder && (
+        <button
+          type="button"
+          aria-label={garde ? `Retirer « ${document.nom} » de cet appareil` : `Garder « ${document.nom} » sur cet appareil`}
+          aria-pressed={garde}
+          onClick={surGarder}
+          className="text-muted hover:text-brand-600 grid size-11 shrink-0 place-items-center"
+        >
+          {garde ? (
+            <CircleCheck className="text-brand-500 size-4" aria-hidden />
+          ) : (
+            <Download className="size-4" aria-hidden />
+          )}
+        </button>
+      )}
       {aMoi && (
         <>
           <button

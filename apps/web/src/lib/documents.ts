@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { TYPES_DE_DOCUMENTS, type DocumentDuVoyage } from '@tripora/core';
 import { supabase } from './supabase';
+import { operer as opererSurLaBase } from './baseLocale';
 
 /**
  * Les documents du coffre : billets, confirmations, scans.
@@ -31,6 +32,8 @@ export interface DocumentsApi {
   deposer(tripId: string, document: NouveauDocument): Promise<void>;
   /** Une adresse d'où lire le fichier, valable quelques minutes. */
   adresse(document: DocumentDuVoyage): Promise<string>;
+  /** Le fichier lui-même : pour l'afficher dans l'application, ou le garder. */
+  telecharger(document: DocumentDuVoyage): Promise<Blob>;
   modifier(id: string, modification: { nom?: string; prive?: boolean }): Promise<void>;
   supprimer(document: DocumentDuVoyage): Promise<void>;
   espace(): Promise<EspaceDesDocuments | null>;
@@ -157,6 +160,11 @@ export function getDocuments(): DocumentsApi {
       if (error || !data?.signedUrl) throw new ErreurDeDocument('Ce document ne s’ouvre pas. A-t-il été retiré ?');
       return data.signedUrl;
     },
+    async telecharger(document) {
+      const { data, error } = await client.storage.from(ESPACE).download(document.chemin);
+      if (error || !data) throw new ErreurDeDocument('Ce document ne se télécharge pas. Êtes-vous connecté ?');
+      return data;
+    },
     async modifier(id, modification) {
       const { error } = await client
         .from('documents_du_voyage')
@@ -230,26 +238,8 @@ function ecrireLesFiches(fiches: DocumentDuVoyage[]): void {
   }
 }
 
-function ouvrirLaBase(): Promise<IDBDatabase> {
-  return new Promise((resoudre, rejeter) => {
-    const demande = indexedDB.open(BASE_LOCALE, 1);
-    demande.onupgradeneeded = () => demande.result.createObjectStore(MAGASIN);
-    demande.onsuccess = () => resoudre(demande.result);
-    demande.onerror = () => rejeter(demande.error ?? new Error('IndexedDB indisponible'));
-  });
-}
-
-async function operer<T>(mode: IDBTransactionMode, geste: (magasin: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  const base = await ouvrirLaBase();
-  try {
-    return await new Promise<T>((resoudre, rejeter) => {
-      const demande = geste(base.transaction(MAGASIN, mode).objectStore(MAGASIN));
-      demande.onsuccess = () => resoudre(demande.result);
-      demande.onerror = () => rejeter(demande.error ?? new Error('IndexedDB'));
-    });
-  } finally {
-    base.close();
-  }
+function operer<T>(mode: IDBTransactionMode, geste: (magasin: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+  return opererSurLaBase(BASE_LOCALE, MAGASIN, mode, geste);
 }
 
 const documentsLocaux: DocumentsApi = {
@@ -278,9 +268,12 @@ const documentsLocaux: DocumentsApi = {
     ]);
   },
   async adresse(document) {
+    return URL.createObjectURL(await documentsLocaux.telecharger(document));
+  },
+  async telecharger(document) {
     const fichier = await operer<Blob | undefined>('readonly', (magasin) => magasin.get(document.chemin));
     if (!fichier) throw new ErreurDeDocument('Ce document ne s’ouvre pas. A-t-il été retiré ?');
-    return URL.createObjectURL(fichier);
+    return fichier;
   },
   async modifier(id, modification) {
     ecrireLesFiches(
