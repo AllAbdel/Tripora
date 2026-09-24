@@ -324,6 +324,47 @@ main,
   list-style: none;
 }
 
+.liste {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.liste li {
+  margin: 0.3rem 0;
+}
+
+.partenaires {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+.partenaires a {
+  font-weight: 600;
+}
+
+.mois {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0 1rem;
+}
+.mois a,
+.mois span {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--filet);
+  background: var(--papier);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.mois span {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffdf8;
+  font-weight: 600;
+}
+
 .discret {
   color: var(--encre-douce);
   font-size: 0.875rem;

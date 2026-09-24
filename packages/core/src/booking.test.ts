@@ -133,12 +133,14 @@ describe('liens de transport', () => {
 
 describe('que faire sur place', () => {
   it('cherche les activités sur le nom court de la ville', () => {
-    const bergen = activityLinks(findDestination('bergen')!)[0]!;
+    const klook = (destination: string) =>
+      activityLinks(findDestination(destination)!).find((lien) => lien.id === 'klook')!;
+    const bergen = klook('bergen');
     expect(bergen.kind).toBe('activity');
     expect(new URL(bergen.url).searchParams.get('query')).toBe('Bergen');
-    const canee = activityLinks(findDestination('crete-la-canee')!)[0]!;
+    const canee = klook('crete-la-canee');
     expect(new URL(canee.url).searchParams.get('query')).toBe('La Canée');
-    const lisbonne = activityLinks(LISBONNE)[0]!;
+    const lisbonne = klook('lisbonne');
     expect(new URL(lisbonne.url).searchParams.get('query')).toBe(LISBONNE.name);
   });
 });
@@ -193,7 +195,7 @@ describe('affiliation', () => {
   });
 
   it('passe les activités par Travelpayouts', () => {
-    const avant = activityLinks(findDestination('istanbul')!)[0]!;
+    const avant = activityLinks(findDestination('istanbul')!).find((lien) => lien.id === 'klook')!;
     const klook = affilierLiens([avant], TRIPORA)[0]!;
     const url = new URL(klook.url);
     expect(url.searchParams.get('p')).toBe('4110');

@@ -4,16 +4,22 @@ import { activitesDe } from '@tripora/core/activites';
 import {
   adresseWikipedia,
   budgetParJour,
+  climatDe,
   destinationsPubliees,
   esc,
   genererLesPages,
   jsonLd,
   pageDeDestination,
+  pageDuMois,
   periodeLisible,
   robots,
 } from './pagesPubliques';
 
-const CONTEXTE = { origine: 'https://tripora.exemple', aujourdhui: '2026-09-24' };
+const CONTEXTE = {
+  origine: 'https://tripora.exemple',
+  aujourdhui: '2026-09-24',
+  partenaire: { marker: '774322', projet: '570857' },
+};
 
 describe('les pages publiques du carnet', () => {
   const fichiers = genererLesPages(CONTEXTE);
@@ -22,7 +28,8 @@ describe('les pages publiques du carnet', () => {
   it('écrit une page par destination du carnet, le sommaire, le plan du site et les robots', () => {
     const publiees = destinationsPubliees();
     expect(publiees.length).toBeGreaterThan(250);
-    expect(fichiers).toHaveLength(publiees.length + 3);
+    // Les destinations, douze pages de mois, le sommaire, le plan du site, les robots.
+    expect(fichiers).toHaveLength(publiees.length + 12 + 3);
     for (const destination of publiees) {
       expect(parChemin.has(`destinations/${destination.id}.html`), destination.id).toBe(true);
     }
@@ -68,7 +75,8 @@ describe('les pages publiques du carnet', () => {
   it('liste toutes les pages dans le plan du site, en adresses complètes', () => {
     const plan = parChemin.get('sitemap.xml')!;
     expect(plan).toContain('<loc>https://tripora.exemple/destinations/bergen</loc>');
-    expect(plan.match(/<loc>/gu)).toHaveLength(destinationsPubliees().length + 2);
+    expect(plan.match(/<loc>/gu)).toHaveLength(destinationsPubliees().length + 12 + 2);
+    expect(plan).toContain('<loc>https://tripora.exemple/ou-partir-en/aout</loc>');
   });
 
   it('ferme aux robots ce qui est derrière une connexion', () => {
@@ -88,6 +96,57 @@ describe('les pages publiques du carnet', () => {
     const page = pageDeDestination(piege, destinationsPubliees(), CONTEXTE);
     expect(page).not.toContain('<script>alert(1)</script>');
     expect(jsonLd({ texte: '</script><script>' })).not.toContain('</script>');
+  });
+});
+
+describe('les liens partenaires des pages', () => {
+  const page = pageDeDestination(findDestination('lisbonne')!, destinationsPubliees(), CONTEXTE);
+
+  it('passent par Travelpayouts et se déclarent aux moteurs', () => {
+    const liens = [...page.matchAll(/<a href="([^"]+)" rel="([^"]+)"/gu)].map((m) => ({
+      adresse: m[1]!,
+      rel: m[2]!,
+    }));
+    const affilies = liens.filter(
+      ({ adresse }) => adresse.includes('tp.media') || adresse.includes('tpk.lu'),
+    );
+    expect(affilies.length).toBeGreaterThanOrEqual(10);
+    for (const { rel } of affilies) expect(rel).toContain('sponsored');
+    expect(page).toContain('Liens partenaires');
+  });
+
+  it('restent des liens ordinaires sans identité de partenaire', () => {
+    const neutre = pageDeDestination(findDestination('lisbonne')!, destinationsPubliees(), {
+      origine: CONTEXTE.origine,
+      aujourdhui: CONTEXTE.aujourdhui,
+    });
+    expect(neutre).not.toContain('tp.media');
+    expect(neutre).not.toContain('Liens partenaires');
+  });
+});
+
+describe('les pages par mois', () => {
+  it('retiennent les destinations dont c’est un bon mois, avec leur climat', () => {
+    const aout = pageDuMois(8, destinationsPubliees(), CONTEXTE);
+    expect(aout).toContain('<h1>Où partir en août ?</h1>');
+    const retenues = destinationsPubliees().filter((d) => d.bestMonths.includes(8));
+    expect(retenues.length).toBeGreaterThan(20);
+    for (const destination of retenues) {
+      expect(aout, destination.id).toContain(`href="/destinations/${destination.id}"`);
+    }
+    expect(aout).toMatch(/\d+ °C · \d+ j de pluie/u);
+  });
+
+  it('ont des normales pour chaque destination publiée', () => {
+    for (const destination of destinationsPubliees()) {
+      expect(climatDe(destination.id), destination.id).toHaveLength(12);
+    }
+  });
+
+  it('se relient entre elles et depuis chaque destination', () => {
+    const bergen = pageDeDestination(findDestination('bergen')!, destinationsPubliees(), CONTEXTE);
+    expect(bergen).toContain('href="/ou-partir-en/juin"');
+    expect(pageDuMois(1, destinationsPubliees(), CONTEXTE)).toContain('href="/ou-partir-en/fevrier"');
   });
 });
 

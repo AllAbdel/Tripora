@@ -58,3 +58,14 @@ test('les robots trouvent le plan du site', async ({ request }) => {
   const plan = await (await request.get('/sitemap.xml')).text();
   expect(plan).toContain('/destinations/bergen</loc>');
 });
+
+test('les pages par mois se lisent et mènent aux destinations', async ({ page }) => {
+  await page.goto('/ou-partir-en/octobre');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Où partir en octobre ?');
+  await page.getByRole('link', { name: 'novembre' }).click();
+  await expect(page).toHaveURL(/\/ou-partir-en\/novembre$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Où partir en novembre ?');
+  await page.locator('main a[href^="/destinations/"]').first().click();
+  await expect(page).toHaveURL(/\/destinations\/[a-z0-9-]+$/);
+  await expect(page.getByRole('heading', { name: 'Réserver sur place' })).toBeVisible();
+});

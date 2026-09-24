@@ -136,7 +136,8 @@ export default function Confidentialite() {
 
       <Bloc titre="Liens partenaires et parrainage">
         <p>
-          Certains liens de réservation — les vols sur Aviasales, les activités sur Klook — sont
+          Certains liens de réservation — vols, visites et billets, transferts depuis l’aéroport,
+          location de voiture, eSIM, consigne à bagages, indemnisation d’un vol retardé — sont
           des liens partenaires, marqués comme tels : si vous réservez par eux, Tripora peut
           toucher une commission, sans rien changer à votre prix. Ils ne changent ni la liste
           ni son ordre, et c’est vérifié par un test automatique.

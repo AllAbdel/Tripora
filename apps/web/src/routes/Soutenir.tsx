@@ -42,8 +42,9 @@ export default function Soutenir() {
             que Tripora recommanderait de toute façon, et des liens partenaires de réservation.
           </p>
           <p className="text-muted text-sm leading-relaxed">
-            Les liens partenaires, ce sont certaines recherches de l’écran « Réserver » — les vols
-            sur Aviasales, les activités sur Klook — marquées « lien partenaire ». Si vous
+            Les liens partenaires, ce sont certains liens de l’écran « Réserver » et du bilan — vols,
+            visites, transferts, location de voiture, eSIM, consigne à bagages, indemnisation d’un
+            vol retardé — marqués « lien partenaire ». Si vous
             réservez par elles, Tripora peut toucher une commission, payée par le site, sans rien
             changer à votre prix. Elles ne changent ni la liste des sites proposés ni son ordre :
             un test le vérifie.

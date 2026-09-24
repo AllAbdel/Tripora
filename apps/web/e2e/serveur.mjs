@@ -16,7 +16,7 @@ import { dirname, extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ICI = dirname(fileURLToPath(import.meta.url));
-const RACINE = resolve(ICI, '../dist-e2e');
+const RACINE = resolve(ICI, process.env['DOSSIER_E2E'] ?? '../dist-e2e');
 const PORT = Number(process.env['PORT_E2E'] ?? 4173);
 
 const TYPES = {

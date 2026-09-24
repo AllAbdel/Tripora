@@ -29,7 +29,12 @@ if (!/^https:\/\/[^/]+$/u.test(origine)) {
   process.exit(1);
 }
 
-const fichiers = genererLesPages({ origine, aujourdhui: new Date().toISOString().slice(0, 10) });
+const fichiers = genererLesPages({
+  origine,
+  aujourdhui: new Date().toISOString().slice(0, 10),
+  // Publics tous les deux : ils figurent en clair dans chaque lien affilié.
+  partenaire: { marker: env['VITE_TRAVELPAYOUTS_MARKER'], projet: env['VITE_TRAVELPAYOUTS_PROJET'] },
+});
 for (const { chemin, contenu } of fichiers) {
   const cible = resolve(SORTIE, chemin);
   mkdirSync(dirname(cible), { recursive: true });

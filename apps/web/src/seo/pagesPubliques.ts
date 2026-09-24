@@ -3,14 +3,24 @@ import {
   DAILY_BASELINE_CENTS,
   DESTINATIONS,
   NOMS_DES_CONTINENTS,
+  TITRES_DES_RUBRIQUES,
+  activityLinks,
+  affilierLiens,
+  climateFromSeries,
   climateYear,
   continentDe,
   haversineKm,
   infosPratiques,
+  liensDeRubrique,
+  type BookingLink,
   type Continent,
   type Destination,
+  type IdentiteDePartenaire,
+  type MonthlyClimate,
+  type RubriqueDePartenaire,
 } from '@tripora/core';
 import { activitesDe, libelleActivite, type Activite } from '@tripora/core/activites';
+import { NORMALES_RELEVEES } from './normales.donnees';
 
 /**
  * Les pages publiques du carnet : une par destination, plus leur sommaire.
@@ -33,6 +43,8 @@ export interface Contexte {
   origine: string;
   /** La date de génération, AAAA-MM-JJ, pour le plan du site. */
   aujourdhui: string;
+  /** L'identité Travelpayouts : sans elle, les liens partenaires restent ordinaires. */
+  partenaire?: IdentiteDePartenaire;
 }
 
 export interface Fichier {
@@ -58,6 +70,10 @@ export function genererLesPages(contexte: Contexte): Fichier[] {
     ...publiees.map((destination) => ({
       chemin: `destinations/${destination.id}.html`,
       contenu: pageDeDestination(destination, publiees, contexte),
+    })),
+    ...MOIS.map((_, index) => ({
+      chemin: `ou-partir-en/${SLUGS_DES_MOIS[index]}.html`,
+      contenu: pageDuMois(index + 1, publiees, contexte),
     })),
     { chemin: 'destinations.html', contenu: sommaire(publiees, contexte) },
     { chemin: 'sitemap.xml', contenu: planDuSite(publiees, contexte) },
@@ -94,13 +110,13 @@ const MOMENTS: Record<Activite['moment'], string> = {
 export function pageDeDestination(
   destination: Destination,
   publiees: readonly Destination[],
-  { origine }: Contexte,
+  { origine, partenaire }: Contexte,
 ): string {
   const activites = activitesDe(destination.id);
   const adresse = `${origine}${cheminDeLaDestination(destination.id)}`;
   const saison = periodeLisible(destination.bestMonths);
   const budget = budgetParJour(destination);
-  const climat = climateYear(destination.id);
+  const climat = climatDe(destination.id);
   const pratique = infosPratiques(destination.countryCode);
 
   const titre = `${destination.name} : que faire ? ${activites.length} idées d’activités | Tripora`;
@@ -181,6 +197,8 @@ export function pageDeDestination(
       </dl>
     </section>
 
+    ${sectionReserver(destination, partenaire)}
+
     ${pratique ? sectionPratique(destination, pratique) : ''}
 
     <section aria-labelledby="titre-proches">
@@ -238,11 +256,15 @@ function carteDActivite(activite: Activite): string {
 function sectionQuandPartir(
   destination: Destination,
   saison: string | null,
-  climat: ReturnType<typeof climateYear>,
+  climat: readonly MonthlyClimate[],
 ): string {
   if (!saison && climat.length !== 12) return '';
   const phrase = saison
-    ? `<p>Les mois les plus agréables pour ${esc(destination.name)} : <strong>${esc(saison)}</strong>, en tenant compte de la météo et de l’affluence.</p>`
+    ? `<p>Les mois les plus agréables pour ${esc(destination.name)} : <strong>${esc(saison)}</strong>, en tenant compte de la météo et de l’affluence.</p>
+      <p class="discret">Autres idées pour ces mois-là : ${[...destination.bestMonths]
+        .sort((a, b) => a - b)
+        .map((mois) => `<a href="${cheminDuMois(mois)}">où partir en ${MOIS[mois - 1]}</a>`)
+        .join(', ')}.</p>`
     : '';
   if (climat.length !== 12) {
     return `
@@ -272,6 +294,192 @@ function sectionQuandPartir(
         </table>
       </div>
     </section>`;
+}
+
+/** Les normales : celles, vérifiées, du catalogue, sinon le relevé de la base. */
+export function climatDe(id: string): MonthlyClimate[] {
+  const embarquees = climateYear(id);
+  if (embarquees.length === 12) return embarquees;
+  const serie = NORMALES_RELEVEES[id];
+  if (!serie) return [];
+  const mois = Array.from({ length: 12 }, (_, index) => climateFromSeries(serie, index + 1));
+  return mois.every((m): m is MonthlyClimate => m !== undefined) ? mois : [];
+}
+
+const RUBRIQUES_PUBLIQUES: readonly RubriqueDePartenaire[] = ['internet', 'transfert', 'voiture'];
+
+/**
+ * Les liens pour réserver : les visites (Klook cherche la ville), puis
+ * internet, l'aéroport, la voiture. Liens partenaires, dits comme tels, et
+ * marqués `sponsored` pour les moteurs — la même transparence que dans
+ * l'application.
+ */
+function sectionReserver(destination: Destination, partenaire: IdentiteDePartenaire | undefined): string {
+  const groupes: [string, BookingLink[]][] = [
+    [TITRES_DES_RUBRIQUES.activites, affilierLiens(activityLinks(destination), partenaire)],
+    ...RUBRIQUES_PUBLIQUES.map(
+      (rubrique): [string, BookingLink[]] => [
+        TITRES_DES_RUBRIQUES[rubrique],
+        affilierLiens(liensDeRubrique(rubrique, destination), partenaire),
+      ],
+    ),
+  ];
+  const affilies = groupes.some(([, liens]) => liens.some((lien) => lien.affilie));
+  return `
+    <section aria-labelledby="titre-reserver">
+      <h2 id="titre-reserver">Réserver sur place</h2>
+      ${groupes
+        .map(
+          ([titre, liens]) => `
+      <h3>${esc(titre)}</h3>
+      <ul class="partenaires">
+        ${liens
+          .map(
+            (lien) =>
+              `<li><a href="${esc(lien.url)}" rel="${lien.affilie ? 'sponsored nofollow noopener' : 'noopener'}" target="_blank">${esc(lien.label)}</a>${lien.note ? ` <span class="discret">${esc(lien.note)}</span>` : ''}</li>`,
+          )
+          .join('\n')}
+      </ul>`,
+        )
+        .join('\n')}
+      ${affilies ? '<p class="discret">Liens partenaires : si vous réservez par eux, Tripora peut toucher une commission, sans rien changer à votre prix ni à l’ordre de ces listes, qui est alphabétique.</p>' : ''}
+    </section>`;
+}
+
+// ---------------------------------------------------------------------------
+// Où partir en … ?
+// ---------------------------------------------------------------------------
+
+const SLUGS_DES_MOIS = [
+  'janvier',
+  'fevrier',
+  'mars',
+  'avril',
+  'mai',
+  'juin',
+  'juillet',
+  'aout',
+  'septembre',
+  'octobre',
+  'novembre',
+  'decembre',
+];
+
+export function cheminDuMois(mois: number): string {
+  return `/ou-partir-en/${SLUGS_DES_MOIS[mois - 1]}`;
+}
+
+/** « en avril », mais « en août » : la préposition ne change pas, le nom oui. */
+function nomDuMois(mois: number): string {
+  return MOIS[mois - 1]!;
+}
+
+export function pageDuMois(mois: number, publiees: readonly Destination[], { origine }: Contexte): string {
+  const nom = nomDuMois(mois);
+  const adresse = `${origine}${cheminDuMois(mois)}`;
+  const retenues = publiees.filter((destination) => destination.bestMonths.includes(mois));
+  const avecClimat = retenues.map((destination) => ({ destination, climat: climatDe(destination.id)[mois - 1] }));
+
+  const auChaud = avecClimat
+    .filter(
+      (ligne): ligne is { destination: Destination; climat: MonthlyClimate } =>
+        ligne.climat !== undefined && ligne.climat.avgHighC >= 24 && ligne.climat.rainyDays <= 8,
+    )
+    .sort((a, b) => b.climat.avgHighC - a.climat.avgHighC)
+    .slice(0, 12);
+
+  const titre = `Où partir en ${nom} ? ${retenues.length} destinations au bon moment | Tripora`;
+  const description = tronquer(
+    `${retenues.length} destinations où ${nom} est l’un des meilleurs mois, météo et affluence comprises${auChaud.length > 0 ? ` — dont ${auChaud.slice(0, 3).map((l) => l.destination.name).join(', ')} au soleil` : ''}. Températures, jours de pluie et budget sur place pour chacune.`,
+    300,
+  );
+
+  const ligne = ({ destination, climat }: { destination: Destination; climat: MonthlyClimate | undefined }) => {
+    const faits = [
+      climat ? `${Math.round(climat.avgHighC)} °C` : null,
+      climat ? `${climat.rainyDays} j de pluie` : null,
+      `dès ${euros(budgetParJour(destination).budget)} par jour`,
+    ].filter(Boolean);
+    return `<li><a href="${cheminDeLaDestination(destination.id)}">${esc(destination.name)}</a> <span class="discret">${esc(destination.country)} · ${esc(faits.join(' · '))}</span></li>`;
+  };
+
+  const parContinent = ORDRE_DES_CONTINENTS.map((continent) => ({
+    continent,
+    lignes: avecClimat.filter(({ destination }) => continentDe(destination.countryCode) === continent),
+  })).filter((groupe) => groupe.lignes.length > 0);
+
+  const corps = `
+    <nav class="ariane" aria-label="Fil d’Ariane">
+      <a href="/destinations">Destinations</a> <span aria-hidden="true">›</span>
+      <span aria-current="page">Où partir en ${esc(nom)}</span>
+    </nav>
+
+    <header class="entete">
+      <h1>Où partir en ${esc(nom)} ?</h1>
+      <p class="chapo">${retenues.length} destinations où ${esc(nom)} compte parmi les meilleurs mois — la météo, mais aussi l’affluence et les prix. Pour chacune : la température et les jours de pluie de ce mois-là, et le budget sur place.</p>
+    </header>
+
+    ${navigationDesMois(mois)}
+
+    ${
+      auChaud.length > 0
+        ? `<section aria-labelledby="titre-soleil">
+      <h2 id="titre-soleil">Pour le soleil</h2>
+      <p>Les plus chaudes en ${esc(nom)}, avec huit jours de pluie au plus.</p>
+      <ul class="liste">
+        ${auChaud.map(ligne).join('\n')}
+      </ul>
+    </section>`
+        : ''
+    }
+
+    ${parContinent
+      .map(
+        ({ continent, lignes }) => `
+    <section aria-labelledby="mois-${continent}">
+      <h2 id="mois-${continent}">${esc(NOMS_DES_CONTINENTS[continent])}</h2>
+      <ul class="liste">
+        ${[...lignes]
+          .sort((a, b) => a.destination.name.localeCompare(b.destination.name, 'fr'))
+          .map(ligne)
+          .join('\n')}
+      </ul>
+    </section>`,
+      )
+      .join('\n')}
+
+    <aside class="appel">
+      <p><strong>Vous partez à plusieurs en ${esc(nom)} ?</strong> Dites à Tripora qui part, d’où et avec quel budget : il propose les destinations qui conviennent au groupe entier, prix des vols compris.</p>
+      <a class="bouton" href="/voyages/nouveau">Trouver notre destination</a>
+    </aside>
+  `;
+
+  return gabarit({
+    titre,
+    description,
+    adresse,
+    corps,
+    donnees: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        { '@type': 'CollectionPage', name: `Où partir en ${nom} ?`, url: adresse, description },
+        filDAriane([
+          ['Destinations', `${origine}/destinations`],
+          [`Où partir en ${nom}`, adresse],
+        ]),
+      ],
+    },
+  });
+}
+
+function navigationDesMois(courant?: number): string {
+  return `<nav class="mois" aria-label="Où partir, mois par mois">
+      ${MOIS.map((nom, index) =>
+        index + 1 === courant
+          ? `<span aria-current="page">${nom}</span>`
+          : `<a href="${cheminDuMois(index + 1)}">${nom}</a>`,
+      ).join('\n')}
+    </nav>`;
 }
 
 function sectionPratique(
@@ -332,6 +540,10 @@ export function sommaire(publiees: readonly Destination[], { origine }: Contexte
       <h1>Où partir ?</h1>
       <p class="chapo">${publiees.length} destinations, ${nombreDActivites.toLocaleString('fr-FR')} idées d’activités. Pour chacune : quoi faire, combien de temps, à quel prix, quand y aller et quel budget prévoir sur place.</p>
     </header>
+    <section aria-labelledby="titre-par-mois">
+      <h2 id="titre-par-mois">Par mois</h2>
+      ${navigationDesMois()}
+    </section>
     ${parContinent
       .map(
         ({ continent, destinations }) => `
@@ -388,7 +600,11 @@ function grouperParPays(destinations: readonly Destination[]): [string, Destinat
 // ---------------------------------------------------------------------------
 
 export function planDuSite(publiees: readonly Destination[], { origine, aujourdhui }: Contexte): string {
-  const adresses = ['/destinations', ...publiees.map((destination) => cheminDeLaDestination(destination.id))];
+  const adresses = [
+    '/destinations',
+    ...MOIS.map((_, index) => cheminDuMois(index + 1)),
+    ...publiees.map((destination) => cheminDeLaDestination(destination.id)),
+  ];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>${esc(origine)}/</loc><lastmod>${aujourdhui}</lastmod></url>
@@ -406,6 +622,7 @@ export function robots({ origine }: Contexte): string {
   return `User-agent: *
 Allow: /$
 Allow: /destinations
+Allow: /ou-partir-en/
 Allow: /confidentialite
 Disallow: /voyages
 Disallow: /rejoindre
@@ -561,7 +778,8 @@ export function adresseWikipedia(etiquette: string): string {
 }
 
 function euros(centimes: number): string {
-  return `${Math.round(centimes / 100).toLocaleString('fr-FR')} €`;
+  // Espace insécable : « 25 » et « € » ne se séparent pas en fin de ligne.
+  return `${Math.round(centimes / 100).toLocaleString('fr-FR')}\u00a0€`;
 }
 
 function dureeLisible(heures: number): string {

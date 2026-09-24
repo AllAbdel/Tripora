@@ -26,6 +26,7 @@ export * from './proposals.js';
 export * from './itinerary.js';
 export * from './places.js';
 export * from './booking.js';
+export * from './partenaires.js';
 export * from './readiness.js';
 export * from './settle.js';
 export * from './catalog/climate.js';

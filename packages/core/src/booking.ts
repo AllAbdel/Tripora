@@ -1,4 +1,5 @@
 import type { Destination, Place, TripConstraints } from './types.js';
+import { partenairesDe, trouverPartenaire, type RubriqueDePartenaire } from './partenaires.js';
 
 /**
  * Liens de réservation préremplis.
@@ -22,7 +23,18 @@ import type { Destination, Place, TripConstraints } from './types.js';
  * Tout est construit ici, sans réseau et sans clé, et testé.
  */
 
-export type BookingKind = 'stay' | 'flight' | 'train' | 'bus' | 'activity';
+export type BookingKind =
+  | 'stay'
+  | 'flight'
+  | 'train'
+  | 'bus'
+  | 'activity'
+  | 'transfer'
+  | 'car'
+  | 'bike'
+  | 'esim'
+  | 'luggage'
+  | 'claim';
 
 export interface BookingLink {
   id: string;
@@ -169,23 +181,45 @@ export function travelLinks(
 /**
  * Que faire sur place : les visites, billets et excursions à réserver.
  *
- * Une recherche sur la ville, pas une activité précise : le carnet propose
- * déjà les idées, ce lien sert au moment de payer un billet. La recherche se
- * fait sur le nom court (« Bergen et les fjords » cherche « Bergen ») : le
- * moteur du site ne connaît que les villes.
+ * Une recherche sur la ville quand on sait la préremplir (Klook), l'accueil du
+ * site sinon. Le carnet propose déjà les idées ; ces liens servent au moment
+ * de payer un billet. La recherche se fait sur le nom court (« Bergen et les
+ * fjords » cherche « Bergen ») : le moteur du site ne connaît que les villes.
  */
 export function activityLinks(destination: Destination): BookingLink[] {
-  const klook = new URL('https://www.klook.com/search/result/');
-  klook.searchParams.set('query', nomCourt(destination.name));
-  return [
-    {
-      id: 'klook',
-      label: 'Klook',
-      kind: 'activity',
-      url: klook.toString(),
-      note: 'Visites, billets coupe-file et excursions',
-    },
-  ];
+  return liensDeRubrique('activites', destination).map((lien) => {
+    if (lien.id !== 'klook') return lien;
+    const klook = new URL('https://www.klook.com/search/result/');
+    klook.searchParams.set('query', nomCourt(destination.name));
+    return { ...lien, url: klook.toString() };
+  });
+}
+
+const GENRE_DE_LA_RUBRIQUE: Record<RubriqueDePartenaire, BookingKind> = {
+  activites: 'activity',
+  transfert: 'transfer',
+  voiture: 'car',
+  'deux-roues': 'bike',
+  internet: 'esim',
+  bagages: 'luggage',
+  indemnisation: 'claim',
+};
+
+/**
+ * Les liens d'une rubrique de partenaires, vers l'accueil de chaque site.
+ * Non décorés : c'est `affilierLiens` qui les fait passer par Travelpayouts.
+ */
+export function liensDeRubrique(
+  rubrique: RubriqueDePartenaire,
+  destination?: Pick<Destination, 'countryCode'>,
+): BookingLink[] {
+  return partenairesDe(rubrique, destination).map((partenaire) => ({
+    id: partenaire.id,
+    label: partenaire.nom,
+    kind: GENRE_DE_LA_RUBRIQUE[rubrique],
+    url: partenaire.accueil,
+    note: partenaire.note,
+  }));
 }
 
 /** « Bergen et les fjords » → « Bergen » ; « Crète — La Canée » → « La Canée ». */
@@ -202,7 +236,7 @@ function nomCourt(nom: string): string {
  * L'identité de partenaire Travelpayouts. **Publique** : les deux nombres
  * figurent en clair dans chaque lien affilié.
  */
-export interface Partenaire {
+export interface IdentiteDePartenaire {
   /** L'identifiant de partenaire (« marker »), à qui revient la commission. */
   marker?: string;
   /** Le projet (« trs ») auquel le tableau de bord rattache les clics. */
@@ -210,26 +244,10 @@ export interface Partenaire {
 }
 
 /**
- * Les programmes Travelpayouts rejoints, et leurs numéros.
- *
- * Volontairement court. Chaque programme a son numéro, et **inventer un numéro
- * ne produit pas un lien qui rapporte : ça produit un lien qui ne rapporte
- * rien, ou pire, qui casse**. Ceux-ci sont relevés sur les liens générés par
- * le tableau de bord de Tripora (le 24 septembre 2026) :
- *
- *   https://tp.media/r?campaign_id=100&marker=…&p=4114&trs=…&u=https://aviasales.com
- *   https://tp.media/r?campaign_id=137&marker=…&p=4110&trs=…&u=https://klook.com
- *
- * Ajouter un partenaire se fait ici, en relevant ses numéros sur un lien du
- * tableau de bord, jamais de mémoire.
- */
-const PROGRAMMES: Readonly<Record<string, { programme: string; campagne: string }>> = {
-  aviasales: { programme: '4114', campagne: '100' },
-  klook: { programme: '4110', campagne: '137' },
-};
-
-/**
  * Fait passer par Travelpayouts les liens des partenaires rejoints.
+ *
+ * Les partenaires et leurs numéros sont dans `partenaires.ts`, relevés sur
+ * les liens du tableau de bord.
  *
  * Le lien d'origine — la recherche préremplie — devient la destination (`u`)
  * d'un lien `tp.media`, la forme exacte que produit le tableau de bord : le
@@ -248,16 +266,20 @@ const PROGRAMMES: Readonly<Record<string, { programme: string; campagne: string 
  */
 export function affilierLiens(
   liens: readonly BookingLink[],
-  partenaire: Partenaire | undefined,
+  identite: IdentiteDePartenaire | undefined,
 ): BookingLink[] {
-  const marker = (partenaire?.marker ?? '').trim();
-  const projet = (partenaire?.projet ?? '').trim();
+  const marker = (identite?.marker ?? '').trim();
+  const projet = (identite?.projet ?? '').trim();
   // Ce sont des nombres. Tout le reste est une faute de saisie, et poser une
   // faute de saisie dans une URL ne rapporte rien.
   if (!/^[0-9]{3,12}$/.test(marker) || !/^[0-9]{3,12}$/.test(projet)) return [...liens];
 
   return liens.map((lien) => {
-    const numeros = PROGRAMMES[lien.id];
+    const partenaire = trouverPartenaire(lien.id);
+    if (!partenaire) return lien;
+    // Le lien court du tableau de bord, quand le complet n'a pas pu être relevé.
+    if (partenaire.lienCourt) return { ...lien, url: partenaire.lienCourt, affilie: true };
+    const numeros = partenaire.numeros;
     if (!numeros) return lien;
     try {
       // Relire l'URL d'origine écarte ce qui n'en est pas une.

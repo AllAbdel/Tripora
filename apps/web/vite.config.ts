@@ -130,6 +130,7 @@ export default defineConfig(({ mode }) => {
             /^\/api\//,
             /^\/retour-app\//,
             /^\/destinations(\/|$)/,
+            /^\/ou-partir-en\//,
             /^\/(sitemap\.xml|robots\.txt)$/,
           ],
           runtimeCaching: [

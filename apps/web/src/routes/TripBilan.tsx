@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Download, Share2 } from 'lucide-react';
-import { bilanDuVoyage, dateDuJour, findDestination, periodeLisible, type Bilan } from '@tripora/core';
+import { ArrowLeft, Download, ExternalLink, Share2 } from 'lucide-react';
+import {
+  affilierLiens,
+  bilanDuVoyage,
+  dateDuJour,
+  findDestination,
+  liensDeRubrique,
+  periodeLisible,
+  type Bilan,
+} from '@tripora/core';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { ListeFantome } from '@/components/ui/Squelette';
@@ -17,6 +25,7 @@ import { chargerCouverture } from '@/lib/cover';
 import { dessinerLeBilan, type ContenuDuBilan } from '@/lib/imageDuBilan';
 import { estNatif, ouvrirUnFichier } from '@/lib/natif';
 import { signaler } from '@/lib/feedback';
+import { env } from '@/lib/env';
 
 /**
  * Le bilan du voyage : ce qu'on raconte en rentrant, en chiffres justes, et
@@ -273,8 +282,53 @@ export default function TripBilan() {
               )}
             </div>
           </section>
+
+          <VolRate />
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Un vol raté se rattrape après coup, souvent sans qu'on le sache : le bilan
+ * est le bon moment pour y penser. Le droit est rappelé tel qu'il est, avec
+ * ses conditions ; les services qui s'en chargent sont des liens partenaires,
+ * et c'est dit.
+ */
+function VolRate() {
+  const liens = affilierLiens(liensDeRubrique('indemnisation'), env.travelpayouts);
+  return (
+    <Card>
+      <CardBody className="space-y-2.5">
+        <h2 className="font-bold">Un vol retardé ou annulé ?</h2>
+        <p className="text-muted text-sm leading-relaxed">
+          Plus de trois heures de retard à l’arrivée, une annulation moins de deux semaines
+          avant, un refus d’embarquement : pour un vol au départ de l’Union européenne, ou vers
+          elle sur une compagnie européenne, le règlement européen 261/2004 prévoit de 250 à
+          600 € par personne selon la distance. Ces services réclament l’indemnité à votre place
+          et se rémunèrent sur ce qu’ils obtiennent.
+        </p>
+        <ul className="flex flex-wrap gap-2">
+          {liens.map((lien) => (
+            <li key={lien.id}>
+              <a
+                href={lien.url}
+                target="_blank"
+                rel={lien.affilie ? 'noopener noreferrer sponsored' : 'noopener noreferrer'}
+                className="hover:bg-brand-50 dark:hover:bg-ink-700/40 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-[color:var(--border-subtle)] px-3.5 text-sm font-medium"
+              >
+                {lien.label}
+                <ExternalLink className="text-muted size-3.5" aria-hidden />
+                <span className="sr-only">
+                  {lien.affilie ? ' (lien partenaire)' : ''} (s’ouvre dans un nouvel onglet)
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        {liens.some((lien) => lien.affilie) && <p className="text-muted text-xs">Liens partenaires.</p>}
+      </CardBody>
+    </Card>
   );
 }
