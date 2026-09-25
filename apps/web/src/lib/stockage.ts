@@ -21,9 +21,10 @@ const PREFIXE = 'tripora.';
  *
  * Le thème et la couleur choisie ne disent rien de personne : les effacer
  * rendrait l'application blanche et étrangère à quelqu'un qui se reconnecte
- * dans la minute, sans rien protéger.
+ * dans la minute, sans rien protéger. Le guide de démarrage non plus : se
+ * reconnecter ne doit pas rejouer un guide qu'on vient de fermer.
  */
-const A_GARDER: ReadonlySet<string> = new Set(['tripora.theme']);
+const A_GARDER: ReadonlySet<string> = new Set(['tripora.theme', 'tripora.guide-vu']);
 
 /**
  * Ce qui n'existe qu'ici, et qu'une déconnexion ne doit donc pas emporter.

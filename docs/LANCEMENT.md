@@ -51,8 +51,9 @@ chose que la page de confidentialité, sinon Google refuse la publication.
 > Les trips ouverts pour rejoindre un groupe qui part déjà, le bilan du voyage
 > à partager, le passeport de vos pays visités.
 >
-> Gratuit, sans publicité, sans revente de données. Connexion avec Google, ou
-> avec un simple code d'invitation.
+> Gratuit, sans publicité, sans revente de données. Connexion avec Google, avec
+> un code reçu par e-mail (sans mot de passe), ou avec un simple code
+> d'invitation.
 
 **Catégorie** : Voyages et infos locales.
 **Adresse e-mail de contact** : celle de la page de confidentialité.
@@ -88,7 +89,7 @@ une déclaration faite en ton nom.
   « Activité dans l'application » partagée avec eux.
 - **Données collectées** (toutes « nécessaires au fonctionnement », aucune
   pour la publicité) :
-  - Informations personnelles : nom, adresse e-mail (compte Google) ;
+  - Informations personnelles : nom, adresse e-mail (compte Google ou e-mail) ;
     facultatif : genre et année de naissance (trips ouverts réservés).
   - Informations financières : autres informations financières (IBAN,
     identifiants PayPal, Revolut, Wise — facultatif, pour être remboursé) ;
@@ -109,7 +110,9 @@ Déjà en place dans le code :
 - `sitemap.xml` et `robots.txt` à la racine du site ;
 - liens canoniques vers https://tripora-3rg.pages.dev (le même site servi par
   Vercel ne fait pas doublon) ;
-- données structurées schema.org sur chaque page.
+- données structurées schema.org sur chaque page ;
+- un accueil lisible sans compte (`/`), et les pages légales :
+  `/mentions-legales`, `/confidentialite`, `/conditions`.
 
 À faire de ton côté, une seule fois :
 
@@ -126,9 +129,63 @@ Si tu achètes un jour un nom de domaine, il suffira de changer
 `VITE_SITE_ORIGIN` dans `apps/web/.env` : liens canoniques et plan du site
 suivront.
 
-## 4. À vérifier avant de toucher des commissions
+## 4. Connexion par e-mail : brancher un serveur d'envoi
 
-La page de mentions légales dit que Tripora est édité par un particulier
+L'écran de connexion propose, à côté de Google, de s'inscrire ou de se
+connecter avec une adresse e-mail : on reçoit un **code à 6 chiffres**, on le
+recopie, c'est tout (pas de mot de passe). Le code marche aussi dans
+l'application mobile, là où un lien magique ouvrirait le navigateur.
+
+Tant que rien n'est branché, Supabase n'envoie ces e-mails **qu'aux membres de
+l'équipe du projet** (toi), et au plus deux par heure : pour tout le monde,
+l'écran affiche « L'envoi d'e-mails n'est pas encore ouvert sur Tripora.
+Continuez avec Google en attendant. » Pour l'ouvrir, 10 minutes, gratuit,
+sans carte bancaire :
+
+1. **Brevo** (300 e-mails par jour gratuits) : créer un compte sur
+   https://www.brevo.com, puis *Paramètres → Expéditeurs, domaines et IP →
+   Expéditeurs* : ajouter l'adresse qui enverra les codes et la valider avec le
+   code reçu.
+2. Toujours dans Brevo : *SMTP & API → onglet SMTP → Générer une nouvelle clé
+   SMTP*. Noter le **serveur** (`smtp-relay.brevo.com`), le **port** (`587`),
+   l'**identifiant** affiché et la **clé**.
+3. Supabase → *Authentication → Emails → SMTP Settings* → activer *Custom
+   SMTP* et remplir : l'adresse d'expéditeur validée à l'étape 1, le nom
+   `Tripora`, puis serveur, port, identifiant et clé. La clé ne passe que par
+   ce formulaire : ne me l'envoie pas.
+4. Supabase → *Authentication → Emails → Templates* : remplacer deux modèles
+   pour qu'ils contiennent **le code**, pas seulement un lien.
+
+   **Confirm signup** — objet : `Votre code Tripora : {{ .Token }}`
+
+   ```html
+   <h2>Bienvenue sur Tripora</h2>
+   <p>Voici votre code pour créer votre compte :</p>
+   <p style="font-size:32px;font-weight:700;letter-spacing:6px">{{ .Token }}</p>
+   <p>Recopiez-le dans Tripora. Il ne sert qu’une fois et expire au bout d’une heure.</p>
+   <p style="color:#777">Vous n’avez rien demandé ? Ignorez ce message : sans ce code, aucun compte n’est créé.</p>
+   ```
+
+   **Magic Link** — objet : `Votre code de connexion Tripora : {{ .Token }}`
+
+   ```html
+   <h2>Votre code de connexion</h2>
+   <p style="font-size:32px;font-weight:700;letter-spacing:6px">{{ .Token }}</p>
+   <p>Recopiez-le dans Tripora. Il ne sert qu’une fois et expire au bout d’une heure.</p>
+   <p style="color:#777">Ce n’est pas vous ? Ignorez ce message : sans ce code, personne ne peut entrer.</p>
+   ```
+
+5. Essayer : sur le site, *Se connecter → Première fois*, une autre adresse
+   que la tienne.
+
+Une adresse Gmail comme expéditeur fonctionne, mais une partie des codes
+risque de finir dans les indésirables (l'écran le rappelle). Le jour où tu
+achètes un nom de domaine, l'authentifier dans Brevo règle ce point. Dis-moi
+quel service tu as choisi : la page de confidentialité le nommera.
+
+## 5. À vérifier avant de toucher des commissions
+
+La page des mentions légales (`/mentions-legales`) dit que Tripora est édité par un particulier
 « non professionnel », ce qui dispense de publier une adresse postale. Dès que
 tu déclares une activité (micro-entreprise pour les commissions), la loi
 demande d'y indiquer ton nom, ton adresse et ton numéro SIRET. Dis-le-moi le

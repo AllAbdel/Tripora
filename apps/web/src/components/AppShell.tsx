@@ -12,6 +12,7 @@ import { useEnLigne } from '@/lib/useEnLigne';
 import { useEcranLarge } from '@/lib/useEcranLarge';
 import { useClavierOuvert } from '@/lib/useClavierOuvert';
 import { cn } from '@/lib/cn';
+import { useGuide } from '@/stores/guide';
 import { useT } from '@/i18n/useT';
 import type { CleDeTexte } from '@/i18n/textes';
 
@@ -149,6 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
  */
 function BarreLaterale({ pathname }: { pathname: string }) {
   const t = useT();
+  const ouvrirLeGuide = useGuide((etat) => etat.ouvrir);
   const idVoyage = voyageDeLAdresse(pathname);
   // Même clé que l'aperçu : le voyage vient du cache, sans nouvelle requête.
   const voyage = useQuery({
@@ -237,6 +239,33 @@ function BarreLaterale({ pathname }: { pathname: string }) {
           </ul>
         </nav>
       )}
+
+      {/* Le pied de page du site, à sa place sur un grand écran : en bas de
+          la colonne, toujours à portée, jamais dans le chemin. */}
+      <nav aria-label="Informations légales" className="text-muted mt-auto px-3 text-xs">
+        <ul className="flex flex-wrap gap-x-3 gap-y-1.5">
+          <li>
+            <button type="button" onClick={ouvrirLeGuide} className="hover:underline">
+              Guide
+            </button>
+          </li>
+          <li>
+            <Link to="/conditions" className="hover:underline">
+              Conditions
+            </Link>
+          </li>
+          <li>
+            <Link to="/confidentialite" className="hover:underline">
+              Confidentialité
+            </Link>
+          </li>
+          <li>
+            <Link to="/mentions-legales" className="hover:underline">
+              Mentions légales
+            </Link>
+          </li>
+        </ul>
+      </nav>
     </aside>
   );
 }

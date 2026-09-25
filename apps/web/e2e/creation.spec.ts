@@ -21,7 +21,7 @@ test('on crée un voyage de bout en bout, et il apparaît sur l’accueil', asyn
   const plantages: string[] = [];
   page.on('pageerror', (erreur) => plantages.push(erreur.message));
 
-  await page.goto('/', { waitUntil: 'networkidle' });
+  await page.goto('/connexion', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
   await expect(page.getByRole('heading', { name: 'Mes trips' })).toBeVisible();
 
@@ -84,7 +84,7 @@ test('on crée un voyage de bout en bout, et il apparaît sur l’accueil', asyn
 test('l’assistant refuse d’avancer tant qu’il manque le départ', async ({ page }) => {
   // Un bouton qui avance sans rien retenir est pire qu'un bouton éteint :
   // on croit avoir répondu.
-  await page.goto('/', { waitUntil: 'networkidle' });
+  await page.goto('/connexion', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
   await page.getByRole('link', { name: /Créer un trip|Créer/ }).first().click();
   await suivant(page).click();
@@ -103,7 +103,7 @@ test.describe('la position de l’appareil', () => {
     // ligne. Ils refusaient la géolocalisation à la page elle-même : le
     // bouton répondait « position refusée » même quand la personne l'avait
     // autorisée, et aucun test ne le voyait.
-    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.goto('/connexion', { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
     await page.getByRole('link', { name: /Créer un trip|Créer/ }).first().click();
     await suivant(page).click();

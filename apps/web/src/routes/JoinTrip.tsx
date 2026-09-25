@@ -8,6 +8,7 @@ import { Logo } from '@/components/Logo';
 import { getCollaboration } from '@/lib/collaboration';
 import { useAuth } from '@/lib/auth-context';
 import { toFailure } from '@/lib/errors';
+import { oublierLaSuite } from '@/lib/suiteApresConnexion';
 
 /**
  * Rejoindre un voyage par lien ou par code.
@@ -36,6 +37,9 @@ export default function JoinTrip() {
     try {
       if (!identity) await continueAsGuest();
       const { tripId } = await collaboration.joinWithCode(valeur);
+      // Une création demandée plus tôt, sans compte, n'a plus lieu d'être :
+      // on est venu rejoindre, pas organiser.
+      oublierLaSuite();
       navigate(`/voyages/${tripId}/mes-envies`, { replace: true });
     } catch (cause) {
       setErreur(messageLisible(cause));

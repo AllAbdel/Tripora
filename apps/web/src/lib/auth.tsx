@@ -10,7 +10,14 @@ import { oublierApresDeconnexion } from './stockage';
 import { viderLeCache } from './cache';
 import { retirerTousLesRappels } from './rappels';
 import { oublierToutesLesCopies } from './documentsHorsLigne';
-import { AuthContext, type AuthContextValue, type Identity } from './auth-context';
+import {
+  AuthContext,
+  type AuthContextValue,
+  type DemandeDeCode,
+  type Fournisseur,
+  type Identity,
+} from './auth-context';
+import { normaliserEmail } from './connexionEmail';
 
 const LOCAL_KEY = 'tripora.local-identity';
 
@@ -52,10 +59,21 @@ function ailleursQuePrevu(): boolean {
 function readLocalIdentity(): Identity | null {
   try {
     const raw = localStorage.getItem(LOCAL_KEY);
-    return raw ? (JSON.parse(raw) as Identity) : null;
+    // Les identités locales écrites avant l'arrivée de `fournisseur` ne le
+    // portent pas : elles restent valables.
+    if (!raw) return null;
+    const lue = JSON.parse(raw) as Omit<Identity, 'fournisseur'> & Partial<Pick<Identity, 'fournisseur'>>;
+    return { ...lue, fournisseur: lue.fournisseur ?? 'local' };
   } catch {
     return null;
   }
+}
+
+/** Par où ce compte est entré : Google, un code reçu par e-mail, ou invité. */
+function fournisseurDe(user: User): Fournisseur {
+  if (user.is_anonymous) return 'invite';
+  const fournisseur = user.app_metadata?.['provider'];
+  return fournisseur === 'email' ? 'email' : 'google';
 }
 
 function fromSession(session: Session | null): Identity | null {
@@ -72,6 +90,7 @@ function fromSession(session: Session | null): Identity | null {
     avatarUrl: meta['avatar_url'] as string | undefined,
     isAnonymous: user.is_anonymous ?? false,
     mode: 'supabase',
+    fournisseur: fournisseurDe(user),
   };
 }
 
@@ -160,13 +179,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Une seule adresse détient les sessions : si on n'y est pas, on y va
     // d'abord. Le paramètre demande à l'écran d'arrivée de reprendre tout seul.
     if (ailleursQuePrevu()) {
-      window.location.assign(`${ORIGINE_AUTH}/?connexion=google`);
+      window.location.assign(`${ORIGINE_AUTH}/connexion?connexion=google`);
       return;
     }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/voyages` },
+    });
+    if (error) throw error;
+  }, []);
+
+  const envoyerUnCode = useCallback(async ({ email, creer, prenom }: DemandeDeCode) => {
+    if (!supabase) throw new Error('Aucun serveur configuré');
+    const nom = prenom?.trim();
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normaliserEmail(email),
+      options: {
+        // « Se connecter » ne crée rien : une faute de frappe dans l'adresse
+        // ouvrirait sinon un second compte, vide, sans que personne le sache.
+        shouldCreateUser: creer,
+        // Lu une seule fois, à la création, par le déclencheur qui écrit le
+        // profil (`handle_new_user`) : c'est le nom que verront les autres.
+        ...(creer && nom ? { data: { full_name: nom.slice(0, 60) } } : {}),
+      },
+    });
+    if (error) throw error;
+  }, []);
+
+  const verifierLeCode = useCallback(async (email: string, code: string) => {
+    if (!supabase) throw new Error('Aucun serveur configuré');
+    const { error } = await supabase.auth.verifyOtp({
+      email: normaliserEmail(email),
+      token: code,
+      type: 'email',
     });
     if (error) throw error;
   }, []);
@@ -183,6 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName: 'Voyageur',
       isAnonymous: true,
       mode: 'local',
+      fournisseur: 'local',
     };
     localStorage.setItem(LOCAL_KEY, JSON.stringify(local));
     setIdentity(local);
@@ -194,7 +241,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // serveur et bien vivant côté navigateur.
     if (supabase) {
       try {
-        await supabase.auth.signOut();
+        // `local` : seule cette session-ci est fermée. Par défaut, Supabase
+        // révoque toutes les sessions du compte — se déconnecter sur
+        // l'ordinateur déconnectait aussi le téléphone, l'application et
+        // l'autre navigateur, qui ne le découvraient qu'à la visite suivante
+        // (« Refresh Token Not Found », relevé le 24 septembre 2026).
+        // Fermer partout reste possible : supprimer son compte le fait.
+        await supabase.auth.signOut({ scope: 'local' });
       } catch {
         // Hors ligne, la révocation échoue. On efface quand même : quelqu'un
         // qui rend son téléphone ne doit pas dépendre du réseau pour cela.
@@ -227,10 +280,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       backendReady: isSupabaseConfigured,
       signInWithGoogle,
+      envoyerUnCode,
+      verifierLeCode,
       continueAsGuest,
       signOut,
     }),
-    [identity, loading, signInWithGoogle, continueAsGuest, signOut],
+    [identity, loading, signInWithGoogle, envoyerUnCode, verifierLeCode, continueAsGuest, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

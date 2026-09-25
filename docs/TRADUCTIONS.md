@@ -11,6 +11,12 @@ casser les tests ni gêner le reste du développement, qui continue en parallèl
   réglable dans le profil ; l'arabe s'affiche de droite à gauche.
 - **Une cinquantaine de clés** seulement (`apps/web/src/i18n/textes.ts`) :
   navigation, actions courantes, écrans d'entrée, états vides, trips ouverts.
+- Écrits en français en dur, à traduire comme le reste : l'accueil public
+  (`routes/Accueil.tsx`), la connexion par e-mail (`routes/Connexion.tsx`,
+  messages dans `lib/connexionEmail.ts`), le guide de démarrage
+  (`components/guide/etapesDuGuide.ts`), le pied de page et les pages légales
+  (`Confidentialite`, `MentionsLegales`, `Conditions`). Les pages légales
+  engagent : les faire relire plutôt que les traduire mot à mot.
 - **Presque tout le reste est écrit en français en dur** dans les composants :
   environ 35 écrans de `apps/web/src/routes/` n'appellent pas `useT()`, ni la
   plupart des composants de `apps/web/src/components/`.

@@ -1,14 +1,18 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
+import { CadrePublic } from '@/components/CadrePublic';
+import { GuideAuPremierPassage } from '@/components/guide/GuideAuPremierPassage';
 import { useAuth } from '@/lib/auth-context';
-import SignIn from '@/routes/SignIn';
+import Accueil from '@/routes/Accueil';
+import Connexion from '@/routes/Connexion';
 import Trips from '@/routes/Trips';
 import TripDetail from '@/routes/TripDetail';
 import JoinTrip from '@/routes/JoinTrip';
 import NotFound from '@/routes/NotFound';
 import { retenirLaDestinationDemandee } from '@/lib/destinationDemandee';
+import { lireLaSuite, oublierLaSuite, retenirLaSuite } from '@/lib/suiteApresConnexion';
 
 // MapLibre pèse à lui seul plus que tout le reste de l'application : la carte
 // n'est téléchargée que par les personnes qui l'ouvrent vraiment.
@@ -41,6 +45,8 @@ const TripValise = lazy(() => import('@/routes/TripValise'));
 const TripRecapitulatif = lazy(() => import('@/routes/TripRecapitulatif'));
 const Soutenir = lazy(() => import('@/routes/Soutenir'));
 const Confidentialite = lazy(() => import('@/routes/Confidentialite'));
+const MentionsLegales = lazy(() => import('@/routes/MentionsLegales'));
+const Conditions = lazy(() => import('@/routes/Conditions'));
 const TripEdit = lazy(() => import('@/routes/TripEdit'));
 const ModerationApps = lazy(() => import('@/routes/ModerationApps'));
 const TripsOuverts = lazy(() => import('@/routes/TripsOuverts'));
@@ -108,6 +114,8 @@ function TabbedRoutes() {
         <Route path="/passeport" element={<Passeport />} />
         <Route path="/soutenir" element={<Soutenir />} />
         <Route path="/confidentialite" element={<Confidentialite />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="/conditions" element={<Conditions />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
@@ -133,63 +141,124 @@ function EcranEnChargement() {
   );
 }
 
+/** Une page publique lue sans compte : la barre, le texte, le pied de page. */
+function PagePublique({ children }: { children: ReactNode }) {
+  return (
+    <CadrePublic>
+      <Suspense fallback={<EcranEnChargement />}>{children}</Suspense>
+    </CadrePublic>
+  );
+}
+
+/**
+ * Une page qui demande un compte, ouverte sans en avoir.
+ *
+ * On mène à la connexion en retenant où l'on allait : une fois connecté, on y
+ * arrive directement. La liste des voyages n'a pas besoin d'être retenue —
+ * c'est là qu'on arrive de toute façon —, et son adresse peut porter le code
+ * d'un retour de Google raté, qu'il ne faut pas rejouer plus tard.
+ */
+function VersLaConnexion() {
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    if (pathname !== '/voyages') retenirLaSuite(`${pathname}${search}`);
+  }, [pathname, search]);
+  return <Navigate to="/connexion" replace state={{ inscription: pathname === '/voyages/nouveau' }} />;
+}
+
+/** Connecté sur l'écran de connexion : on va là où on voulait aller. */
+function ApresConnexion() {
+  // Lue au rendu, effacée après : un rendu peut être joué deux fois.
+  const [cible] = useState(() => lireLaSuite() ?? '/voyages');
+  useEffect(() => oublierLaSuite(), []);
+  return <Navigate to={cible} replace />;
+}
+
 export default function App() {
   const { identity, loading } = useAuth();
   const { search } = useLocation();
-  const connecte = Boolean(identity);
 
   // « Organiser ce voyage » depuis une page publique du carnet : la destination
   // entre dans le brouillon, connexion faite ou pas.
   useEffect(() => {
     if (loading) return;
-    retenirLaDestinationDemandee(search, { apresConnexion: !connecte });
-  }, [search, loading, connecte]);
+    retenirLaDestinationDemandee(search);
+  }, [search, loading]);
 
   if (loading) return <FullScreenLoader />;
 
   return (
-    <Routes>
-      {/* Public : un lien d'invitation doit marcher pour quelqu'un qui n'a
-          jamais ouvert Tripora. L'écran ouvre lui-même une session invité. */}
-      <Route path="/rejoindre" element={<JoinTrip />} />
-      <Route path="/rejoindre/:code" element={<JoinTrip />} />
-      {/* Public aussi : ce que Tripora conserve doit pouvoir se lire avant de
-          créer un compte. Le lien de l'écran de connexion y renvoyait, et on
-          retombait sur la connexion. */}
-      {!identity && (
-        <Route
-          path="/confidentialite"
-          element={
-            <Suspense fallback={<FullScreenLoader />}>
-              <Confidentialite />
-            </Suspense>
-          }
-        />
-      )}
+    <>
+      <Routes>
+        {/* Public : un lien d'invitation doit marcher pour quelqu'un qui n'a
+            jamais ouvert Tripora. L'écran ouvre lui-même une session invité. */}
+        <Route path="/rejoindre" element={<JoinTrip />} />
+        <Route path="/rejoindre/:code" element={<JoinTrip />} />
 
-      {identity ? (
-        <>
-          <Route
-            path="/voyages/nouveau"
-            element={
-              <Suspense fallback={<FullScreenLoader />}>
-                <CreateTrip />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/voyages/:id/mes-envies"
-            element={
-              <Suspense fallback={<FullScreenLoader />}>
-                <MyPreferences />
-              </Suspense>
-            }
-          />
-          <Route path="*" element={<TabbedRoutes />} />
-        </>
-      ) : (
-        <Route path="*" element={<SignIn />} />
-      )}
-    </Routes>
+        {identity ? (
+          <>
+            <Route path="/connexion" element={<ApresConnexion />} />
+            <Route
+              path="/voyages/nouveau"
+              element={
+                <Suspense fallback={<FullScreenLoader />}>
+                  <CreateTrip />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/voyages/:id/mes-envies"
+              element={
+                <Suspense fallback={<FullScreenLoader />}>
+                  <MyPreferences />
+                </Suspense>
+              }
+            />
+            <Route path="*" element={<TabbedRoutes />} />
+          </>
+        ) : (
+          <>
+            {/* Sans compte, on lit : l'accueil, et ce que Tripora fait de vos
+                données. Tout le reste mène à la connexion, puis y revient. */}
+            <Route path="/" element={<Accueil />} />
+            <Route path="/connexion" element={<Connexion />} />
+            <Route
+              path="/confidentialite"
+              element={
+                <PagePublique>
+                  <Confidentialite />
+                </PagePublique>
+              }
+            />
+            <Route
+              path="/mentions-legales"
+              element={
+                <PagePublique>
+                  <MentionsLegales />
+                </PagePublique>
+              }
+            />
+            <Route
+              path="/conditions"
+              element={
+                <PagePublique>
+                  <Conditions />
+                </PagePublique>
+              }
+            />
+            <Route
+              path="/soutenir"
+              element={
+                <PagePublique>
+                  <Soutenir />
+                </PagePublique>
+              }
+            />
+            <Route path="*" element={<VersLaConnexion />} />
+          </>
+        )}
+      </Routes>
+      <GuideAuPremierPassage />
+    </>
   );
 }

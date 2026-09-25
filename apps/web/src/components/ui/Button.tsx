@@ -29,6 +29,31 @@ const SIZES: Record<Size, string> = {
   lg: 'h-14 px-6 text-base gap-2.5',
 };
 
+/**
+ * L'apparence d'un bouton, pour un lien qui en joue le rôle.
+ *
+ * « Créer un voyage » sur l'accueil change de page : c'est un lien, et il doit
+ * le rester (clic du milieu, adresse au survol, lecteurs d'écran). Il porte
+ * seulement l'habit du bouton.
+ */
+export function classesDeBouton({
+  variant = 'primary',
+  size = 'md',
+  block = false,
+}: { variant?: Variant; size?: Size; block?: boolean } = {}): string {
+  return cn(
+    // Un rectangle à peine adouci, pas une pilule. La pilule est la forme
+    // par défaut de toutes les interfaces générées : elle n'appartient à
+    // personne. Le même rayon que les cartes fait, lui, une famille.
+    'inline-flex items-center justify-center rounded-[var(--radius-card)] font-semibold',
+    'transition-[background-color,transform,box-shadow] duration-200',
+    'active:scale-[0.98] disabled:pointer-events-none disabled:opacity-55',
+    VARIANTS[variant],
+    SIZES[size],
+    block && 'w-full',
+  );
+}
+
 export function Button({
   variant = 'primary',
   size = 'md',
@@ -45,18 +70,7 @@ export function Button({
       {...rest}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cn(
-        // Un rectangle à peine adouci, pas une pilule. La pilule est la forme
-        // par défaut de toutes les interfaces générées : elle n'appartient à
-        // personne. Le même rayon que les cartes fait, lui, une famille.
-        'inline-flex items-center justify-center rounded-[var(--radius-card)] font-semibold',
-        'transition-[background-color,transform,box-shadow] duration-200',
-        'active:scale-[0.98] disabled:pointer-events-none disabled:opacity-55',
-        VARIANTS[variant],
-        SIZES[size],
-        block && 'w-full',
-        className,
-      )}
+      className={cn(classesDeBouton({ variant, size, block }), className)}
     >
       {loading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : icon}
       {children}

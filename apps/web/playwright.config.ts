@@ -64,6 +64,18 @@ export default defineConfig({
     // par clic, avec le réseau et la console.
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // Le guide de démarrage s'ouvre à la première connexion, par-dessus
+    // l'écran : chaque test le trouverait devant ses boutons. On le dit déjà
+    // vu ; le test du guide repart, lui, d'un navigateur vierge.
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: `http://localhost:${PORT}`,
+          localStorage: [{ name: 'tripora.guide-vu', value: '1' }],
+        },
+      ],
+    },
   },
 
   projects: [

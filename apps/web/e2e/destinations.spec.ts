@@ -24,8 +24,9 @@ test('une page de destination se lit sans compte et mène à la création du voy
   await expect(page).toHaveURL(/\/voyages\/nouveau\?destination=bergen$/);
 
   // Pas encore de compte : l'écran de connexion, puis la création reprend.
+  await expect(page).toHaveURL(/\/connexion$/);
   await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
-  await expect(page).toHaveURL(/\/voyages\/nouveau$/);
+  await expect(page).toHaveURL(/\/voyages\/nouveau\?destination=bergen$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Avec qui partez-vous ?');
 
   const brouillon = await page.evaluate(
@@ -49,7 +50,7 @@ test('le sommaire mène à chaque destination, et la confidentialité se lit san
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Lisbonne');
 
   await page.getByRole('link', { name: 'Confidentialité' }).click();
-  await expect(page.getByRole('heading', { name: 'Confidentialité et mentions légales' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Confidentialité', level: 1 })).toBeVisible();
 });
 
 test('les robots trouvent le plan du site', async ({ request }) => {

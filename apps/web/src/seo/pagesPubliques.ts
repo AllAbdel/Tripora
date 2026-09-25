@@ -21,6 +21,9 @@ import {
 } from '@tripora/core';
 import { activitesDe, libelleActivite, type Activite } from '@tripora/core/activites';
 import { NORMALES_RELEVEES } from './normales.donnees';
+import { cheminDuMois, SLUGS_DES_MOIS } from './mois';
+
+export { cheminDuMois };
 
 /**
  * Les pages publiques du carnet : une par destination, plus leur sommaire.
@@ -350,25 +353,6 @@ function sectionReserver(destination: Destination, partenaire: IdentiteDePartena
 // Où partir en … ?
 // ---------------------------------------------------------------------------
 
-const SLUGS_DES_MOIS = [
-  'janvier',
-  'fevrier',
-  'mars',
-  'avril',
-  'mai',
-  'juin',
-  'juillet',
-  'aout',
-  'septembre',
-  'octobre',
-  'novembre',
-  'decembre',
-];
-
-export function cheminDuMois(mois: number): string {
-  return `/ou-partir-en/${SLUGS_DES_MOIS[mois - 1]}`;
-}
-
 /** « en avril », mais « en août » : la préposition ne change pas, le nom oui. */
 function nomDuMois(mois: number): string {
   return MOIS[mois - 1]!;
@@ -624,6 +608,9 @@ Allow: /$
 Allow: /destinations
 Allow: /ou-partir-en/
 Allow: /confidentialite
+Allow: /mentions-legales
+Allow: /conditions
+Disallow: /connexion
 Disallow: /voyages
 Disallow: /rejoindre
 Disallow: /profil
@@ -693,7 +680,8 @@ function gabarit({
 ${corps}
 </main>
 <footer class="pied">
-  <p><a href="/destinations">Toutes les destinations</a> · <a href="/">L’application</a> · <a href="/confidentialite">Confidentialité</a></p>
+  <p><a href="/destinations">Toutes les destinations</a> · <a href="/">L’application</a></p>
+  <p><a href="/mentions-legales">Mentions légales</a> · <a href="/confidentialite">Confidentialité</a> · <a href="/conditions">Conditions d’utilisation</a></p>
   <p class="discret">Activités et prix indicatifs du carnet Tripora, vérifiés à la main. Climat : normales Open-Meteo. Descriptions détaillées : Wikipédia, sous licence CC BY-SA.</p>
 </footer>
 </body>

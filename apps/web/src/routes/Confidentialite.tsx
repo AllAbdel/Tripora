@@ -1,10 +1,8 @@
 import { Link } from 'react-router';
-import { ArrowLeft } from 'lucide-react';
-import { Card, CardBody } from '@/components/ui/Card';
-import { useAuth } from '@/lib/auth-context';
+import { Bloc, Definition, LienDeContact, PageLegale } from '@/components/PageLegale';
 
 /**
- * La politique de confidentialité et les mentions légales.
+ * La politique de confidentialité.
  *
  * Écrite pour être lue, pas pour couvrir : chaque paragraphe dit ce que
  * l'application fait réellement, vérifiable dans le code. Une page qui promet
@@ -14,23 +12,11 @@ import { useAuth } from '@/lib/auth-context';
  *
  * Les rubriques suivent l'ordre des questions qu'on se pose : qu'est-ce que
  * vous savez de moi, où est-ce que ça va, combien de temps, et comment je m'en
- * débarrasse.
+ * débarrasse. Les mentions légales ont leur propre page.
  */
 export default function Confidentialite() {
-  const { identity } = useAuth();
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-5 px-4 pt-4 pb-28">
-      <div className="flex items-center gap-2">
-        <Link
-          to={identity ? '/profil' : '/'}
-          aria-label={identity ? 'Retour au profil' : 'Retour à l’accueil'}
-          className="hover:bg-brand-50 dark:hover:bg-ink-700/40 -ml-2 grid size-11 place-items-center rounded-full"
-        >
-          <ArrowLeft className="size-5" aria-hidden />
-        </Link>
-        <h1 className="text-lg font-semibold">Confidentialité et mentions légales</h1>
-      </div>
-
+    <PageLegale titre="Confidentialité" miseAJour="25 septembre 2026">
       <Bloc titre="En une phrase">
         <p>
           Tripora conserve le minimum nécessaire pour qu’un voyage fonctionne à plusieurs,
@@ -41,8 +27,9 @@ export default function Confidentialite() {
 
       <Bloc titre="Ce que Tripora conserve">
         <Definition terme="Votre identité">
-          Selon la façon dont vous vous connectez : soit un compte invité, qui ne contient qu’un
-          identifiant aléatoire et un nom d’affichage, soit un compte Google, dont Tripora reçoit
+          Selon la façon dont vous vous connectez : un compte invité, qui ne contient qu’un
+          identifiant aléatoire et un nom d’affichage ; un compte e-mail, dont Tripora connaît
+          l’adresse et le prénom que vous avez donné ; ou un compte Google, dont Tripora reçoit
           l’adresse e-mail, le prénom et la photo de profil. Rien d’autre — ni contacts, ni
           agenda, ni fichiers. Facultatifs : votre genre et votre année de naissance, si vous les
           indiquez pour rejoindre un trip ouvert réservé (mixité, tranche d’âge). Ils ne sont
@@ -79,7 +66,8 @@ export default function Confidentialite() {
         </Definition>
         <Definition terme="Ce que Tripora ne conserve pas">
           Aucune position GPS, aucun historique de navigation, aucun identifiant publicitaire,
-          aucun mot de passe — il n’y en a pas.
+          aucun mot de passe — il n’y en a pas : la connexion par e-mail se fait avec un code à
+          usage unique, valable une heure au plus.
         </Definition>
       </Bloc>
 
@@ -110,6 +98,11 @@ export default function Confidentialite() {
           autorisent souvent la réutilisation des textes envoyés pour améliorer leurs modèles.
           C’est pour ça que tout le reste de Tripora fonctionne sans eux.
         </Definition>
+        <Definition terme="Le service d’envoi d’e-mails">
+          Uniquement si vous vous connectez par e-mail : votre adresse et le code de connexion,
+          le temps de vous l’envoyer. Aucun autre message ne vous est adressé — ni lettre
+          d’information, ni relance.
+        </Definition>
         <Definition terme="Travelpayouts (prix des vols)">
           Le code de l’aéroport de départ et le mois visé, depuis nos serveurs, pour relever les
           prix des vols. Rien sur vous ni sur votre groupe.
@@ -134,7 +127,7 @@ export default function Confidentialite() {
         </p>
       </Bloc>
 
-      <Bloc titre="Liens partenaires et parrainage">
+      <Bloc titre="Liens partenaires et parrainage" id="liens-partenaires">
         <p>
           Certains liens de réservation — vols, visites et billets, transferts depuis l’aéroport,
           location de voiture, eSIM, consigne à bagages, indemnisation d’un vol retardé — sont
@@ -181,7 +174,7 @@ export default function Confidentialite() {
             </strong>{' '}
             — dans l’application : Profil, puis « Supprimer mon compte ». L’effacement est
             immédiat, et les fichiers déposés quittent le stockage dans la nuit. Sans accès à
-            l’application, écrivez à l’adresse ci-dessous : la suppression est faite sous trente
+            l’application, écrivez à <LienDeContact /> : la suppression est faite sous trente
             jours.
           </li>
           <li>
@@ -191,56 +184,16 @@ export default function Confidentialite() {
         </ul>
       </Bloc>
 
-      <Bloc titre="Mentions légales">
-        <Definition terme="Éditeur">
-          Tripora est un projet personnel, édité par un particulier ; les liens partenaires
-          peuvent lui rapporter des commissions. Contact :{' '}
-          <a
-            href="mailto:abdelslam.allaouat.pro@gmail.com"
-            className="text-brand-600 dark:text-brand-300 underline"
-          >
-            abdelslam.allaouat.pro@gmail.com
-          </a>
-          . Conformément à la loi pour la confiance dans l’économie numérique, un éditeur non
-          professionnel peut ne pas publier son adresse postale dès lors que celle-ci est connue
-          de son hébergeur.
-        </Definition>
-        <Definition terme="Hébergeurs">
-          Cloudflare, Inc. — 101 Townsend St, San Francisco, CA 94107, États-Unis. Vercel, Inc. —
-          440 N Barranca Ave #4133, Covina, CA 91723, États-Unis. Supabase, Inc. — 970 Toa Payoh
-          North, Singapour, avec les données de Tripora hébergées à Paris.
-        </Definition>
-        <Definition terme="Ce que Tripora ne garantit pas">
-          Les prix affichés sont des estimations ou des tarifs relevés à une date indiquée, jamais
-          des offres. Les recommandations d’applications et les informations de voyage sont
-          données de bonne foi et peuvent vieillir. Vérifiez toujours les formalités d’entrée
-          auprès des sources officielles du pays concerné.
-        </Definition>
+      <Bloc titre="Qui est responsable">
+        <p className="text-muted">
+          Tripora est édité par un particulier, joignable à <LienDeContact />. L’éditeur, les
+          hébergeurs et les crédits sont sur la page des{' '}
+          <Link to="/mentions-legales" className="text-brand-600 dark:text-brand-300 underline">
+            mentions légales
+          </Link>
+          .
+        </p>
       </Bloc>
-
-      <p className="text-muted px-1 text-xs">
-        Dernière mise à jour : 24 septembre 2026.
-      </p>
-    </div>
-  );
-}
-
-function Bloc({ titre, children }: { titre: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardBody className="space-y-2.5">
-        <h2 className="font-semibold">{titre}</h2>
-        <div className="space-y-2.5 text-sm leading-relaxed">{children}</div>
-      </CardBody>
-    </Card>
-  );
-}
-
-/** Un terme et ce qu'il recouvre : plus lisible qu'un paragraphe de plus. */
-function Definition({ terme, children }: { terme: string; children: React.ReactNode }) {
-  return (
-    <p className="text-muted">
-      <strong className="text-[color:var(--text-strong)]">{terme}.</strong> {children}
-    </p>
+    </PageLegale>
   );
 }

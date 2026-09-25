@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 export function Field({
@@ -19,7 +19,9 @@ export function Field({
   );
 }
 
-export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+// `ComponentProps<'input'>` plutôt que les seuls attributs : depuis React 19,
+// `ref` est une prop comme une autre, et elle traverse jusqu'au champ.
+export function TextInput({ className, ...rest }: ComponentProps<'input'>) {
   return (
     <input
       {...rest}

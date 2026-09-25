@@ -30,6 +30,7 @@ const CONNECTE: Identity = {
   displayName: 'Thomas',
   isAnonymous: true,
   mode: 'supabase',
+  fournisseur: 'invite',
 };
 
 function afficher({
@@ -48,6 +49,8 @@ function afficher({
     loading: false,
     backendReady,
     signInWithGoogle: vi.fn(),
+    envoyerUnCode: vi.fn(),
+    verifierLeCode: vi.fn(),
     continueAsGuest,
     signOut: vi.fn(),
   };

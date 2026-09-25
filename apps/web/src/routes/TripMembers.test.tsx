@@ -49,10 +49,12 @@ function fauxApi(overrides: Partial<CollaborationApi> = {}): CollaborationApi {
 
 function afficher() {
   const identity: AuthContextValue = {
-    identity: { id: ABDEL, displayName: 'Abdel', isAnonymous: false, mode: 'supabase' },
+    identity: { id: ABDEL, displayName: 'Abdel', isAnonymous: false, mode: 'supabase', fournisseur: 'google' },
     loading: false,
     backendReady: true,
     signInWithGoogle: vi.fn(),
+    envoyerUnCode: vi.fn(),
+    verifierLeCode: vi.fn(),
     continueAsGuest: vi.fn(),
     signOut: vi.fn(),
   };

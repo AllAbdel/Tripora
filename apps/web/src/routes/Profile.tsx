@@ -4,9 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BellOff,
   Check,
+  FileText,
   HandCoins,
   Lock,
   LogOut,
+  Mail,
+  PlayCircle,
+  Scale,
   Monitor,
   Moon,
   Palette,
@@ -38,6 +42,16 @@ import {
   type ThemePreference,
 } from '@/stores/theme';
 import { cn } from '@/lib/cn';
+import { useGuide } from '@/stores/guide';
+import { ADRESSE_DE_CONTACT } from '@/components/PageLegale';
+import type { Fournisseur } from '@/lib/auth-context';
+
+const COMPTES: Record<Fournisseur, string> = {
+  google: 'Compte Google',
+  email: 'Compte e-mail',
+  invite: 'Compte invité',
+  local: 'Compte invité',
+};
 
 const THEMES: { value: ThemePreference; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Clair', icon: Sun },
@@ -62,6 +76,7 @@ const RETOURS: { value: Retours; label: string; detail: string; icon: typeof Sun
  */
 export default function Profile() {
   const { identity, signOut, backendReady } = useAuth();
+  const ouvrirLeGuide = useGuide((etat) => etat.ouvrir);
   const apps = getApps();
 
   const jeModere = useQuery({
@@ -87,7 +102,7 @@ export default function Profile() {
             <div className="min-w-0">
               <p className="truncate font-semibold">{identity?.displayName ?? 'Voyageur'}</p>
               <p className="text-muted text-sm">
-                {identity?.isAnonymous ? 'Compte invité' : 'Compte Google'}
+                {COMPTES[identity?.fournisseur ?? 'invite']}
                 {!backendReady && ' · stocké sur cet appareil'}
               </p>
             </div>
@@ -156,6 +171,27 @@ export default function Profile() {
           </Card>
         </Section>
 
+        {/* Dans l'application mobile, pas de pied de page : ce qu'on y met sur
+            le site — guide, conditions, mentions, contact — vit ici. */}
+        <Section titre="À propos">
+          <Card>
+            <CardBody className="divide-y divide-[color:var(--border-subtle)] py-1">
+              <LigneAPropos icone={<PlayCircle className="size-4" aria-hidden />} onClick={ouvrirLeGuide}>
+                Revoir le guide de démarrage
+              </LigneAPropos>
+              <LigneAPropos icone={<Scale className="size-4" aria-hidden />} to="/conditions">
+                Conditions d’utilisation
+              </LigneAPropos>
+              <LigneAPropos icone={<FileText className="size-4" aria-hidden />} to="/mentions-legales">
+                Mentions légales
+              </LigneAPropos>
+              <LigneAPropos icone={<Mail className="size-4" aria-hidden />} href={`mailto:${ADRESSE_DE_CONTACT}`}>
+                Nous écrire
+              </LigneAPropos>
+            </CardBody>
+          </Card>
+        </Section>
+
         {jeModere.data && (
           <Section titre="Modération">
             <Card>
@@ -192,6 +228,46 @@ export default function Profile() {
         )}
       </div>
     </>
+  );
+}
+
+/** Une ligne de la rubrique « À propos » : un écran, un lien ou une action. */
+function LigneAPropos({
+  icone,
+  children,
+  to,
+  href,
+  onClick,
+}: {
+  icone: React.ReactNode;
+  children: React.ReactNode;
+  to?: string;
+  href?: string;
+  onClick?: () => void;
+}) {
+  const classes =
+    'text-brand-700 dark:text-brand-200 flex min-h-12 w-full items-center gap-3 text-start text-sm font-semibold';
+  if (to) {
+    return (
+      <Link to={to} className={classes}>
+        {icone}
+        {children}
+      </Link>
+    );
+  }
+  if (href) {
+    return (
+      <a href={href} className={classes}>
+        {icone}
+        {children}
+      </a>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={classes}>
+      {icone}
+      {children}
+    </button>
   );
 }
 

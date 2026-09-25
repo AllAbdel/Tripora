@@ -40,7 +40,7 @@ export function PontNatif() {
       if (!actif) return;
       // Session ouverte : l'écran de connexion laisse place aux voyages de
       // lui-même. Sinon on y revient, avec la raison.
-      navigate(erreur ? '/' : '/voyages', {
+      navigate(erreur ? '/connexion' : '/voyages', {
         replace: true,
         ...(erreur ? { state: { erreurDeConnexion: erreur } } : {}),
       });

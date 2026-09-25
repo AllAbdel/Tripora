@@ -2,6 +2,8 @@ import { Link } from 'react-router';
 import { ArrowLeft, ExternalLink, HandCoins, Scale, ShieldCheck } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/lib/cn';
+import { useAuth } from '@/lib/auth-context';
+import { useTitreDuDocument } from '@/lib/useTitreDuDocument';
 
 /**
  * Comment Tripora est financé, dit en entier.
@@ -16,12 +18,15 @@ import { cn } from '@/lib/cn';
  * n'en dépend pas cliquera plus volontiers que quelqu'un qui le découvre.
  */
 export default function Soutenir() {
+  // Lisible sans compte : le pied de page du site y renvoie.
+  const { identity } = useAuth();
+  useTitreDuDocument('Comment Tripora est financé — Tripora');
   return (
     <div className="mx-auto w-full max-w-2xl space-y-5 px-4 pt-4 pb-28">
       <div className="flex items-center gap-2">
         <Link
-          to="/profil"
-          aria-label="Retour au profil"
+          to={identity ? '/profil' : '/'}
+          aria-label={identity ? 'Retour au profil' : 'Retour à l’accueil'}
           className="hover:bg-brand-50 dark:hover:bg-ink-700/40 -ml-2 grid size-11 place-items-center rounded-full"
         >
           <ArrowLeft className="size-5" aria-hidden />

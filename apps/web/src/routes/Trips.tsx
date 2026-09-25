@@ -19,7 +19,8 @@ import { ConfirmerSuppression } from '@/components/ConfirmerSuppression';
 import { basculerFavori, favorisEnTete, listerFavoris } from '@/lib/favoris';
 import { signaler } from '@/lib/feedback';
 import { useRappelsDesVoyages } from '@/lib/rappels';
-import { prendreLaCreationEnAttente } from '@/lib/destinationDemandee';
+import { prendreLaSuite } from '@/lib/suiteApresConnexion';
+import { PiedDePage } from '@/components/PiedDePage';
 
 export default function Trips() {
   const { identity, backendReady } = useAuth();
@@ -29,10 +30,11 @@ export default function Trips() {
   const [aSupprimer, setASupprimer] = useState<TripSummary | null>(null);
   const navigate = useNavigate();
 
-  // Arrivé ici après la connexion, depuis « Organiser ce voyage » d'une page
-  // du carnet : la création reprend là où elle a été demandée.
+  // Arrivé ici au retour de Google — qui ramène toujours sur /voyages — alors
+  // qu'on voulait autre chose : créer un trip, ouvrir un voyage. On y va.
   useEffect(() => {
-    if (prendreLaCreationEnAttente()) navigate('/voyages/nouveau');
+    const suite = prendreLaSuite();
+    if (suite && suite !== '/voyages') navigate(suite, { replace: true });
   }, [navigate]);
 
   const { data, isLoading, error } = useQuery({
@@ -166,6 +168,13 @@ export default function Trips() {
         {/* Seulement avec un serveur : sans lui, il n'y a pas d'inconnus à
             rejoindre, et la porte mènerait à un écran vide. */}
         {backendReady && data && <PorteDesTripsOuverts />}
+      </div>
+
+      {/* Sur le site, sur un téléphone : l'accueil des voyages porte le pied
+          de page. Sur un ordinateur, il est dans la barre latérale ; dans
+          l'application mobile, dans le profil. */}
+      <div className="lg:hidden">
+        <PiedDePage variante="discret" />
       </div>
 
       <ConfirmerSuppression
