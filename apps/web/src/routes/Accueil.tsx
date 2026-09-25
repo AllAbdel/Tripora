@@ -5,7 +5,7 @@ import { CadrePublic } from '@/components/CadrePublic';
 import { Drapeau } from '@/components/Drapeau';
 import { Pastille, type NomDePastille } from '@/components/Pastille';
 import { TableauDesDeparts } from '@/components/TableauDesDeparts';
-import { classesDeBouton } from '@/components/ui/Button';
+import { classesDeBouton } from '@/components/ui/classesDeBouton';
 import { estNatif } from '@/lib/natif';
 import { destinationsDuMois, niveauDePrix } from '@/lib/vitrine';
 import { useGuide } from '@/stores/guide';
