@@ -50,6 +50,20 @@ export interface AuthContextValue {
   /** Ouvre la session si le code est le bon. */
   verifierLeCode: (email: string, code: string) => Promise<void>;
   continueAsGuest: () => Promise<void>;
+  /**
+   * Un compte invité devient un vrai compte, sous le même identifiant : ses
+   * voyages, ses votes et ses dépenses restent les siens. Par Google…
+   */
+  rattacherGoogle: () => Promise<void>;
+  /** … ou par une adresse e-mail : un code est envoyé, puis vérifié. */
+  rattacherEmail: (email: string) => Promise<void>;
+  confirmerRattachementEmail: (email: string, code: string) => Promise<void>;
+  /**
+   * Faux quand Google ne peut pas être rattaché d'ici : sur une adresse du
+   * site qui ne détient pas les sessions, le retour de Google atterrirait
+   * ailleurs que le compte invité.
+   */
+  rattachementGooglePossible: boolean;
   signOut: () => Promise<void>;
 }
 

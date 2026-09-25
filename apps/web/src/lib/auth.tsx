@@ -5,7 +5,8 @@ import { supabase } from './supabase';
 import { isSupabaseConfigured } from './env';
 import { RETOUR_OAUTH } from './oauthReturn';
 import { estNatif } from './natif';
-import { commencerLaConnexionGoogle } from './connexionNative';
+import { commencerLaConnexionGoogle, commencerLeRattachementGoogle } from './connexionNative';
+import { oublierLaSuite, retenirLaSuite } from './suiteApresConnexion';
 import { oublierApresDeconnexion } from './stockage';
 import { viderLeCache } from './cache';
 import { retirerTousLesRappels } from './rappels';
@@ -69,11 +70,19 @@ function readLocalIdentity(): Identity | null {
   }
 }
 
-/** Par où ce compte est entré : Google, un code reçu par e-mail, ou invité. */
+/**
+ * Par où ce compte est entré : Google, un code reçu par e-mail, ou invité.
+ *
+ * On lit la liste des fournisseurs, pas seulement le premier : un invité qui
+ * a rattaché Google garde « anonymous » comme fournisseur d'origine.
+ */
 function fournisseurDe(user: User): Fournisseur {
   if (user.is_anonymous) return 'invite';
-  const fournisseur = user.app_metadata?.['provider'];
-  return fournisseur === 'email' ? 'email' : 'google';
+  const fournisseurs = [
+    user.app_metadata?.['provider'],
+    ...((user.app_metadata?.['providers'] as unknown[] | undefined) ?? []),
+  ];
+  return fournisseurs.includes('google') ? 'google' : 'email';
 }
 
 function fromSession(session: Session | null): Identity | null {
@@ -217,6 +226,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }, []);
 
+  const rattacherGoogle = useCallback(async () => {
+    if (!supabase) throw new Error('Aucun serveur configuré');
+    // De retour de Google, on arrive sur la liste des voyages (la seule
+    // adresse de retour autorisée) : on reprend ensuite sur le profil, où le
+    // compte s'affiche désormais comme un compte Google.
+    retenirLaSuite('/profil');
+    if (estNatif) {
+      await commencerLeRattachementGoogle();
+      return;
+    }
+    const { error } = await supabase.auth.linkIdentity({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/voyages` },
+    });
+    if (error) {
+      oublierLaSuite();
+      throw error;
+    }
+  }, []);
+
+  const rattacherEmail = useCallback(async (email: string) => {
+    if (!supabase) throw new Error('Aucun serveur configuré');
+    // Le compte invité n'a pas d'adresse : Supabase envoie un code à la
+    // nouvelle, et le compte devient permanent quand il est recopié.
+    const { error } = await supabase.auth.updateUser({ email: normaliserEmail(email) });
+    if (error) throw error;
+  }, []);
+
+  const confirmerRattachementEmail = useCallback(async (email: string, code: string) => {
+    if (!supabase) throw new Error('Aucun serveur configuré');
+    const { error } = await supabase.auth.verifyOtp({
+      email: normaliserEmail(email),
+      token: code,
+      type: 'email_change',
+    });
+    if (error) throw error;
+    // La session change de nature, pas d'identifiant : on la relit pour que
+    // le jeton porte « plus anonyme » tout de suite, sans attendre le
+    // prochain rafraîchissement.
+    await supabase.auth.refreshSession();
+  }, []);
+
   const continueAsGuest = useCallback(async () => {
     if (supabase) {
       const { error } = await supabase.auth.signInAnonymously();
@@ -283,9 +334,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       envoyerUnCode,
       verifierLeCode,
       continueAsGuest,
+      rattacherGoogle,
+      rattacherEmail,
+      confirmerRattachementEmail,
+      rattachementGooglePossible: estNatif || !ailleursQuePrevu(),
       signOut,
     }),
-    [identity, loading, signInWithGoogle, envoyerUnCode, verifierLeCode, continueAsGuest, signOut],
+    [
+      identity,
+      loading,
+      signInWithGoogle,
+      envoyerUnCode,
+      verifierLeCode,
+      continueAsGuest,
+      rattacherGoogle,
+      rattacherEmail,
+      confirmerRattachementEmail,
+      signOut,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

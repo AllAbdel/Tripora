@@ -28,6 +28,23 @@ export async function commencerLaConnexionGoogle(): Promise<void> {
 }
 
 /**
+ * Rattacher Google au compte invité, depuis l'application mobile.
+ *
+ * Le même aller-retour que la connexion, par `tripora://connexion` : seule la
+ * demande change. Au retour, l'échange du code rend la session du même
+ * compte, désormais lié à Google.
+ */
+export async function commencerLeRattachementGoogle(): Promise<void> {
+  const { data, error } = await requireSupabase().auth.linkIdentity({
+    provider: 'google',
+    options: { redirectTo: RETOUR_GOOGLE, skipBrowserRedirect: true },
+  });
+  if (error) throw error;
+  if (!data.url) throw new Error('Le serveur n’a pas fourni l’adresse de Google.');
+  await ouvrirDansLeNavigateur(data.url);
+}
+
+/**
  * Le retour de Google. Renvoie le message à afficher, ou `null` si la session
  * est ouverte.
  */

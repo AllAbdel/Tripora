@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import type { CollaborationApi } from '@/lib/collaboration';
+import { authFactice } from '@/test/authFactice';
 import { AuthContext, type AuthContextValue, type Identity } from '@/lib/auth-context';
 import JoinTrip from './JoinTrip';
 
@@ -44,16 +45,7 @@ function afficher({
   route?: string;
   continueAsGuest?: AuthContextValue['continueAsGuest'];
 } = {}) {
-  const auth: AuthContextValue = {
-    identity,
-    loading: false,
-    backendReady,
-    signInWithGoogle: vi.fn(),
-    envoyerUnCode: vi.fn(),
-    verifierLeCode: vi.fn(),
-    continueAsGuest,
-    signOut: vi.fn(),
-  };
+  const auth = authFactice({ identity, backendReady, continueAsGuest });
   render(
     <AuthContext.Provider value={auth}>
       <MemoryRouter initialEntries={[route]}>

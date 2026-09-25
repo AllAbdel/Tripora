@@ -112,6 +112,18 @@ export default function Trips() {
           </Banner>
         )}
 
+        {/* Un invité ne sait pas qu'il l'est : il a tapé un code, c'est tout.
+            On le lui dit tant qu'il a des voyages à perdre. */}
+        {backendReady && identity?.isAnonymous && (data?.length ?? 0) > 0 && (
+          <Banner tone="info" title="Compte d’invité">
+            Vos voyages ne vivent que sur cet appareil.{' '}
+            <Link to="/profil#garder-mes-voyages" className="font-semibold underline underline-offset-2">
+              Les garder avec Google ou votre e-mail
+            </Link>
+            .
+          </Banner>
+        )}
+
         {error && (
           <Banner tone="warning" title="Chargement impossible">
             {toFailure(error).message}

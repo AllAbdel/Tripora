@@ -1,26 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { ArrowLeft, LogIn, Mail, Ticket } from 'lucide-react';
+import { ArrowLeft, LogIn, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
-import { Field, TextInput } from '@/components/ui/Field';
 import { CadrePublic } from '@/components/CadrePublic';
 import { useAuth } from '@/lib/auth-context';
 import { diagnosticConnexion, RETOUR_OAUTH } from '@/lib/oauthReturn';
-import {
-  chiffresDuCode,
-  codeComplet,
-  emailPlausible,
-  messageDErreurEmail,
-  normaliserEmail,
-  secondesAAttendre,
-} from '@/lib/connexionEmail';
+import { FormulaireCodeEmail } from '@/components/FormulaireCodeEmail';
 import { useTitreDuDocument } from '@/lib/useTitreDuDocument';
 import { env } from '@/lib/env';
 import { cn } from '@/lib/cn';
-
-/** Le délai minimal de Supabase entre deux codes pour la même adresse. */
-const ATTENTE_ENTRE_DEUX_CODES = 60;
 
 type Intention = 'creer' | 'connecter';
 
@@ -34,7 +23,7 @@ type Intention = 'creer' | 'connecter';
  * connexion faite, on y retourne (voir `suiteApresConnexion.ts`).
  */
 export default function Connexion() {
-  const { signInWithGoogle, continueAsGuest, backendReady } = useAuth();
+  const { signInWithGoogle, envoyerUnCode, verifierLeCode, continueAsGuest, backendReady } = useAuth();
   const navigate = useNavigate();
   const etat = useLocation().state as { erreurDeConnexion?: string; inscription?: boolean } | null;
   const [intention, setIntention] = useState<Intention>(etat?.inscription ? 'creer' : 'connecter');
@@ -189,7 +178,14 @@ export default function Connexion() {
 
               {/* La clé remet le formulaire à zéro quand on change d'onglet :
                   un code demandé pour « se connecter » ne vaut pas inscription. */}
-              <ParEmail key={intention} intention={intention} />
+              <FormulaireCodeEmail
+                key={intention}
+                avecPrenom={intention === 'creer'}
+                demander={(email, prenom) =>
+                  envoyerUnCode({ email, creer: intention === 'creer', prenom })
+                }
+                valider={verifierLeCode}
+              />
             </div>
           ) : (
             <Button
@@ -231,182 +227,5 @@ export default function Connexion() {
         </div>
       </main>
     </CadrePublic>
-  );
-}
-
-/**
- * L'adresse, puis le code.
- *
- * Deux temps sur le même écran, parce que l'e-mail peut mettre une minute à
- * arriver : on garde l'adresse sous les yeux, et de quoi en redemander un.
- */
-function ParEmail({ intention }: { intention: Intention }) {
-  const { envoyerUnCode, verifierLeCode } = useAuth();
-  const [email, setEmail] = useState('');
-  const [prenom, setPrenom] = useState('');
-  const [envoyeA, setEnvoyeA] = useState<string | null>(null);
-  const [code, setCode] = useState('');
-  const [occupe, setOccupe] = useState(false);
-  const [erreur, setErreur] = useState<string | null>(null);
-  const [attente, setAttente] = useState(0);
-  const champCode = useRef<HTMLInputElement>(null);
-
-  // Le compte à rebours du « renvoyer » : une seconde à la fois, arrêté à zéro.
-  useEffect(() => {
-    if (attente <= 0) return;
-    const minuteur = window.setTimeout(() => setAttente((reste) => reste - 1), 1000);
-    return () => window.clearTimeout(minuteur);
-  }, [attente]);
-
-  async function envoyer(adresse: string) {
-    setErreur(null);
-    setOccupe(true);
-    try {
-      await envoyerUnCode({ email: adresse, creer: intention === 'creer', prenom });
-      setEnvoyeA(normaliserEmail(adresse));
-      setCode('');
-      setAttente(ATTENTE_ENTRE_DEUX_CODES);
-      // Le champ du code prend la main : le clavier numérique s'ouvre seul.
-      window.setTimeout(() => champCode.current?.focus(), 50);
-    } catch (cause) {
-      setErreur(messageDErreurEmail(cause, 'envoi'));
-      const delai = secondesAAttendre(cause instanceof Error ? cause.message : '');
-      if (delai) setAttente(delai);
-    } finally {
-      setOccupe(false);
-    }
-  }
-
-  async function verifier(chiffres: string) {
-    if (!envoyeA || !codeComplet(chiffres)) return;
-    setErreur(null);
-    setOccupe(true);
-    try {
-      // La session ouverte, l'application bascule d'elle-même : cet écran
-      // disparaît et la suite prévue s'affiche.
-      await verifierLeCode(envoyeA, chiffres);
-    } catch (cause) {
-      setErreur(messageDErreurEmail(cause, 'verification'));
-      setOccupe(false);
-    }
-  }
-
-  function soumettreAdresse(evenement: FormEvent) {
-    evenement.preventDefault();
-    if (!emailPlausible(email)) {
-      setErreur('Cette adresse e-mail ne semble pas valide.');
-      return;
-    }
-    void envoyer(email);
-  }
-
-  if (!envoyeA) {
-    return (
-      <form onSubmit={soumettreAdresse} className="space-y-4" noValidate>
-        {intention === 'creer' && (
-          <Field label="Votre prénom" hint="C’est le nom que verront vos covoyageurs.">
-            <TextInput
-              value={prenom}
-              onChange={(evenement) => setPrenom(evenement.target.value)}
-              autoComplete="given-name"
-              maxLength={60}
-              placeholder="Léa"
-            />
-          </Field>
-        )}
-        <Field label="Adresse e-mail">
-          <TextInput
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            autoCapitalize="none"
-            spellCheck={false}
-            value={email}
-            onChange={(evenement) => setEmail(evenement.target.value)}
-            placeholder="vous@exemple.fr"
-            required
-          />
-        </Field>
-        {erreur && (
-          <p role="alert" className="text-sm text-red-700 dark:text-red-300">
-            {erreur}
-          </p>
-        )}
-        <Button
-          type="submit"
-          variant="secondary"
-          block
-          size="lg"
-          icon={<Mail className="size-5" aria-hidden />}
-          loading={occupe}
-          disabled={attente > 0}
-        >
-          {attente > 0 ? `Nouveau code dans ${attente} s` : 'Recevoir un code par e-mail'}
-        </Button>
-      </form>
-    );
-  }
-
-  return (
-    <form
-      onSubmit={(evenement) => {
-        evenement.preventDefault();
-        void verifier(chiffresDuCode(code));
-      }}
-      className="space-y-4"
-    >
-      <p className="text-sm leading-relaxed">
-        Code envoyé à <strong className="break-all">{envoyeA}</strong>. Il arrive en moins d’une
-        minute — pensez à regarder dans les indésirables.
-      </p>
-      <Field label="Le code reçu">
-        <TextInput
-          ref={champCode}
-          value={code}
-          onChange={(evenement) => {
-            const chiffres = chiffresDuCode(evenement.target.value);
-            setCode(chiffres);
-            // Six chiffres collés ou tapés : on valide sans faire chercher le
-            // bouton. Au-delà de six, le projet en demande plus — on attend.
-            if (chiffres.length === 6) void verifier(chiffres);
-          }}
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="[0-9]*"
-          maxLength={12}
-          placeholder="123456"
-          className="chiffres text-center text-2xl tracking-[0.4em]"
-          aria-describedby={erreur ? 'erreur-du-code' : undefined}
-        />
-      </Field>
-      {erreur && (
-        <p id="erreur-du-code" role="alert" className="text-sm text-red-700 dark:text-red-300">
-          {erreur}
-        </p>
-      )}
-      <Button type="submit" block size="lg" loading={occupe} disabled={!codeComplet(code)}>
-        Valider
-      </Button>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <button
-          type="button"
-          onClick={() => {
-            setEnvoyeA(null);
-            setErreur(null);
-          }}
-          className="text-muted min-h-11 underline-offset-4 hover:underline"
-        >
-          Changer d’adresse
-        </button>
-        <button
-          type="button"
-          disabled={attente > 0 || occupe}
-          onClick={() => void envoyer(envoyeA)}
-          className="text-brand-700 dark:text-brand-200 min-h-11 font-semibold underline-offset-4 hover:underline disabled:opacity-50 disabled:hover:no-underline"
-        >
-          {attente > 0 ? `Renvoyer dans ${attente} s` : 'Renvoyer le code'}
-        </button>
-      </div>
-    </form>
   );
 }

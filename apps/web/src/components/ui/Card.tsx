@@ -1,8 +1,9 @@
-import type { HTMLAttributes } from 'react';
+import type { ComponentProps, HTMLAttributes } from 'react';
 import { cn } from '@/lib/cn';
 
 /** Conteneur de base : les contenus de Tripora sont des cartes, pas des lignes. */
-export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
+// `ComponentProps<'div'>` : la `ref` traverse jusqu'au conteneur (React 19).
+export function Card({ className, ...rest }: ComponentProps<'div'>) {
   return (
     <div
       {...rest}

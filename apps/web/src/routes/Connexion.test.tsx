@@ -4,19 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import Connexion from './Connexion';
 import { AuthContext, type AuthContextValue } from '@/lib/auth-context';
+import { authFactice } from '@/test/authFactice';
 
 function afficher(modifications: Partial<AuthContextValue> = {}, etat?: unknown) {
-  const valeur: AuthContextValue = {
-    identity: null,
-    loading: false,
-    backendReady: true,
-    signInWithGoogle: vi.fn().mockResolvedValue(undefined),
-    envoyerUnCode: vi.fn().mockResolvedValue(undefined),
-    verifierLeCode: vi.fn().mockResolvedValue(undefined),
-    continueAsGuest: vi.fn().mockResolvedValue(undefined),
-    signOut: vi.fn().mockResolvedValue(undefined),
-    ...modifications,
-  };
+  const valeur = authFactice(modifications);
   render(
     <MemoryRouter initialEntries={[{ pathname: '/connexion', state: etat }]}>
       <AuthContext.Provider value={valeur}>

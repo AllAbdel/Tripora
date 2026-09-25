@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { CollaborationApi, TripMember } from '@/lib/collaboration';
-import { AuthContext, type AuthContextValue } from '@/lib/auth-context';
+import { authFactice } from '@/test/authFactice';
+import { AuthContext } from '@/lib/auth-context';
 import TripMembers from './TripMembers';
 
 const collaboration = vi.hoisted(() => ({ current: null as CollaborationApi | null }));
@@ -48,16 +49,9 @@ function fauxApi(overrides: Partial<CollaborationApi> = {}): CollaborationApi {
 }
 
 function afficher() {
-  const identity: AuthContextValue = {
+  const identity = authFactice({
     identity: { id: ABDEL, displayName: 'Abdel', isAnonymous: false, mode: 'supabase', fournisseur: 'google' },
-    loading: false,
-    backendReady: true,
-    signInWithGoogle: vi.fn(),
-    envoyerUnCode: vi.fn(),
-    verifierLeCode: vi.fn(),
-    continueAsGuest: vi.fn(),
-    signOut: vi.fn(),
-  };
+  });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>

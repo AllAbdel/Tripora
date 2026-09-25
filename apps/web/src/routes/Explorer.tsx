@@ -88,7 +88,11 @@ export default function Explorer() {
         {anonyme && (
           <Banner tone="info">
             Vous êtes connecté en invité. Vous pouvez regarder ; pour vous présenter à des
-            inconnus, il faut un compte — c’est la moindre des choses envers eux.
+            inconnus, il faut un compte — c’est la moindre des choses envers eux.{' '}
+            <Link to="/profil#garder-mes-voyages" className="font-semibold underline underline-offset-2">
+              Créer mon compte sans perdre mes voyages
+            </Link>
+            .
           </Banner>
         )}
 

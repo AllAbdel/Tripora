@@ -26,7 +26,8 @@ export default function Conditions() {
         <Definition terme="Trois façons d’entrer">
           Avec Google, avec une adresse e-mail (un code à usage unique, sans mot de passe), ou en
           invité pour rejoindre un voyage par un code. Un compte invité vit sur l’appareil où il a
-          été ouvert : pour retrouver vos voyages ailleurs, créez un compte.
+          été ouvert ; rattachez-le à Google ou à une adresse e-mail depuis le profil pour
+          retrouver vos voyages ailleurs.
         </Definition>
         <Definition terme="Qui peut l’utiliser">
           Tripora s’adresse aux personnes majeures. Les trips ouverts, qui mettent en relation

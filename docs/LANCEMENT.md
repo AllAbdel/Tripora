@@ -153,7 +153,7 @@ sans carte bancaire :
    SMTP* et remplir : l'adresse d'expéditeur validée à l'étape 1, le nom
    `Tripora`, puis serveur, port, identifiant et clé. La clé ne passe que par
    ce formulaire : ne me l'envoie pas.
-4. Supabase → *Authentication → Emails → Templates* : remplacer deux modèles
+4. Supabase → *Authentication → Emails → Templates* : remplacer trois modèles
    pour qu'ils contiennent **le code**, pas seulement un lien.
 
    **Confirm signup** — objet : `Votre code Tripora : {{ .Token }}`
@@ -175,7 +175,23 @@ sans carte bancaire :
    <p style="color:#777">Ce n’est pas vous ? Ignorez ce message : sans ce code, personne ne peut entrer.</p>
    ```
 
-5. Essayer : sur le site, *Se connecter → Première fois*, une autre adresse
+   **Change Email Address** — objet : `Votre code Tripora : {{ .Token }}`
+   (c'est le modèle qu'utilise un compte invité qui devient un vrai compte)
+
+   ```html
+   <h2>Gardez vos voyages</h2>
+   <p>Voici votre code pour rattacher cette adresse à votre compte Tripora :</p>
+   <p style="font-size:32px;font-weight:700;letter-spacing:6px">{{ .Token }}</p>
+   <p>Recopiez-le dans Tripora. Vos voyages, vos votes et vos dépenses restent les vôtres.</p>
+   <p style="color:#777">Vous n’avez rien demandé ? Ignorez ce message : sans ce code, rien ne change.</p>
+   ```
+
+5. Supabase → *Authentication → Sign In / Providers* (ou *Settings*) :
+   activer **Allow manual linking**. C'est ce qui permet à un ami entré avec un
+   code d'invitation de rattacher son compte Google sans perdre ses voyages
+   (Profil → « Gardez vos voyages »). Sans ce réglage, le bouton Google
+   répond que le rattachement n'est pas encore ouvert, et propose l'e-mail.
+6. Essayer : sur le site, *Se connecter → Première fois*, une autre adresse
    que la tienne.
 
 Une adresse Gmail comme expéditeur fonctionne, mais une partie des codes

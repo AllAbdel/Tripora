@@ -29,6 +29,7 @@ import { ApercuDuPasseport } from '@/components/ApercuDuPasseport';
 import { MesMoyensDePaiement } from '@/components/MesMoyensDePaiement';
 import { ReglageDesRappels } from '@/components/ReglageDesRappels';
 import { SupprimerMonCompte } from '@/components/SupprimerMonCompte';
+import { GarderMesVoyages } from '@/components/GarderMesVoyages';
 import { rappelsPossibles } from '@/lib/rappels';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -108,6 +109,8 @@ export default function Profile() {
             </div>
           </CardBody>
         </Card>
+
+        {identity?.isAnonymous && identity.mode === 'supabase' && <GarderMesVoyages />}
 
         <ApercuDuPasseport />
 

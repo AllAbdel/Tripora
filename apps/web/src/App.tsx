@@ -166,12 +166,19 @@ function VersLaConnexion() {
   return <Navigate to="/connexion" replace state={{ inscription: pathname === '/voyages/nouveau' }} />;
 }
 
-/** Connecté sur l'écran de connexion : on va là où on voulait aller. */
+/**
+ * Connecté sur l'écran de connexion : on va là où on voulait aller.
+ *
+ * Le message éventuel suit : l'application mobile ramène ici un refus de
+ * Google, y compris quand on était déjà connecté (un compte invité qui
+ * rattachait Google), et c'est l'écran d'arrivée qui doit l'afficher.
+ */
 function ApresConnexion() {
+  const { state } = useLocation();
   // Lue au rendu, effacée après : un rendu peut être joué deux fois.
   const [cible] = useState(() => lireLaSuite() ?? '/voyages');
   useEffect(() => oublierLaSuite(), []);
-  return <Navigate to={cible} replace />;
+  return <Navigate to={cible} replace state={state} />;
 }
 
 export default function App() {
