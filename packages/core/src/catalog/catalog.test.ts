@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DESTINATIONS, findDestination } from './destinations.js';
+import { AUTRES_NOMS, DESTINATIONS, findDestination, searchDestinations } from './destinations.js';
 import { isReasonableSeason, reasonableDistanceKm, selectCandidates } from './candidates.js';
 import { PREFERENCE_AXES } from '../preferences.js';
 import { haversineKm } from '../geo.js';
@@ -136,5 +136,30 @@ describe('présélection des candidates', () => {
       constraints({ budgetPerPersonCents: null, month: undefined, dateMode: 'weekend' }),
     );
     expect(ids.length).toBeGreaterThan(5);
+  });
+});
+
+describe('recherche d’une destination', () => {
+  it('trouve une ville sous le nom lu sur un billet, en anglais', () => {
+    // « Riyadh » ne trouvait rien : on croyait que Tripora ne connaissait pas
+    // l'Arabie saoudite, alors que Riyad était au catalogue.
+    expect(searchDestinations('Riyadh').map((d) => d.id)).toContain('riyad');
+    expect(searchDestinations('jeddah').map((d) => d.id)).toContain('djeddah');
+    expect(searchDestinations('al ula').map((d) => d.id)).toContain('alula');
+    expect(searchDestinations('Al-Ula').map((d) => d.id)).toContain('alula');
+    expect(searchDestinations('hofuf').map((d) => d.id)).toContain('al-ahsa');
+  });
+
+  it('trouve toutes les villes d’un pays par son nom', () => {
+    const saoudiennes = searchDestinations('arabie saoudite').map((d) => d.id);
+    expect(saoudiennes).toEqual(expect.arrayContaining(['riyad', 'djeddah', 'alula', 'abha', 'al-ahsa']));
+  });
+
+  it('ne donne d’autres noms qu’à des destinations qui existent', () => {
+    // Un autre nom rattaché à un identifiant disparu ne trouverait plus rien,
+    // sans que personne s'en aperçoive.
+    for (const id of Object.keys(AUTRES_NOMS)) {
+      expect(findDestination(id), id).toBeDefined();
+    }
   });
 });

@@ -1598,6 +1598,15 @@ export const DESTINATIONS: readonly Destination[] = [
   make('riyad', 'Riyad', 'Arabie saoudite', 'SA', 24.7136, 46.6753, ['RUH'],
     { culture: 0.7, nature: 0.4, food: 0.8, nightlife: 0.25, relax: 0.5, adventure: 0.55, shopping: 0.8, offbeat: 0.8 },
     0.9, 0.5, [11, 12, 1, 2, 3], 'Asia/Riyadh'),
+  // Les montagnes de l'Asir : l'été saoudien s'y passe au frais, à plus de
+  // deux mille mètres, quand le reste du pays dépasse quarante degrés. Mars à
+  // mai et août sont les mois des orages (douze à quinze jours de pluie).
+  make('abha', 'Abha et l’Asir', 'Arabie saoudite', 'SA', 18.2169, 42.5053, ['AHB'],
+    { culture: 0.75, nature: 0.95, food: 0.65, nightlife: 0.15, relax: 0.8, adventure: 0.8, shopping: 0.35, offbeat: 0.95 },
+    0.75, 0.4, [6, 7, 9, 10, 11], 'Asia/Riyadh'),
+  make('al-ahsa', 'L’oasis d’Al-Ahsa', 'Arabie saoudite', 'SA', 25.3830, 49.5870, ['HOF'],
+    { culture: 0.85, nature: 0.8, food: 0.7, nightlife: 0.1, relax: 0.6, adventure: 0.5, shopping: 0.5, offbeat: 0.95 },
+    0.7, 0.45, [11, 12, 1, 2, 3], 'Asia/Riyadh'),
   make('saint-domingue', 'Saint-Domingue', 'République dominicaine', 'DO', 18.4861, -69.9312, ['SDQ'],
     { culture: 0.9, nature: 0.7, food: 0.8, nightlife: 0.85, relax: 0.8, adventure: 0.6, shopping: 0.5, offbeat: 0.8 },
     0.6, 0.6, [12, 1, 2, 3, 4], 'America/Santo_Domingo'),
@@ -2007,14 +2016,34 @@ export const DESTINATIONS_BY_ID: ReadonlyMap<string, Destination> = new Map(
  * Les villes dont le nom commence par la saisie passent devant : taper « ro »
  * doit proposer Rome avant Barcelone, qui ne la contient qu'au milieu.
  */
+/**
+ * Les autres façons d'écrire un lieu.
+ *
+ * Le catalogue nomme les villes en français — Riyad, Djeddah —, mais on tape
+ * souvent le nom qu'on a lu sur un billet d'avion ou une réservation, en
+ * anglais : « Riyadh », « Jeddah ». Une recherche qui ne trouvait rien laissait
+ * croire que Tripora ne connaissait pas le pays. Les traits d'union et les
+ * espaces des noms arabes (« Al-Ula », « Al Ula ») sont écrits des deux façons.
+ */
+export const AUTRES_NOMS: Readonly<Record<string, readonly string[]>> = {
+  riyad: ['Riyadh', 'Ar-Riyad'],
+  djeddah: ['Jeddah', 'Jiddah'],
+  alula: ['Al-Ula', 'Al Ula', 'Hegra'],
+  abha: ['Asir', 'Aseer'],
+  'al-ahsa': ['Al Ahsa', 'Al-Hasa', 'Al Hasa', 'Hofuf', 'Al-Hofuf'],
+};
+
+/** Ce dans quoi la recherche cherche : le nom, le pays, les autres noms. */
+function texteCherchable(destination: Destination): string {
+  return fold([destination.name, destination.country, ...(AUTRES_NOMS[destination.id] ?? [])].join(' '));
+}
+
 export function searchDestinations(query: string, limit = 30): Destination[] {
   const needle = fold(query);
   const pool =
     needle.length === 0
       ? [...DESTINATIONS]
-      : DESTINATIONS.filter((destination) =>
-          fold(`${destination.name} ${destination.country}`).includes(needle),
-        );
+      : DESTINATIONS.filter((destination) => texteCherchable(destination).includes(needle));
   return pool
     .sort((a, b) => {
       const aStarts = fold(a.name).startsWith(needle) ? 0 : 1;
