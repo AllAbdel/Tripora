@@ -97,15 +97,28 @@
   --color-brand-800: #0a2c57;
   --color-brand-900: #07203f;
 
+  /* Les nuances intermédiaires (50, 200, 600, 900…) sont interpolées en OKLab
+     entre les teintes de référence, vers le papier pour les claires et vers la
+     nuit pour les sombres. Elles manquaient alors que des écrans s'en
+     servaient : Tailwind 4 ne génère rien pour une nuance absente, sans erreur
+     ni avertissement. La barre « dépassé » du budget, les épingles du groupe
+     sur la carte, le libellé d'une note moyenne restaient sans couleur. */
+  --color-lagoon-50: #f0f6f1;
+  --color-lagoon-200: #b4dcd7;
   --color-lagoon-300: #7ec6c2;
   --color-lagoon-500: #2f8f88;
+  --color-lagoon-600: #257570;
   --color-lagoon-700: #1b5c58;
+  --color-lagoon-900: #1c3532;
 
   /* L'encre : des bruns profonds, jamais du noir pur. Le noir absolu sur un
      fond crème fait un trou ; une encre brune s'y pose. */
+  --color-ink-100: #d0c6b4;
   --color-ink-300: #a79c8a;
   --color-ink-500: #6b6355;
+  --color-ink-600: #524b3f;
   --color-ink-700: #3a342b;
+  --color-ink-800: #2a251f;
   --color-ink-900: #1a1713;
 
   /* Le papier, du plus clair au plus bruni. */
@@ -115,9 +128,17 @@
   --color-paper-300: #e6ddcb;
   --color-paper-400: #d4c7ae;
 
+  --color-gold-50: #fcf6e9;
+  --color-gold-200: #f1daae;
   --color-gold-300: #e8c37a;
+  --color-gold-400: #d4a656;
   --color-gold-500: #c08a2e;
+  /* Plus près du 700 que du 500 : c'est la nuance des libellés dorés, et elle
+     doit tenir 4,5:1 sur le papier des cartes (4,7:1 ici). */
+  --color-gold-600: #97691d;
   --color-gold-700: #8a5f18;
+  --color-gold-800: #63461b;
+  --color-gold-900: #453219;
 
   --font-display: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --font-sans:
