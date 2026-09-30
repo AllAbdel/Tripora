@@ -23,11 +23,10 @@ test('une page de destination se lit sans compte et mène à la création du voy
   await page.getByRole('link', { name: 'Organiser ce voyage' }).first().click();
   await expect(page).toHaveURL(/\/voyages\/nouveau\?destination=bergen$/);
 
-  // Pas encore de compte : l'écran de connexion, puis la création reprend.
-  await expect(page).toHaveURL(/\/connexion$/);
-  await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
-  await expect(page).toHaveURL(/\/voyages\/nouveau\?destination=bergen$/);
+  // Pas de compte, et pas de mur : la création s'ouvre directement, la
+  // destination déjà choisie. Le compte ne sera proposé qu'à la fin.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Avec qui partez-vous ?');
+  await expect(page).toHaveURL(/\/voyages\/nouveau\?destination=bergen$/);
 
   const brouillon = await page.evaluate(
     () =>
