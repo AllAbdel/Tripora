@@ -40,6 +40,8 @@ import { Reserver } from '@/components/Reserver';
 import { ApplicationsUtiles } from '@/components/ApplicationsUtiles';
 import { MeteoPrevue } from '@/components/MeteoPrevue';
 import { EmpreinteDuVoyage } from '@/components/EmpreinteDuVoyage';
+import { SuivreLePrix } from '@/components/SuivreLePrix';
+import { BaissesDuVoyage } from '@/components/BaissesDuVoyage';
 import { LeVoyageAuPresent } from '@/components/LeVoyageAuPresent';
 import { InfosPratiques } from '@/components/InfosPratiques';
 import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
@@ -291,6 +293,8 @@ export default function TripDetail() {
             />
           )}
 
+          <BaissesDuVoyage tripId={data.summary.id} />
+
           <ProchainGeste
             tripId={data.summary.id}
             readiness={etatDuGroupe!}
@@ -399,6 +403,18 @@ export default function TripDetail() {
             <Reserver constraints={data.constraints} destination={villeRetenue} />
           )}
 
+          {villeRetenue &&
+            estimateTransportOptions(data.constraints.origin, villeRetenue, data.constraints.participants).some(
+              (option) => option.mode === 'plane',
+            ) && (
+              <SuivreLePrix
+                enCarte
+                tripId={data.summary.id}
+                constraints={data.constraints}
+                destination={villeRetenue}
+              />
+            )}
+
           {villeRetenue && id && <ApplicationsUtiles tripId={id} destination={villeRetenue} />}
 
           {proposals && proposals.scores.length > 0 && (
@@ -458,6 +474,13 @@ export default function TripDetail() {
                         depart={data.constraints.origin}
                         enFrance={trajetEnFrance(data.constraints.origin, destination)}
                         prixReleve={prix?.parDestination[score.destinationId]}
+                        suiviDuPrix={
+                          <SuivreLePrix
+                            tripId={data.summary.id}
+                            constraints={data.constraints}
+                            destination={destination}
+                          />
+                        }
                         vote={
                           !data.lockedDestinationId ? (
                             <VoteBar

@@ -16,7 +16,7 @@ import { Bloc, Definition, LienDeContact, PageLegale } from '@/components/PageLe
  */
 export default function Confidentialite() {
   return (
-    <PageLegale titre="Confidentialité" miseAJour="25 septembre 2026">
+    <PageLegale titre="Confidentialité" miseAJour="30 septembre 2026">
       <Bloc titre="En une phrase">
         <p>
           Tripora conserve le minimum nécessaire pour qu’un voyage fonctionne à plusieurs,
@@ -57,6 +57,14 @@ export default function Confidentialite() {
           mixité, tranche d’âge, rythme) est visible des personnes connectées qui cherchent un
           voyage — ni les membres, ni l’itinéraire, ni la discussion. Une candidature transmet
           votre présentation à l’organisateur.
+        </Definition>
+        <Definition terme="Les prix que vous suivez">
+          Si vous suivez le prix d’un vol : l’aéroport de départ, la destination, le mois, et les
+          prix relevés chaque matin. Visibles de vous seul, supprimés quand vous arrêtez le suivi,
+          et d’eux-mêmes une fois le mois passé.
+          Si vous activez les notifications, l’adresse d’abonnement que fournit votre navigateur
+          est conservée pour pouvoir le réveiller ; la notification elle-même ne contient ni
+          destination ni prix.
         </Definition>
         <Definition terme="Sur votre appareil seulement">
           Le thème, la couleur choisie et les retours sonores restent dans le navigateur. Les
@@ -110,6 +118,12 @@ export default function Confidentialite() {
         <Definition terme="Travelpayouts (prix des vols)">
           Le code de l’aéroport de départ et le mois visé, depuis nos serveurs, pour relever les
           prix des vols. Rien sur vous ni sur votre groupe.
+        </Definition>
+        <Definition terme="Le service de notification de votre navigateur">
+          Uniquement si vous activez les notifications des alertes de prix : Google (Chrome,
+          Android), Mozilla (Firefox) ou Apple (Safari) reçoit un signal vide qui réveille votre
+          navigateur. Ni destination, ni prix, ni nom : le message affiché est toujours le même,
+          et le détail se lit dans Tripora.
         </Definition>
         <Definition terme="Les services que vous ouvrez vous-même">
           Cliquer sur un lien vers une application recommandée ou un site de réservation vous

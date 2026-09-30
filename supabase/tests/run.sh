@@ -70,6 +70,9 @@ psql_run -q -d "$DB" -f "$ROOT/supabase/tests/lieux_osm_test.sql"
 echo "→ Tests du compte invité devenu compte"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/compte_invite_test.sql"
 
+echo "→ Tests des alertes de prix"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/alertes_de_prix_test.sql"
+
 # En dernier : la purge efface le voyage dont tous les tests précédents se
 # servent.
 echo "→ Tests de la purge des voyages supprimés"

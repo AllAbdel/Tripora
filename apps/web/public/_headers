@@ -56,3 +56,8 @@
 # correction reste invisible plusieurs jours.
 /sw.js
   Cache-Control: no-cache
+
+# Ce qu'il importe (les notifications des alertes de prix) : le navigateur
+# relit les scripts importés à travers le cache HTTP, il faut donc le même régime.
+/sw-alertes.js
+  Cache-Control: no-cache

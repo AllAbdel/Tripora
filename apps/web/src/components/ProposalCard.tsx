@@ -48,6 +48,7 @@ export function ProposalCard({
   choixDuGroupe = false,
   verrouillee = false,
   enFrance = false,
+  suiviDuPrix,
 }: {
   rank: number;
   destination: Destination;
@@ -78,6 +79,8 @@ export function ProposalCard({
   verrouillee?: boolean;
   /** Départ et arrivée en France : le train y a l'empreinte du TGV. */
   enFrance?: boolean;
+  /** « Suivre le prix du vol », sous les trajets quand l'avion en fait partie. */
+  suiviDuPrix?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const climat = month === undefined ? undefined : climateFor(destination.id, month);
@@ -321,6 +324,7 @@ export function ProposalCard({
                     </li>
                   ))}
                 </ul>
+                {transport.some((option) => option.mode === 'plane') && suiviDuPrix}
               </section>
             )}
           </div>

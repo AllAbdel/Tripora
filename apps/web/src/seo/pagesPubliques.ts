@@ -656,6 +656,7 @@ Disallow: /connexion
 Disallow: /voyages
 Disallow: /rejoindre
 Disallow: /partager
+Disallow: /alertes
 Disallow: /profil
 Disallow: /passeport
 Disallow: /budget
@@ -705,6 +706,7 @@ export function pourLesAssistants(publiees: readonly Destination[], { origine }:
 - « Découvrir » : les activités défilent comme des cartes ; le groupe voit ce qui plaît, sans savoir qui a dit non.
 - Le programme jour par jour, composé à partir des activités qui ont plu, et exportable dans l'agenda.
 - La carte du voyage : lieux du programme, adresses et épingles du groupe.
+- Alertes de prix : suivre le vol d'une proposition ; Tripora relève le prix chaque matin et prévient (notification du navigateur) quand il baisse d'au moins 10 %.
 - « Partager vers Tripora » : une vidéo TikTok, un Reel, une fiche Google Maps ou un article partagé à l'application devient des épingles sur la carte du groupe (les lieux cités y sont trouvés et situés).
 - Sondages, tâches partagées (« qui fait quoi »), valise à cocher, coffre (codes, wifi, billets, lisibles hors ligne).
 - « Qui doit quoi » : dépenses en toutes devises, remboursements calculés au plus simple, liens de paiement.

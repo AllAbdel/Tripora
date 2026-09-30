@@ -16,6 +16,13 @@ casser les tests ni gêner le reste du développement, qui continue en parallèl
   messages dans `lib/connexionEmail.ts`), le guide de démarrage
   (`components/guide/etapesDuGuide.ts`), la dernière étape de la création
   sans compte (`components/EnregistrerLeTrip.tsx`, `lib/resumeDuBrouillon.ts`),
+  les écrans ajoutés depuis — les ponts et vacances scolaires
+  (`components/OccasionsDePartir.tsx`), l'empreinte carbone
+  (`components/EmpreinteDuVoyage.tsx`, phrases dans `packages/core/src/carbone.ts`),
+  le partage vers Tripora (`routes/Partager.tsx`, `lib/partage.ts`), les alertes
+  de prix (`routes/AlertesDePrix.tsx`, `components/SuivreLePrix.tsx`,
+  `components/BaissesDuVoyage.tsx`, `lib/alertesDePrix.ts`, et le texte de la
+  notification dans `public/sw-alertes.js`) —,
   le fichier pour les assistants (`llms.txt`, généré par
   `seo/pagesPubliques.ts` : il a déjà un paragraphe en anglais), le pied de page et les pages légales
   (`Confidentialite`, `MentionsLegales`, `Conditions`). Les pages légales

@@ -62,6 +62,7 @@ const Decouvrir = lazy(() => import('@/routes/Decouvrir'));
 const Explorer = lazy(() => import('@/routes/Explorer'));
 const Passeport = lazy(() => import('@/routes/Passeport'));
 const Partager = lazy(() => import('@/routes/Partager'));
+const AlertesDePrix = lazy(() => import('@/routes/AlertesDePrix'));
 
 function FullScreenLoader() {
   return (
@@ -116,6 +117,7 @@ function TabbedRoutes() {
         {/* « Partager vers Tripora » : le menu Partager du téléphone ou du
             navigateur arrive ici, avec le lien dans l'adresse. */}
         <Route path="/partager" element={<Partager />} />
+        <Route path="/alertes" element={<AlertesDePrix />} />
         <Route path="/soutenir" element={<Soutenir />} />
         <Route path="/confidentialite" element={<Confidentialite />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />

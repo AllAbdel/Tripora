@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import {
   BellOff,
+  BellRing,
   Check,
   FileText,
   HandCoins,
@@ -31,6 +32,7 @@ import { ReglageDesRappels } from '@/components/ReglageDesRappels';
 import { SupprimerMonCompte } from '@/components/SupprimerMonCompte';
 import { GarderMesVoyages } from '@/components/GarderMesVoyages';
 import { rappelsPossibles } from '@/lib/rappels';
+import { alertesPossibles } from '@/lib/alertesDePrix';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -130,6 +132,26 @@ export default function Profile() {
         {rappelsPossibles && (
           <Section titre="Rappels">
             <ReglageDesRappels />
+          </Section>
+        )}
+
+        {alertesPossibles && identity?.mode === 'supabase' && (
+          <Section titre="Alertes de prix">
+            <Card>
+              <CardBody className="space-y-2">
+                <p className="text-muted text-sm leading-relaxed">
+                  Les vols que vous suivez sont relevés chaque matin. Quand l’un d’eux baisse
+                  vraiment, vous le voyez ici, et sur cet appareil si vous le souhaitez.
+                </p>
+                <Link
+                  to="/alertes"
+                  className="text-brand-600 dark:text-brand-300 inline-flex min-h-11 items-center gap-2 text-sm font-semibold"
+                >
+                  <BellRing className="size-4" aria-hidden />
+                  Mes alertes de prix
+                </Link>
+              </CardBody>
+            </Card>
           </Section>
         )}
 

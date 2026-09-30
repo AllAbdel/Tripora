@@ -87,6 +87,9 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
+          // Les notifications des alertes de prix : afficher le message fixe
+          // et ouvrir /alertes au toucher (public/sw-alertes.js).
+          importScripts: ['/sw-alertes.js'],
           globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
           /**
            * Ce que la première visite ne doit pas payer.
@@ -126,6 +129,8 @@ export default defineConfig(({ mode }) => {
             // La feuille de style des pages publiques du carnet : l'application
             // ne s'en sert jamais.
             '**/pages.css',
+            // Importé par le service worker lui-même, jamais demandé par une page.
+            '**/sw-alertes.js',
           ],
           // La page de retour de connexion de l'application mobile ne doit
           // jamais être remplacée par Tripora : le site, voyant un code sans
