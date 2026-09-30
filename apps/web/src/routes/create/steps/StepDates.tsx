@@ -4,6 +4,7 @@ import { OptionCard } from '@/components/ui/OptionCard';
 import { Chip } from '@/components/ui/Chip';
 import { Field, TextInput } from '@/components/ui/Field';
 import { NumberStepper } from '@/components/ui/NumberStepper';
+import { CePendant, OccasionsDePartir } from '@/components/OccasionsDePartir';
 import { MONTHS, useTripDraft } from '@/stores/tripDraft';
 
 const MODES: { value: DateMode; label: string; description: string; icon: typeof Sun }[] = [
@@ -35,7 +36,8 @@ const MODES: { value: DateMode; label: string; description: string; icon: typeof
 
 export function StepDates() {
   const draft = useTripDraft();
-  const { dateMode, month, startDate, endDate, windowStart, windowEnd, durationDays, patch } = draft;
+  const { dateMode, month, startDate, endDate, windowStart, windowEnd, durationDays, origin, groupType, patch } =
+    draft;
   const today = dateDuJour();
 
   return (
@@ -126,6 +128,13 @@ export function StepDates() {
         </div>
       )}
 
+      {dateMode === 'exact' && startDate && endDate && (
+        <CePendant debut={startDate} fin={endDate} origin={origin} />
+      )}
+      {dateMode === 'window' && windowStart && windowEnd && (
+        <CePendant debut={windowStart} fin={windowEnd} origin={origin} />
+      )}
+
       {dateMode !== 'exact' && (
         <NumberStepper
           label="Durée du séjour"
@@ -136,6 +145,24 @@ export function StepDates() {
           onChange={(value) => patch({ durationDays: value })}
         />
       )}
+
+      {/* Les ponts et les vacances : un appui, et les dates sont posées. Les
+          grandes vacances ne se prennent pas en entier — elles deviennent une
+          fenêtre, dans laquelle Tripora cherche la période la moins chère. */}
+      <OccasionsDePartir
+        origin={origin}
+        familles={groupType === 'family'}
+        onChoisir={(occasion) =>
+          occasion.jours > 16
+            ? patch({ dateMode: 'window', windowStart: occasion.debut, windowEnd: occasion.fin })
+            : patch({
+                dateMode: 'exact',
+                startDate: occasion.debut,
+                endDate: occasion.fin,
+                durationDays: occasion.jours,
+              })
+        }
+      />
     </div>
   );
 }

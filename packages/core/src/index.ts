@@ -23,6 +23,7 @@ export * from './catalog/origins.js';
 // permet à l'application de ne le charger qu'à ce moment-là.
 export * from './transport.js';
 export * from './carbone.js';
+export * from './conges.js';
 export * from './proposals.js';
 export * from './itinerary.js';
 export * from './places.js';

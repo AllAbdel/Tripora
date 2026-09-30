@@ -699,6 +699,7 @@ export function pourLesAssistants(publiees: readonly Destination[], { origine }:
 
 - Propositions de destinations chiffrées pour tout le groupe : vol relevé depuis la ville de départ (avec sa date de relevé), budget sur place, climat du mois, et correspondance avec les envies de chacun.
 - Chacun donne ses envies et son budget ; le groupe vote et tranche. Personne ne subit une destination qu'il déteste.
+- Les ponts et les vacances scolaires (zones A, B, C) proposés au moment de choisir les dates.
 - L'empreinte carbone de chaque trajet (avion, train, car, voiture partagée), par personne et aller-retour, d'après les facteurs de l'ADEME.
 - « Découvrir » : les activités défilent comme des cartes ; le groupe voit ce qui plaît, sans savoir qui a dit non.
 - Le programme jour par jour, composé à partir des activités qui ont plu, et exportable dans l'agenda.
