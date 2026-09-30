@@ -295,7 +295,7 @@ const ETAPES: { pastille: NomDePastille; titre: string; texte: string }[] = [
     pastille: 'creer',
     titre: 'Créez le voyage',
     texte:
-      'Avec qui, d’où, quand, pour combien. Pas encore de destination ? C’est justement ce que Tripora sait trouver.',
+      'Avec qui, d’où, quand, pour combien — sans compte pour commencer. Pas encore de destination ? C’est justement ce que Tripora sait trouver.',
   },
   {
     pastille: 'participants',

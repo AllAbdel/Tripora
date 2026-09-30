@@ -28,8 +28,9 @@ describe('les pages publiques du carnet', () => {
   it('écrit une page par destination du carnet, le sommaire, le plan du site et les robots', () => {
     const publiees = destinationsPubliees();
     expect(publiees.length).toBeGreaterThan(250);
-    // Les destinations, douze pages de mois, le sommaire, le plan du site, les robots.
-    expect(fichiers).toHaveLength(publiees.length + 12 + 3);
+    // Les destinations, douze pages de mois, le sommaire, le plan du site, les
+    // robots et le fichier pour les assistants.
+    expect(fichiers).toHaveLength(publiees.length + 12 + 4);
     for (const destination of publiees) {
       expect(parChemin.has(`destinations/${destination.id}.html`), destination.id).toBe(true);
     }
@@ -86,6 +87,20 @@ describe('les pages publiques du carnet', () => {
     expect(texte).toContain('Disallow: /rejoindre');
     expect(texte).toContain('Allow: /destinations');
     expect(texte).toContain('Sitemap: https://tripora.exemple/sitemap.xml');
+  });
+
+  it('explique Tripora à un assistant, et lui montre la porte sans compte', () => {
+    const texte = parChemin.get('llms.txt')!;
+    expect(texte.startsWith('# Tripora\n')).toBe(true);
+    expect(texte).toContain('[Créer un trip](https://tripora.exemple/voyages/nouveau)');
+    expect(texte).toContain('« Plus tard »');
+    expect(texte).toContain('https://tripora.exemple/ou-partir-en/juillet');
+    // Ce que Tripora ne fait pas, dit aussi clairement que ce qu'il fait.
+    expect(texte).toContain('ne réserve rien');
+    expect(texte).not.toMatch(/undefined|NaN/u);
+    const lu = robots(CONTEXTE);
+    expect(lu).toContain('Allow: /llms.txt');
+    expect(lu).toContain('Allow: /voyages/nouveau$');
   });
 
   it('ne laisse passer aucune balise venue du contenu', () => {

@@ -163,7 +163,7 @@ function VersLaConnexion() {
   useEffect(() => {
     if (pathname !== '/voyages') retenirLaSuite(`${pathname}${search}`);
   }, [pathname, search]);
-  return <Navigate to="/connexion" replace state={{ inscription: pathname === '/voyages/nouveau' }} />;
+  return <Navigate to="/connexion" replace />;
 }
 
 /**
@@ -202,17 +202,23 @@ export default function App() {
         <Route path="/rejoindre" element={<JoinTrip />} />
         <Route path="/rejoindre/:code" element={<JoinTrip />} />
 
+        {/* Ouvert à tous : on compose son trip avant d'avoir un compte. Le
+            compte n'est demandé qu'à la toute fin, au moment d'enregistrer —
+            quand on a déjà six réponses à ne pas perdre. Déclarée une seule
+            fois, hors du choix « connecté ou pas » : quand la session s'ouvre
+            à la dernière étape, l'écran reste le même et garde son état. */}
+        <Route
+          path="/voyages/nouveau"
+          element={
+            <Suspense fallback={<FullScreenLoader />}>
+              <CreateTrip />
+            </Suspense>
+          }
+        />
+
         {identity ? (
           <>
             <Route path="/connexion" element={<ApresConnexion />} />
-            <Route
-              path="/voyages/nouveau"
-              element={
-                <Suspense fallback={<FullScreenLoader />}>
-                  <CreateTrip />
-                </Suspense>
-              }
-            />
             <Route
               path="/voyages/:id/mes-envies"
               element={
@@ -225,8 +231,9 @@ export default function App() {
           </>
         ) : (
           <>
-            {/* Sans compte, on lit : l'accueil, et ce que Tripora fait de vos
-                données. Tout le reste mène à la connexion, puis y revient. */}
+            {/* Sans compte, on lit l'accueil et ce que Tripora fait de vos
+                données, et on compose un trip (plus haut). Tout le reste mène
+                à la connexion, puis y revient. */}
             <Route path="/" element={<Accueil />} />
             <Route path="/connexion" element={<Connexion />} />
             <Route

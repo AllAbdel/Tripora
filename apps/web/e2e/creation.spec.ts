@@ -10,7 +10,7 @@ import { expect, test, type Page } from '@playwright/test';
  */
 
 const suivant = (page: Page) =>
-  page.getByRole('button', { name: /^(Continuer|Voir les|Créer|Terminer)/ }).first();
+  page.getByRole('button', { name: /^(Continuer|Voir les|Créer|Terminer|Valider)/ }).first();
 
 /** Le numéro d'étape affiché en haut, pour savoir où l'on en est. */
 async function etape(page: Page): Promise<string> {
@@ -78,6 +78,55 @@ test('on crée un voyage de bout en bout, et il apparaît sur l’accueil', asyn
 
   await page.getByRole('link', { name: /Trips/ }).first().click();
   await expect(page.getByRole('heading', { level: 2 })).toHaveCount(1);
+  expect(plantages).toEqual([]);
+});
+
+/** Les six réponses, remplies comme le ferait une personne pressée. */
+async function repondreAuxSixQuestions(page: Page) {
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Avec qui partez-vous ?');
+  await suivant(page).click();
+  await page.getByRole('textbox').first().fill('Paris');
+  await page.getByRole('radio').filter({ hasText: 'Paris' }).first().click();
+  await suivant(page).click();
+  await suivant(page).click();
+  await page.getByRole('radio').first().click();
+  await page.getByRole('button', { name: 'juillet', exact: true }).click();
+  await suivant(page).click();
+  await page.getByRole('radio').filter({ hasText: /moins cher possible/ }).first().click();
+  await suivant(page).click();
+  await page.getByRole('radio', { name: 'Essentiel' }).first().click();
+}
+
+test('sans compte, on compose tout son trip ; le compte n’est proposé qu’à la fin', async ({ page }) => {
+  const plantages: string[] = [];
+  page.on('pageerror', (erreur) => plantages.push(erreur.message));
+
+  // L'accueil, sans compte, puis directement la création.
+  await page.goto('/', { waitUntil: 'networkidle' });
+  await page.getByRole('link', { name: 'Créer un voyage' }).first().click();
+  await expect(page).toHaveURL(/\/voyages\/nouveau$/);
+  await repondreAuxSixQuestions(page);
+
+  // La dernière question validée : le trip récapitulé, et seulement
+  // maintenant la proposition de le garder.
+  await page.getByRole('button', { name: 'Valider mon trip' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Votre trip est prêt');
+  await expect(page.getByText('Paris', { exact: true })).toBeVisible();
+  await expect(page.getByText('Le moins cher possible')).toBeVisible();
+
+  // Revenir en arrière ne perd rien.
+  await page.getByRole('button', { name: 'Revenir aux envies' }).click();
+  await expect(await etape(page)).toContain('6 sur 6');
+  await page.getByRole('button', { name: 'Valider mon trip' }).click();
+
+  // Ce build n'a pas de serveur : le trip se garde sur l'appareil, et
+  // s'enregistre sans qu'on reclique « Créer ».
+  await page.getByRole('button', { name: /Garder ce trip sur cet appareil/ }).click();
+  await expect(page).toHaveURL(/\/voyages\/[^/]+$/, { timeout: 15_000 });
+  const enregistres = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('tripora.local-trips') ?? '[]') as unknown[],
+  );
+  expect(enregistres, 'le voyage doit avoir été écrit').toHaveLength(1);
   expect(plantages).toEqual([]);
 });
 

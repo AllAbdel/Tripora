@@ -14,7 +14,10 @@ casser les tests ni gêner le reste du développement, qui continue en parallèl
 - Écrits en français en dur, à traduire comme le reste : l'accueil public
   (`routes/Accueil.tsx`), la connexion par e-mail (`routes/Connexion.tsx`,
   messages dans `lib/connexionEmail.ts`), le guide de démarrage
-  (`components/guide/etapesDuGuide.ts`), le pied de page et les pages légales
+  (`components/guide/etapesDuGuide.ts`), la dernière étape de la création
+  sans compte (`components/EnregistrerLeTrip.tsx`, `lib/resumeDuBrouillon.ts`),
+  le fichier pour les assistants (`llms.txt`, généré par
+  `seo/pagesPubliques.ts` : il a déjà un paragraphe en anglais), le pied de page et les pages légales
   (`Confidentialite`, `MentionsLegales`, `Conditions`). Les pages légales
   engagent : les faire relire plutôt que les traduire mot à mot.
 - **Presque tout le reste est écrit en français en dur** dans les composants :

@@ -131,7 +131,7 @@ export default defineConfig(({ mode }) => {
             /^\/retour-app\//,
             /^\/destinations(\/|$)/,
             /^\/ou-partir-en\//,
-            /^\/(sitemap\.xml|robots\.txt)$/,
+            /^\/(sitemap\.xml|robots\.txt|llms\.txt)$/,
           ],
           runtimeCaching: [
             {

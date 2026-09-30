@@ -8,7 +8,7 @@ import { expect, test } from '@playwright/test';
  * vient qu'au moment d'agir — puis ramène là où l'on allait.
  */
 
-test('l’accueil se lit sans compte, et « Créer un voyage » y revient après la connexion', async ({
+test('l’accueil se lit sans compte, et « Créer un voyage » ouvre la création sans rien demander', async ({
   page,
 }) => {
   const plantages: string[] = [];
@@ -22,9 +22,8 @@ test('l’accueil se lit sans compte, et « Créer un voyage » y revient après
   await expect(page.getByRole('heading', { name: /^Où partir en / })).toBeVisible();
 
   await page.getByRole('link', { name: 'Créer un voyage' }).first().click();
-  await expect(page).toHaveURL(/\/connexion$/);
-  await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
-  // La connexion faite, on arrive sur la création, pas sur une liste vide.
+  // Pas d'écran de connexion à l'entrée : le compte n'est proposé qu'au
+  // moment d'enregistrer le trip (voir creation.spec.ts).
   await expect(page).toHaveURL(/\/voyages\/nouveau$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Avec qui partez-vous ?');
   expect(plantages).toEqual([]);

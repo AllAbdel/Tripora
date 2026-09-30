@@ -81,6 +81,7 @@ export function genererLesPages(contexte: Contexte): Fichier[] {
     { chemin: 'destinations.html', contenu: sommaire(publiees, contexte) },
     { chemin: 'sitemap.xml', contenu: planDuSite(publiees, contexte) },
     { chemin: 'robots.txt', contenu: robots(contexte) },
+    { chemin: 'llms.txt', contenu: pourLesAssistants(publiees, contexte) },
   ];
 }
 
@@ -610,6 +611,8 @@ Allow: /ou-partir-en/
 Allow: /confidentialite
 Allow: /mentions-legales
 Allow: /conditions
+Allow: /llms.txt
+Allow: /voyages/nouveau$
 Disallow: /connexion
 Disallow: /voyages
 Disallow: /rejoindre
@@ -624,6 +627,69 @@ Disallow: /retour-app
 Disallow: /go/
 
 Sitemap: ${origine}/sitemap.xml
+`;
+}
+
+/**
+ * Tripora expliqué à un assistant (`/llms.txt`).
+ *
+ * Une intelligence artificielle qu'on envoie découvrir Tripora — pour le
+ * résumer, le comparer, en tirer une publicité — lit d'abord ce fichier s'il
+ * existe : ce que fait l'application, ce qu'elle ne fait pas, par où
+ * l'essayer sans compte, et les pages qui se lisent sans connexion. Le format
+ * est une proposition, pas une norme : il ne change rien au référencement,
+ * il évite seulement qu'un assistant s'arrête à l'écran de connexion ou
+ * invente une fonction. Les chiffres sont calculés à partir du carnet, pour
+ * ne jamais vieillir.
+ */
+export function pourLesAssistants(publiees: readonly Destination[], { origine }: Contexte): string {
+  const activites = DESTINATIONS.reduce((total, destination) => total + activitesDe(destination.id).length, 0);
+  const destinations = DESTINATIONS.length;
+  const arrondi = (n: number) => (n >= 1000 ? `${Math.floor(n / 100) * 100}` : `${Math.floor(n / 10) * 10}`);
+  return `# Tripora
+
+> Tripora aide un groupe d'amis à choisir une destination, à s'organiser et à faire ses comptes, dans une seule application gratuite, sans publicité, sur le web, Android et iOS. Plus de ${arrondi(destinations)} destinations et ${arrondi(activites)} activités décrites.
+
+## Essayer sans compte
+
+- [Créer un trip](${origine}/voyages/nouveau) : six questions — avec qui, d'où, où (ou « Tripora propose »), quand, quel budget, quelles envies. Le compte n'est demandé qu'à la toute fin, pour enregistrer le trip ; « Plus tard » le garde sur l'appareil, sans compte ni e-mail.
+- [Rejoindre un voyage](${origine}/rejoindre) avec le code reçu d'un ami : aucun compte à créer.
+- [L'accueil](${origine}/) présente l'application en une page.
+
+## Ce que fait Tripora
+
+- Propositions de destinations chiffrées pour tout le groupe : vol relevé depuis la ville de départ (avec sa date de relevé), budget sur place, climat du mois, et correspondance avec les envies de chacun.
+- Chacun donne ses envies et son budget ; le groupe vote et tranche. Personne ne subit une destination qu'il déteste.
+- « Découvrir » : les activités défilent comme des cartes ; le groupe voit ce qui plaît, sans savoir qui a dit non.
+- Le programme jour par jour, composé à partir des activités qui ont plu, et exportable dans l'agenda.
+- La carte du voyage : lieux du programme, adresses et épingles du groupe.
+- Sondages, tâches partagées (« qui fait quoi »), valise à cocher, coffre (codes, wifi, billets, lisibles hors ligne).
+- « Qui doit quoi » : dépenses en toutes devises, remboursements calculés au plus simple, liens de paiement.
+- Trips ouverts : rejoindre un groupe qui part au même endroit, aux conditions de son organisateur (réservé aux majeurs).
+- Passeport du voyageur et bilan du voyage à partager.
+- Quatorze langues.
+
+## Ce que Tripora ne fait pas
+
+- Il ne vend aucun voyage, ne réserve rien et ne manipule pas l'argent du groupe. Les réservations se font chez les sites marchands.
+- Certains liens sont des liens partenaires, marqués comme tels : ils peuvent rapporter une commission sans changer le prix ni l'ordre des listes.
+- Les prix affichés sont des relevés datés ou des estimations, jamais des offres.
+- Les noms des personnes ne sont jamais transmis à une intelligence artificielle.
+
+## Pages lisibles sans compte
+
+- [Le carnet des destinations](${origine}/destinations) : ${publiees.length} destinations, chacune avec ses activités, son climat mois par mois et son budget sur place.
+${MOIS.map((nom, index) => `- [Où partir en ${nom} ?](${origine}${cheminDuMois(index + 1)})`).join('\n')}
+
+## Informations
+
+- [Conditions d'utilisation](${origine}/conditions)
+- [Confidentialité](${origine}/confidentialite)
+- [Mentions légales et contact](${origine}/mentions-legales)
+
+## In English
+
+Tripora is a free, ad-free group trip planner (web, Android, iOS) in French with thirteen other languages. A group picks a destination together from priced proposals (dated flight fares, on-site budget, monthly climate), votes, builds a day-by-day plan from activities they liked, and splits expenses in any currency. Anyone can [start planning a trip without an account](${origine}/voyages/nouveau); an account is only offered at the very end, to save it, and "Plus tard" keeps it on the device instead.
 `;
 }
 

@@ -13,6 +13,12 @@
  */
 
 const CLE = 'tripora.suite-apres-connexion';
+
+/**
+ * Où revenir de chez Google quand on enregistrait un trip composé sans
+ * compte : la création, qui s'enregistre alors toute seule.
+ */
+export const REPRISE_DE_LA_CREATION = '/voyages/nouveau?enregistrer=1';
 const DUREE_MS = 30 * 60 * 1000;
 
 /**
