@@ -89,6 +89,14 @@ describe('les pages publiques du carnet', () => {
     expect(texte).toContain('Sitemap: https://tripora.exemple/sitemap.xml');
   });
 
+  it('donne l’empreinte carbone du trajet depuis Paris', () => {
+    const barcelone = parChemin.get('destinations/barcelone.html');
+    expect(barcelone, 'la page de Barcelone').toBeDefined();
+    expect(barcelone).toContain('Y aller depuis Paris : l’empreinte carbone');
+    expect(barcelone).toMatch(/<dt>Train<\/dt><dd>\d+ kg<\/dd>/u);
+    expect(barcelone).toMatch(/En train plutôt qu’en avion : \d+ kg de CO₂e de moins par personne/u);
+  });
+
   it('explique Tripora à un assistant, et lui montre la porte sans compte', () => {
     const texte = parChemin.get('llms.txt')!;
     expect(texte.startsWith('# Tripora\n')).toBe(true);

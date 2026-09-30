@@ -8,6 +8,11 @@ import {
   affilierLiens,
   climateFromSeries,
   climateYear,
+  empreinteDuTrajet,
+  estimateTransportOptions,
+  kgLisibles,
+  phraseDeComparaison,
+  TRANSPORT_LABELS_FR,
   continentDe,
   haversineKm,
   infosPratiques,
@@ -200,6 +205,8 @@ export function pageDeDestination(
         <div><dt>Grand confort</dt><dd>${euros(budget.comfort)}</dd></div>
       </dl>
     </section>
+
+    ${sectionEmpreinte(destination)}
 
     ${sectionReserver(destination, partenaire)}
 
@@ -580,6 +587,38 @@ function grouperParPays(destinations: readonly Destination[]): [string, Destinat
   return [...groupes.entries()].sort(([a], [b]) => a.localeCompare(b, 'fr'));
 }
 
+/** Le départ de référence des pages publiques : le plus fréquent chez les visiteurs. */
+const PARIS = { name: 'Paris', lat: 48.8566, lng: 2.3522 };
+
+/**
+ * L'empreinte carbone du trajet depuis Paris, mode par mode.
+ *
+ * Le chiffre que presque aucun site de voyage ne donne, et qui change
+ * souvent une décision : Barcelone en train plutôt qu'en avion, c'est le même
+ * week-end pour une fraction des émissions. Mêmes facteurs que l'application
+ * (ADEME, rail européen moyen hors de France).
+ */
+export function sectionEmpreinte(destination: Destination): string {
+  if (haversineKm(PARIS, destination) < 80) return '';
+  const enFrance = destination.countryCode === 'FR';
+  const empreintes = estimateTransportOptions(PARIS, destination, 1)
+    .map((option) => empreinteDuTrajet(option.mode, PARIS, destination, { enFrance }))
+    .filter((empreinte) => empreinte !== null && empreinte.mode !== 'car')
+    .sort((a, b) => a!.kg - b!.kg) as NonNullable<ReturnType<typeof empreinteDuTrajet>>[];
+  if (empreintes.length === 0) return '';
+  const comparaison = phraseDeComparaison(empreintes);
+  return `
+    <section aria-labelledby="titre-empreinte">
+      <h2 id="titre-empreinte">Y aller depuis Paris : l’empreinte carbone</h2>
+      <p>Par personne, aller et retour, en kilogrammes d’équivalent CO₂ — fabrication, énergie et, pour l’avion, traînées de condensation comprises.</p>
+      <dl class="budget">
+        ${empreintes.map((empreinte) => `<div><dt>${esc(TRANSPORT_LABELS_FR[empreinte.mode])}</dt><dd>${esc(kgLisibles(empreinte.kg))}</dd></div>`).join('\n        ')}
+      </dl>
+      ${comparaison ? `<p><strong>${esc(comparaison)}</strong></p>` : ''}
+      <p class="discret">Facteurs de l’ADEME (Impact CO₂) ; hors de France, le train prend la moyenne du rail européen publiée par l’Agence européenne pour l’environnement.</p>
+    </section>`;
+}
+
 // ---------------------------------------------------------------------------
 // Plan du site et robots
 // ---------------------------------------------------------------------------
@@ -660,6 +699,7 @@ export function pourLesAssistants(publiees: readonly Destination[], { origine }:
 
 - Propositions de destinations chiffrées pour tout le groupe : vol relevé depuis la ville de départ (avec sa date de relevé), budget sur place, climat du mois, et correspondance avec les envies de chacun.
 - Chacun donne ses envies et son budget ; le groupe vote et tranche. Personne ne subit une destination qu'il déteste.
+- L'empreinte carbone de chaque trajet (avion, train, car, voiture partagée), par personne et aller-retour, d'après les facteurs de l'ADEME.
 - « Découvrir » : les activités défilent comme des cartes ; le groupe voit ce qui plaît, sans savoir qui a dit non.
 - Le programme jour par jour, composé à partir des activités qui ont plu, et exportable dans l'agenda.
 - La carte du voyage : lieux du programme, adresses et épingles du groupe.

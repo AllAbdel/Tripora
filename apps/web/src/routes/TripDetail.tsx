@@ -10,6 +10,7 @@ import {
   dateDuJour,
   MONTHS_FR,
   paysDuPoint,
+  trajetEnFrance,
   resumerLeCoffre,
   resumerLesTaches,
   sondagesEnAttente,
@@ -38,6 +39,7 @@ import { VoteBar } from '@/components/VoteBar';
 import { Reserver } from '@/components/Reserver';
 import { ApplicationsUtiles } from '@/components/ApplicationsUtiles';
 import { MeteoPrevue } from '@/components/MeteoPrevue';
+import { EmpreinteDuVoyage } from '@/components/EmpreinteDuVoyage';
 import { LeVoyageAuPresent } from '@/components/LeVoyageAuPresent';
 import { InfosPratiques } from '@/components/InfosPratiques';
 import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
@@ -379,6 +381,14 @@ export default function TripDetail() {
           )}
 
           {villeRetenue && (
+            <EmpreinteDuVoyage
+              depart={data.constraints.origin}
+              destination={villeRetenue}
+              participants={data.constraints.participants}
+            />
+          )}
+
+          {villeRetenue && (
             <InfosPratiques
               destination={villeRetenue}
               paysDeDepart={data.constraints.origin.country ?? paysDuPoint(data.constraints.origin)}
@@ -446,6 +456,7 @@ export default function TripDetail() {
                         participants={data.constraints.participants}
                         membres={data.members}
                         depart={data.constraints.origin}
+                        enFrance={trajetEnFrance(data.constraints.origin, destination)}
                         prixReleve={prix?.parDestination[score.destinationId]}
                         vote={
                           !data.lockedDestinationId ? (

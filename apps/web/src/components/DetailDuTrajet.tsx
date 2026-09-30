@@ -1,9 +1,11 @@
-import { Bus, Car, Info, Plane, Ship, Train } from 'lucide-react';
+import { Bus, Car, Info, Leaf, Plane, Ship, Train } from 'lucide-react';
 import {
   describeSource,
   detaillerTrajet,
   formatCents,
+  kgLisibles,
   TRANSPORT_LABELS_FR,
+  type EmpreinteDuTrajet,
   type EtapeTrajet,
   type LieuNomme,
   type TransportEstimate,
@@ -36,10 +38,13 @@ export function DetailDuTrajet({
   depart,
   arrivee,
   option,
+  empreinte,
 }: {
   depart: LieuNomme;
   arrivee: LieuNomme;
   option: TransportEstimate;
+  /** Les kilos de CO₂e de ce mode, par personne et aller-retour, quand on sait les dire. */
+  empreinte?: EmpreinteDuTrajet | null | undefined;
 }) {
   const Icone = ICONES[option.mode];
   const trajet = detaillerTrajet(depart, arrivee, option);
@@ -66,6 +71,18 @@ export function DetailDuTrajet({
             ? ' · sans escale'
             : ` · ${trajet.escales} escale${trajet.escales > 1 ? 's' : ''}`}
       </p>
+
+      {empreinte && (
+        <p className="text-muted mt-1 flex items-start gap-1.5 text-xs">
+          <Leaf className="mt-0.5 size-3 shrink-0" aria-hidden />
+          <span>
+            <span className="chiffres font-medium text-[color:var(--text-strong)]">
+              {kgLisibles(empreinte.kg)} de CO₂e
+            </span>{' '}
+            par personne, aller-retour · {empreinte.source}
+          </span>
+        </p>
+      )}
 
       <ol className="mt-2 space-y-1.5">
         {trajet.etapes.map((etape, index) => (

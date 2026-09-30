@@ -12,6 +12,8 @@ import {
   climateFor,
   correspondanceAuxEnvies,
   costLines,
+  empreinteDuTrajet,
+  phraseDeComparaison,
   formatCents,
   freshnessLabel,
   type DestinationScore,
@@ -45,6 +47,7 @@ export function ProposalCard({
   vote,
   choixDuGroupe = false,
   verrouillee = false,
+  enFrance = false,
 }: {
   rank: number;
   destination: Destination;
@@ -73,6 +76,8 @@ export function ProposalCard({
   /** Celle que les votes désignent, distincte de celle que le calcul classe en tête. */
   choixDuGroupe?: boolean;
   verrouillee?: boolean;
+  /** Départ et arrivée en France : le train y a l'empreinte du TGV. */
+  enFrance?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const climat = month === undefined ? undefined : climateFor(destination.id, month);
@@ -80,6 +85,14 @@ export function ProposalCard({
     () => correspondanceAuxEnvies(destination, membres),
     [destination, membres],
   );
+  const empreintes = useMemo(
+    () =>
+      transport
+        .map((option) => empreinteDuTrajet(option.mode, depart, destination, { participants, enFrance }))
+        .filter((empreinte) => empreinte !== null),
+    [transport, depart, destination, participants, enFrance],
+  );
+  const comparaison = phraseDeComparaison(empreintes);
   const [texte, setTexte] = useState<string | null>(null);
   const [redaction, setRedaction] = useState(false);
 
@@ -287,12 +300,18 @@ export function ProposalCard({
             {transport.length > 0 && (
               <section className="space-y-2.5">
                 <h4 className="text-sm font-semibold">Comment y aller</h4>
+                {comparaison && (
+                  <p className="text-lagoon-700 dark:text-lagoon-300 text-xs font-medium">
+                    {comparaison}
+                  </p>
+                )}
                 <ul className="space-y-2.5">
                   {transport.map((option) => (
                     <li key={option.mode}>
                       <DetailDuTrajet
                         depart={depart}
                         arrivee={destination}
+                        empreinte={empreintes.find((empreinte) => empreinte.mode === option.mode)}
                         option={
                           option.mode === 'plane' && prixReleve
                             ? { ...option, price: prixReleve }

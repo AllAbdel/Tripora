@@ -36,7 +36,8 @@ const BUS_PER_KM_CENTS = 9;
 const CAR_PER_KM_CENTS = 14;
 
 /** Détour moyen d'une route par rapport à la ligne droite. */
-const ROAD_DETOUR = 1.25;
+export const DETOUR_ROUTIER = 1.25;
+const ROAD_DETOUR = DETOUR_ROUTIER;
 
 const estimated = (cents: number): PricedValue => ({
   cents: Math.round(cents),
