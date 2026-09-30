@@ -32,6 +32,16 @@
                 <data android:scheme="tripora" />
             </intent-filter>
 
+            <!-- « Partager vers Tripora » : un lien ou un texte envoyé depuis
+                 TikTok, Instagram, Google Maps ou le navigateur. MainActivity
+                 le traduit en tripora://partager, que l'application sait déjà
+                 ouvrir. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
         </activity>
 
         <provider

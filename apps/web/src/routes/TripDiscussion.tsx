@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ExternalLink, MapPin, Pin, Send, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ExternalLink, MapPin, Pin, Search, Send, Trash2, X } from 'lucide-react';
 import { fragmenterMessage, nomPropose, premierLien, type FragmentMessage } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
@@ -109,6 +109,14 @@ export default function TripDiscussion() {
             </Link>
           )}
         </div>
+
+        <Link
+          to={`/partager?voyage=${id ?? ''}`}
+          className="text-brand-700 dark:text-brand-200 inline-flex min-h-11 items-center gap-2 text-sm font-semibold"
+        >
+          <Search className="size-4" aria-hidden />
+          Des lieux dans une vidéo ? Épinglez-les depuis le lien
+        </Link>
 
         {(envoyer.error || messages.error) && (
           <Banner tone="warning" title="Un problème est survenu">

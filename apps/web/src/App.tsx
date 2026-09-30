@@ -61,6 +61,7 @@ const TripBilan = lazy(() => import('@/routes/TripBilan'));
 const Decouvrir = lazy(() => import('@/routes/Decouvrir'));
 const Explorer = lazy(() => import('@/routes/Explorer'));
 const Passeport = lazy(() => import('@/routes/Passeport'));
+const Partager = lazy(() => import('@/routes/Partager'));
 
 function FullScreenLoader() {
   return (
@@ -112,6 +113,9 @@ function TabbedRoutes() {
         <Route path="/budget" element={<BudgetTab />} />
         <Route path="/profil" element={<Profile />} />
         <Route path="/passeport" element={<Passeport />} />
+        {/* « Partager vers Tripora » : le menu Partager du téléphone ou du
+            navigateur arrive ici, avec le lien dans l'adresse. */}
+        <Route path="/partager" element={<Partager />} />
         <Route path="/soutenir" element={<Soutenir />} />
         <Route path="/confidentialite" element={<Confidentialite />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />

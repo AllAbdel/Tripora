@@ -154,3 +154,116 @@ export function nomPropose(fragment: FragmentMessage): string {
       return fragment.host;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Les liens de carte : un lieu se lit directement dans l'adresse.
+// ---------------------------------------------------------------------------
+
+/** Ce qu'une adresse de carte dit du lieu : un nom, un point, ou de quoi le chercher. */
+export interface LieuDuLien {
+  nom: string | null;
+  lat: number | null;
+  lng: number | null;
+  /** Le texte à géocoder quand l'adresse nomme le lieu sans le situer. */
+  recherche: string | null;
+}
+
+/** Google Maps, Plans d'Apple ou OpenStreetMap, raccourcisseurs compris. */
+export function estUnLienDeCarte(adresse: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(adresse);
+  } catch {
+    return false;
+  }
+  const h = url.hostname.toLowerCase().replace(/^www\./u, '');
+  if (h === 'maps.app.goo.gl' || (h === 'goo.gl' && url.pathname.startsWith('/maps'))) return true;
+  if (h.startsWith('maps.google.')) return true;
+  if (/^google\.[a-z.]+$/u.test(h) && url.pathname.startsWith('/maps')) return true;
+  if (h === 'maps.apple.com' || h === 'maps.apple') return true;
+  return h === 'openstreetmap.org' || h === 'osm.org' || h.endsWith('.openstreetmap.org');
+}
+
+function point(lat: string | number | undefined, lng: string | number | undefined) {
+  const la = Number(lat);
+  const lo = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return null;
+  if (Math.abs(la) > 90 || Math.abs(lo) > 180 || (la === 0 && lo === 0)) return null;
+  return { lat: Math.round(la * 1e6) / 1e6, lng: Math.round(lo * 1e6) / 1e6 };
+}
+
+/** « 48.8584,2.2945 » → un point ; tout autre texte → rien. */
+function pointEcrit(texte: string | null): { lat: number; lng: number } | null {
+  const trouve = texte?.trim().match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/u);
+  return trouve ? point(trouve[1], trouve[2]) : null;
+}
+
+function nettoyerNom(brut: string | null | undefined): string | null {
+  if (!brut) return null;
+  let nom: string;
+  try {
+    nom = decodeURIComponent(brut.replace(/\+/gu, ' '));
+  } catch {
+    nom = brut.replace(/\+/gu, ' ');
+  }
+  nom = nom.replace(/\s+/gu, ' ').trim().slice(0, 120);
+  return nom === '' || pointEcrit(nom) ? null : nom;
+}
+
+/**
+ * Le lieu désigné par une adresse de carte, sans rien demander au réseau.
+ *
+ * Google Maps met le point exact du lieu dans `!3d…!4d…` et le centre de la
+ * vue dans `@lat,lng` : le premier est préféré, le second n'est qu'un repli.
+ * Un raccourci (`maps.app.goo.gl/…`) ne contient rien : il faut d'abord le
+ * suivre, ce que fait le serveur. Rien n'est deviné : sans point ni nom,
+ * c'est `null`.
+ */
+export function lieuDuLienDeCarte(adresse: string): LieuDuLien | null {
+  if (!estUnLienDeCarte(adresse)) return null;
+  const url = new URL(adresse);
+  const h = url.hostname.toLowerCase().replace(/^www\./u, '');
+  const q = (cle: string) => url.searchParams.get(cle);
+
+  if (h === 'maps.apple.com' || h === 'maps.apple') {
+    const situe = pointEcrit(q('ll')) ?? pointEcrit(q('coordinate')) ?? pointEcrit(q('sll'));
+    const nom = nettoyerNom(q('q') ?? q('name') ?? q('address'));
+    if (!situe && !nom) return null;
+    return { nom, lat: situe?.lat ?? null, lng: situe?.lng ?? null, recherche: situe ? null : nom };
+  }
+
+  if (h.includes('openstreetmap') || h === 'osm.org') {
+    const marque = point(q('mlat') ?? undefined, q('mlon') ?? undefined);
+    const vue = url.hash.match(/map=\d+\/(-?[\d.]+)\/(-?[\d.]+)/u);
+    const situe = marque ?? (vue ? point(vue[1], vue[2]) : null);
+    const recherche = nettoyerNom(q('query'));
+    if (!situe && !recherche) return null;
+    return { nom: recherche, lat: situe?.lat ?? null, lng: situe?.lng ?? null, recherche: situe ? null : recherche };
+  }
+
+  // Google Maps.
+  const chemin = url.pathname;
+  const exact = chemin.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/u);
+  const vue = chemin.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/u);
+  const nomDuChemin = chemin.match(/\/maps\/(?:place|search)\/([^/@]+)/u)?.[1];
+  const requete = q('q') ?? q('query') ?? q('destination') ?? q('daddr');
+  const situe =
+    (exact ? point(exact[1], exact[2]) : null) ??
+    pointEcrit(requete) ??
+    pointEcrit(q('ll')) ??
+    (vue ? point(vue[1], vue[2]) : null);
+  const nom = nettoyerNom(nomDuChemin) ?? nettoyerNom(requete);
+  if (!situe && !nom) return null;
+  return { nom, lat: situe?.lat ?? null, lng: situe?.lng ?? null, recherche: situe ? null : nom };
+}
+
+/** Un raccourci de carte : il faut le suivre avant de pouvoir le lire. */
+export function estUnRaccourciDeCarte(adresse: string): boolean {
+  try {
+    const url = new URL(adresse);
+    const h = url.hostname.toLowerCase();
+    return h === 'maps.app.goo.gl' || (h === 'goo.gl' && url.pathname.startsWith('/maps'));
+  } catch {
+    return false;
+  }
+}

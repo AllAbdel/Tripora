@@ -91,7 +91,11 @@ export default function Confidentialite() {
           cinq personnes qui ouvrent la même destination ne déclenchent qu’une requête.
         </Definition>
         <Definition terme="Les fournisseurs d’intelligence artificielle">
-          Uniquement si vous utilisez l’assistant. Ce qui part est <strong>pseudonymisé</strong> :
+          Uniquement si vous utilisez l’assistant, ou si vous partagez un lien à Tripora pour en
+          tirer des épingles : dans ce cas, c’est le texte public de la vidéo ou de la page — sa
+          légende, son titre — qui part, pour y relever les noms de lieux ; les @mentions et les
+          adresses e-mail en sont retirées, et le lien n’est lu que depuis nos serveurs. Pour
+          l’assistant, ce qui part est <strong>pseudonymisé</strong> :
           les participants deviennent « Participant A, B, C », et ni les noms, ni les adresses
           e-mail, ni les identifiants ne sont transmis. Une fonction dédiée le vérifie avant
           chaque envoi. Attention tout de même : les offres gratuites de ces fournisseurs

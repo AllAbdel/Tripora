@@ -67,6 +67,14 @@ export default defineConfig(({ mode }) => {
           background_color: '#0b1220',
           theme_color: '#0a84ff',
           categories: ['travel', 'lifestyle', 'productivity'],
+          // Tripora apparaît dans le menu Partager d'Android une fois
+          // installé : une vidéo TikTok, une fiche Google Maps, un article
+          // arrivent sur /partager, qui y trouve les lieux à épingler.
+          share_target: {
+            action: '/partager',
+            method: 'GET',
+            params: { title: 'titre', text: 'texte', url: 'lien' },
+          },
           icons: [
             { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
             { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
