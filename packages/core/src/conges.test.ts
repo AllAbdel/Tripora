@@ -3,10 +3,15 @@ import {
   calendrierConnuJusquau,
   cePendant,
   dimancheDePaques,
+  feriesConnus,
+  feriesConnusJusquau,
   joursFeries,
+  joursFeriesDu,
+  paysDeDepart,
   pontsEntre,
   VACANCES_SCOLAIRES,
   vacancesAVenir,
+  weekendDu,
   zoneProbable,
 } from './conges.js';
 
@@ -96,5 +101,63 @@ describe('la zone du départ', () => {
     // Pau relève de Bordeaux, bien que Toulouse soit plus proche.
     expect(zoneProbable({ lat: 43.2951, lng: -0.3708, country: 'France' })).toBe('A');
     expect(zoneProbable({ lat: 38.7223, lng: -9.1393, country: 'Portugal' })).toBeNull();
+  });
+});
+
+describe('le calendrier du pays de départ', () => {
+  it('reconnaît le pays d’après la ville de départ', () => {
+    expect(paysDeDepart({ lat: 51.47, lng: -0.4543, country: 'Royaume-Uni' })).toBe('GB');
+    expect(paysDeDepart({ lat: 48.8566, lng: 2.3522 })).toBe('FR');
+    expect(paysDeDepart({ lat: 24.7136, lng: 46.6753 })).toBe('SA');
+    // Au milieu de l'océan : on ne devine pas.
+    expect(paysDeDepart({ lat: -60, lng: 0 })).toBeNull();
+    expect(feriesConnus('GB')).toBe(true);
+    expect(feriesConnus('XX')).toBe(false);
+    expect(feriesConnus(null)).toBe(false);
+  });
+
+  it('n’impose pas les fériés français aux autres pays', () => {
+    const anglais = joursFeriesDu('GB', 2027).map((jour) => jour.date);
+    expect(anglais).toContain('2027-03-29'); // lundi de Pâques (Angleterre)
+    expect(anglais).toContain('2027-08-30'); // dernier lundi d'août
+    expect(anglais).not.toContain('2027-05-08'); // le 8 mai n'y est pas férié
+    expect(anglais).not.toContain('2027-07-14');
+    expect(joursFeriesDu('XX', 2027)).toEqual([]);
+  });
+
+  it('prend le jour reporté quand le férié tombe le week-end', () => {
+    // Noël 2027 : un samedi, et le lendemain un dimanche ; les deux sont reportés au lundi et au mardi.
+    const ponts = pontsEntre('2027-12-01', '2027-12-31', 'GB');
+    expect(ponts).toEqual([
+      expect.objectContaining({ debut: '2027-12-25', fin: '2027-12-28', jours: 4, aPoser: 0, nom: 'Noël et Boxing Day' }),
+    ]);
+    expect(joursFeriesDu('GB', 2027).find((jour) => jour.date === '2027-12-27')).toMatchObject({ reporte: true });
+  });
+
+  it('suit le week-end du pays', () => {
+    expect(weekendDu('FR')).toEqual([6, 0]);
+    // Arabie saoudite : vendredi et samedi.
+    expect([...weekendDu('SA')].sort()).toEqual([5, 6]);
+    // Le 22 février 2027, jour de la Fondation, est un lundi : là-bas, on pose le dimanche.
+    const [fondation] = pontsEntre('2027-02-15', '2027-02-28', 'SA');
+    expect(fondation).toMatchObject({ debut: '2027-02-19', fin: '2027-02-22', jours: 4, aPoser: 1 });
+  });
+
+  it('fait une seule occasion d’une fête de plusieurs jours', () => {
+    const nouvelAn = pontsEntre('2027-02-01', '2027-02-28', 'CN');
+    expect(nouvelAn).toHaveLength(1);
+    expect(nouvelAn[0]).toMatchObject({ debut: '2027-02-05', fin: '2027-02-10', aPoser: 0 });
+    expect(nouvelAn[0]!.nomEn).toContain('Chinese New Year');
+  });
+
+  it('ne parle de vacances scolaires qu’au départ de la France', () => {
+    expect(cePendant('2026-10-20', '2026-10-25', null, 'GB').vacances).toEqual([]);
+    expect(cePendant('2026-10-20', '2026-10-25', null, 'FR').vacances).not.toEqual([]);
+  });
+
+  it('rappelle de régénérer les fériés du monde avant qu’ils ne s’épuisent', () => {
+    // Quand ce test échoue : avancer les années dans packages/core/scripts/feries.py et le relancer.
+    const dansUnAn = new Date(Date.now() + 365 * 86_400_000).toISOString().slice(0, 10);
+    expect(feriesConnusJusquau() >= dansUnAn).toBe(true);
   });
 });

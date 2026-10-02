@@ -1,4 +1,6 @@
 import { paysDuPoint } from './catalog/origins.js';
+import { codeDuPays } from './catalog/pays.js';
+import { FERIES_CONNUS, FERIES_DU_MONDE } from './feries-du-monde.js';
 import { haversineKm } from './geo.js';
 import type { GeoPoint } from './types.js';
 
@@ -9,6 +11,13 @@ import type { GeoPoint } from './types.js';
  * le monde a libres. Une famille regarde les vacances de sa zone ; des amis
  * qui travaillent guettent le jeudi de l'Ascension et le 8 mai un vendredi.
  * Tripora les connaît, et les propose.
+ *
+ * **Selon le pays de départ.** Le 8 mai n'est férié qu'en France ; à Londres,
+ * c'est le lundi de Pâques et le dernier lundi d'août ; à Riyad, le week-end
+ * tombe le vendredi et le samedi. Les fériés de la France sont écrits ici, à
+ * la main ; ceux des autres pays viennent de `feries-du-monde.ts` (généré).
+ * Les vacances scolaires ne sont connues que pour la France : ailleurs, on
+ * n'en parle pas plutôt que de plaquer le calendrier français.
  */
 
 export type ZoneScolaire = 'A' | 'B' | 'C';
@@ -176,6 +185,12 @@ export function zoneProbable(point: GeoPoint & { country?: string | undefined })
 export interface JourFerie {
   date: string;
   nom: string;
+  /** Le nom en anglais, pour l'interface en anglais. */
+  en: string;
+  /** Un jour chômé à la place d'un férié tombé le week-end. */
+  reporte?: boolean;
+  /** Une fête réglée sur la lune : la date dépend de son observation. */
+  estime?: boolean;
 }
 
 /** Le dimanche de Pâques (calendrier grégorien, algorithme de Meeus). */
@@ -201,18 +216,78 @@ export function dimancheDePaques(annee: number): string {
 export function joursFeries(annee: number): JourFerie[] {
   const paques = dimancheDePaques(annee);
   return [
-    { date: iso(annee, 1, 1), nom: 'Jour de l’an' },
-    { date: decaler(paques, 1), nom: 'Lundi de Pâques' },
-    { date: iso(annee, 5, 1), nom: 'Fête du Travail' },
-    { date: iso(annee, 5, 8), nom: 'Victoire 1945' },
-    { date: decaler(paques, 39), nom: 'Ascension' },
-    { date: decaler(paques, 50), nom: 'Lundi de Pentecôte' },
-    { date: iso(annee, 7, 14), nom: 'Fête nationale' },
-    { date: iso(annee, 8, 15), nom: 'Assomption' },
-    { date: iso(annee, 11, 1), nom: 'Toussaint' },
-    { date: iso(annee, 11, 11), nom: 'Armistice' },
-    { date: iso(annee, 12, 25), nom: 'Noël' },
+    { date: iso(annee, 1, 1), nom: 'Jour de l’an', en: 'New Year’s Day' },
+    { date: decaler(paques, 1), nom: 'Lundi de Pâques', en: 'Easter Monday' },
+    { date: iso(annee, 5, 1), nom: 'Fête du Travail', en: 'Labour Day' },
+    { date: iso(annee, 5, 8), nom: 'Victoire 1945', en: 'Victory in Europe Day' },
+    { date: decaler(paques, 39), nom: 'Ascension', en: 'Ascension Day' },
+    { date: decaler(paques, 50), nom: 'Lundi de Pentecôte', en: 'Whit Monday' },
+    { date: iso(annee, 7, 14), nom: 'Fête nationale', en: 'Bastille Day' },
+    { date: iso(annee, 8, 15), nom: 'Assomption', en: 'Assumption Day' },
+    { date: iso(annee, 11, 1), nom: 'Toussaint', en: 'All Saints’ Day' },
+    { date: iso(annee, 11, 11), nom: 'Armistice', en: 'Armistice Day' },
+    { date: iso(annee, 12, 25), nom: 'Noël', en: 'Christmas Day' },
   ].sort((x, y) => x.date.localeCompare(y.date));
+}
+
+// ---------------------------------------------------------------------------
+// Le pays de départ
+// ---------------------------------------------------------------------------
+
+/**
+ * Le pays d'un point de départ, en code ISO (« FR », « GB ») ; `null` quand on
+ * ne le sait pas (un point loin de toute ville connue).
+ */
+export function paysDeDepart(point: GeoPoint & { country?: string | undefined }): string | null {
+  return codeDuPays(point.country ?? paysDuPoint(point, 120)) ?? null;
+}
+
+/** Vrai quand Tripora connaît les jours fériés de ce pays. */
+export function feriesConnus(pays: string | null | undefined): boolean {
+  return pays === 'FR' || (pays != null && pays in FERIES_DU_MONDE);
+}
+
+/** Les jours du week-end, numérotés comme `Date.getUTCDay()` : samedi et dimanche presque partout. */
+export function weekendDu(pays: string): readonly number[] {
+  return FERIES_DU_MONDE[pays]?.w ?? [6, 0];
+}
+
+const LUS = new Map<string, JourFerie[]>();
+
+/** Les jours fériés d'un pays pour une année ; aucun pour un pays inconnu. */
+export function joursFeriesDu(pays: string, annee: number): JourFerie[] {
+  if (pays === 'FR') return joursFeries(annee);
+  const donnees = FERIES_DU_MONDE[pays];
+  if (!donnees) return [];
+  let tous = LUS.get(pays);
+  if (!tous) {
+    tous = [];
+    for (const bloc of donnees.d.split(';')) {
+      const [an, jours] = bloc.split(':') as [string, string];
+      for (const jour of jours.split(',')) {
+        const lu = /^(\d{2})(\d{2})(\d+)([re]?)$/u.exec(jour);
+        const noms = lu ? donnees.n[Number(lu[3])] : undefined;
+        if (!lu || !noms) continue;
+        const [francais, anglais = francais] = noms;
+        // « Day off » : un jour de pont accordé par l'État (Chine), pas un férié reporté.
+        const reporte = lu[4] === 'r' && anglais !== 'Day off';
+        tous.push({
+          date: `${an}-${lu[1]}-${lu[2]}`,
+          nom: reporte ? `${francais} (jour reporté)` : francais,
+          en: reporte ? `${anglais} (observed)` : anglais,
+          ...(reporte ? { reporte: true } : {}),
+          ...(lu[4] === 'e' ? { estime: true } : {}),
+        });
+      }
+    }
+    LUS.set(pays, tous);
+  }
+  return tous.filter((jour) => jour.date.startsWith(`${annee}-`));
+}
+
+/** Jusqu'à quelle date les jours fériés des pays hors France sont connus. */
+export function feriesConnusJusquau(): string {
+  return `${FERIES_CONNUS.derniere}-12-31`;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,6 +297,8 @@ export function joursFeries(annee: number): JourFerie[] {
 export interface OccasionDePartir {
   /** « Ascension », « Vacances de printemps (zone C) ». */
   nom: string;
+  /** Le nom en anglais, pour un pont (les vacances, françaises, passent par la traduction de l'interface). */
+  nomEn?: string;
   debut: string;
   fin: string;
   /** Jours de suite, week-end compris. */
@@ -232,45 +309,75 @@ export interface OccasionDePartir {
   finProvisoire?: boolean;
 }
 
+/** Au-delà, poser des jours n'est plus un pont, ce sont des vacances. */
+const JOURS_A_POSER_MAX = 2;
+
 /**
- * Les week-ends prolongés par un jour férié, entre deux dates.
+ * Les week-ends prolongés par un jour férié, entre deux dates, dans un pays.
  *
- * Un férié un lundi ou un vendredi donne trois jours sans rien poser ; un
- * mardi ou un jeudi en donne quatre pour un jour posé ; un mercredi, cinq pour
- * deux. Un férié le week-end ne donne rien : on ne le propose pas.
+ * Autour de chaque férié tombé en semaine, on prend les jours chômés qui le
+ * touchent (week-end, autres fériés), puis, s'il le faut, un ou deux jours de
+ * congé pour rejoindre le week-end le plus proche. En France : un férié un
+ * lundi ou un vendredi donne trois jours sans rien poser ; un mardi ou un
+ * jeudi, quatre pour un jour posé ; un mercredi, cinq pour deux. Un férié le
+ * week-end ne donne rien — sauf là où il est reporté au lundi, comme au
+ * Royaume-Uni : c'est alors le lundi qui compte. Plusieurs fériés d'affilée
+ * (Noël et le lendemain, le Nouvel An chinois) ne font qu'une occasion.
  */
-export function pontsEntre(depuis: string, jusqua: string): OccasionDePartir[] {
-  const premiere = Number(depuis.slice(0, 4));
-  const derniere = Number(jusqua.slice(0, 4));
+export function pontsEntre(depuis: string, jusqua: string, pays = 'FR'): OccasionDePartir[] {
+  const weekend = new Set(weekendDu(pays));
+  const feries = new Map<string, JourFerie[]>();
+  for (let annee = Number(depuis.slice(0, 4)) - 1; annee <= Number(jusqua.slice(0, 4)) + 1; annee += 1) {
+    for (const ferie of joursFeriesDu(pays, annee)) feries.set(ferie.date, [...(feries.get(ferie.date) ?? []), ferie]);
+  }
+  const chome = (jour: string) => weekend.has(jourDeLaSemaine(jour)) || feries.has(jour);
+
   const ponts: OccasionDePartir[] = [];
-  for (let annee = premiere; annee <= derniere; annee += 1) {
-    for (const ferie of joursFeries(annee)) {
-      if (ferie.date < depuis || ferie.date > jusqua) continue;
-      const jour = jourDeLaSemaine(ferie.date); // 0 = dimanche
-      let debut: string;
-      let fin: string;
-      let aPoser: number;
-      switch (jour) {
-        case 1: // lundi : samedi → lundi
-          [debut, fin, aPoser] = [decaler(ferie.date, -2), ferie.date, 0];
-          break;
-        case 2: // mardi : samedi → mardi, lundi posé
-          [debut, fin, aPoser] = [decaler(ferie.date, -3), ferie.date, 1];
-          break;
-        case 3: // mercredi : mercredi → dimanche, jeudi et vendredi posés
-          [debut, fin, aPoser] = [ferie.date, decaler(ferie.date, 4), 2];
-          break;
-        case 4: // jeudi : jeudi → dimanche, vendredi posé
-          [debut, fin, aPoser] = [ferie.date, decaler(ferie.date, 3), 1];
-          break;
-        case 5: // vendredi : vendredi → dimanche
-          [debut, fin, aPoser] = [ferie.date, decaler(ferie.date, 2), 0];
-          break;
-        default:
-          continue;
+  for (const date of [...feries.keys()].sort()) {
+    if (date < depuis || date > jusqua || weekend.has(jourDeLaSemaine(date))) continue;
+    if (ponts.length > 0 && date <= ponts[ponts.length - 1]!.fin) continue;
+    // Les jours chômés d'affilée autour du férié.
+    let debut = date;
+    let fin = date;
+    while (chome(decaler(debut, -1))) debut = decaler(debut, -1);
+    while (chome(decaler(fin, 1))) fin = decaler(fin, 1);
+    // Puis le moins de jours posés pour atteindre trois jours : d'abord vers
+    // la fin de la semaine (le jeudi de l'Ascension appelle le vendredi).
+    let choix = { debut, fin, aPoser: 0 };
+    if (ecartEnJours(debut, fin) + 1 < 3) {
+      const options: { debut: string; fin: string; aPoser: number }[] = [];
+      for (let k = 1; k <= JOURS_A_POSER_MAX; k += 1) {
+        if (chome(decaler(fin, k + 1))) {
+          let bout = decaler(fin, k + 1);
+          while (chome(decaler(bout, 1))) bout = decaler(bout, 1);
+          options.push({ debut, fin: bout, aPoser: k });
+        }
+        if (chome(decaler(debut, -k - 1))) {
+          let bout = decaler(debut, -k - 1);
+          while (chome(decaler(bout, -1))) bout = decaler(bout, -1);
+          options.push({ debut: bout, fin, aPoser: k });
+        }
       }
-      ponts.push({ nom: ferie.nom, debut, fin, jours: ecartEnJours(debut, fin) + 1, aPoser, nature: 'pont' });
+      const meilleure = options.find((option) => ecartEnJours(option.debut, option.fin) + 1 >= 3);
+      if (!meilleure) continue;
+      choix = meilleure;
     }
+    // Le nom : les fériés de la période, sans les jours de pont ni les doublons d'un report.
+    const dedans = [...feries.entries()]
+      .filter(([jour]) => jour >= choix.debut && jour <= choix.fin)
+      .flatMap(([, jours]) => jours)
+      .filter((ferie) => ferie.en !== 'Day off');
+    const noms = [...new Set(dedans.map((ferie) => ferie.nom.replace(/ \(jour reporté\)$/u, '')))];
+    const nomsEn = [...new Set(dedans.map((ferie) => ferie.en.replace(/ \(observed\)$/u, '')))];
+    ponts.push({
+      nom: noms.join(' et '),
+      nomEn: nomsEn.join(' and '),
+      debut: choix.debut,
+      fin: choix.fin,
+      jours: ecartEnJours(choix.debut, choix.fin) + 1,
+      aPoser: choix.aPoser,
+      nature: 'pont',
+    });
   }
   return ponts;
 }
@@ -308,14 +415,19 @@ export function cePendant(
   debut: string,
   fin: string,
   zone: ZoneScolaire | null,
+  pays = 'FR',
 ): { vacances: PeriodeDeVacances[]; feries: JourFerie[] } {
-  const vacances = VACANCES_SCOLAIRES.filter(
-    (periode) =>
-      periode.debut <= fin && periode.fin >= debut && (zone === null || periode.zones.includes(zone)),
-  );
+  // Les vacances scolaires connues sont celles de la France : ailleurs, rien.
+  const vacances =
+    pays === 'FR'
+      ? VACANCES_SCOLAIRES.filter(
+          (periode) =>
+            periode.debut <= fin && periode.fin >= debut && (zone === null || periode.zones.includes(zone)),
+        )
+      : [];
   const feries: JourFerie[] = [];
   for (let annee = Number(debut.slice(0, 4)); annee <= Number(fin.slice(0, 4)); annee += 1) {
-    feries.push(...joursFeries(annee).filter((jour) => jour.date >= debut && jour.date <= fin));
+    feries.push(...joursFeriesDu(pays, annee).filter((jour) => jour.date >= debut && jour.date <= fin));
   }
   return { vacances, feries };
 }
