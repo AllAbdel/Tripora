@@ -8,6 +8,7 @@ import { PontNatif } from '@/components/PontNatif';
 import { persister, queryClient, VERSION_DU_CACHE } from '@/lib/cache';
 import { applyTheme, useTheme, watchSystemTheme } from '@/stores/theme';
 import { appliquerLaLangue, useLangue } from '@/stores/langue';
+import { demarrerLaTraductionAuRendu } from '@/i18n/traductionAuRendu';
 import './index.css';
 
 applyTheme(useTheme.getState().preference);
@@ -15,6 +16,8 @@ watchSystemTheme();
 // Avant le premier rendu : `lang` et `dir` sur <html>. Poser `dir="rtl"` après
 // coup ferait sauter toute la page d'un côté à l'autre sous les yeux.
 appliquerLaLangue(useLangue.getState().preference);
+// L'anglais de tout ce que `useT()` ne couvre pas, posé sur le texte rendu.
+demarrerLaTraductionAuRendu();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Élément racine introuvable');

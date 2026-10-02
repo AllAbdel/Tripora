@@ -11,7 +11,11 @@
  * sur l'image, comme la licence le demande. Si le navigateur refuse de
  * l'exporter (serveur sans autorisation de partage), l'image se dessine sans
  * elle plutôt que de ne pas se dessiner du tout.
+ *
+ * L'image n'est pas du texte de la page : la traduction au rendu ne la voit
+ * pas. Ses textes passent donc par le même dictionnaire au moment du dessin.
  */
+import { traduireDansLaLangueActive as traduire } from '@/i18n/traductionAuRendu';
 
 export interface ContenuDuBilan {
   titre: string;
@@ -126,7 +130,7 @@ function dessiner(contexte: CanvasRenderingContext2D, contenu: ContenuDuBilan, p
       contexte.font = `400 24px ${SANS}`;
       contexte.fillStyle = 'rgba(255,255,255,0.55)';
       contexte.textAlign = 'right';
-      contexte.fillText(`Photo : ${contenu.photo.credit}`.slice(0, 90), LARGEUR - 32, 52);
+      contexte.fillText(`${traduire('Photo :')} ${contenu.photo.credit}`.slice(0, 90), LARGEUR - 32, 52);
       contexte.textAlign = 'left';
     }
   }
@@ -191,7 +195,7 @@ function dessiner(contexte: CanvasRenderingContext2D, contenu: ContenuDuBilan, p
   contexte.font = `400 32px ${SANS}`;
   contexte.fillStyle = 'rgba(255,255,255,0.7)';
   contexte.textAlign = 'right';
-  contexte.fillText('Le voyage à plusieurs, sans prise de tête', LARGEUR - MARGE, HAUTEUR - 98);
+  contexte.fillText(traduire('Le voyage à plusieurs, sans prise de tête'), LARGEUR - MARGE, HAUTEUR - 98);
   contexte.textAlign = 'left';
 }
 
@@ -203,6 +207,16 @@ function exporter(toile: HTMLCanvasElement): Promise<Blob> {
       rejeter(erreur instanceof Error ? erreur : new Error(String(erreur)));
     }
   });
+}
+
+function traduireLeContenu(contenu: ContenuDuBilan): ContenuDuBilan {
+  return {
+    ...contenu,
+    titre: traduire(contenu.titre),
+    sousTitre: contenu.sousTitre.split(' · ').map(traduire).join(' · '),
+    chiffres: contenu.chiffres.map((chiffre) => ({ ...chiffre, libelle: traduire(chiffre.libelle) })),
+    lignes: contenu.lignes.map(traduire),
+  };
 }
 
 export async function dessinerLeBilan(contenu: ContenuDuBilan): Promise<Blob> {
@@ -221,7 +235,7 @@ export async function dessinerLeBilan(contenu: ContenuDuBilan): Promise<Blob> {
   if (!contexte) throw new Error('Dessin impossible sur cet appareil');
 
   const photo = contenu.photo?.url ? await chargerLaPhoto(contenu.photo.url) : null;
-  dessiner(contexte, contenu, photo);
+  dessiner(contexte, traduireLeContenu(contenu), photo);
   try {
     return await exporter(toile);
   } catch {

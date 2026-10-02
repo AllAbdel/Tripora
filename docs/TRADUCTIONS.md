@@ -4,7 +4,46 @@ Ce guide s'adresse à qui reprend la traduction de Tripora, humain ou IA. Il
 dit où en est le multilingue, comment il marche, et comment y travailler sans
 casser les tests ni gêner le reste du développement, qui continue en parallèle.
 
-## Où en est-on
+## L'anglais : traduit, par la traduction au rendu
+
+Depuis octobre 2026, l'application est en anglais presque partout. Le porteur
+du projet a levé, **pour l'anglais seulement**, la règle « ne pas traduire
+soi-même » ; elle tient toujours pour les autres langues.
+
+- **Comment.** `apps/web/src/i18n/traductionAuRendu.ts` observe le document
+  et remplace chaque texte affiché (et `placeholder`, `aria-label`, `title`,
+  `alt`) par sa traduction, cherchée dans `phrases-en.ts` : un dictionnaire
+  dont la clé est **la phrase française exacte** (espaces normalisés), puis
+  des motifs (`MOTIFS_EN`) pour les phrases à nombre ou à nom (« 12 jours en
+  juillet », les explications du classement, les titres des journées). Le
+  français reste la source, dans les composants ; rien n'est touché sous
+  `translate="no"`, ni dans les champs de saisie. Retour au français :
+  chaque texte retrouve sa version d'origine.
+- **Ce qui reste en français en anglais** : les pages légales
+  (Confidentialité, Mentions légales, Conditions : à faire relire, pas à
+  traduire mot à mot) ; le carnet d'activités et les infos pratiques en
+  dehors de Bali, de l'Indonésie et des propositions de démonstration ; les
+  noms de destinations et de villes de départ du catalogue (« Abou Dabi ») ;
+  ce que les gens écrivent eux-mêmes.
+- **Trouver ce qui manque** : l'application construite en mode local,
+  parcourue en anglais par un navigateur, liste chaque texte resté en
+  français, écran par écran.
+  ```sh
+  cd apps/web
+  VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= npx vite build --outDir dist-e2e
+  pnpm traductions:recolte > /tmp/phrases-manquantes.json
+  ```
+  Puis compléter `phrases-en.ts` (ou `MOTIFS_EN`). Sur la dernière récolte, il
+  ne reste que des noms propres, des montants et des noms de langues.
+- **Pour qui écrit un nouvel écran** : une phrase tient dans **un seul nœud
+  texte** (un gabarit `` `${n} idées à ${ville}` ``, pas `{n} idées à {ville}`
+  en JSX, qui fait trois nœuds que le dictionnaire ne reconnaît pas) ; un nom
+  ou un texte saisi porte `translate="no"` ; une image dessinée (canvas) passe
+  ses textes par `traduireDansLaLangueActive`.
+- **Une autre langue** se brancherait de la même façon : un dictionnaire de
+  plus dans `DICTIONNAIRES`, sans toucher aux composants.
+
+## Où en est-on (les clés, toutes langues)
 
 - **14 langues** déclarées : fr, en, es, it, de, pt, nl, pl, tr, ru, ar, zh,
   ja, ko (`apps/web/src/i18n/langues.ts`). La langue suit celle du système,
@@ -12,7 +51,7 @@ casser les tests ni gêner le reste du développement, qui continue en parallèl
 - **Une cinquantaine de clés** seulement (`apps/web/src/i18n/textes.ts`) :
   navigation, actions courantes, écrans d'entrée, états vides, trips ouverts.
   Nouvelle clé à traduire : `nav.contenu` (« Aller au contenu », le lien
-  d'évitement lu au clavier et au lecteur d'écran).
+  d'évitement lu au clavier et au lecteur d'écran ; faite en anglais).
 - Écrits en français en dur, à traduire comme le reste : l'accueil public
   (`routes/Accueil.tsx`), la connexion par e-mail (`routes/Connexion.tsx`,
   messages dans `lib/connexionEmail.ts`), le guide de démarrage

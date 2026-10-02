@@ -114,6 +114,7 @@ export const FR: Record<CleDeTexte, string> = {
 
 const EN: Dictionnaire = {
   'nav.trips': 'Trips', 'nav.carte': 'Map', 'nav.budget': 'Budget', 'nav.profil': 'Profile',
+  'nav.contenu': 'Skip to content',
   'action.creer': 'Create a trip', 'action.retour': 'Back', 'action.annuler': 'Cancel',
   'action.enregistrer': 'Save', 'action.continuer': 'Continue', 'action.chercher': 'Search',
   'action.publier': 'Publish', 'action.rejoindre': 'Join', 'action.nouveau': 'New',

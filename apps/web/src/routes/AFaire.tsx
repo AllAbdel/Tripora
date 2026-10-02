@@ -161,8 +161,7 @@ export default function AFaire() {
         <TitreDePage pastille="itineraire">À faire</TitreDePage>
         {ville && (
           <p className="text-muted mt-1 text-sm">
-            {toutes.length} idée{toutes.length > 1 ? 's' : ''} à {ville.name}, classées selon les
-            envies du groupe
+            {`${toutes.length} idée${toutes.length > 1 ? 's' : ''} à ${ville.name}, classées selon les envies du groupe`}
           </p>
         )}
       </div>

@@ -169,10 +169,9 @@ export default function TripBudget() {
       <div>
         <TitreDePage pastille="depenses">Budget</TitreDePage>
         <p className="text-muted text-sm">
-          {voyage.data.summary.title}
-          {villeRetenue ? ` · ${villeRetenue.name}` : ''} · {voyage.data.constraints.durationDays}{' '}
-          jour{voyage.data.constraints.durationDays > 1 ? 's' : ''} à {combien} personne
-          {combien > 1 ? 's' : ''}
+          <span translate="no">{voyage.data.summary.title}</span>
+          {villeRetenue ? ` · ${villeRetenue.name}` : ''}
+          {` · ${voyage.data.constraints.durationDays} jour${voyage.data.constraints.durationDays > 1 ? 's' : ''} à ${combien} personne${combien > 1 ? 's' : ''}`}
         </p>
       </div>
 

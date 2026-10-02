@@ -14,6 +14,7 @@
     "flags": "tsx scripts/generate-flags.mjs",
     "lint": "eslint src scripts e2e --max-warnings 0",
     "smoke": "node scripts/smoke.mjs",
+    "traductions:recolte": "node scripts/recolter-traductions.mjs",
     "build:mobile": "tsc --noEmit && vite build --mode mobile"
   },
   "dependencies": {
