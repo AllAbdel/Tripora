@@ -28,13 +28,17 @@
 #    sur ces navigateurs, et sans le moindre message : privé d'ouvrier,
 #    MapLibre n'affiche que la couleur de fond du style, et ne signale rien.
 #  - `'unsafe-inline'` en `style-src` : Tailwind et MapLibre posent des styles
-#    en ligne. C'est la seule concession, et elle ne permet pas d'exécuter du
-#    code — seulement de colorer des éléments.
+#    en ligne. Elle ne permet pas d'exécuter du code — seulement de colorer
+#    des éléments.
+#  - `'wasm-unsafe-eval'` en `script-src` : la lecture des tickets de caisse
+#    tourne en WebAssembly sur l'appareil (la photo n'est envoyée nulle part).
+#    Compiler du WebAssembly demande ce mot-clé ; il n'autorise ni `eval` ni
+#    aucun script en ligne, et le moteur vient de Tripora (`/ocr/…`).
 #
 # Ce qui est refusé sans exception : tout script d'une autre origine, tout
 # cadre, et l'inclusion de Tripora dans un cadre étranger.
 /*
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.wikimedia.org https://*.wikipedia.org https://tiles.openfreemap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://*.wikimedia.org https://*.wikipedia.org; manifest-src 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.wikimedia.org https://*.wikipedia.org https://tiles.openfreemap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://*.wikimedia.org https://*.wikipedia.org; manifest-src 'self'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
@@ -61,3 +65,8 @@
 # relit les scripts importés à travers le cache HTTP, il faut donc le même régime.
 /sw-alertes.js
   Cache-Control: no-cache
+
+# La lecture des tickets : le dossier porte la version, le contenu ne change
+# jamais sous un même chemin.
+/ocr/*
+  Cache-Control: public, max-age=31536000, immutable

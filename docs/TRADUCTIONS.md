@@ -22,7 +22,8 @@ casser les tests ni gêner le reste du développement, qui continue en parallèl
   le partage vers Tripora (`routes/Partager.tsx`, `lib/partage.ts`), les alertes
   de prix (`routes/AlertesDePrix.tsx`, `components/SuivreLePrix.tsx`,
   `components/BaissesDuVoyage.tsx`, `lib/alertesDePrix.ts`, et le texte de la
-  notification dans `public/sw-alertes.js`) —,
+  notification dans `public/sw-alertes.js`), le scanner de tickets
+  (`components/ScannerUnTicket.tsx`) —,
   le fichier pour les assistants (`llms.txt`, généré par
   `seo/pagesPubliques.ts` : il a déjà un paragraphe en anglais), le pied de page et les pages légales
   (`Confidentialite`, `MentionsLegales`, `Conditions`). Les pages légales

@@ -1,4 +1,7 @@
 import { fileURLToPath, URL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -27,6 +30,54 @@ function origineDuSite(mode: string): Plugin {
   };
 }
 
+/**
+ * La lecture des tickets de caisse, servie par Tripora lui-même.
+ *
+ * Tesseract.js va chercher par défaut son moteur et ses données sur un CDN :
+ * la CSP le refuserait, l'application hors ligne ne le trouverait pas, et ce
+ * serait un tiers de plus à qui chaque scan se signale. On copie donc, depuis
+ * les paquets installés, les seuls fichiers utiles — l'ouvrier, le moteur
+ * WebAssembly en trois variantes (le navigateur prend la plus rapide qu'il
+ * sait exécuter), le modèle français compact — sous un chemin qui porte la
+ * version : un fichier gardé en cache ne peut pas être périmé.
+ *
+ * Rien de tout cela n'est préchargé : quelques mégaoctets, téléchargés au
+ * premier ticket scanné seulement.
+ */
+function lectureDesTickets(): Plugin {
+  const exiger = createRequire(import.meta.url);
+  const tesseract = dirname(exiger.resolve('tesseract.js/package.json'));
+  const coeur = dirname(createRequire(join(tesseract, 'package.json')).resolve('tesseract.js-core/package.json'));
+  const francais = dirname(exiger.resolve('@tesseract.js-data/fra/package.json'));
+  const version = (JSON.parse(readFileSync(join(tesseract, 'package.json'), 'utf8')) as { version: string }).version;
+  const dossier = `ocr/${version}/`;
+  const fichiers: Record<string, string> = {
+    'worker.min.js': join(tesseract, 'dist/worker.min.js'),
+    'tesseract-core-lstm.wasm.js': join(coeur, 'tesseract-core-lstm.wasm.js'),
+    'tesseract-core-simd-lstm.wasm.js': join(coeur, 'tesseract-core-simd-lstm.wasm.js'),
+    'tesseract-core-relaxedsimd-lstm.wasm.js': join(coeur, 'tesseract-core-relaxedsimd-lstm.wasm.js'),
+    'fra.traineddata.gz': join(francais, '4.0.0_best_int/fra.traineddata.gz'),
+  };
+  return {
+    name: 'tripora-lecture-des-tickets',
+    config: () => ({ define: { __DOSSIER_OCR__: JSON.stringify(`/${dossier}`) } }),
+    configureServer(serveur) {
+      serveur.middlewares.use((requete, reponse, suite) => {
+        const chemin = (requete.url ?? '').split('?')[0] ?? '';
+        const source = chemin.startsWith(`/${dossier}`) ? fichiers[chemin.slice(dossier.length + 1)] : undefined;
+        if (!source) return suite();
+        reponse.setHeader('Content-Type', chemin.endsWith('.js') ? 'text/javascript' : 'application/octet-stream');
+        reponse.end(readFileSync(source));
+      });
+    },
+    generateBundle() {
+      for (const [nom, source] of Object.entries(fichiers)) {
+        this.emitFile({ type: 'asset', fileName: dossier + nom, source: readFileSync(source) });
+      }
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   /**
    * L'application mobile embarque ce même site, construit avec `--mode mobile`.
@@ -42,6 +93,7 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       origineDuSite(mode),
+      lectureDesTickets(),
       VitePWA({
         disable: mobile,
         registerType: 'autoUpdate',
@@ -131,6 +183,8 @@ export default defineConfig(({ mode }) => {
             '**/pages.css',
             // Importé par le service worker lui-même, jamais demandé par une page.
             '**/sw-alertes.js',
+            // La lecture des tickets : plusieurs mégaoctets, pour qui scanne.
+            '**/ocr/**',
           ],
           // La page de retour de connexion de l'application mobile ne doit
           // jamais être remplacée par Tripora : le site, voyant un code sans
@@ -205,6 +259,19 @@ export default defineConfig(({ mode }) => {
               options: {
                 cacheName: 'tripora-ressources-v1',
                 expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 60 },
+                cacheableResponse: { statuses: [200] },
+              },
+            },
+            {
+              // La lecture des tickets, une fois téléchargée : disponible hors
+              // ligne ensuite. Le dossier porte la version, « cache d'abord »
+              // ne peut donc pas servir un moteur périmé.
+              urlPattern: ({ sameOrigin, url }: { sameOrigin: boolean; url: URL }) =>
+                sameOrigin && url.pathname.startsWith('/ocr/'),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'tripora-lecture-des-tickets',
+                expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 180 },
                 cacheableResponse: { statuses: [200] },
               },
             },

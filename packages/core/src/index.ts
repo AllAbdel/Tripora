@@ -24,6 +24,7 @@ export * from './catalog/origins.js';
 export * from './transport.js';
 export * from './carbone.js';
 export * from './conges.js';
+export * from './ticket.js';
 export * from './proposals.js';
 export * from './itinerary.js';
 export * from './places.js';

@@ -67,4 +67,15 @@
          peut arriver quelques minutes plus tard, et aucun écran de réglage ne
          s'ouvre pour les demander). -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
+
+    <!-- « Prendre le ticket en photo » : l'appareil photo du téléphone, par son
+         application, sans permission CAMERA (c'est elle qui prend la photo).
+         Depuis Android 11, une application ne voit les autres que si elle
+         déclare ce qu'elle leur demande : sans cette ligne, le bouton
+         retomberait sur le choix d'un fichier. -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
 </manifest>

@@ -16,7 +16,7 @@ import { Bloc, Definition, LienDeContact, PageLegale } from '@/components/PageLe
  */
 export default function Confidentialite() {
   return (
-    <PageLegale titre="Confidentialité" miseAJour="30 septembre 2026">
+    <PageLegale titre="Confidentialité" miseAJour="2 octobre 2026">
       <Bloc titre="En une phrase">
         <p>
           Tripora conserve le minimum nécessaire pour qu’un voyage fonctionne à plusieurs,
@@ -70,7 +70,9 @@ export default function Confidentialite() {
           Le thème, la couleur choisie et les retours sonores restent dans le navigateur. Les
           rappels de l’application Android sont programmés sur le téléphone lui-même, et les
           copies de documents gardées pour une consultation hors ligne restent dans l’appareil —
-          effacées à la déconnexion. Rien de tout cela ne part sur le serveur.
+          effacées à la déconnexion. Un ticket de caisse scanné est lu par l’appareil lui-même :
+          la photo n’est ni envoyée ni conservée, seuls le montant, la date et le nom du commerce
+          lus remplissent le formulaire. Rien de tout cela ne part sur le serveur.
         </Definition>
         <Definition terme="Ce que Tripora ne conserve pas">
           Aucune position GPS, aucun historique de navigation, aucun identifiant publicitaire,

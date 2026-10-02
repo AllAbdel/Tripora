@@ -14,6 +14,8 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Field, TextInput } from '@/components/ui/Field';
 import { MoneyInput } from '@/components/ui/MoneyInput';
+import { ScannerUnTicket } from '@/components/ScannerUnTicket';
+import { datePlausible, montantSaisi } from '@/lib/lectureDuTicket';
 import { getTripRepository } from '@/lib/trips';
 import { getCollaboration } from '@/lib/collaboration';
 import { getExpenses, CATEGORIES, type ExpenseCategory } from '@/lib/expenses';
@@ -435,6 +437,20 @@ function Formulaire({
             <X className="size-4" aria-hidden />
           </button>
         </div>
+
+        <ScannerUnTicket
+          onLu={(lecture) => {
+            if (lecture.commerce && label.trim().length === 0) setLabel(lecture.commerce);
+            if (lecture.montantCents !== null) setMontant(montantSaisi(lecture.montantCents));
+            const dateLue = datePlausible(lecture.date, dateDuJour());
+            if (dateLue) setDate(dateLue);
+            if (lecture.categorie) setCategorie(lecture.categorie);
+            // La devise du ticket, si elle fait partie de celles qu'on sait convertir.
+            if (lecture.devise && devisesOffertes.some((entree) => entree.code === lecture.devise)) {
+              setChoix(lecture.devise);
+            }
+          }}
+        />
 
         <Field label="Quoi ?">
           <TextInput
