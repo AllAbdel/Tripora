@@ -1,9 +1,19 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { useLangue } from '@/stores/langue';
 import { PHRASES_EN } from './phrases-en';
-import { demarrerLaTraductionAuRendu, traduireDansLaLangueActive, traduireTexte } from './traductionAuRendu';
+import {
+  chargerLeDictionnaire,
+  demarrerLaTraductionAuRendu,
+  traduireDansLaLangueActive,
+  traduireTexte,
+} from './traductionAuRendu';
 
 const attendre = () => new Promise((ok) => setTimeout(ok, 0));
+
+beforeAll(async () => {
+  expect(await chargerLeDictionnaire('en')).toBe(true);
+  expect(await chargerLeDictionnaire('es')).toBe(false);
+});
 
 describe('traduireTexte', () => {
   it('traduit une phrase exacte et garde ses espaces de bord', () => {

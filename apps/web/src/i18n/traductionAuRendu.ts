@@ -1,6 +1,5 @@
 import { resoudre, useLangue } from '@/stores/langue';
 import type { Langue } from './langues';
-import { MOTIFS_EN, PHRASES_EN } from './phrases-en';
 
 /**
  * La traduction au rendu : l'anglais pour tout ce que `useT()` ne couvre pas.
@@ -22,6 +21,10 @@ import { MOTIFS_EN, PHRASES_EN } from './phrases-en';
  * Ce qui n'est jamais touché : les champs de saisie, et tout ce qui est marqué
  * `translate="no"` (les noms, les messages, ce que les gens écrivent eux-mêmes).
  *
+ * Le dictionnaire ne se charge que pour sa langue : un francophone ne
+ * télécharge pas l'anglais (une soixantaine de kilo-octets). Pendant ce
+ * chargement, l'écran reste en français, puis se traduit d'un coup.
+ *
  * Une phrase absente du dictionnaire reste en français, comme avec `useT()`.
  * Pour trouver celles qui manquent : `pnpm --filter @tripora/web traductions:recolte`
  * parcourt l'application en anglais et liste chaque texte resté en français.
@@ -36,9 +39,19 @@ interface Dictionnaire {
   motifs: readonly Motif[];
 }
 
-const DICTIONNAIRES: Partial<Record<Langue, Dictionnaire>> = {
-  en: { phrases: PHRASES_EN, motifs: MOTIFS_EN },
+const CHARGEURS: Partial<Record<Langue, () => Promise<Dictionnaire>>> = {
+  en: () => import('./phrases-en').then((module) => ({ phrases: module.PHRASES_EN, motifs: module.MOTIFS_EN })),
 };
+const DICTIONNAIRES: Partial<Record<Langue, Dictionnaire>> = {};
+
+/** Charge le dictionnaire d'une langue ; faux si cette langue n'en a pas. */
+export async function chargerLeDictionnaire(langue: Langue): Promise<boolean> {
+  if (DICTIONNAIRES[langue]) return true;
+  const chargeur = CHARGEURS[langue];
+  if (!chargeur) return false;
+  DICTIONNAIRES[langue] = await chargeur();
+  return true;
+}
 
 const ATTRIBUTS = ['placeholder', 'aria-label', 'title', 'alt'] as const;
 const EXCLUS = '[translate="no"],script,style,textarea,code,pre,[contenteditable="true"]';
@@ -179,7 +192,17 @@ function appliquer(nouvelle: Langue) {
   if (nouvelle === langue) return;
   restaurer();
   langue = nouvelle;
-  if (DICTIONNAIRES[langue]) parcourir(document.documentElement);
+  if (DICTIONNAIRES[langue]) {
+    parcourir(document.documentElement);
+    return;
+  }
+  chargerLeDictionnaire(nouvelle)
+    .then((charge) => {
+      // La langue a pu changer pendant le chargement.
+      if (charge && langue === nouvelle) parcourir(document.documentElement);
+    })
+    // Hors ligne sans le fichier en cache : l'écran reste en français.
+    .catch(() => {});
 }
 
 /**
