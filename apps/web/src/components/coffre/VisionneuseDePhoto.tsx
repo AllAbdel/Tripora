@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 /**
@@ -22,7 +23,9 @@ export function VisionneuseDePhoto({ adresse, nom, surFermer }: { adresse: strin
     return () => window.removeEventListener('keydown', surTouche);
   }, [surFermer]);
 
-  return (
+  // Au niveau du document : l'écran crée son propre empilement (animation
+  // d'arrivée), sous lequel la barre d'onglets passerait devant la photo.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -50,6 +53,7 @@ export function VisionneuseDePhoto({ adresse, nom, surFermer }: { adresse: strin
           onClick={(event) => event.stopPropagation()}
         />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

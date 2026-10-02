@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   FileText,
   Globe2,
+  Images,
   KeyRound,
   Layers,
   MessagesSquare,
@@ -74,7 +75,8 @@ export type NomDePastille =
   | 'taches'
   | 'decouvrir'
   | 'coffre'
-  | 'bilan';
+  | 'bilan'
+  | 'journal';
 
 /** Un pictogramme dessiné (`PageGlyphs`) ou un pictogramme de bibliothèque. */
 type IconePastille = ComponentType<SVGProps<SVGSVGElement>> | LucideIcon;
@@ -133,6 +135,9 @@ const PASTILLES: Readonly<Record<NomDePastille, Pastille>> = {
   // Le bilan : les cotillons du retour, dans un mauve de fête qu'aucune
   // autre case ne porte.
   bilan: { icone: PartyPopper, degrade: ['#c471f5', '#9b4fd8'], auTrait: true },
+  // Le journal photo : les images, dans un vert d'eau profond — plus sombre
+  // que le turquoise des trips ouverts, pour ne pas les confondre.
+  journal: { icone: Images, degrade: ['#3d9a94', '#1f5f5b'], auTrait: true },
 };
 
 const TAILLES = {

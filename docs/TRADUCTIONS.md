@@ -23,7 +23,8 @@ casser les tests ni gêner le reste du développement, qui continue en parallèl
   de prix (`routes/AlertesDePrix.tsx`, `components/SuivreLePrix.tsx`,
   `components/BaissesDuVoyage.tsx`, `lib/alertesDePrix.ts`, et le texte de la
   notification dans `public/sw-alertes.js`), le scanner de tickets
-  (`components/ScannerUnTicket.tsx`) —,
+  (`components/ScannerUnTicket.tsx`), le journal photo
+  (`routes/TripJournal.tsx`, titres des jours dans `packages/core/src/journal.ts`) —,
   le fichier pour les assistants (`llms.txt`, généré par
   `seo/pagesPubliques.ts` : il a déjà un paragraphe en anglais), le pied de page et les pages légales
   (`Confidentialite`, `MentionsLegales`, `Conditions`). Les pages légales

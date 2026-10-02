@@ -709,7 +709,8 @@ export function pourLesAssistants(publiees: readonly Destination[], { origine }:
 - Alertes de prix : suivre le vol d'une proposition ; Tripora relève le prix chaque matin et prévient (notification du navigateur) quand il baisse d'au moins 10 %.
 - « Partager vers Tripora » : une vidéo TikTok, un Reel, une fiche Google Maps ou un article partagé à l'application devient des épingles sur la carte du groupe (les lieux cités y sont trouvés et situés).
 - Sondages, tâches partagées (« qui fait quoi »), valise à cocher, coffre (codes, wifi, billets, lisibles hors ligne).
-- « Qui doit quoi » : dépenses en toutes devises, remboursements calculés au plus simple, liens de paiement.
+- Journal photo partagé : les photos de chacun, rangées par jour du voyage, position GPS effacée avant l'envoi.
+- « Qui doit quoi » : dépenses en toutes devises, remboursements calculés au plus simple, liens de paiement ; un ticket de caisse photographié remplit la dépense (lu sur l'appareil).
 - Trips ouverts : rejoindre un groupe qui part au même endroit, aux conditions de son organisateur (réservé aux majeurs).
 - Passeport du voyageur et bilan du voyage à partager.
 - Quatorze langues.

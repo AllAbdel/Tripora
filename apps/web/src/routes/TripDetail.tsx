@@ -27,6 +27,7 @@ import { requeteDesSondages } from '@/lib/sondages';
 import { requeteDesTaches } from '@/lib/taches';
 import { requeteDuCoffre } from '@/lib/coffre';
 import { requeteDesDocuments } from '@/lib/documents';
+import { requeteDuJournal } from '@/lib/journal';
 import { useRappelsDuVoyage } from '@/lib/rappels';
 import { requeteDesEnvies } from '@/lib/envies';
 import { supabase } from '@/lib/supabase';
@@ -127,6 +128,7 @@ export default function TripDetail() {
   const taches = useQuery(requeteDesTaches(id));
   const coffre = useQuery(requeteDuCoffre(id));
   const documents = useQuery(requeteDesDocuments(id));
+  const journal = useQuery(requeteDuJournal(id));
   // Mes avis sur le carnet : combien d'idées il me reste à juger dans « Découvrir ».
   const envies = useQuery({ ...requeteDesEnvies(id, identity?.id ?? 'moi'), enabled: Boolean(id && data?.lockedDestinationId) });
   const mesAvis = Object.values(envies.data?.parActivite ?? {}).filter((avis) => avis.moi !== null).length;
@@ -335,6 +337,7 @@ export default function TripDetail() {
             sondagesAVoter={sondagesEnAttente(sondages.data ?? [], moiIci)}
             aDecouvrir={Math.max(0, (nombreDActivites.data ?? 0) - mesAvis)}
             coffre={resumerLeCoffre(coffre.data ?? [], documents.data?.length ?? 0)}
+            nombreDePhotos={journal.data?.length ?? 0}
             termine={Boolean(
               datesExactes && data.constraints.endDate && data.constraints.endDate < dateDuJour(villeRetenue?.timezone),
             )}

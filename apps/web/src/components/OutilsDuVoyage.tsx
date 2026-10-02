@@ -34,6 +34,7 @@ export function OutilsDuVoyage({
   taches,
   aDecouvrir = 0,
   coffre = null,
+  nombreDePhotos = 0,
   termine = false,
 }: {
   tripId: string;
@@ -59,6 +60,8 @@ export function OutilsDuVoyage({
   aDecouvrir?: number;
   /** « 2 codes · 1 wifi », ou `null` quand le coffre est vide. */
   coffre?: string | null;
+  /** Les photos du journal. */
+  nombreDePhotos?: number;
   /** Le séjour est fini : place au bilan. */
   termine?: boolean;
 }) {
@@ -148,6 +151,14 @@ export function OutilsDuVoyage({
         : 'Dates, logement, resto',
       // Un vote attendu, c'est le groupe qui attend : ça se remarque.
       accent: sondagesAVoter > 0,
+    },
+    {
+      to: `/voyages/${tripId}/journal`,
+      pastille: 'journal' as const,
+      titre: 'Journal photo',
+      detail:
+        nombreDePhotos > 0 ? `${nombreDePhotos} photo${nombreDePhotos > 1 ? 's' : ''}` : 'Les photos du groupe',
+      accent: false,
     },
     {
       to: `/voyages/${tripId}/discussion`,

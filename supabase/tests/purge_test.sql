@@ -38,6 +38,11 @@ begin
   select count(*) into n from public.fichiers_a_effacer
    where bucket = 'documents' and chemin like 'aaaaaaaa-0000-0000-0000-000000000002/%';
   assert n >= 1, 'Les fichiers du voyage purgé doivent être notés à effacer';
+  select count(*) into n from public.fichiers_a_effacer
+   where bucket = 'journal' and chemin like 'aaaaaaaa-0000-0000-0000-000000000002/%';
+  assert n >= 2, 'Les photos du journal du voyage purgé doivent être notées à effacer';
+  assert not exists (select 1 from public.photos_du_voyage where trip_id = 'aaaaaaaa-0000-0000-0000-000000000002'),
+    'Ses photos doivent être parties en cascade';
 
   -- Les autres voyages ne sont pas touchés.
   assert exists (select 1 from public.trips where id = 'aaaaaaaa-0000-0000-0000-000000000001'),

@@ -47,6 +47,12 @@ export default function Confidentialite() {
           du voyage seulement ; un document marqué « privé » n’est visible que de la personne
           qui l’a déposé.
         </Definition>
+        <Definition terme="Le journal photo">
+          Les photos que chacun y ajoute, visibles des seuls membres du voyage. Avant l’envoi, chaque
+          photo est redessinée sur votre appareil : allégée, et débarrassée de ses métadonnées — dont
+          la position GPS que le téléphone y inscrit. Sa date de prise de vue est gardée pour la
+          ranger par jour. Elles partent avec le voyage, ou avec votre compte.
+        </Definition>
         <Definition terme="Vos moyens de remboursement">
           Si vous les renseignez : votre identifiant PayPal.me, Revolut ou Wise, votre IBAN et le
           nom du titulaire. Seules les personnes avec qui vous partagez un voyage les voient,
