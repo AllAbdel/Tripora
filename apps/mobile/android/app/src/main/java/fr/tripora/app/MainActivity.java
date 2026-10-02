@@ -16,8 +16,12 @@ import com.getcapacitor.BridgeActivity;
  */
 public class MainActivity extends BridgeActivity {
 
-    /** Au-delà, ce n'est plus un lien partagé : on tronque plutôt que refuser. */
-    private static final int LONGUEUR_MAX = 3000;
+    /**
+     * Assez pour un e-mail de confirmation partagé depuis la messagerie (les
+     * dates, la référence et le prix suivent souvent un long en-tête) ; au-delà,
+     * on tronque plutôt que refuser.
+     */
+    private static final int LONGUEUR_MAX = 20000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

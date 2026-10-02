@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Link2, MapPin, Search } from 'lucide-react';
-import { dateDuJour, findDestination } from '@tripora/core';
+import { ArrowLeft, CalendarCheck, Check, Link2, MapPin, Search } from 'lucide-react';
+import {
+  dateDuJour,
+  findDestination,
+  lireUneConfirmation,
+  ressembleAUneReservation,
+  type LectureDeConfirmation,
+} from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -19,6 +25,7 @@ import {
   type LectureDuPartage,
 } from '@/lib/partage';
 import { signaler } from '@/lib/feedback';
+import { confierLaConfirmation, texteCompletDuPartage } from '@/lib/confirmationPartagee';
 import { cn } from '@/lib/cn';
 
 /**
@@ -41,6 +48,17 @@ export default function Partager() {
   const [lecture, setLecture] = useState<LectureDuPartage | null>(null);
   const [coches, setCoches] = useState<ReadonlySet<number>>(new Set());
   const [ajoutes, setAjoutes] = useState<number | null>(null);
+  const [pasUneReservation, setPasUneReservation] = useState(false);
+
+  // Un e-mail de confirmation partagé depuis la messagerie : ce n'est pas un
+  // lien à épingler, c'est une réservation à ranger dans le voyage.
+  const confirmation = useMemo(() => {
+    const texte = texteCompletDuPartage(parametres);
+    if (!texte) return null;
+    const lecture = lireUneConfirmation(texte);
+    return ressembleAUneReservation(lecture) ? { texte, lecture } : null;
+  }, [parametres]);
+  const reservation = pasUneReservation ? null : confirmation;
 
   const trips = useQuery({
     queryKey: ['trips', repository.kind],
@@ -75,11 +93,11 @@ export default function Partager() {
   // Arrivé par le menu Partager avec un voyage connu : on lit tout de suite.
   const dejaLu = useRef(false);
   useEffect(() => {
-    if (dejaLu.current || !saisie.trim() || !tripId || trips.isLoading) return;
+    if (reservation || dejaLu.current || !saisie.trim() || !tripId || trips.isLoading) return;
     if (!partage.lien && !partage.texte) return;
     dejaLu.current = true;
     lire.mutate();
-  }, [saisie, tripId, trips.isLoading, partage, lire]);
+  }, [reservation, saisie, tripId, trips.isLoading, partage, lire]);
 
   const ajouter = useMutation({
     mutationFn: async () => {
@@ -113,6 +131,20 @@ export default function Partager() {
     },
     onError: () => signaler('echec'),
   });
+
+  if (reservation) {
+    return (
+      <RangerLaReservation
+        lecture={reservation.lecture}
+        texte={reservation.texte}
+        voyages={voyages}
+        chargement={trips.isLoading}
+        tripId={tripId}
+        surChoisirLeVoyage={setTripChoisi}
+        surIgnorer={() => setPasUneReservation(true)}
+      />
+    );
+  }
 
   if (!discussion) {
     return (
@@ -337,3 +369,118 @@ function ordonner(trips: readonly TripSummary[]): TripSummary[] {
   const passes = trips.filter((trip) => trip.endDate && trip.endDate < aujourdHui);
   return [...aVenir, ...passes];
 }
+
+function dateLisible(jour: string): string {
+  return new Date(`${jour}T12:00:00Z`).toLocaleDateString('fr-FR', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+}
+
+/**
+ * Une confirmation de réservation partagée vers Tripora : on la range dans le
+ * voyage choisi. Le formulaire de réservation s'ouvre rempli ; rien n'est
+ * enregistré avant que la personne l'ait relu.
+ */
+function RangerLaReservation({
+  lecture,
+  texte,
+  voyages,
+  chargement,
+  tripId,
+  surChoisirLeVoyage,
+  surIgnorer,
+}: {
+  lecture: LectureDeConfirmation;
+  texte: string;
+  voyages: readonly TripSummary[];
+  chargement: boolean;
+  tripId: string | null;
+  surChoisirLeVoyage: (id: string) => void;
+  surIgnorer: () => void;
+}) {
+  const naviguer = useNavigate();
+  const { brouillon } = lecture;
+  const voyage = voyages.find((trip) => trip.id === tripId) ?? null;
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-5 px-5 pt-6 pb-32">
+      <Link
+        to="/voyages"
+        className="text-muted hover:text-brand-500 -ms-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm transition-colors"
+      >
+        <ArrowLeft className="size-4" aria-hidden />
+        Mes trips
+      </Link>
+      <TitreDePage pastille="hebergements">Une réservation à ranger</TitreDePage>
+
+      <Card className="animate-rise">
+        <CardBody className="space-y-1.5">
+          <p className="etiquette flex items-center gap-1.5">
+            <CalendarCheck className="size-3.5" aria-hidden />
+            Lu dans l’e-mail
+          </p>
+          <p className="titre-lieu text-xl break-words">{brouillon.titre ?? 'Réservation'}</p>
+          {brouillon.debutLe && (
+            <p className="text-sm">
+              {dateLisible(brouillon.debutLe)}
+              {brouillon.debutA ? ` à ${brouillon.debutA}` : ''}
+              {brouillon.finLe && brouillon.finLe !== brouillon.debutLe ? ` → ${dateLisible(brouillon.finLe)}` : ''}
+            </p>
+          )}
+          {brouillon.reference && (
+            <p className="text-muted text-sm">
+              Référence <span className="chiffres font-semibold">{brouillon.reference}</span>
+            </p>
+          )}
+          <p className="text-muted pt-1 text-xs">
+            L’e-mail est lu sur votre appareil et n’est envoyé nulle part. Vous relirez la fiche avant de
+            l’enregistrer.
+          </p>
+        </CardBody>
+      </Card>
+
+      {voyages.length === 0 && !chargement ? (
+        <Banner tone="info" title="Pas encore de voyage">
+          Une réservation se range dans un voyage. <Link to="/voyages/nouveau">Créez-en un</Link>, puis
+          partagez à nouveau l’e-mail.
+        </Banner>
+      ) : (
+        <>
+          {voyages.length > 1 && (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-semibold">Pour quel voyage ?</legend>
+              <div className="flex flex-wrap gap-2">
+                {voyages.slice(0, 6).map((trip) => (
+                  <Chip key={trip.id} selected={trip.id === tripId} onClick={() => surChoisirLeVoyage(trip.id)}>
+                    {trip.title}
+                  </Chip>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          <Button
+            block
+            size="lg"
+            disabled={!voyage}
+            icon={<CalendarCheck className="size-5" aria-hidden />}
+            onClick={() => {
+              if (!voyage) return;
+              confierLaConfirmation(texte);
+              void naviguer(`/voyages/${voyage.id}/reservations?depuis=partage`);
+            }}
+          >
+            {voyage ? `Ranger dans « ${voyage.title} »` : 'Ranger dans un voyage'}
+          </Button>
+        </>
+      )}
+
+      <button type="button" onClick={surIgnorer} className="text-muted min-h-11 text-sm underline">
+        Ce n’est pas une réservation : chercher des lieux dans ce texte
+      </button>
+    </div>
+  );
+}
+

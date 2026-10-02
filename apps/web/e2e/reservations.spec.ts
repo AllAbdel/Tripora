@@ -77,3 +77,32 @@ test('une fiche incomplète ne s’enregistre pas, et dit ce qui manque', async 
   await expect(page.getByText('Le lien doit commencer par https://')).toBeVisible();
   await expect(page.getByRole('heading', { level: 3 })).toHaveCount(0);
 });
+
+/**
+ * Le même e-mail, partagé depuis l'application de messagerie (menu Partager
+ * du téléphone) : Tripora y reconnaît une réservation, la range dans le
+ * voyage, et la fiche s'ouvre déjà remplie.
+ */
+test('un e-mail partagé vers Tripora devient une réservation du voyage', async ({ page }) => {
+  await poser(page, [DATE], '/voyages');
+  const sujet = 'Votre réservation est confirmée – Ubud Tropical Villas';
+  await page.goto(`/partager?${new URLSearchParams({ titre: sujet, texte: EMAIL_BOOKING })}`, {
+    waitUntil: 'networkidle',
+  });
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Une réservation à ranger' })).toBeVisible();
+  await expect(page.getByText('Ubud Tropical Villas', { exact: true })).toBeVisible();
+  await expect(page.getByText(/ven\. 10 juillet à 14:00 → lun\. 13 juillet/u)).toBeVisible();
+  await page.getByRole('button', { name: 'Ranger dans « Bali entre potes »' }).click();
+
+  await expect(page).toHaveURL(/\/voyages\/v1\/reservations$/u);
+  await expect(page.getByText(/Rempli depuis le texte de l’e-mail/)).toBeVisible();
+  await expect(page.getByLabel('Nom', { exact: true })).toHaveValue('Ubud Tropical Villas');
+  await expect(page.getByLabel('Numéro de confirmation')).toHaveValue('4521.873.219');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('heading', { level: 3, name: 'Ubud Tropical Villas' })).toBeVisible();
+
+  // Le texte confié pour le trajet ne traîne pas dans l'onglet.
+  expect(await page.evaluate(() => sessionStorage.getItem('tripora.confirmation-partagee'))).toBeNull();
+});
+

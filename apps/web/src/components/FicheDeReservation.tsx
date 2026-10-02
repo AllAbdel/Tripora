@@ -94,6 +94,7 @@ function problemeDeLaSaisie(saisie: Saisie): string | null {
 
 export function FicheDeReservation({
   initiale,
+  emailInitial,
   deviseParDefaut = 'EUR',
   enregistrement,
   surEnregistrer,
@@ -101,14 +102,22 @@ export function FicheDeReservation({
 }: {
   /** Une réservation existante à corriger ; sinon, une nouvelle. */
   initiale?: DonneesDeReservation;
+  /** Un e-mail de confirmation déjà reçu (partagé depuis la messagerie) : la fiche s'ouvre remplie. */
+  emailInitial?: string | null;
   deviseParDefaut?: string;
   enregistrement: boolean;
   surEnregistrer: (donnees: DonneesDeReservation) => void;
   surAnnuler: () => void;
 }) {
-  const [saisie, setSaisie] = useState<Saisie>(() => saisieDepuis(initiale, deviseParDefaut));
+  const [lecture, setLecture] = useState<LectureDeConfirmation | null>(() =>
+    emailInitial ? lireUneConfirmation(emailInitial) : null,
+  );
+  const [saisie, setSaisie] = useState<Saisie>(() =>
+    lecture && lecture.trouves.length > 0
+      ? saisieDepuis(lecture.brouillon, deviseParDefaut)
+      : saisieDepuis(initiale, deviseParDefaut),
+  );
   const [email, setEmail] = useState('');
-  const [lecture, setLecture] = useState<LectureDeConfirmation | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const modifier = (champs: Partial<Saisie>) => setSaisie((avant) => ({ ...avant, ...champs }));
   const idEmail = useId();
@@ -187,7 +196,8 @@ export function FicheDeReservation({
               />
               <p id={idAide} className="text-muted text-xs">
                 Booking, Airbnb, Agoda, Expedia, GetYourGuide, Viator, Klook… L’e-mail est lu sur
-                votre appareil et n’est envoyé nulle part.
+                votre appareil et n’est envoyé nulle part. Sur Android, le menu Partager de votre
+                messagerie l’envoie aussi directement à Tripora.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

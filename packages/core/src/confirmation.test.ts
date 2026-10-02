@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ressembleAUneReservation,
   decoderLesMotsEncodes,
   lireUnNombre,
   lireUneConfirmation,
@@ -282,5 +283,19 @@ describe('les montants', () => {
     expect(lireUnNombre('1.500.000')).toBe(1_500_000);
     expect(lireUnNombre('612,40')).toBe(612.4);
     expect(lireUnNombre('180')).toBe(180);
+  });
+});
+
+describe('un texte partagé vers Tripora', () => {
+  it('reconnaît une confirmation, pas une légende de vidéo', () => {
+    const confirmation = lireUneConfirmation(`Votre réservation est confirmée
+GetYourGuide
+Visite guidée du temple de Tanah Lot
+Date : 12 juin 2027 à 16:30
+Numéro de réservation : GYG7Q2LM`);
+    expect(ressembleAUneReservation(confirmation)).toBe(true);
+
+    const legende = lireUneConfirmation('On y était le 12 juin, coucher de soleil incroyable 🌅 #bali https://vm.tiktok.com/ZN1/');
+    expect(ressembleAUneReservation(legende)).toBe(false);
   });
 });

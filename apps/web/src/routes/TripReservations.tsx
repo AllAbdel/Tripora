@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -33,6 +33,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ListeFantome } from '@/components/ui/Squelette';
 import { TitreDePage } from '@/components/TitreDePage';
 import { FicheDeReservation } from '@/components/FicheDeReservation';
+import { lireLaConfirmationConfiee, oublierLaConfirmationConfiee } from '@/lib/confirmationPartagee';
 import { BoiteDeConfirmation } from '@/components/ConfirmerSuppression';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
@@ -54,7 +55,20 @@ export default function TripReservations() {
   const { id } = useParams();
   const { identity } = useAuth();
   const queryClient = useQueryClient();
-  const [edition, setEdition] = useState<Reservation | 'nouvelle' | null>(null);
+  const [parametres, setParametres] = useSearchParams();
+  // Un e-mail de confirmation partagé depuis la messagerie (voir Partager) :
+  // la fiche s'ouvre déjà remplie.
+  const [emailPartage] = useState(() =>
+    parametres.get('depuis') === 'partage' ? lireLaConfirmationConfiee() : null,
+  );
+  const [edition, setEdition] = useState<Reservation | 'nouvelle' | null>(() => (emailPartage ? 'nouvelle' : null));
+
+  // Lu une fois : on l'efface, et l'adresse redevient celle de l'écran.
+  useEffect(() => {
+    if (parametres.get('depuis') !== 'partage') return;
+    oublierLaConfirmationConfiee();
+    setParametres({}, { replace: true });
+  }, [parametres, setParametres]);
   const [aSupprimer, setASupprimer] = useState<Reservation | null>(null);
 
   const voyage = useQuery({
@@ -142,7 +156,7 @@ export default function TripReservations() {
       {edition !== null && (
         <FicheDeReservation
           key={edition === 'nouvelle' ? 'nouvelle' : edition.id}
-          {...(edition !== 'nouvelle' ? { initiale: edition } : {})}
+          {...(edition !== 'nouvelle' ? { initiale: edition } : { emailInitial: emailPartage })}
           enregistrement={enregistrer.isPending}
           surEnregistrer={(donnees) => enregistrer.mutate(donnees)}
           surAnnuler={() => setEdition(null)}

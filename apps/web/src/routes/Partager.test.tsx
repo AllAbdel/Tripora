@@ -67,4 +67,34 @@ describe('partager un lien vers Tripora', () => {
     );
     expect(await screen.findByText(/2 épingles ajoutées/)).toBeInTheDocument();
   });
+
+  it('reconnaît un e-mail de confirmation, et ne part pas lire ses liens', async () => {
+    lire.mockClear();
+    const texte = `Booking.com
+Merci, votre réservation à Ubud Tropical Villas est confirmée.
+Numéro de confirmation : 4521.873.219
+Arrivée
+ven. 10 juil. 2026
+Départ
+lun. 13 juil. 2026
+Gérer votre réservation : https://secure.booking.com/myreservations.html?bn=4521873219`;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={[`/partager?${new URLSearchParams({ texte })}`]}>
+          <Routes>
+            <Route path="/partager" element={<Partager />} />
+            <Route path="/voyages/:id/reservations" element={<p>Fiche de réservation</p>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Une réservation à ranger' })).toBeInTheDocument();
+    expect(screen.getByText('4521.873.219')).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: 'Ranger dans « Lisbonne entre potes »' }));
+    expect(await screen.findByText('Fiche de réservation')).toBeInTheDocument();
+    expect(sessionStorage.getItem('tripora.confirmation-partagee')).toContain('Ubud Tropical Villas');
+    // Un e-mail n'est pas un lien à épingler : rien n'est parti au serveur.
+    expect(lire).not.toHaveBeenCalled();
+  });
 });

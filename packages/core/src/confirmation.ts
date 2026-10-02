@@ -80,6 +80,17 @@ export function lireUneConfirmation(brut: string): LectureDeConfirmation {
   return { brouillon, origine: trouves.length > 0 ? origine : null, trouves };
 }
 
+/**
+ * Un texte partagé est-il une confirmation de réservation ?
+ *
+ * Il faut une date, et de quoi la reconnaître — un nom ou un numéro de
+ * réservation. Une date seule ne suffit pas : une légende de vidéo (« on y
+ * était le 12 juin ! ») en a souvent une, et ne réserve rien.
+ */
+export function ressembleAUneReservation(lecture: LectureDeConfirmation): boolean {
+  return lecture.trouves.includes('debutLe') && (lecture.trouves.includes('titre') || lecture.trouves.includes('reference'));
+}
+
 /** Combien de champs une lecture a vraiment remplis. */
 function remplis(lecture: Partial<DonneesDeReservation> | null): number {
   if (!lecture) return 0;

@@ -707,6 +707,7 @@ export function pourLesAssistants(publiees: readonly Destination[], { origine }:
 - Le programme jour par jour, composé à partir des activités qui ont plu, et exportable dans l'agenda.
 - La carte du voyage : lieux du programme, adresses et épingles du groupe ; la carte de la destination se télécharge pour servir sans réseau.
 - Alertes de prix : suivre le vol d'une proposition ; Tripora relève le prix chaque matin et prévient (notification du navigateur) quand il baisse d'au moins 10 %.
+- Réservations : l'e-mail de confirmation (collé, importé, ou partagé depuis la messagerie) remplit la fiche — hôtel, visite ou trajet rangé à la bonne date pour tout le groupe, lu sur l'appareil.
 - « Partager vers Tripora » : une vidéo TikTok, un Reel, une fiche Google Maps ou un article partagé à l'application devient des épingles sur la carte du groupe (les lieux cités y sont trouvés et situés).
 - Sondages, tâches partagées (« qui fait quoi »), valise à cocher, coffre (codes, wifi, billets, lisibles hors ligne).
 - Journal photo partagé : les photos de chacun, rangées par jour du voyage, position GPS effacée avant l'envoi.
