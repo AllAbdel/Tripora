@@ -13,6 +13,7 @@ import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
 import { TitreDePage } from '@/components/TitreDePage';
 import { TripMap, type MapMarker } from '@/components/TripMap';
+import { CarteHorsLigne } from '@/components/CarteHorsLigne';
 import { buildTripMarkers } from '@/lib/mapMarkers';
 import { requeteDesLieux } from '@/lib/places';
 import { getTripRepository } from '@/lib/trips';
@@ -127,6 +128,12 @@ export default function TripMapScreen() {
         lieux={lieux.data?.liste.length ?? 0}
         epingles={epingles.data?.length ?? 0}
       />
+
+      {villeRetenue && (
+        <div className="px-5 pt-3">
+          <CarteHorsLigne destination={villeRetenue} />
+        </div>
+      )}
 
       {villeChoisie && choisie && (
         <div className="animate-rise px-5 pt-3">

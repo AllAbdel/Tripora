@@ -43,6 +43,7 @@ import { MeteoPrevue } from '@/components/MeteoPrevue';
 import { EmpreinteDuVoyage } from '@/components/EmpreinteDuVoyage';
 import { SuivreLePrix } from '@/components/SuivreLePrix';
 import { BaissesDuVoyage } from '@/components/BaissesDuVoyage';
+import { CarteHorsLigne } from '@/components/CarteHorsLigne';
 import { LeVoyageAuPresent } from '@/components/LeVoyageAuPresent';
 import { InfosPratiques } from '@/components/InfosPratiques';
 import { OuEnEstLeGroupe } from '@/components/OuEnEstLeGroupe';
@@ -405,6 +406,8 @@ export default function TripDetail() {
           {villeRetenue && (
             <Reserver constraints={data.constraints} destination={villeRetenue} />
           )}
+
+          {villeRetenue && <CarteHorsLigne destination={villeRetenue} />}
 
           {villeRetenue &&
             estimateTransportOptions(data.constraints.origin, villeRetenue, data.constraints.participants).some(

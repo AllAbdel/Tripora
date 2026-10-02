@@ -78,7 +78,8 @@ export default function Confidentialite() {
           copies de documents gardées pour une consultation hors ligne restent dans l’appareil —
           effacées à la déconnexion. Un ticket de caisse scanné est lu par l’appareil lui-même :
           la photo n’est ni envoyée ni conservée, seuls le montant, la date et le nom du commerce
-          lus remplissent le formulaire. Rien de tout cela ne part sur le serveur.
+          lus remplissent le formulaire. Une carte téléchargée pour le hors-ligne reste dans
+          l’appareil, et se supprime d’un geste. Rien de tout cela ne part sur le serveur.
         </Definition>
         <Definition terme="Ce que Tripora ne conserve pas">
           Aucune position GPS, aucun historique de navigation, aucun identifiant publicitaire,
@@ -102,7 +103,8 @@ export default function Confidentialite() {
           un prix. Voici exactement ce que chacun reçoit.
         </p>
         <Definition terme="OpenFreeMap, Open-Meteo, Wikipédia, Overpass">
-          Le nom ou les coordonnées d’une ville, jamais les vôtres. Ces appels partent depuis nos
+          Le nom ou les coordonnées d’une ville, jamais les vôtres — y compris quand vous
+          téléchargez la carte d’une destination : seules les tuiles de la ville sont demandées. Ces appels partent depuis nos
           serveurs quand c’est possible, et le résultat est mis en cache pour tout le groupe :
           cinq personnes qui ouvrent la même destination ne déclenchent qu’une requête.
         </Definition>

@@ -1,14 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { PALETTES, retouchesPour, roleDeLaCouche } from '@/lib/carteAuTon';
 import {
+  AJAXError,
   LngLatBounds,
   Map as MapLibreMap,
   Marker,
   NavigationControl,
+  addProtocol,
   type ErrorEvent,
   type StyleSpecification,
 } from 'maplibre-gl';
 import { setWorkerUrl } from 'maplibre-gl';
+import {
+  PROTOCOLE,
+  RessourceAbsente,
+  STYLES,
+  cartesHorsLignePresentes,
+  depuisLeProtocole,
+  lireRessourceDeCarte,
+  versLeProtocole,
+} from '@/lib/carteHorsLigne';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import adresseDeLOuvrier from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { GeoPoint } from '@tripora/core';
@@ -51,10 +62,32 @@ import { useTheme } from '@/stores/theme';
  */
 setWorkerUrl(adresseDeLOuvrier);
 
-const FONDS = {
-  clair: 'https://tiles.openfreemap.org/styles/positron',
-  sombre: 'https://tiles.openfreemap.org/styles/dark',
-} as const;
+const FONDS = STYLES;
+
+/**
+ * La carte gardée sur l'appareil (voir `lib/carteHorsLigne`).
+ *
+ * Dès qu'une destination a été téléchargée, les adresses d'OpenFreeMap sont
+ * réécrites vers ce protocole : la carte lit alors tuiles, polices et
+ * pictogrammes depuis le stockage de l'appareil, et ne va au réseau que pour
+ * ce qu'il n'a pas. Une tuile ni gardée ni joignable répond « 404 », que
+ * MapLibre traite comme une zone vide — pas comme une panne qui ferait
+ * basculer toute la carte sur le fond de repli.
+ */
+addProtocol(PROTOCOLE, async (parametres, abandon) => {
+  try {
+    return { data: await lireRessourceDeCarte(depuisLeProtocole(parametres.url), parametres.type, abandon.signal) };
+  } catch (cause) {
+    if (cause instanceof RessourceAbsente) throw new AJAXError(404, 'Hors ligne', parametres.url, new Blob());
+    throw cause;
+  }
+});
+
+function passerParLAppareil(adresse: string) {
+  if (!cartesHorsLignePresentes()) return undefined;
+  const reecrite = versLeProtocole(adresse);
+  return reecrite ? { url: reecrite } : undefined;
+}
 
 /**
  * Fond de secours quand les tuiles ne répondent pas.
@@ -170,6 +203,7 @@ export function TripMap({
       center: [2.35, 46.6],
       zoom: 4,
       attributionControl: { compact: true },
+      transformRequest: passerParLAppareil,
     });
     instance.addControl(new NavigationControl({ showCompass: false }), 'top-right');
     instance.on('error', (evenement: ErrorEvent) => {
