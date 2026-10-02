@@ -120,9 +120,10 @@ export default function Confidentialite() {
           autorisent souvent la réutilisation des textes envoyés pour améliorer leurs modèles.
           C’est pour ça que tout le reste de Tripora fonctionne sans eux.
         </Definition>
-        <Definition terme="Le service d’envoi d’e-mails">
+        <Definition terme="Brevo (envoi des e-mails)">
           Uniquement si vous vous connectez par e-mail : votre adresse et le code de connexion,
-          le temps de vous l’envoyer. Aucun autre message ne vous est adressé — ni lettre
+          le temps de vous l’envoyer. Brevo est une société française ; c’est elle qui
+          achemine ces messages pour Tripora. Aucun autre message ne vous est adressé — ni lettre
           d’information, ni relance.
         </Definition>
         <Definition terme="Travelpayouts (prix des vols)">

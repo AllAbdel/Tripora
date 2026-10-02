@@ -196,8 +196,11 @@ sans carte bancaire :
 
 Une adresse Gmail comme expéditeur fonctionne, mais une partie des codes
 risque de finir dans les indésirables (l'écran le rappelle). Le jour où tu
-achètes un nom de domaine, l'authentifier dans Brevo règle ce point. Dis-moi
-quel service tu as choisi : la page de confidentialité le nommera.
+achètes un nom de domaine, l'authentifier dans Brevo règle ce point.
+
+**Fait le 2 octobre 2026** : Brevo branché (expéditeur « Tripora »), les trois
+modèles posés, « Allow manual linking » activé. La page de confidentialité
+nomme Brevo.
 
 ## 5. À vérifier avant de toucher des commissions
 
