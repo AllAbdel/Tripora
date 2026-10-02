@@ -1,0 +1,13 @@
+{
+  "name": "tripora-pub",
+  "private": true,
+  "description": "La vidéo publicitaire de Tripora : animation GSAP rendue image par image dans Chromium, musique synthétisée.",
+  "type": "module",
+  "scripts": {
+    "captures": "node captures.mjs",
+    "rendu": "node rendu.mjs"
+  },
+  "devDependencies": {
+    "gsap": "^3.13.0"
+  }
+}

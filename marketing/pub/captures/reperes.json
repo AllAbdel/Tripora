@@ -1,0 +1,34 @@
+{
+  "propositions": {
+    "Réservations": 607,
+    "destinations pour votre groupe": 1181,
+    "Budapest": 1318,
+    "Cracovie": 1709,
+    "Prague": 2077,
+    "hauteur": 3980
+  },
+  "itineraire": {
+    "Des vrais lieux": 173,
+    "Arrivée, puis": 585,
+    "Ajouter un lieu": 1050,
+    "hauteur": 1360
+  },
+  "afaire": {
+    "Les rizières": 414,
+    "La forêt des singes": 657,
+    "Nusa Penida": 901,
+    "hauteur": 3598
+  },
+  "bilan": {
+    "L’image à partager": 396,
+    "hauteur": 1654
+  },
+  "voyage": {
+    "Où on en est": 409,
+    "Découvrir": 557,
+    "Destination retenue": 1356,
+    "L’empreinte du trajet": 1465,
+    "Infos pratiques": 1688,
+    "hauteur": 4061
+  }
+}
