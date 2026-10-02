@@ -58,6 +58,8 @@ export function Couverture({ destination }: { destination: Destination }) {
           et seul décor s'il n'y en a jamais. */}
       <span
         aria-hidden
+        // Pure décoration (WCAG 1.4.3, exception) : le nom figure dans le titre de la page.
+        data-decor
         className="titre-lieu absolute inset-0 grid place-items-center overflow-hidden
                    text-[3.75rem] whitespace-nowrap text-[color:var(--color-paper-300)]
                    dark:text-[color:var(--color-ink-500)]"

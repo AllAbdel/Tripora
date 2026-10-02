@@ -14,6 +14,7 @@ import { useClavierOuvert } from '@/lib/useClavierOuvert';
 import { cn } from '@/lib/cn';
 import { useGuide } from '@/stores/guide';
 import { useT } from '@/i18n/useT';
+import { LienDEvitement } from '@/components/LienDEvitement';
 import type { CleDeTexte } from '@/i18n/textes';
 
 interface Tab {
@@ -63,6 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh lg:flex">
+      <LienDEvitement />
       {ecranLarge && <BarreLaterale pathname={pathname} />}
       <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col lg:mx-0 lg:max-w-none lg:min-w-0 lg:flex-1">
         {/*
@@ -87,7 +89,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             horizontal raconte un sens de navigation que l'application n'a pas. */}
         <main
           key={pathname}
-          className="animate-page flex-1 pb-24 lg:mx-auto lg:w-full lg:max-w-4xl lg:px-6 lg:pb-12 print:pb-0"
+          id="contenu"
+          tabIndex={-1}
+          className="animate-page flex-1 pb-24 outline-none lg:mx-auto lg:w-full lg:max-w-4xl lg:px-6 lg:pb-12 print:pb-0"
         >
           {children}
         </main>

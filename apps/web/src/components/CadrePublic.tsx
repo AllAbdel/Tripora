@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Logo } from '@/components/Logo';
 import { PiedDePage } from '@/components/PiedDePage';
+import { LienDEvitement } from '@/components/LienDEvitement';
 import { cn } from '@/lib/cn';
 
 /**
@@ -28,6 +29,7 @@ export function CadrePublic({
 }) {
   return (
     <div className="flex min-h-dvh flex-col">
+      <LienDEvitement />
       <header
         className="bg-[color:var(--surface)]/85 filet sticky top-0 z-30 border-b backdrop-blur-xl print:hidden"
       >
@@ -51,7 +53,9 @@ export function CadrePublic({
           )}
         </div>
       </header>
-      <div className="flex-1">{children}</div>
+      <div id="contenu" className="flex-1">
+        {children}
+      </div>
       <PiedDePage variante={pied} />
     </div>
   );

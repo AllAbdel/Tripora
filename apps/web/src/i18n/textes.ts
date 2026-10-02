@@ -25,7 +25,7 @@ import type { Langue } from './langues';
 
 export type CleDeTexte =
   // Navigation
-  | 'nav.trips' | 'nav.carte' | 'nav.budget' | 'nav.profil'
+  | 'nav.trips' | 'nav.carte' | 'nav.budget' | 'nav.profil' | 'nav.contenu'
   // Actions courantes
   | 'action.creer' | 'action.retour' | 'action.annuler' | 'action.enregistrer'
   | 'action.continuer' | 'action.chercher' | 'action.publier' | 'action.rejoindre'
@@ -57,6 +57,7 @@ export const FR: Record<CleDeTexte, string> = {
   'nav.carte': 'Carte',
   'nav.budget': 'Budget',
   'nav.profil': 'Profil',
+  'nav.contenu': 'Aller au contenu',
 
   'action.creer': 'Créer un trip',
   'action.retour': 'Retour',

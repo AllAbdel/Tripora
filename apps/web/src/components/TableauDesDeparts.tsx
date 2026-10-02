@@ -17,7 +17,10 @@ export function TableauDesDeparts({ combien = 5 }: { combien?: number }) {
   if (lignes.length === 0) return null;
 
   return (
-    <div aria-hidden className="select-none">
+    // Ses dernières lignes s'effacent exprès : une illustration, exemptée des
+    // contrastes minimaux (WCAG 1.4.3, « pure décoration »), et masquée aux
+    // lecteurs d'écran pour la même raison.
+    <div aria-hidden data-decor className="select-none">
       <p className="etiquette-filet mb-2">
         <span className="etiquette">Au départ, aujourd’hui</span>
       </p>

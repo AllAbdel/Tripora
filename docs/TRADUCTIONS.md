@@ -11,6 +11,8 @@ casser les tests ni gêner le reste du développement, qui continue en parallèl
   réglable dans le profil ; l'arabe s'affiche de droite à gauche.
 - **Une cinquantaine de clés** seulement (`apps/web/src/i18n/textes.ts`) :
   navigation, actions courantes, écrans d'entrée, états vides, trips ouverts.
+  Nouvelle clé à traduire : `nav.contenu` (« Aller au contenu », le lien
+  d'évitement lu au clavier et au lecteur d'écran).
 - Écrits en français en dur, à traduire comme le reste : l'accueil public
   (`routes/Accueil.tsx`), la connexion par e-mail (`routes/Connexion.tsx`,
   messages dans `lib/connexionEmail.ts`), le guide de démarrage

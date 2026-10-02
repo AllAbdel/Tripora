@@ -134,14 +134,20 @@ export function InfosPratiques({
   );
 }
 
+/**
+ * Une ligne de la liste : le terme et sa valeur, directement dans le groupe
+ * (`dl > div > dt + dd`). Le pictogramme vit dans le terme : un élément de
+ * plus entre la liste et ses termes, et les lecteurs d'écran ne lisent plus
+ * une liste de définitions, mais du texte en vrac.
+ */
 function Ligne({ icone: Icone, titre, children }: { icone: typeof Plug; titre: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3">
-      <Icone className="text-muted mt-0.5 size-4 shrink-0" aria-hidden />
-      <div className="min-w-0">
-        <dt className="text-muted text-xs">{titre}</dt>
-        <dd>{children}</dd>
-      </div>
+    <div className="relative min-w-0 ps-7">
+      <dt className="text-muted text-xs">
+        <Icone className="text-muted absolute start-0 top-0.5 size-4" aria-hidden />
+        {titre}
+      </dt>
+      <dd>{children}</dd>
     </div>
   );
 }

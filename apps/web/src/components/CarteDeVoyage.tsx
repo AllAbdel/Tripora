@@ -171,6 +171,8 @@ function PlaqueTypographique({ trip }: { trip: TripSummary }) {
   return (
     <div
       aria-hidden
+      // Pure décoration (WCAG 1.4.3, exception) : le nom est écrit en clair sur la carte.
+      data-decor
       className="absolute inset-0 grid place-items-center overflow-hidden
                  bg-[color:var(--color-paper-100)] dark:bg-[color:var(--color-ink-700)]"
     >
