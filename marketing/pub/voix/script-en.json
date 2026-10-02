@@ -1,0 +1,121 @@
+{
+  "langue": "en",
+  "synthese": true,
+  "note": "Same windows as the French script. Voice synthesized offline (Kokoro, voice af_heart) by synthese.py; any human recording dropped into voix/en/ (01.wav, 02.wav…) takes its place — then remove \"synthese\".",
+  "lignes": [
+    {
+      "id": "01",
+      "debut": 6.1,
+      "fin": 9.95,
+      "texte": "Traveling with friends? The dream. Planning it together… not so much."
+    },
+    {
+      "id": "02",
+      "debut": 10.05,
+      "fin": 13.95,
+      "texte": "Tripora. Group travel, from first idea to lasting memory."
+    },
+    {
+      "id": "03",
+      "debut": 14.45,
+      "fin": 18.85,
+      "texte": "One wish, one sentence: your trip is ready. No account needed."
+    },
+    {
+      "id": "04",
+      "debut": 19.25,
+      "fin": 23.85,
+      "texte": "Invite the crew. Everyone adds their own wishes and budget."
+    },
+    {
+      "id": "05",
+      "debut": 24.45,
+      "fin": 30.85,
+      "texte": "Tripora compares destinations — flights, weather, total cost — and explains every pick."
+    },
+    {
+      "id": "06",
+      "debut": 31.3,
+      "fin": 35.8,
+      "texte": "The group votes. You choose the destination together."
+    },
+    {
+      "id": "07",
+      "debut": 36.3,
+      "fin": 39.95,
+      "texte": "Swipe through activities. The group ranking builds itself."
+    },
+    {
+      "id": "08",
+      "debut": 40.3,
+      "fin": 42.85,
+      "texte": "Price drop? You’ll know."
+    },
+    {
+      "id": "09",
+      "debut": 43.4,
+      "fin": 49.7,
+      "texte": "A day-by-day itinerary, with real places. Rain on Thursday? Tripora suggests a swap."
+    },
+    {
+      "id": "10",
+      "debut": 50.2,
+      "fin": 53.95,
+      "texte": "Saw it online? Share it. It’s pinned."
+    },
+    {
+      "id": "11",
+      "debut": 54.3,
+      "fin": 58.85,
+      "texte": "Bookings, tickets, codes: the whole group has everything. Even offline."
+    },
+    {
+      "id": "12",
+      "debut": 59.2,
+      "fin": 61.85,
+      "texte": "And everything else you need."
+    },
+    {
+      "id": "13",
+      "debut": 62.3,
+      "fin": 66.85,
+      "texte": "A receipt? Snap it. The expense is logged and split."
+    },
+    {
+      "id": "14",
+      "debut": 67.3,
+      "fin": 70.85,
+      "texte": "Who owes what? Settled in two transfers."
+    },
+    {
+      "id": "15",
+      "debut": 71.3,
+      "fin": 74.85,
+      "texte": "All your photos, in one shared journal."
+    },
+    {
+      "id": "16",
+      "debut": 75.3,
+      "fin": 80.7,
+      "texte": "Back home, a recap to share — and a passport that fills up with every trip."
+    },
+    {
+      "id": "17",
+      "debut": 81.3,
+      "fin": 84.75,
+      "texte": "And this is just the beginning."
+    },
+    {
+      "id": "18",
+      "debut": 85.3,
+      "fin": 87.6,
+      "texte": "Free. No ads."
+    },
+    {
+      "id": "19",
+      "debut": 88.3,
+      "fin": 91.6,
+      "texte": "Tripora. Travel together."
+    }
+  ]
+}

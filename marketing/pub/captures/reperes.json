@@ -1,34 +1,33 @@
 {
   "propositions": {
-    "Réservations": 607,
-    "destinations pour votre groupe": 1181,
-    "Budapest": 1318,
-    "Cracovie": 1709,
-    "Prague": 2077,
+    "entete": 1181,
+    "budapest": 1318,
+    "cracovie": 1709,
+    "prague": 2077,
     "hauteur": 3980
   },
   "itineraire": {
-    "Des vrais lieux": 173,
-    "Arrivée, puis": 585,
-    "Ajouter un lieu": 1050,
+    "lieux": 173,
+    "jour1": 585,
+    "ajouter": 1050,
     "hauteur": 1360
   },
   "afaire": {
-    "Les rizières": 414,
-    "La forêt des singes": 657,
-    "Nusa Penida": 901,
+    "rizieres": 414,
+    "singes": 657,
+    "penida": 901,
     "hauteur": 3598
   },
   "bilan": {
-    "L’image à partager": 396,
+    "image": 396,
     "hauteur": 1654
   },
   "voyage": {
-    "Où on en est": 409,
-    "Découvrir": 557,
-    "Destination retenue": 1356,
-    "L’empreinte du trajet": 1465,
-    "Infos pratiques": 1688,
+    "avancement": 409,
+    "outils": 557,
+    "destination": 1356,
+    "empreinte": 1465,
+    "infos": 1688,
     "hauteur": 4061
   }
 }

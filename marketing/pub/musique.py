@@ -7,6 +7,8 @@ grille IV–V–iii–vi. Les bruitages tombent aux instants exportés par l'ani
 (sortie/cues.json, `node rendu.mjs --cues`).
 
     python3 musique.py   → sortie/bande-son.wav (+ sortie/musique-seule.wav, sortie/bruitages.wav)
+    LANGUE=en python3 musique.py → la même chose pour la pub en anglais (sortie/cues-en.json) :
+                           bande-son-sans-voix-en.wav, musique-seule-en.wav, bruitages-en.wav
 """
 import json
 import math
@@ -18,6 +20,9 @@ from scipy.io import wavfile
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 SORTIE = os.path.join(ICI, 'sortie')
+LANGUE = os.environ.get('LANGUE', 'fr')
+# La version française garde ses noms ; une autre langue a ses propres bruitages (la frappe suit sa phrase).
+SUFFIXE = '' if LANGUE == 'fr' else f'-{LANGUE}'
 SR = 44100
 DUREE = 95.0
 N = int(DUREE * SR)
@@ -596,7 +601,7 @@ def ecrire(chemin, x):
 
 
 def main():
-    with open(os.path.join(SORTIE, 'cues.json'), encoding='utf-8') as f:
+    with open(os.path.join(SORTIE, f'cues{SUFFIXE}.json'), encoding='utf-8') as f:
         pub = json.load(f)
     musique, envoi = composer()
     musique = musique + reverb(envoi, 2.6) * 0.55
@@ -612,11 +617,12 @@ def main():
     sfx = normaliser_rms(sfx, -25.0)
     total = limiter(musique + sfx)
     longueur = int((fin + 0.2) * SR)
-    ecrire(os.path.join(SORTIE, 'bande-son.wav'), total[:, :longueur])
-    ecrire(os.path.join(SORTIE, 'musique-seule.wav'), limiter(musique)[:, :longueur])
-    ecrire(os.path.join(SORTIE, 'bruitages.wav'), limiter(sfx)[:, :longueur])
+    nom = 'bande-son.wav' if LANGUE == 'fr' else f'bande-son-sans-voix{SUFFIXE}.wav'
+    ecrire(os.path.join(SORTIE, nom), total[:, :longueur])
+    ecrire(os.path.join(SORTIE, f'musique-seule{SUFFIXE}.wav'), limiter(musique)[:, :longueur])
+    ecrire(os.path.join(SORTIE, f'bruitages{SUFFIXE}.wav'), limiter(sfx)[:, :longueur])
     crete = np.max(np.abs(total))
-    print(f'bande-son.wav : {longueur / SR:.1f} s, crête {20 * math.log10(crete):.1f} dBFS, RMS {20 * math.log10(np.sqrt(np.mean(total ** 2))):.1f} dBFS')
+    print(f'{nom} : {longueur / SR:.1f} s, crête {20 * math.log10(crete):.1f} dBFS, RMS {20 * math.log10(np.sqrt(np.mean(total ** 2))):.1f} dBFS')
 
 
 if __name__ == '__main__':

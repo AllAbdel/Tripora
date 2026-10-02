@@ -4,6 +4,7 @@
  *   node rendu.mjs --apercu 3,10.5,24   → captures/apercu-*.png aux instants donnés
  *   node rendu.mjs --cues               → sortie/cues.json (les bruitages, pour musique.py)
  *   node rendu.mjs                      → sortie/image.mp4 (sans le son)
+ *   LANGUE=en node rendu.mjs            → la pub en anglais : sortie/image-en.mp4, cues-en.json, apercu-en-*.png
  *
  * La page est servie depuis la racine du dépôt (les polices et le logo sont
  * ceux de l'application). Chaque image : window.allerA(t), puis une capture.
@@ -29,6 +30,9 @@ const FFMPEG = process.env.FFMPEG ?? 'ffmpeg';
 const IPS = Number(process.env.IPS ?? 30);
 const OUVRIERS = Number(process.env.OUVRIERS ?? 4);
 const SORTIE = resolve(ICI, 'sortie');
+const LANGUE = process.env.LANGUE ?? 'fr';
+// Les fichiers de la version française gardent leur nom ; les autres langues prennent un suffixe.
+const SUFFIXE = LANGUE === 'fr' ? '' : `-${LANGUE}`;
 mkdirSync(SORTIE, { recursive: true });
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.json': 'application/json' };
@@ -40,7 +44,7 @@ const serveur = createServer((req, res) => {
   createReadStream(fichier).pipe(res);
 });
 await new Promise((ok) => serveur.listen(0, ok));
-const ADRESSE = `http://localhost:${serveur.address().port}/marketing/pub/index.html`;
+const ADRESSE = `http://localhost:${serveur.address().port}/marketing/pub/index.html?langue=${LANGUE}`;
 
 const navigateur = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell',
@@ -69,13 +73,13 @@ if (process.argv.includes('--apercu')) {
   const page = await ouvrir();
   const instants = arg('--apercu').split(',').map(Number);
   for (const t of instants) {
-    writeFileSync(join(SORTIE, `apercu-${t.toFixed(2)}.png`), await image(page, t, 'png'));
+    writeFileSync(join(SORTIE, `apercu${SUFFIXE}-${t.toFixed(2)}.png`), await image(page, t, 'png'));
   }
   console.log(`${instants.length} aperçus dans ${SORTIE}`);
 } else if (process.argv.includes('--cues')) {
   const page = await ouvrir();
   const pub = await page.evaluate(() => window.PUB);
-  writeFileSync(join(SORTIE, 'cues.json'), JSON.stringify(pub, null, 1));
+  writeFileSync(join(SORTIE, `cues${SUFFIXE}.json`), JSON.stringify(pub, null, 1));
   console.log(`${pub.cues.length} bruitages, durée ${pub.duree} s`);
 } else {
   const page0 = await ouvrir();
@@ -90,7 +94,7 @@ if (process.argv.includes('--apercu')) {
   await Promise.all(Array.from({ length: OUVRIERS }, async (_, k) => {
     const a = debut + k * parOuvrier, b = Math.min(fin, a + parOuvrier);
     if (a >= b) return;
-    const fichier = join(SORTIE, `troncon-${String(k).padStart(2, '0')}.mp4`);
+    const fichier = join(SORTIE, `troncon${SUFFIXE}-${String(k).padStart(2, '0')}.mp4`);
     troncons[k] = fichier;
     const ff = spawn(FFMPEG, ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(IPS), '-i', '-',
       '-c:v', 'libx264', '-preset', 'slow', '-crf', '15', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-tune', 'animation',
@@ -109,13 +113,13 @@ if (process.argv.includes('--apercu')) {
     await new Promise((ok, ko) => ff.on('close', (c) => (c === 0 ? ok() : ko(new Error(`ffmpeg ${c}`)))));
     await page.close();
   }));
-  const liste = join(SORTIE, 'troncons.txt');
+  const liste = join(SORTIE, `troncons${SUFFIXE}.txt`);
   writeFileSync(liste, troncons.filter(Boolean).map((f) => `file '${f}'`).join('\n') + '\n');
   await new Promise((ok, ko) => {
-    const ff = spawn(FFMPEG, ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', liste, '-c', 'copy', join(SORTIE, 'image.mp4')], { stdio: 'inherit' });
+    const ff = spawn(FFMPEG, ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', liste, '-c', 'copy', join(SORTIE, `image${SUFFIXE}.mp4`)], { stdio: 'inherit' });
     ff.on('close', (c) => (c === 0 ? ok() : ko(new Error(`ffmpeg ${c}`))));
   });
-  console.log(`Vidéo sans le son : ${join(SORTIE, 'image.mp4')} (${((Date.now() - depart) / 1000).toFixed(0)} s)`);
+  console.log(`Vidéo sans le son : ${join(SORTIE, `image${SUFFIXE}.mp4`)} (${((Date.now() - depart) / 1000).toFixed(0)} s)`);
 }
 
 await navigateur.close();

@@ -88,6 +88,41 @@ un morceau sous licence et garder les bruitages, calés sur l'image.
 
 Les enregistrements (`voix/*/`) restent hors du dépôt.
 
+## La version anglaise
+
+La même pub, plan pour plan, sur les écrans de l'application en anglais.
+`scenes.js` porte les deux langues côte à côte (`L('français', 'english')`) ;
+`index.html?langue=en` choisit l'anglais, les captures de `captures-en/` et
+leurs repères (`reperes.js` : les défilements visent les mêmes textes, qui ne
+tombent pas à la même hauteur dans les deux langues).
+
+```sh
+LANGUE=en node captures.mjs            # captures-en/ : l'application en anglais
+LANGUE=en node rendu.mjs --cues        # sortie/cues-en.json
+LANGUE=en python3 musique.py           # musique-seule-en.wav, bruitages-en.wav (la frappe suit la phrase anglaise)
+python3 synthese.py en                 # voix/en/01.wav… : la voix, synthétisée hors ligne
+python3 voix.py en                     # sortie/bande-son-en.wav : musique effacée sous la voix
+LANGUE=en node rendu.mjs               # sortie/image-en.mp4
+ffmpeg -i sortie/image-en.mp4 -i sortie/bande-son-en.wav -map 0:v -map 1:a -c:v copy \
+  -c:a aac -b:a 192k -ar 48000 -shortest -movflags +faststart sortie/tripora-pub-en.mp4
+python3 vertical.py en --sans-sous-titres   # sortie/tripora-pub-9x16-en.mp4
+```
+
+- **La voix** est celle de [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M)
+  (82 M de paramètres, licence Apache 2.0), voix `af_heart`, calculée sur le
+  processeur, sans compte ni service payant. Il faut le paquet Python
+  `kokoro-onnx`, le modèle quantifié `model_quantized.onnx` et les voix
+  `voices.bin` (chemins dans `KOKORO_MODELE` et `KOKORO_VOIX`). Le modèle et
+  les voix se trouvent sur Hugging Face, ou sur npm (`kokoro-q8-shards` : le
+  modèle en six morceaux à recoller ; `kokoro-local-runtime` : les voix
+  anglaises, à réunir dans un `.npz`). `synthese.py` ralentit ou accélère
+  chaque réplique pour qu'elle tienne dans sa fenêtre ; un vrai enregistrement
+  posé dans `voix/en/` prend sa place (retirer alors `"synthese"` du script,
+  pour retrouver la réduction de bruit).
+- **Sans sous-titres** : la version anglaise ne montre pas le texte de la voix.
+  En 9:16, la vidéo descend au centre et la devise de la marque occupe la
+  place libre ; les chapitres, l'adresse et l'appel final restent.
+
 ## Crédits et licences
 
 - Animation : [GSAP](https://gsap.com) 3 (licence standard sans frais), outil
@@ -96,4 +131,5 @@ Les enregistrements (`voix/*/`) restent hors du dépôt.
   et les glyphes de navigation de Tripora.
 - Polices : Fraunces et Inter Tight (SIL Open Font License), celles de l'app.
 - Musique et bruitages : synthétisés par `musique.py`, sans échantillon.
+- Voix anglaise : [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (Apache 2.0), voix `af_heart`.
 - Personnages, prix, adresses et références : fictifs, pour la démonstration.

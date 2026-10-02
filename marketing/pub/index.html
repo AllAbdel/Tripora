@@ -7,6 +7,14 @@
 </head>
 <body>
   <div id="scene"></div>
+  <script>
+    // ?langue=en : la pub en anglais, sur les captures de l'application en anglais (captures-en/).
+    window.LANGUE = new URLSearchParams(location.search).get('langue') === 'en' ? 'en' : 'fr';
+    window.CAPTURES = window.LANGUE === 'fr' ? 'captures' : 'captures-' + window.LANGUE;
+    document.documentElement.lang = window.LANGUE;
+    // Les repères des captures (hauteurs des textes visés par les défilements), chargés avant les plans.
+    document.write('<script src="' + window.CAPTURES + '/reperes.js"><\/script>');
+  </script>
   <script src="node_modules/gsap/dist/gsap.min.js"></script>
   <script src="node_modules/gsap/dist/MotionPathPlugin.min.js"></script>
   <script src="icones.js"></script>

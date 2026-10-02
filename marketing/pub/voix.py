@@ -15,6 +15,8 @@ réenregistrer : une voix qui court derrière l'image ne se rattrape pas.
     python3 voix.py fr            → sortie/voix-fr.wav, sortie/bande-son-fr.wav (musique effacée sous la voix),
                                      sortie/sous-titres-fr.ass / .srt, sortie/voix-fr.json
     python3 voix.py fr --prompteur → sortie/prompteur-fr.mp4 (la vidéo pour enregistrer en une prise)
+    python3 voix.py en            → la version anglaise, sur sa propre musique (LANGUE=en python3 musique.py) ;
+                                     ses répliques viennent de synthese.py ou d'un enregistrement
 """
 import glob
 import json
@@ -51,6 +53,12 @@ NETTOYAGE = ','.join([
     'afftdn=nf=-28:tn=1',                  # le bruit de fond de la pièce
     'acompressor=threshold=-22dB:ratio=3:attack=8:release=120:makeup=2',
     'loudnorm=I=-17:TP=-2:LRA=7',          # même niveau d'une réplique à l'autre
+])
+# Une voix de synthèse n'a ni souffle ni pièce : pas de réduction de bruit, qui la colorerait.
+NETTOYAGE_SYNTHESE = ','.join([
+    'highpass=f=60',
+    'acompressor=threshold=-20dB:ratio=2:attack=10:release=150:makeup=1',
+    'loudnorm=I=-17:TP=-2:LRA=7',
 ])
 
 
@@ -159,9 +167,15 @@ Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour,
         f.write(entete + corps)
 
 
-def charger_script(langue):
+def charger_script(langue, entier=False):
     with open(os.path.join(ICI, 'voix', f'script-{langue}.json'), encoding='utf-8') as f:
-        return json.load(f)['lignes']
+        script = json.load(f)
+    return script if entier else script['lignes']
+
+
+def suffixe(langue):
+    """Les fichiers de la musique : sans suffixe pour le français, -en pour l'anglais (sa frappe suit sa phrase)."""
+    return '' if langue == 'fr' else f'-{langue}'
 
 
 def fichier_de(dossier, nom):
@@ -173,18 +187,20 @@ def fichier_de(dossier, nom):
 
 
 def preparer(langue):
-    lignes = charger_script(langue)
+    script = charger_script(langue, entier=True)
+    lignes = script['lignes']
+    nettoyage = NETTOYAGE_SYNTHESE if script.get('synthese') else NETTOYAGE
     dossier = os.path.join(ICI, 'voix', langue)
     prise = fichier_de(dossier, 'prise')
     if prise:
-        repliques = decouper_prise(lire(prise, NETTOYAGE), len(lignes))
+        repliques = decouper_prise(lire(prise, nettoyage), len(lignes))
     else:
         repliques = []
         manquantes = [l['id'] for l in lignes if not fichier_de(dossier, l['id'])]
         if manquantes:
             raise SystemExit(f'Il manque les répliques {", ".join(manquantes)} dans {dossier}.')
         for l in lignes:
-            repliques.append(lire(fichier_de(dossier, l['id']), NETTOYAGE))
+            repliques.append(lire(fichier_de(dossier, l['id']), nettoyage))
 
     piste = np.zeros(int(96 * SR))
     rapport, trop_longues = [], []
@@ -246,7 +262,7 @@ def lire_stereo(nom):
 
 def mixer(langue):
     """Musique et bruitages s'effacent sous la voix (−9 dB et −5 dB), avec une attaque et un relâchement naturels."""
-    musique, sfx = lire_stereo('musique-seule.wav'), lire_stereo('bruitages.wav')
+    musique, sfx = lire_stereo(f'musique-seule{suffixe(langue)}.wav'), lire_stereo(f'bruitages{suffixe(langue)}.wav')
     _, v = wavfile.read(os.path.join(SORTIE, f'voix-{langue}.wav'))
     v = v.astype(np.float64) / 32768.0
     n = min(len(musique), len(sfx))

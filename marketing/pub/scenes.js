@@ -13,6 +13,11 @@
   const parImage = (fn) => PAR_IMAGE.push(fn);
   const hasard = ILLU.graine(2026);
   const borne = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+  // ?langue=en : la même pub en anglais, sur les captures de l'application en anglais.
+  const EN = window.LANGUE === 'en';
+  const L = (fr, en) => (EN ? en : fr);
+  const CAPTURES = window.CAPTURES ?? 'captures';
+  const R = window.REPERES;
   const ease = {
     pose: 'expo.out', // vive au départ, arrêt net, sans rebond
     entre: 'power3.inOut',
@@ -116,10 +121,10 @@
     const onglet = (g, t, i) => `<div class="${i === actif ? 'actif' : ''}">${glyphe(g)}<span>${t}</span></div>`;
     const e = h(`<div class="tel" style="left:${x}px;top:${y}px;transform:scale(${echelle})">
       <div class="tel-ecran" style="${sombre ? 'background:#14110e' : ''}">
-        <div class="tel-contenu">${image ? `<img class="page" src="captures/${image}">` : ''}</div>
+        <div class="tel-contenu">${image ? `<img class="page" src="${CAPTURES}/${image}">` : ''}</div>
         <div class="tel-statut ${sombre ? 'sombre' : ''}"><span>9:41</span><span class="icones">${BARRE}</span></div>
         <div class="tel-ilot"></div>
-        ${onglets ? `<div class="tel-onglets">${onglet('Voyages', 'TRIPS', 0)}${onglet('Carte', 'CARTE', 1)}${onglet('Depenses', 'BUDGET', 2)}${onglet('Profil', 'PROFIL', 3)}</div>` : ''}
+        ${onglets ? `<div class="tel-onglets">${onglet('Voyages', 'TRIPS', 0)}${onglet('Carte', L('CARTE', 'MAP'), 1)}${onglet('Depenses', 'BUDGET', 2)}${onglet('Profil', L('PROFIL', 'PROFILE'), 3)}</div>` : ''}
       </div><div class="tel-reflet"></div></div>`, parent);
     return { el: e, ecran: e.querySelector('.tel-ecran'), contenu: e.querySelector('.tel-contenu'), page: e.querySelector('img.page') };
   }
@@ -151,7 +156,7 @@
   /* ---------- Calques fixes ---------- */
   const grain = h('<div id="grain"></div>', racine);
   h('<div id="vignette"></div>', racine);
-  const chapitres = h(`<div id="chapitres">${['Choisir', 'Organiser', 'Vivre', 'Se souvenir'].map((c, i) => `<span><b>0${i + 1}</b>${c}<i></i></span>`).join('')}</div>`, racine);
+  const chapitres = h(`<div id="chapitres">${L(['Choisir', 'Organiser', 'Vivre', 'Se souvenir'], ['Choose', 'Plan', 'Live', 'Remember']).map((c, i) => `<span><b>0${i + 1}</b>${c}<i></i></span>`).join('')}</div>`, racine);
   const marque = h('<div id="marque"><img src="/apps/web/public/icons/icon.svg" alt="">Tripora</div>', racine);
   const voile = h('<div id="voile"></div>', racine);
 
@@ -182,18 +187,25 @@
   montrer(p1, 0, 6.5);
   const entete = h(`<div style="position:absolute;left:50%;top:70px;transform:translateX(-50%);display:flex;align-items:center;gap:16px;padding:14px 26px;border-radius:999px;background:var(--feuille);border:1px solid var(--filet);box-shadow:0 16px 30px -20px rgba(26,23,19,.4);font-weight:650;font-size:26px">
       <span style="display:flex">${['hugo', 'sarah', 'malik', 'lea'].map((q, i) => `<span style="margin-left:${i ? -14 : 0}px">${avatar(q, 44)}</span>`).join('')}</span>
-      Vacances 2026 <span style="color:var(--muet);font-weight:500">· 6 membres</span>
+      ${L('Vacances 2026', 'Summer 2026')} <span style="color:var(--muet);font-weight:500">${L('· 6 membres', '· 6 members')}</span>
       <span class="badge-non-lus chiffre" style="background:var(--corail);color:#fff;border-radius:999px;padding:4px 14px;font-size:22px;font-weight:700">0</span></div>`, p1.cadre);
   surgir(entete, 0.15, { son: null });
   const badge = entete.querySelector('.badge-non-lus');
-  const MESSAGES = [
+  const MESSAGES = L([
     ['hugo', 'On part où cet été ?'], ['sarah', 'Moi c’est fin juillet ou rien'], ['malik', 'Bali !!!'], ['ines', 'Trop cher pour moi…'],
     ['lea', 'Quelqu’un a regardé les vols ?'], ['tom', 'J’ai trouvé un logement trop beau'], ['hugo', 'C’est où le lien ??'], ['sarah', 'On vote quand ?'],
     ['malik', 'Je peux pas avant le 14'], ['lea', 'Qui réserve la voiture ?'], ['tom', 'Je te dois combien déjà ?'], ['hugo', 'Le tableur est où ?'],
     ['ines', 'Lisbonne sinon ?'], ['sarah', 'Vous avez vu mon message ?'], ['malik', 'Ok mais on décide quand ?'], ['lea', 'Allô ???'],
     ['tom', 'Le vol de 6 h c’est non'], ['hugo', 'On fait un sondage ?'], ['sarah', 'Il pleut là-bas en juillet ?'], ['malik', 'Qui avance l’argent ?'],
     ['lea', 'Envoyez vos dispos !'], ['tom', 'J’ai plus de batterie'], ['hugo', 'Ça fait trois semaines qu’on en parle'], ['sarah', '???'],
-  ];
+  ], [
+    ['hugo', 'Where are we going this summer?'], ['sarah', 'Late July or nothing for me'], ['malik', 'Bali!!!'], ['ines', 'Too expensive for me…'],
+    ['lea', 'Has anyone checked flights?'], ['tom', 'I found the most amazing place'], ['hugo', 'Where’s the link??'], ['sarah', 'When do we vote?'],
+    ['malik', 'Can’t go before the 14th'], ['lea', 'Who’s booking the car?'], ['tom', 'How much do I owe you again?'], ['hugo', 'Where’s the spreadsheet?'],
+    ['ines', 'Lisbon instead?'], ['sarah', 'Did you see my message?'], ['malik', 'Ok but when do we decide?'], ['lea', 'Hello???'],
+    ['tom', 'The 6 am flight is a no'], ['hugo', 'Should we do a poll?'], ['sarah', 'Does it rain there in July?'], ['malik', 'Who’s fronting the money?'],
+    ['lea', 'Send your dates!'], ['tom', 'My battery’s dying'], ['hugo', 'We’ve been at this for three weeks'], ['sarah', '???'],
+  ]);
   const POSITIONS = [
     [640, 290], [700, 410], [680, 530], [900, 650],
     [120, 170], [1230, 150], [180, 420], [1330, 360], [90, 660], [1180, 600], [500, 800], [1320, 820], [140, 900], [880, 900], [620, 180], [980, 720],
@@ -230,12 +242,13 @@
   const p2 = plan('constat');
   montrer(p2, 5.55, 10.05);
   feuille(p2, null, 6.0, 0.9);
-  const ligne1 = titre(p2.cadre, 'Partir entre amis,<br><em>c’est le rêve.</em>', { x: 160, y: 330, classe: 'titre xl' });
+  const ligne1 = titre(p2.cadre, L('Partir entre amis,<br><em>c’est le rêve.</em>', 'Traveling with friends?<br><em>The dream.</em>'), { x: 160, y: 330, classe: 'titre xl' });
   apparaitre(ligne1, 6.3, { stagger: 0.07 });
   effacer(ligne1, 7.8);
-  const ligne2 = titre(p2.cadre, 'Tout organiser à six,<br><em class="or">beaucoup moins.</em>', { x: 160, y: 330, classe: 'titre xl' });
+  const ligne2 = titre(p2.cadre, L('Tout organiser à six,<br><em class="or">beaucoup moins.</em>', 'Planning it for six?<br><em class="or">Not so much.</em>'), { x: 160, y: 330, classe: 'titre xl' });
   apparaitre(ligne2, 8.0, { stagger: 0.07 });
-  const gribouillis = h(`<svg style="position:absolute;left:110px;top:440px;overflow:visible" width="1060" height="260" viewBox="0 0 1060 260">
+  // « Not so much. » est plus court que « beaucoup moins. » : le gribouillis s'étire à sa mesure.
+  const gribouillis = h(`<svg style="position:absolute;left:110px;top:440px;overflow:visible" width="${L(1060, 820)}" height="260" viewBox="0 0 1060 260" preserveAspectRatio="none">
     <path d="M90,36 C330,-4 720,-2 940,34 C1030,52 1052,132 982,186 C880,250 400,252 150,220 C30,202 -12,146 26,100 C56,62 150,44 270,34" fill="none" stroke="#c08a2e" stroke-width="7" stroke-linecap="round"/></svg>`, p2.cadre);
   trait(gribouillis.querySelector('path'), 8.75, 0.7);
   sfx('gribouillis', 8.75);
@@ -264,7 +277,7 @@
   mot.mis.length = 0;
   mot.el.innerHTML = [...'Tripora'].map((c) => `<span class="m"><span class="mi">${c}</span></span>`).join('');
   apparaitre([...mot.el.querySelectorAll('.mi')], 10.35, { stagger: 0.045, duree: 1.1 });
-  const devise = titre(p3.cadre, 'Le voyage de groupe, de l’idée au souvenir.', { x: 0, y: 790, classe: 'texte', largeur: 1920, centre: true, style: 'font-size:42px;color:rgba(244,239,228,.85)' });
+  const devise = titre(p3.cadre, L('Le voyage de groupe, de l’idée au souvenir.', 'Group travel, from first idea to lasting memory.'), { x: 0, y: 790, classe: 'texte', largeur: 1920, centre: true, style: 'font-size:42px;color:rgba(244,239,228,.85)' });
   apparaitre(devise, 11.0, { stagger: 0.04 });
   // Poussières d'étoiles qui montent lentement.
   for (let i = 0; i < 40; i++) {
@@ -279,14 +292,14 @@
   const p4 = plan('creer');
   montrer(p4, 13.5, 19.5);
   feuille(p4, p3, 14.0, 0.9);
-  const st4 = h('<div class="sur-titre" style="position:absolute;left:140px;top:250px">01 — Choisir</div>', p4.cadre);
+  const st4 = h(`<div class="sur-titre" style="position:absolute;left:140px;top:250px">${L('01 — Choisir', '01 — Choose')}</div>`, p4.cadre);
   surgir(st4, 14.3, { son: null, y: 20 });
-  const t4 = titre(p4.cadre, 'Créez votre voyage<br><em>en une phrase.</em>', { x: 140, y: 300, classe: 'titre l' });
+  const t4 = titre(p4.cadre, L('Créez votre voyage<br><em>en une phrase.</em>', 'Create your trip<br><em>in one sentence.</em>'), { x: 140, y: 300, classe: 'titre l' });
   apparaitre(t4, 14.4);
   const champ = h(`<div style="position:absolute;left:140px;top:580px;width:900px;height:100px;border-radius:50px;background:var(--feuille);border:2px solid var(--marque);box-shadow:0 24px 50px -28px rgba(26,95,180,.55);display:flex;align-items:center;gap:20px;padding:0 34px;font-size:33px;font-weight:500">
       <span style="color:var(--marque);display:flex">${ico('sparkles', 34, 2)}</span><span class="frappe"></span><span class="curseur" style="width:3px;height:40px;background:var(--marque);margin-left:-14px"></span></div>`, p4.cadre);
   surgir(champ, 14.9, { son: null });
-  const PHRASE = '5 jours au soleil en octobre, 600 € max chacun';
+  const PHRASE = L('5 jours au soleil en octobre, 600 € max chacun', '5 sunny days in October, €600 max each');
   const frappe = champ.querySelector('.frappe'), curseur = champ.querySelector('.curseur');
   const [f0, f1] = [15.35, 17.0];
   [...PHRASE].forEach((c, i) => { if (c !== ' ') sfx('touche', f0 + ((f1 - f0) * i) / PHRASE.length, { hauteur: i }); });
@@ -295,16 +308,19 @@
     frappe.textContent = PHRASE.slice(0, n);
     curseur.style.opacity = t > f1 + 0.3 ? 0 : Math.floor(t * 2.6) % 2 === 0 || (t > f0 && t < f1) ? 1 : 0;
   });
-  const puces4 = [['sun', 'Soleil', 'var(--or)'], ['calendar-days', 'Octobre', 'var(--corail)'], ['clock', '5 jours', 'var(--lagon)'], ['wallet', '600 € / pers.', 'var(--marque)']]
+  // En anglais, les puces n'ont pas la même largeur : une rangée souple plutôt que des positions mesurées sur le français.
+  const rangee4 = EN ? h('<div style="position:absolute;left:140px;top:720px;display:flex;gap:20px"></div>', p4.cadre) : null;
+  const puces4 = L([['sun', 'Soleil', 'var(--or)'], ['calendar-days', 'Octobre', 'var(--corail)'], ['clock', '5 jours', 'var(--lagon)'], ['wallet', '600 € / pers.', 'var(--marque)']],
+    [['sun', 'Sunshine', 'var(--or)'], ['calendar-days', 'October', 'var(--corail)'], ['clock', '5 days', 'var(--lagon)'], ['wallet', '€600 / person', 'var(--marque)']])
     .map(([i, t, c], k) => {
-      const e = h(`<div style="position:absolute;left:${140 + [0, 206, 438, 640][k]}px;top:720px">${puce(i, t, c)}</div>`, p4.cadre);
+      const e = EN ? h(`<div>${puce(i, t, c)}</div>`, rangee4) : h(`<div style="position:absolute;left:${140 + [0, 206, 438, 640][k]}px;top:720px">${puce(i, t, c)}</div>`, p4.cadre);
       surgir(e, 17.15 + k * 0.13, { y: -40, hauteur: k });
       return e;
     });
   const pied4 = h(`<div class="texte s" style="position:absolute;left:140px;top:860px;display:flex;gap:30px;align-items:center">
-    <span style="display:flex;align-items:center;gap:10px"><span style="color:var(--lagon)">${ico('check', 30, 3)}</span>Sans compte</span>
-    <span style="display:flex;align-items:center;gap:10px"><span style="color:var(--lagon)">${ico('check', 30, 3)}</span>Sans mot de passe</span>
-    <span style="display:flex;align-items:center;gap:10px"><span style="color:var(--lagon)">${ico('check', 30, 3)}</span>Gratuit</span></div>`, p4.cadre);
+    <span style="display:flex;align-items:center;gap:10px"><span style="color:var(--lagon)">${ico('check', 30, 3)}</span>${L('Sans compte', 'No account')}</span>
+    <span style="display:flex;align-items:center;gap:10px"><span style="color:var(--lagon)">${ico('check', 30, 3)}</span>${L('Sans mot de passe', 'No password')}</span>
+    <span style="display:flex;align-items:center;gap:10px"><span style="color:var(--lagon)">${ico('check', 30, 3)}</span>${L('Gratuit', 'Free')}</span></div>`, p4.cadre);
   surgir(pied4, 17.9, { son: null, y: 20 });
   const tel4 = telephone(p4.cadre, { image: 'creer.jpg', x: 1290, y: 84, onglets: false });
   entreeTel(tel4, 14.35);
@@ -317,21 +333,21 @@
   const p5 = plan('inviter');
   montrer(p5, 18.6, 24.5);
   glisse(p5, p4, 19.0);
-  const t5 = titre(p5.cadre, 'Invitez la bande.', { x: 140, y: 130, classe: 'titre m' });
+  const t5 = titre(p5.cadre, L('Invitez la bande.', 'Invite the crew.'), { x: 140, y: 130, classe: 'titre m' });
   apparaitre(t5, 19.2);
-  const s5 = titre(p5.cadre, 'Chacun donne ses envies et son budget.', { x: 140, y: 236, classe: 'texte' });
+  const s5 = titre(p5.cadre, L('Chacun donne ses envies et son budget.', 'Everyone adds their wishes and budget.'), { x: 140, y: 236, classe: 'texte' });
   apparaitre(s5, 19.5, { stagger: 0.03 });
   const carteQr = h(`<div class="carte" style="left:140px;top:360px;width:380px;height:500px;padding:36px;display:flex;flex-direction:column;align-items:center;gap:22px">
-      <div class="etiquette">Lien d’invitation</div>
+      <div class="etiquette">${L('Lien d’invitation', 'Invite link')}</div>
       <div style="width:250px;height:250px">${ILLU.qr(25, 9)}</div>
       <div class="chiffre" style="font-size:38px;font-weight:700;letter-spacing:0.14em">K7P2-QX9M</div>
-      <div class="texte s" style="font-size:22px;text-align:center">Un lien, un QR code :<br>ils rejoignent sans rien installer.</div></div>`, p5.cadre);
+      <div class="texte s" style="font-size:22px;text-align:center">${L('Un lien, un QR code :<br>ils rejoignent sans rien installer.', 'One link, one QR code:<br>nothing to install.')}</div></div>`, p5.cadre);
   surgir(carteQr, 19.45, { son: null });
   const MEMBRES = [
-    ['ines', [['Plage', '#2f8f88'], ['Gastronomie', '#c08a2e']], 600],
-    ['hugo', [['Fête', '#8b6cf0'], ['Culture', '#1a5fb4']], 800],
-    ['sarah', [['Nature', '#4f8a3c'], ['Plage', '#2f8f88']], 450],
-    ['malik', [['Gastronomie', '#c08a2e'], ['Aventure', '#e2574c']], 650],
+    ['ines', [[L('Plage', 'Beach'), '#2f8f88'], [L('Gastronomie', 'Food'), '#c08a2e']], 600],
+    ['hugo', [[L('Fête', 'Nightlife'), '#8b6cf0'], ['Culture', '#1a5fb4']], 800],
+    ['sarah', [['Nature', '#4f8a3c'], [L('Plage', 'Beach'), '#2f8f88']], 450],
+    ['malik', [[L('Gastronomie', 'Food'), '#c08a2e'], [L('Aventure', 'Adventure'), '#e2574c']], 650],
   ];
   const cartesMembres = MEMBRES.map(([qui, envies, budget], i) => {
     const x = 600 + i * 300;
@@ -339,7 +355,7 @@
         ${avatar(qui, 104)}
         <div class="titre" style="font-size:40px">${AMIS[qui].nom}</div>
         <div style="display:flex;flex-direction:column;gap:10px;align-items:center">${envies.map(([e, c]) => `<span style="padding:8px 18px;border-radius:999px;background:${c}1f;color:${c};font-weight:650;font-size:22px">${e}</span>`).join('')}</div>
-        <div class="budget" style="margin-top:auto;font-size:22px;color:var(--muet);font-weight:600">Budget max<br><b class="chiffre" style="font-size:36px;color:var(--encre)">${budget} €</b></div></div>`, p5.cadre);
+        <div class="budget" style="margin-top:auto;font-size:22px;color:var(--muet);font-weight:600">${L('Budget max', 'Max budget')}<br><b class="chiffre" style="font-size:36px;color:var(--encre)">${L(`${budget} €`, `€${budget}`)}</b></div></div>`, p5.cadre);
     tl.fromTo(c, { x: 330 - x, y: 120, scale: 0.4, rotation: -10, autoAlpha: 0 }, { x: 0, y: 0, scale: 1, rotation: 0, autoAlpha: 1, duration: 0.9, ease: ease.pose }, 20.0 + i * 0.22);
     sfx('souffle', 20.0 + i * 0.22, { doux: true, hauteur: i });
     return c;
@@ -347,8 +363,8 @@
   const anneau = h('<div style="position:absolute;left:1245px;top:722px;width:180px;height:58px;border-radius:18px;border:4px solid var(--or)"></div>', p5.cadre);
   tl.fromTo(anneau, { scale: 1.4, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.5, ease: ease.pose }, 22.1);
   const groupe5 = h(`<div class="carte" style="left:600px;top:840px;width:1170px;height:96px;display:flex;align-items:center;gap:22px;padding:0 34px;font-size:30px;font-weight:600">
-      <span style="color:var(--or)">${ico('users', 36, 2.2)}</span>Budget du groupe : <b class="chiffre" style="color:var(--marque)">450 € par personne</b>
-      <span style="margin-left:auto;color:var(--muet);font-size:24px">le plus serré fait foi</span></div>`, p5.cadre);
+      <span style="color:var(--or)">${ico('users', 36, 2.2)}</span>${L('Budget du groupe :', 'Group budget:')} <b class="chiffre" style="color:var(--marque)">${L('450 € par personne', '€450 per person')}</b>
+      <span style="margin-left:auto;color:var(--muet);font-size:24px">${L('le plus serré fait foi', 'the tightest budget sets the bar')}</span></div>`, p5.cadre);
   surgir(groupe5, 22.3, { hauteur: 5 });
 
   /* =====================================================================
@@ -357,27 +373,33 @@
   const p6 = plan('propositions');
   montrer(p6, 23.5, 31.5);
   feuille(p6, p5, 24.0, 0.9);
-  const t6 = titre(p6.cadre, 'Des destinations<br>notées, <em>chiffrées</em>,<br>expliquées.', { x: 120, y: 170, classe: 'titre m', largeur: 700 });
+  const t6 = titre(p6.cadre, L('Des destinations<br>notées, <em>chiffrées</em>,<br>expliquées.', 'Destinations<br>rated, <em>priced</em>,<br>explained.'), { x: 120, y: 170, classe: 'titre m', largeur: 700 });
   apparaitre(t6, 24.35);
-  const s6 = titre(p6.cadre, 'Chaque proposition dit ce qui la distingue des autres — pas l’avis d’un algorithme opaque.', { x: 120, y: 470, classe: 'texte', largeur: 620 });
+  const s6 = titre(p6.cadre, L('Chaque proposition dit ce qui la distingue des autres — pas l’avis d’un algorithme opaque.', 'Every suggestion says what sets it apart — not the verdict of a black-box algorithm.'), { x: 120, y: 470, classe: 'texte', largeur: 620 });
   apparaitre(s6, 25.3, { stagger: 0.025 });
   const score = h(`<div style="position:absolute;left:120px;top:690px;display:flex;align-items:baseline;gap:18px">
       <span class="titre chiffre" style="font-size:150px;color:var(--marque)">87</span><span class="titre" style="font-size:44px;color:var(--muet)">/100</span>
-      <span class="texte s" style="max-width:300px;line-height:1.25;margin-left:10px">Budapest répond à 92 % des envies du groupe.</span></div>`, p6.cadre);
+      <span class="texte s" style="max-width:300px;line-height:1.25;margin-left:10px">${L('Budapest répond à 92 % des envies du groupe.', 'Budapest matches 92% of the group’s wishes.')}</span></div>`, p6.cadre);
   surgir(score, 26.4, { hauteur: 3 });
   const tel6 = telephone(p6.cadre, { image: 'propositions-long.jpg', x: 830, y: 84 });
   entreeTel(tel6, 24.2, { rotY: -6 });
-  tl.set(tel6.page, { y: -(1181 - 70) }, 23.5);
-  defiler(tel6, 25.6, 1318 - 40, 0.9);
-  defiler(tel6, 27.6, 1709 - 40, 0.9);
-  defiler(tel6, 29.3, 2077 - 40, 0.9);
-  const NOTES6 = [
+  tl.set(tel6.page, { y: -(R.propositions.entete - 70) }, 23.5);
+  defiler(tel6, 25.6, R.propositions.budapest - 40, 0.9);
+  defiler(tel6, 27.6, R.propositions.cracovie - 40, 0.9);
+  defiler(tel6, 29.3, R.propositions.prague - 40, 0.9);
+  const NOTES6 = L([
     ['plane', 'var(--marque)', 'Prix des vols relevés', 'avec la date du relevé'],
     ['sun', 'var(--or)', 'Climat du mois, mesuré', 'normales sur trois ans'],
     ['wallet', 'var(--lagon)', 'Coût total par personne', 'vol, logement, repas, activités'],
     ['route', '#4f8a3c', 'Empreinte carbone du trajet', 'avion, train, car ou voiture'],
     ['calendar-days', 'var(--corail)', 'Ponts et vacances scolaires', 'zones A, B et C'],
-  ];
+  ], [
+    ['plane', 'var(--marque)', 'Real flight prices', 'with the date they were seen'],
+    ['sun', 'var(--or)', 'Measured monthly climate', 'three-year averages'],
+    ['wallet', 'var(--lagon)', 'Total cost per person', 'flights, lodging, meals, activities'],
+    ['route', '#4f8a3c', 'Carbon footprint of the trip', 'plane, train, coach or car'],
+    ['calendar-days', 'var(--corail)', 'Holidays and long weekends', 'France’s school zones A, B and C'],
+  ]);
   const liens6 = h('<svg style="position:absolute;left:0;top:0;overflow:visible" width="1920" height="1080"></svg>', p6.cadre);
   NOTES6.forEach(([i, c, titreNote, detail], k) => {
     const y = 150 + k * 160;
@@ -398,14 +420,14 @@
   const p7 = plan('vote');
   montrer(p7, 30.6, 36.5);
   glisse(p7, p6, 31.0);
-  const t7 = titre(p7.cadre, 'Le groupe vote.', { x: 140, y: 110, classe: 'titre m' });
+  const t7 = titre(p7.cadre, L('Le groupe vote.', 'The group votes.'), { x: 140, y: 110, classe: 'titre m' });
   apparaitre(t7, 31.2);
-  const s7 = titre(p7.cadre, 'La destination se décide ensemble, pas au plus bavard.', { x: 140, y: 214, classe: 'texte' });
+  const s7 = titre(p7.cadre, L('La destination se décide ensemble, pas au plus bavard.', 'You choose together — not whoever talks the loudest.'), { x: 140, y: 214, classe: 'texte' });
   apparaitre(s7, 31.5, { stagger: 0.03 });
   const POSTALES = [
-    ['lisbonne', 'Lisbonne', 'Portugal', 230, 380, -6, 2],
-    ['bali', 'Bali', 'Indonésie', 700, 350, 2, 4],
-    ['budapest', 'Budapest', 'Hongrie', 1170, 385, 5, 1],
+    ['lisbonne', L('Lisbonne', 'Lisbon'), 'Portugal', 230, 380, -6, 2],
+    ['bali', 'Bali', L('Indonésie', 'Indonesia'), 700, 350, 2, 4],
+    ['budapest', 'Budapest', L('Hongrie', 'Hungary'), 1170, 385, 5, 1],
   ];
   const postales = POSTALES.map(([illu, nom, pays, x, y, rot, votes], i) => {
     const c = h(`<div class="carte" style="left:${x}px;top:${y}px;width:500px;height:420px;padding:14px;border-radius:10px;transform:rotate(${rot}deg)">
@@ -437,7 +459,7 @@
   tl.to([postales[0].c, postales[2].c], { y: 60, autoAlpha: 0.35, filter: 'saturate(0.2)', duration: 0.6, ease: ease.pose }, 34.0);
   tl.set(postales[1].c, { zIndex: 5 }, 33.95);
   tl.to(postales[1].c, { scale: 1.1, y: -10, rotation: 0, duration: 0.6, ease: ease.pose }, 34.0);
-  const tamponChoisi = h(`<div style="position:absolute;left:880px;top:470px;width:300px;z-index:6">${ILLU.tampon({ centre: 'CHOISI', couleur: '#d2473b', rond: false, rotation: -12 })}</div>`, p7.cadre);
+  const tamponChoisi = h(`<div style="position:absolute;left:880px;top:470px;width:300px;z-index:6">${ILLU.tampon({ centre: L('CHOISI', 'CHOSEN'), couleur: '#d2473b', rond: false, rotation: -12 })}</div>`, p7.cadre);
   tl.fromTo(tamponChoisi, { scale: 2.4, autoAlpha: 0 }, { scale: 1, autoAlpha: 0.92, duration: 0.2, ease: 'power4.in' }, 34.45);
   tl.to(postales[1].c, { x: '+=7', duration: 0.04, repeat: 5, yoyo: true, ease: 'none' }, 34.65);
   sfx('tampon', 34.65);
@@ -455,13 +477,13 @@
       <span style="display:inline-block;padding:6px 12px;border-radius:999px;background:rgba(0,0,0,.35);font-size:13px;font-weight:650">${etiquette}</span>
       <div style="position:absolute;left:0;right:0;top:180px;display:grid;place-items:center;opacity:.25">${ico('map-pin', 96, 1.4)}</div>
       <div style="position:absolute;left:22px;right:22px;bottom:30px"><div class="titre" style="font-size:36px;color:#fff;line-height:1.08">${titreC}</div><div style="font-size:17px;margin-top:12px;opacity:.9;line-height:1.4">${detail}</div>
-      <div style="display:flex;gap:8px;margin-top:16px">${['2 h', '€', 'Le matin'].map((x) => `<span style="padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.14);font-size:14px;font-weight:600">${x}</span>`).join('')}</div></div></div>`, pile);
-  carteSwipe('Nusa Penida à la journée', 'Traversée en bateau rapide, puis les falaises de Kelingking que tout le monde a vues en photo.', 'Plage', 'linear-gradient(170deg,#c27a45,#4a2414)');
-  const c3 = carteSwipe('Plongée à Amed', 'Épave du Liberty et jardins de corail, à quelques brasses du rivage.', 'Mer et plongée', 'linear-gradient(170deg,#2e5e8a,#10243d)');
-  const c2 = carteSwipe('La forêt des singes d’Ubud', 'Trois temples dans une forêt de figuiers, et sept cents macaques qui y vivent vraiment.', 'Parc', 'linear-gradient(170deg,#2c6b5d,#0e2a24)');
-  const c1 = h('<img src="captures/carte-rizieres.jpg" style="position:absolute;inset:0;width:100%;height:100%;border-radius:22px">', pile);
+      <div style="display:flex;gap:8px;margin-top:16px">${['2 h', '€', L('Le matin', 'Morning')].map((x) => `<span style="padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.14);font-size:14px;font-weight:600">${x}</span>`).join('')}</div></div></div>`, pile);
+  carteSwipe(L('Nusa Penida à la journée', 'Nusa Penida day trip'), L('Traversée en bateau rapide, puis les falaises de Kelingking que tout le monde a vues en photo.', 'A fast boat across, then the Kelingking cliffs everyone has seen in photos.'), L('Plage', 'Beach'), 'linear-gradient(170deg,#c27a45,#4a2414)');
+  const c3 = carteSwipe(L('Plongée à Amed', 'Diving in Amed'), L('Épave du Liberty et jardins de corail, à quelques brasses du rivage.', 'The Liberty wreck and coral gardens, a few strokes from the shore.'), L('Mer et plongée', 'Sea and diving'), 'linear-gradient(170deg,#2e5e8a,#10243d)');
+  const c2 = carteSwipe(L('La forêt des singes d’Ubud', 'The Ubud Monkey Forest'), L('Trois temples dans une forêt de figuiers, et sept cents macaques qui y vivent vraiment.', 'Three temples in a forest of fig trees, and seven hundred macaques that really live there.'), L('Parc', 'Park'), 'linear-gradient(170deg,#2c6b5d,#0e2a24)');
+  const c1 = h(`<img src="${CAPTURES}/carte-rizieres.jpg" style="position:absolute;inset:0;width:100%;height:100%;border-radius:22px">`, pile);
   const sceau = (texte, couleur, cote) => `<div style="position:absolute;top:34px;${cote}:24px;padding:8px 16px;border:4px solid ${couleur};color:${couleur};border-radius:10px;font-weight:800;font-size:26px;letter-spacing:.08em;transform:rotate(${cote === 'left' ? -14 : 14}deg);background:rgba(255,255,255,.12)">${texte}</div>`;
-  const s1 = h(sceau('J’AI ENVIE', '#5fd39b', 'left'), pile), s2 = h(sceau('J’AI ENVIE', '#5fd39b', 'left'), pile), s3 = h(sceau('SANS MOI', '#ff7a6e', 'right'), pile);
+  const s1 = h(sceau(L('J’AI ENVIE', 'I’M IN'), '#5fd39b', 'left'), pile), s2 = h(sceau(L('J’AI ENVIE', 'I’M IN'), '#5fd39b', 'left'), pile), s3 = h(sceau(L('SANS MOI', 'NOT FOR ME'), '#ff7a6e', 'right'), pile);
   gsap.set([s1, s2, s3], { autoAlpha: 0 });
   const swipe = (carte, s, t, sens) => {
     tl.to(s, { autoAlpha: 1, duration: 0.15 }, t);
@@ -470,14 +492,14 @@
     sfx('swipe', t + 0.05, { sens });
   };
   swipe(c1, s1, 36.75, 1); swipe(c2, s2, 37.65, 1); swipe(c3, s3, 38.55, -1);
-  const t8 = titre(p8.cadre, 'Swipez les activités.', { x: 820, y: 170, classe: 'titre m' });
+  const t8 = titre(p8.cadre, L('Swipez les activités.', 'Swipe through activities.'), { x: 820, y: 170, classe: 'titre m' });
   apparaitre(t8, 36.3);
-  const s8 = titre(p8.cadre, 'Le classement du groupe se fait tout seul.', { x: 820, y: 278, classe: 'texte' });
+  const s8 = titre(p8.cadre, L('Le classement du groupe se fait tout seul.', 'The group ranking builds itself.'), { x: 820, y: 278, classe: 'texte' });
   apparaitre(s8, 36.6, { stagger: 0.03 });
   const classement = h(`<div class="carte" style="left:820px;top:400px;width:940px;padding:34px 40px">
-      <div class="etiquette" style="margin-bottom:18px">Classement du groupe</div></div>`, p8.cadre);
+      <div class="etiquette" style="margin-bottom:18px">${L('Classement du groupe', 'Group ranking')}</div></div>`, p8.cadre);
   surgir(classement, 36.8, { son: null });
-  [['Rizières en terrasses de Tegallalang', 4], ['Forêt des singes d’Ubud', 3], ['Nusa Penida à la journée', 3]].forEach(([nom, coeurs], i) => {
+  L([['Rizières en terrasses de Tegallalang', 4], ['Forêt des singes d’Ubud', 3], ['Nusa Penida à la journée', 3]], [['Tegallalang rice terraces', 4], ['Ubud Monkey Forest', 3], ['Nusa Penida day trip', 3]]).forEach(([nom, coeurs], i) => {
     const r = h(`<div style="display:flex;align-items:center;gap:24px;padding:20px 0;border-top:1px solid var(--filet)">
         <span class="titre chiffre" style="font-size:46px;color:${['var(--or)', 'var(--muet)', '#b07a4a'][i]};width:40px">${i + 1}</span>
         <span style="font-size:32px;font-weight:600;flex:1">${nom}</span>
@@ -492,28 +514,28 @@
   const p9 = plan('alerte');
   montrer(p9, 39.6, 43.5);
   glisse(p9, p8, 40.0);
-  const t9 = titre(p9.cadre, 'Le prix baisse ?<br><em class="lagon">Vous êtes prévenus.</em>', { x: 140, y: 250, classe: 'titre l', largeur: 1000 });
+  const t9 = titre(p9.cadre, L('Le prix baisse ?<br><em class="lagon">Vous êtes prévenus.</em>', 'Price drop?<br><em class="lagon">You’ll know.</em>'), { x: 140, y: 250, classe: 'titre l', largeur: 1000 });
   apparaitre(t9, 40.25);
   const tel9 = telephone(p9.cadre, { x: 1230, y: 84, sombre: true, onglets: false });
   tel9.ecran.insertAdjacentHTML('afterbegin', `<div style="position:absolute;inset:0;background:linear-gradient(180deg,#1d2f57 0%,#5a3d6b 38%,#d9706a 70%,#f6b58a 100%)"></div>
     <div style="position:absolute;left:95px;top:600px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,#ffe2b0 0%,rgba(255,226,176,.6) 45%,rgba(255,226,176,0) 70%)"></div>
     <div style="position:absolute;left:0;right:0;bottom:0;height:150px;background:linear-gradient(180deg,#2f4f6b,#17283c)"></div>
-    <div style="position:absolute;top:110px;width:100%;text-align:center;color:#fff"><div style="font-size:20px;font-weight:600;opacity:.9">lundi 18 mai</div><div class="chiffre" style="font-size:104px;font-weight:600;letter-spacing:-.03em;line-height:1">08:41</div></div>`);
+    <div style="position:absolute;top:110px;width:100%;text-align:center;color:#fff"><div style="font-size:20px;font-weight:600;opacity:.9">${L('lundi 18 mai', 'Monday, May 18')}</div><div class="chiffre" style="font-size:104px;font-weight:600;letter-spacing:-.03em;line-height:1">08:41</div></div>`);
   tel9.ecran.querySelector('.tel-statut').style.background = 'transparent';
   entreeTel(tel9, 39.9, { rotY: -10 });
   const notif = h(`<div style="position:absolute;left:14px;right:14px;top:330px;border-radius:26px;padding:16px 18px;background:rgba(250,248,244,.86);backdrop-filter:blur(16px);display:flex;gap:14px;z-index:5;box-shadow:0 20px 40px -20px rgba(0,0,0,.5)">
       <img src="/apps/web/public/icons/icon.svg" style="width:44px;height:44px;border-radius:11px">
-      <div style="flex:1;font-size:16px;line-height:1.3"><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:650;color:#6b6355;letter-spacing:.04em"><span>TRIPORA</span><span>maintenant</span></div>
-      <b style="font-size:17px">Un prix que vous suivez a baissé</b><br>Ouvrez Tripora pour voir de combien.</div></div>`, tel9.ecran);
+      <div style="flex:1;font-size:16px;line-height:1.3"><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:650;color:#6b6355;letter-spacing:.04em"><span>TRIPORA</span><span>${L('maintenant', 'now')}</span></div>
+      <b style="font-size:17px">${L('Un prix que vous suivez a baissé', 'A price you’re watching just dropped')}</b><br>${L('Ouvrez Tripora pour voir de combien.', 'Open Tripora to see by how much.')}</div></div>`, tel9.ecran);
   tl.fromTo(notif, { y: -260, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.7, ease: ease.pose }, 40.7);
   sfx('notification', 40.75);
   const prix9 = h(`<div class="carte" style="left:140px;top:600px;width:720px;padding:30px 36px;display:flex;align-items:center;gap:28px">
       <div class="pastille" style="width:84px;height:84px;background:var(--lagon)">${ico('trending-down', 44, 2.4)}</div>
-      <div style="flex:1"><div class="etiquette">Paris → Denpasar · juillet</div>
-      <div style="display:flex;align-items:baseline;gap:18px;margin-top:6px"><s class="chiffre" style="font-size:34px;color:var(--muet)">612 €</s><span class="titre chiffre" style="font-size:64px;color:var(--lagon)">548 €</span></div></div>
-      <span style="font-weight:700;font-size:26px;color:var(--lagon);background:#2f8f881c;padding:10px 16px;border-radius:12px">−64 €</span></div>`, p9.cadre);
+      <div style="flex:1"><div class="etiquette">${L('Paris → Denpasar · juillet', 'Paris → Denpasar · July')}</div>
+      <div style="display:flex;align-items:baseline;gap:18px;margin-top:6px"><s class="chiffre" style="font-size:34px;color:var(--muet)">${L('612 €', '€612')}</s><span class="titre chiffre" style="font-size:64px;color:var(--lagon)">${L('548 €', '€548')}</span></div></div>
+      <span style="font-weight:700;font-size:26px;color:var(--lagon);background:#2f8f881c;padding:10px 16px;border-radius:12px">${L('−64 €', '−€64')}</span></div>`, p9.cadre);
   surgir(prix9, 41.5, { hauteur: 4 });
-  const pied9 = h('<div class="texte s" style="position:absolute;left:140px;top:790px">Tripora surveille les vols chaque matin, pour vous.</div>', p9.cadre);
+  const pied9 = h(`<div class="texte s" style="position:absolute;left:140px;top:790px">${L('Tripora surveille les vols chaque matin, pour vous.', 'Tripora checks flights every morning, for you.')}</div>`, p9.cadre);
   surgir(pied9, 41.9, { son: null, y: 20 });
 
   /* =====================================================================
@@ -524,11 +546,12 @@
   feuille(p10, p9, 43.0, 0.9);
   const tel10 = telephone(p10.cadre, { image: 'itineraire-long.jpg', x: 110, y: 84 });
   entreeTel(tel10, 43.2, { de: 'gauche', rotY: 7 });
-  defiler(tel10, 44.4, 330, 1.0);
-  defiler(tel10, 46.6, 516, 2.0);
-  const st10 = h('<div class="sur-titre" style="position:absolute;left:660px;top:70px">02 — Organiser</div>', p10.cadre);
+  defiler(tel10, 44.4, R.itineraire.jour1 - 255, 1.0);
+  // Jusqu'en bas de la page, pas plus loin : l'écran fait 844 px de haut.
+  defiler(tel10, 46.6, R.itineraire.hauteur - 844, 2.0);
+  const st10 = h(`<div class="sur-titre" style="position:absolute;left:660px;top:70px">${L('02 — Organiser', '02 — Plan')}</div>`, p10.cadre);
   surgir(st10, 43.3, { son: null, y: 20 });
-  const t10 = titre(p10.cadre, 'Un itinéraire jour par jour,<br><em>avec de vrais lieux.</em>', { x: 660, y: 112, classe: 'titre s', largeur: 1180 });
+  const t10 = titre(p10.cadre, L('Un itinéraire jour par jour,<br><em>avec de vrais lieux.</em>', 'A day-by-day itinerary,<br><em>with real places.</em>'), { x: 660, y: 112, classe: 'titre s', largeur: 1180 });
   apparaitre(t10, 43.4);
   const boiteCarte = h(`<div style="position:absolute;left:640px;top:300px;width:780px;height:499px;border-radius:24px;box-shadow:0 40px 80px -40px rgba(26,23,19,.5)">${ILLU.carteBali().replace('width="1000" height="640"', 'width="780" height="499"')}</div>`, p10.cadre);
   surgir(boiteCarte, 43.6, { son: null, y: 50 });
@@ -563,9 +586,10 @@
   route(svg10, a2, b2, J2, 45.45); route(svg10, b2, c2b, J2, 45.85);
   const a3 = epingle(svg10, 'sidemen', J3, 46.5, 3), b3 = epingle(svg10, 'amed', J3, 46.9, 3, true);
   route(svg10, a3, b3, J3, 46.65);
-  const jours = h(`<div class="carte" style="left:1450px;top:300px;width:400px;padding:22px 24px;z-index:3"><div class="etiquette" style="margin-bottom:10px">Le programme</div></div>`, p10.cadre);
+  const jours = h(`<div class="carte" style="left:1450px;top:300px;width:400px;padding:22px 24px;z-index:3"><div class="etiquette" style="margin-bottom:10px">${L('Le programme', 'The plan')}</div></div>`, p10.cadre);
   surgir(jours, 44.1, { son: null });
-  const lignesJours = [['Jour 1', 'Seminyak et Canggu', J1], ['Jour 2', 'Ubud et les rizières', J2], ['Jour 3', 'Plongée à Amed', J3], ['Jour 4', 'Musées et spa', J4]].map(([j, d, c], i) => {
+  const lignesJours = L([['Jour 1', 'Seminyak et Canggu', J1], ['Jour 2', 'Ubud et les rizières', J2], ['Jour 3', 'Plongée à Amed', J3], ['Jour 4', 'Musées et spa', J4]],
+    [['Day 1', 'Seminyak and Canggu', J1], ['Day 2', 'Ubud and rice fields', J2], ['Day 3', 'Diving in Amed', J3], ['Day 4', 'Museums and spa', J4]]).map(([j, d, c], i) => {
     const l = h(`<div style="position:relative;display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid var(--filet);font-size:22px;min-height:57px">
         <b style="width:76px">${j}</b><span class="activite" style="flex:1;display:flex;align-items:center;gap:12px;color:var(--encre-douce);font-weight:500;line-height:1.2"><span style="flex:none;width:14px;height:14px;border-radius:50%;background:${c}"></span>${d}</span><span class="meteo" style="color:var(--marque)"></span></div>`, jours);
     surgir(l, 44.3 + i * 0.55, { y: 16, son: null });
@@ -577,9 +601,9 @@
   tl.fromTo(lignesJours[2].querySelector('.meteo'), { scale: 0, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.4, ease: ease.pose }, 47.4);
   sfx('pluie', 47.4);
   const conseil = h(`<div class="carte" style="left:1450px;top:620px;width:400px;padding:22px 24px;z-index:3;font-size:21px;line-height:1.35">
-      <div style="display:flex;gap:10px;align-items:center;font-weight:700;color:var(--marque)">${ico('cloud-rain', 26, 2.2)}Pluie prévue jeudi</div>
-      <div style="margin:8px 0 16px;color:var(--encre-douce)">Échanger la plongée avec la journée à l’abri de vendredi ?</div>
-      <div class="btn" style="display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border-radius:12px;background:var(--marque);color:#fff;font-weight:650">${ico('arrow-left-right', 22, 2.4)}Échanger</div></div>`, p10.cadre);
+      <div style="display:flex;gap:10px;align-items:center;font-weight:700;color:var(--marque)">${ico('cloud-rain', 26, 2.2)}${L('Pluie prévue jeudi', 'Rain expected Thursday')}</div>
+      <div style="margin:8px 0 16px;color:var(--encre-douce)">${L('Échanger la plongée avec la journée à l’abri de vendredi ?', 'Swap the dive with Friday’s indoor day?')}</div>
+      <div class="btn" style="display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border-radius:12px;background:var(--marque);color:#fff;font-weight:650">${ico('arrow-left-right', 22, 2.4)}${L('Échanger', 'Swap')}</div></div>`, p10.cadre);
   surgir(conseil, 47.7, { hauteur: 2 });
   toucher(conseil, 120, 160, 48.55);
   tl.to(conseil.querySelector('.btn'), { scale: 0.94, duration: 0.1, yoyo: true, repeat: 1 }, 48.55);
@@ -587,7 +611,7 @@
   tl.to(lignesJours[2].querySelector('.activite'), { y: ecart, duration: 0.55, ease: ease.entre }, 48.75);
   tl.to(lignesJours[3].querySelector('.activite'), { y: -ecart, duration: 0.55, ease: ease.entre }, 48.75);
   sfx('glisse', 48.75, { doux: true });
-  const s10 = titre(p10.cadre, 'Il pleut jeudi ? Tripora propose d’échanger deux journées.', { x: 640, y: 840, classe: 'texte s', largeur: 800 });
+  const s10 = titre(p10.cadre, L('Il pleut jeudi ? Tripora propose d’échanger deux journées.', 'Rain on Thursday? Tripora suggests swapping two days.'), { x: 640, y: 840, classe: 'texte s', largeur: 800 });
   apparaitre(s10, 47.6, { stagger: 0.025 });
 
   /* =====================================================================
@@ -600,12 +624,12 @@
       <div style="position:absolute;inset:0;transform:scale(1.7);transform-origin:50% 40%">${ILLU.cascade().replace('<svg', '<svg width="380" height="676"')}</div>
       <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.6))"></div>
       <div style="position:absolute;left:50%;top:44%;width:96px;height:96px;margin:-48px;border-radius:50%;background:rgba(255,255,255,.88);display:grid;place-items:center;color:#1a1713">${ico('play', 44, 2)}</div>
-      <div style="position:absolute;left:24px;right:24px;bottom:120px;color:#fff;font-weight:700;font-size:26px;line-height:1.2">Les 5 plus belles cascades de Bali</div>
-      <div style="position:absolute;left:24px;bottom:84px;color:rgba(255,255,255,.85);font-weight:600;font-size:18px">@voyageuse · 1,2 M de vues</div>
+      <div style="position:absolute;left:24px;right:24px;bottom:120px;color:#fff;font-weight:700;font-size:26px;line-height:1.2">${L('Les 5 plus belles cascades de Bali', 'The 5 most beautiful waterfalls in Bali')}</div>
+      <div style="position:absolute;left:24px;bottom:84px;color:rgba(255,255,255,.85);font-weight:600;font-size:18px">${L('@voyageuse · 1,2 M de vues', '@wanderer · 1.2M views')}</div>
       <div class="feuille-partage" style="position:absolute;left:0;right:0;bottom:0;height:250px;background:var(--feuille);border-radius:28px 28px 0 0;padding:26px 24px">
-        <div style="font-weight:700;font-size:22px;margin-bottom:22px">Partager</div>
+        <div style="font-weight:700;font-size:22px;margin-bottom:22px">${L('Partager', 'Share')}</div>
         <div style="display:flex;justify-content:space-between">
-          ${[['#3cbf63', 'messages-square', 'Messages'], ['#3b8ae6', 'mail', 'E-mail'], ['', '', 'Tripora'], ['#8a8378', 'file-text', 'Copier']].map(([c, i, n]) => `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;font-size:16px;font-weight:600;color:#524b3f">${n === 'Tripora' ? '<img class="cible-tripora" src="/apps/web/public/icons/icon.svg" style="width:66px;height:66px;border-radius:16px">' : `<div style="width:66px;height:66px;border-radius:16px;background:${c};color:#fff;display:grid;place-items:center">${ico(i, 32, 2)}</div>`}${n}</div>`).join('')}
+          ${[['#3cbf63', 'messages-square', 'Messages'], ['#3b8ae6', 'mail', L('E-mail', 'Mail')], ['', '', 'Tripora'], ['#8a8378', 'file-text', L('Copier', 'Copy')]].map(([c, i, n]) => `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;font-size:16px;font-weight:600;color:#524b3f">${n === 'Tripora' ? '<img class="cible-tripora" src="/apps/web/public/icons/icon.svg" style="width:66px;height:66px;border-radius:16px">' : `<div style="width:66px;height:66px;border-radius:16px;background:${c};color:#fff;display:grid;place-items:center">${ico(i, 32, 2)}</div>`}${n}</div>`).join('')}
         </div></div></div>`, p11.cadre);
   surgir(video, 50.15, { son: null, y: 60 });
   const feuillePartage = video.querySelector('.feuille-partage');
@@ -614,7 +638,7 @@
   toucher(feuillePartage, 225, 96, 51.45);
   tl.to(video, { scale: 0.18, x: 640, y: -40, rotation: 8, autoAlpha: 0, duration: 0.7, ease: 'power3.in' }, 51.8);
   sfx('glisse', 51.8);
-  const t11 = titre(p11.cadre, 'Vu sur les réseaux ?<br><em>Partagez-le à Tripora.</em>', { x: 820, y: 100, classe: 'titre s', largeur: 1000 });
+  const t11 = titre(p11.cadre, L('Vu sur les réseaux ?<br><em>Partagez-le à Tripora.</em>', 'Saw it online?<br><em>Share it to Tripora.</em>'), { x: 820, y: 100, classe: 'titre s', largeur: 1000 });
   apparaitre(t11, 50.35);
   const boite11 = h(`<div style="position:absolute;left:820px;top:300px;width:1000px;height:640px;border-radius:28px;box-shadow:0 40px 80px -40px rgba(26,23,19,.5)">${ILLU.carteBali()}</div>`, p11.cadre);
   surgir(boite11, 50.6, { son: null, y: 40 });
@@ -622,9 +646,9 @@
   epingle(svg11, 'tegenungan', '#e2574c', 52.3, '♥', true);
   epingle(svg11, 'tibumana', '#e2574c', 52.5, '♥');
   epingle(svg11, 'sekumpul', '#e2574c', 52.7, '♥');
-  const explication = titre(p11.cadre, 'Une vidéo, une page, un lien Maps : Tripora en tire les lieux et les épingle sur la carte du groupe.', { x: 160, y: 430, classe: 'texte', largeur: 580 });
+  const explication = titre(p11.cadre, L('Une vidéo, une page, un lien Maps : Tripora en tire les lieux et les épingle sur la carte du groupe.', 'A video, a page, a Maps link: Tripora finds the places and pins them on the group map.'), { x: 160, y: 430, classe: 'texte', largeur: 580 });
   apparaitre(explication, 52.35, { stagger: 0.02 });
-  const ajout = h(`<div style="position:absolute;left:1300px;top:860px;display:flex;align-items:center;gap:12px;padding:14px 24px;border-radius:999px;background:var(--lagon);color:#fff;font-weight:650;font-size:26px;box-shadow:0 16px 30px -16px rgba(0,0,0,.45)">${ico('map-pin', 28, 2.4)}3 épingles ajoutées au voyage</div>`, p11.cadre);
+  const ajout = h(`<div style="position:absolute;left:1300px;top:860px;display:flex;align-items:center;gap:12px;padding:14px 24px;border-radius:999px;background:var(--lagon);color:#fff;font-weight:650;font-size:26px;box-shadow:0 16px 30px -16px rgba(0,0,0,.45)">${ico('map-pin', 28, 2.4)}${L('3 épingles ajoutées au voyage', '3 pins added to the trip')}</div>`, p11.cadre);
   surgir(ajout, 52.95, { hauteur: 6 });
 
   /* =====================================================================
@@ -633,28 +657,29 @@
   const p12 = plan('coffre');
   montrer(p12, 53.5, 59.5);
   feuille(p12, p11, 54.0, 0.9);
-  const t12 = titre(p12.cadre, 'Réservations, billets, codes :<br><em>tout le groupe a tout.</em>', { x: 140, y: 100, classe: 'titre s', largeur: 1400 });
+  const t12 = titre(p12.cadre, L('Réservations, billets, codes :<br><em>tout le groupe a tout.</em>', 'Bookings, tickets, codes:<br><em>the whole group has it all.</em>'), { x: 140, y: 100, classe: 'titre s', largeur: 1400 });
   apparaitre(t12, 54.3);
   const mail = h(`<div class="carte" style="left:140px;top:380px;width:600px;padding:30px 34px;font-size:24px;line-height:1.5">
-      <div style="display:flex;align-items:center;gap:14px;font-weight:700;margin-bottom:14px"><span class="pastille" style="width:52px;height:52px;background:#3b8ae6">${ico('mail', 28, 2)}</span>Confirmation de réservation</div>
-      <div style="color:var(--encre-douce)">Bonjour Inès, votre séjour est confirmé.<br><b style="color:var(--encre)">Villa Kayu, Ubud</b><br>Arrivée le 14 juillet · 5 nuits<br>Référence : <b class="chiffre">HX82KQ</b></div></div>`, p12.cadre);
+      <div style="display:flex;align-items:center;gap:14px;font-weight:700;margin-bottom:14px"><span class="pastille" style="width:52px;height:52px;background:#3b8ae6">${ico('mail', 28, 2)}</span>${L('Confirmation de réservation', 'Booking confirmation')}</div>
+      <div style="color:var(--encre-douce)">${L('Bonjour Inès, votre séjour est confirmé.', 'Hi Inès, your stay is confirmed.')}<br><b style="color:var(--encre)">Villa Kayu, Ubud</b><br>${L('Arrivée le 14 juillet · 5 nuits', 'Check-in July 14 · 5 nights')}<br>${L('Référence :', 'Reference:')} <b class="chiffre">HX82KQ</b></div></div>`, p12.cadre);
   surgir(mail, 54.45, { son: null, y: 50 });
   const fleche12 = h(`<div style="position:absolute;left:770px;top:520px;color:var(--marque)">${ico('sparkles', 56, 2)}</div>`, p12.cadre);
   surgir(fleche12, 55.2, { hauteur: 2 });
   const billet = h(`<div class="carte" style="left:860px;top:400px;width:500px;height:300px;padding:0;overflow:hidden;display:flex">
       <div style="width:18px;background:var(--marque)"></div>
       <div style="flex:1;padding:28px 30px;position:relative">
-        <div class="etiquette" style="display:flex;align-items:center;gap:10px;color:var(--marque)">${ico('bed-double', 26, 2.2)}Hébergement</div>
+        <div class="etiquette" style="display:flex;align-items:center;gap:10px;color:var(--marque)">${ico('bed-double', 26, 2.2)}${L('Hébergement', 'Lodging')}</div>
         <div class="titre" style="font-size:44px;margin:12px 0 10px">Villa Kayu, Ubud</div>
-        <div style="font-size:24px;color:var(--encre-douce);font-weight:500">14 → 19 juillet · 5 nuits</div>
-        <div style="position:absolute;left:30px;right:30px;bottom:26px;display:flex;justify-content:space-between;border-top:2px dashed var(--filet);padding-top:16px;font-size:22px"><span class="etiquette">Réf.</span><b class="chiffre" style="letter-spacing:.12em">HX82KQ</b></div>
+        <div style="font-size:24px;color:var(--encre-douce);font-weight:500">${L('14 → 19 juillet · 5 nuits', 'July 14 → 19 · 5 nights')}</div>
+        <div style="position:absolute;left:30px;right:30px;bottom:26px;display:flex;justify-content:space-between;border-top:2px dashed var(--filet);padding-top:16px;font-size:22px"><span class="etiquette">${L('Réf.', 'Ref.')}</span><b class="chiffre" style="letter-spacing:.12em">HX82KQ</b></div>
       </div></div>`, p12.cadre);
   surgir(billet, 55.45, { hauteur: 3, echelle: 0.8 });
-  const lue = h('<div class="texte s" style="position:absolute;left:860px;top:730px;width:520px;font-size:23px">Lue dans l’e-mail, rangée dans le voyage, sans rien recopier.</div>', p12.cadre);
+  const lue = h(`<div class="texte s" style="position:absolute;left:860px;top:730px;width:520px;font-size:23px">${L('Lue dans l’e-mail, rangée dans le voyage, sans rien recopier.', 'Read from the email, filed in the trip.')}</div>`, p12.cadre);
   surgir(lue, 55.9, { son: null, y: 16 });
-  const coffre = h('<div style="position:absolute;left:1420px;top:330px;width:400px"><div class="etiquette" style="margin-bottom:16px">Coffre du voyage</div></div>', p12.cadre);
+  const coffre = h(`<div style="position:absolute;left:1420px;top:330px;width:400px"><div class="etiquette" style="margin-bottom:16px">${L('Coffre du voyage', 'Trip vault')}</div></div>`, p12.cadre);
   surgir(coffre, 56.0, { son: null, y: 10 });
-  [['wifi', 'Wifi de la villa', 'kayu-guest · ••••••••', '#3b8ae6'], ['key-round', 'Code du portail', '4 8 1 5', '#c98a4a'], ['file-text', 'Billets d’avion', 'PDF · 4 passagers', '#6f6cf5']].forEach(([i, t, d, c], k) => {
+  L([['wifi', 'Wifi de la villa', 'kayu-guest · ••••••••', '#3b8ae6'], ['key-round', 'Code du portail', '4 8 1 5', '#c98a4a'], ['file-text', 'Billets d’avion', 'PDF · 4 passagers', '#6f6cf5']],
+    [['wifi', 'Villa wifi', 'kayu-guest · ••••••••', '#3b8ae6'], ['key-round', 'Gate code', '4 8 1 5', '#c98a4a'], ['file-text', 'Plane tickets', 'PDF · 4 passengers', '#6f6cf5']]).forEach(([i, t, d, c], k) => {
     const e = h(`<div class="carte" style="position:relative;margin-bottom:18px;padding:20px 22px;display:flex;align-items:center;gap:18px">
         <span class="pastille" style="width:58px;height:58px;background:${c}">${ico(i, 30, 2)}</span>
         <div style="flex:1"><div style="font-weight:700;font-size:24px">${t}</div><div class="chiffre" style="font-size:21px;color:var(--muet);margin-top:2px">${d}</div></div>
@@ -662,10 +687,10 @@
     surgir(e, 56.2 + k * 0.28, { x: 30, hauteur: k + 2 });
   });
   const horsLigne = h(`<div style="position:absolute;left:1420px;top:830px;display:flex;gap:14px">
-      <span style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:999px;background:var(--lagon);color:#fff;font-weight:650;font-size:22px">${ico('cloud-off', 24, 2.4)}Disponible hors ligne</span></div>`, p12.cadre);
+      <span style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:999px;background:var(--lagon);color:#fff;font-weight:650;font-size:22px">${ico('cloud-off', 24, 2.4)}${L('Disponible hors ligne', 'Available offline')}</span></div>`, p12.cadre);
   surgir(horsLigne, 57.15, { hauteur: 7 });
   const carteHL = h(`<div style="position:absolute;left:140px;top:780px;display:flex;align-items:center;gap:14px;padding:16px 24px;border-radius:16px;background:var(--feuille);border:1px solid var(--filet);font-size:24px;font-weight:600;box-shadow:0 14px 30px -20px rgba(0,0,0,.35)">
-      <span style="color:var(--or)">${ico('map', 30, 2.2)}</span>Et la carte de Bali, gardée sur le téléphone.</div>`, p12.cadre);
+      <span style="color:var(--or)">${ico('map', 30, 2.2)}</span>${L('Et la carte de Bali, gardée sur le téléphone.', 'Plus the map of Bali, saved on your phone.')}</div>`, p12.cadre);
   surgir(carteHL, 57.5, { hauteur: 5 });
 
   /* =====================================================================
@@ -674,13 +699,17 @@
   const p13 = plan('outils');
   montrer(p13, 58.5, 62.3);
   feuille(p13, p12, 59.0, 0.9);
-  const t13 = titre(p13.cadre, 'Et tout ce qui va avec.', { x: 0, y: 150, classe: 'titre m', largeur: 1920, centre: true });
+  const t13 = titre(p13.cadre, L('Et tout ce qui va avec.', 'And everything else you need.'), { x: 0, y: 150, classe: 'titre m', largeur: 1920, centre: true });
   apparaitre(t13, 59.25);
-  const OUTILS = [
+  const OUTILS = L([
     ['route', 'Itinéraire', '#f05d6c'], ['bed-double', 'Réservations', '#6f6cf5'], ['key-round', 'Coffre', '#c98a4a'], ['clipboard-check', 'Qui fait quoi', '#7cb342'],
     ['vote', 'Sondages', '#ec6ea1'], ['images', 'Journal photo', '#26a69a'], ['messages-square', 'Discussion', '#42a5f5'], ['map', 'Carte hors ligne', '#f39a3d'],
     ['wallet', 'Dépenses', '#45a35f'], ['luggage', 'Ma valise', '#ff9f43'], ['info', 'Infos pratiques', '#7d8ca8'], ['calendar-plus', 'Calendrier', '#e2574c'],
-  ];
+  ], [
+    ['route', 'Itinerary', '#f05d6c'], ['bed-double', 'Bookings', '#6f6cf5'], ['key-round', 'Vault', '#c98a4a'], ['clipboard-check', 'Who does what', '#7cb342'],
+    ['vote', 'Polls', '#ec6ea1'], ['images', 'Photo journal', '#26a69a'], ['messages-square', 'Chat', '#42a5f5'], ['map', 'Offline map', '#f39a3d'],
+    ['wallet', 'Expenses', '#45a35f'], ['luggage', 'My packing', '#ff9f43'], ['info', 'Practical info', '#7d8ca8'], ['calendar-plus', 'Calendar', '#e2574c'],
+  ]);
   const ordre = [2, 3, 8, 9, 1, 4, 7, 10, 0, 5, 6, 11];
   OUTILS.forEach(([i, nom, c], k) => {
     const col = k % 6, lig = Math.floor(k / 6);
@@ -700,9 +729,9 @@
   montrer(p14, 61.9, 67.5);
   tl.fromTo(p14.el, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.15 }, 61.9);
   sfx('impact', 62.0, { leger: true });
-  const st14 = h('<div class="sur-titre" style="position:absolute;left:140px;top:80px">03 — Vivre</div>', p14.cadre);
+  const st14 = h(`<div class="sur-titre" style="position:absolute;left:140px;top:80px">${L('03 — Vivre', '03 — Live')}</div>`, p14.cadre);
   surgir(st14, 62.1, { son: null, y: 20 });
-  const t14 = titre(p14.cadre, 'Un ticket ? Une photo.<br><em>La dépense est notée.</em>', { x: 140, y: 122, classe: 'titre s', largeur: 900 });
+  const t14 = titre(p14.cadre, L('Un ticket ? Une photo.<br><em>La dépense est notée.</em>', 'A receipt? Snap it.<br><em>The expense is logged.</em>'), { x: 140, y: 122, classe: 'titre s', largeur: 900 });
   apparaitre(t14, 62.2);
   const ticket = h(`<div style="position:absolute;left:180px;top:340px;width:430px;padding:34px 34px 54px;background:#fffef9;transform:rotate(-3deg);box-shadow:0 30px 60px -30px rgba(26,23,19,.45);font-size:21px;line-height:1.55;color:#2a251f;clip-path:polygon(0 0,100% 0,100% 96%,95% 100%,90% 96%,85% 100%,80% 96%,75% 100%,70% 96%,65% 100%,60% 96%,55% 100%,50% 96%,45% 100%,40% 96%,35% 100%,30% 96%,25% 100%,20% 96%,15% 100%,10% 96%,5% 100%,0 96%)" class="mono">
       <div style="text-align:center;font-weight:700;font-size:26px">WARUNG MADE</div><div style="text-align:center;font-size:18px;opacity:.7">Jl. Raya Ubud · 14/07/26</div>
@@ -723,20 +752,20 @@
   sfx('bip', 64.25);
   tl.to(viseur, { autoAlpha: 0, duration: 0.3 }, 64.5);
   const depense = h(`<div class="carte" style="left:860px;top:370px;width:620px;padding:34px 38px">
-      <div class="etiquette" style="color:var(--lagon)">Nouvelle dépense · lue sur le ticket</div>
+      <div class="etiquette" style="color:var(--lagon)">${L('Nouvelle dépense · lue sur le ticket', 'New expense · read from the receipt')}</div>
       <div class="titre" style="font-size:52px;margin:12px 0 4px">Warung Made</div>
-      <div style="font-size:24px;color:var(--muet);font-weight:600">Repas · payé par Inès · 14 juillet</div>
-      <div style="display:flex;align-items:baseline;gap:20px;margin-top:22px"><span class="titre chiffre" style="font-size:60px">486 000 IDR</span></div>
-      <div class="conv" style="display:flex;align-items:center;gap:14px;margin-top:6px;font-size:30px;font-weight:700;color:var(--lagon)">≈ <span class="chiffre">27,80 €</span><span style="font-size:20px;font-weight:600;color:var(--muet)">au taux de la BCE du jour</span></div>
+      <div style="font-size:24px;color:var(--muet);font-weight:600">${L('Repas · payé par Inès · 14 juillet', 'Meal · paid by Inès · July 14')}</div>
+      <div style="display:flex;align-items:baseline;gap:20px;margin-top:22px"><span class="titre chiffre" style="font-size:60px">${L('486 000 IDR', 'IDR 486,000')}</span></div>
+      <div class="conv" style="display:flex;align-items:center;gap:14px;margin-top:6px;font-size:30px;font-weight:700;color:var(--lagon)">≈ <span class="chiffre">${L('27,80 €', '€27.80')}</span><span style="font-size:20px;font-weight:600;color:var(--muet)">${L('au taux de la BCE du jour', 'at today’s ECB rate')}</span></div>
       <div class="parts" style="display:flex;gap:16px;margin-top:26px;padding-top:22px;border-top:1px solid var(--filet)">
-        ${votants.map((q) => `<div style="display:flex;flex-direction:column;align-items:center;gap:8px">${avatar(q, 66)}<b class="chiffre" style="font-size:22px">6,95 €</b></div>`).join('')}
-        <div style="margin-left:auto;align-self:center;font-size:22px;color:var(--muet);font-weight:600;text-align:right">Partagée<br>en quatre</div></div></div>`, p14.cadre);
+        ${votants.map((q) => `<div style="display:flex;flex-direction:column;align-items:center;gap:8px">${avatar(q, 66)}<b class="chiffre" style="font-size:22px">${L('6,95 €', '€6.95')}</b></div>`).join('')}
+        <div style="margin-left:auto;align-self:center;font-size:22px;color:var(--muet);font-weight:600;text-align:right">${L('Partagée<br>en quatre', 'Split<br>four ways')}</div></div></div>`, p14.cadre);
   tl.fromTo(depense, { x: -360, y: 80, scale: 0.5, rotation: -6, autoAlpha: 0 }, { x: 0, y: 0, scale: 1, rotation: 0, autoAlpha: 1, duration: 0.8, ease: ease.pose }, 64.5);
   sfx('souffle', 64.5);
   tl.fromTo(depense.querySelector('.conv'), { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: ease.pose }, 65.1);
   tl.fromTo(depense.querySelectorAll('.parts > div'), { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: ease.pose, stagger: 0.09 }, 65.6);
   sfx('pieces', 65.6);
-  const prive = h(`<div class="texte s" style="position:absolute;left:860px;top:922px;display:flex;align-items:center;gap:12px;font-size:23px"><span style="color:var(--lagon)">${ico('lock', 24, 2.4)}</span>Lu sur votre téléphone : la photo ne part nulle part.</div>`, p14.cadre);
+  const prive = h(`<div class="texte s" style="position:absolute;left:860px;top:922px;display:flex;align-items:center;gap:12px;font-size:23px"><span style="color:var(--lagon)">${ico('lock', 24, 2.4)}</span>${L('Lu sur votre téléphone : la photo ne part nulle part.', 'Read on your phone: the photo never leaves it.')}</div>`, p14.cadre);
   surgir(prive, 65.3, { son: null, y: 10 });
 
   /* =====================================================================
@@ -745,11 +774,11 @@
   const p15 = plan('dettes');
   montrer(p15, 66.6, 71.5);
   glisse(p15, p14, 67.0);
-  const t15a = titre(p15.cadre, 'Qui doit quoi ?', { x: 140, y: 200, classe: 'titre l' });
+  const t15a = titre(p15.cadre, L('Qui doit quoi ?', 'Who owes what?'), { x: 140, y: 200, classe: 'titre l' });
   apparaitre(t15a, 67.2);
-  const t15b = titre(p15.cadre, '<em class="lagon">Réglé en deux virements.</em>', { x: 140, y: 330, classe: 'titre m', largeur: 1100 });
+  const t15b = titre(p15.cadre, L('<em class="lagon">Réglé en deux virements.</em>', '<em class="lagon">Settled in two transfers.</em>'), { x: 140, y: 330, classe: 'titre m', largeur: 1100 });
   apparaitre(t15b, 69.0);
-  const s15 = titre(p15.cadre, 'Tripora simplifie les dettes du groupe : le moins de remboursements possible, au centime près.', { x: 140, y: 470, classe: 'texte', largeur: 640 });
+  const s15 = titre(p15.cadre, L('Tripora simplifie les dettes du groupe : le moins de remboursements possible, au centime près.', 'Tripora simplifies the group’s debts: the fewest payments possible, down to the cent.'), { x: 140, y: 470, classe: 'texte', largeur: 640 });
   apparaitre(s15, 69.3, { stagger: 0.02 });
   const POS = { ines: [1330, 250], hugo: [1650, 560], sarah: [1330, 870], malik: [1010, 560] };
   const svg15 = h('<svg style="position:absolute;left:0;top:0;overflow:visible" width="1920" height="1080"><defs><marker id="pointe" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs><g class="emmeles"></g><g class="nets"></g></svg>', p15.cadre);
@@ -782,15 +811,15 @@
     .map(([a, b, c], i) => fleche(a, b, '#b8ad99', 4, c, '.emmeles', 67.5 + i * 0.16));
   sfx('gribouillis', 67.5);
   tl.to(emmeles, { autoAlpha: 0, duration: 0.35 }, 68.7);
-  fleche('hugo', 'ines', '#1a5fb4', 8, 40, '.nets', 68.95, '42 €');
-  fleche('malik', 'sarah', '#2f8f88', 8, 40, '.nets', 69.15, '18 €');
+  fleche('hugo', 'ines', '#1a5fb4', 8, 40, '.nets', 68.95, L('42 €', '€42'));
+  fleche('malik', 'sarah', '#2f8f88', 8, 40, '.nets', 69.15, L('18 €', '€18'));
   sfx('net', 68.95);
   Object.entries(POS).forEach(([q, [x, y]], i) => {
     const a = h(`<div style="position:absolute;left:${x - 66}px;top:${y - 66}px;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:2">${avatar(q, 132)}<b style="font-size:24px">${AMIS[q].nom}</b></div>`, p15.cadre);
     surgir(a, 67.15 + i * 0.08, { son: null, echelle: 0.6 });
   });
   const remb = h(`<div style="position:absolute;left:1560px;top:700px;display:flex;align-items:center;gap:12px;padding:16px 24px;border-radius:14px;background:var(--marque);color:#fff;font-weight:700;font-size:24px;box-shadow:0 18px 34px -18px rgba(26,95,180,.7);z-index:3">
-      <span class="ic">${ico('wallet', 26, 2.2)}</span><span class="lib">Rembourser Inès</span></div>`, p15.cadre);
+      <span class="ic">${ico('wallet', 26, 2.2)}</span><span class="lib">${L('Rembourser Inès', 'Pay Inès back')}</span></div>`, p15.cadre);
   surgir(remb, 69.6, { hauteur: 3 });
   toucher(remb, 130, 30, 70.05);
   tl.to(remb, { backgroundColor: '#2f8f88', boxShadow: '0 18px 34px -18px rgba(47,143,136,.7)', duration: 0.2 }, 70.15);
@@ -801,7 +830,7 @@
     if (fait === etatRemb) return;
     etatRemb = fait;
     icRemb.innerHTML = fait ? ico('check', 26, 3) : ico('wallet', 26, 2.2);
-    libRemb.textContent = fait ? 'Remboursé' : 'Rembourser Inès';
+    libRemb.textContent = fait ? L('Remboursé', 'Paid back') : L('Rembourser Inès', 'Pay Inès back');
   });
   sfx('ding', 70.15);
 
@@ -811,14 +840,14 @@
   const p16 = plan('journal');
   montrer(p16, 70.5, 75.5);
   feuille(p16, p15, 71.0, 0.9);
-  const t16 = titre(p16.cadre, 'Le journal photo<br><em>du groupe.</em>', { x: 140, y: 170, classe: 'titre m', largeur: 640 });
+  const t16 = titre(p16.cadre, L('Le journal photo<br><em>du groupe.</em>', 'The group’s<br><em>photo journal.</em>'), { x: 140, y: 170, classe: 'titre m', largeur: 640 });
   apparaitre(t16, 71.3);
-  const s16 = titre(p16.cadre, 'Chacun ajoute les siennes, tout le monde les retrouve, rangées par jour.', { x: 140, y: 400, classe: 'texte', largeur: 560 });
+  const s16 = titre(p16.cadre, L('Chacun ajoute les siennes, tout le monde les retrouve, rangées par jour.', 'Everyone adds theirs, everyone finds them, sorted by day.'), { x: 140, y: 400, classe: 'texte', largeur: 560 });
   apparaitre(s16, 72.1, { stagger: 0.025 });
-  const PHOTOS = [['plage', 'Jimbaran, le soir', 'ines'], ['rizieres', 'Tegallalang', 'hugo'], ['temple', 'Lempuyang', 'sarah'], ['scooter', 'Vers Sidemen', 'malik'], ['cascade', 'Tibumana', 'ines'], ['amis', 'La bande', 'hugo']];
+  const PHOTOS = [['plage', L('Jimbaran, le soir', 'Jimbaran at dusk'), 'ines'], ['rizieres', 'Tegallalang', 'hugo'], ['temple', 'Lempuyang', 'sarah'], ['scooter', L('Vers Sidemen', 'To Sidemen'), 'malik'], ['cascade', 'Tibumana', 'ines'], ['amis', L('La bande', 'The crew'), 'hugo']];
   const grille = [[760, 250], [1110, 250], [1460, 250], [760, 640], [1110, 640], [1460, 640]];
-  const jour1 = h('<div class="etiquette" style="position:absolute;left:760px;top:200px">Mardi 14 juillet</div>', p16.cadre);
-  const jour2 = h('<div class="etiquette" style="position:absolute;left:760px;top:590px">Mercredi 15 juillet</div>', p16.cadre);
+  const jour1 = h(`<div class="etiquette" style="position:absolute;left:760px;top:200px">${L('Mardi 14 juillet', 'Tuesday, July 14')}</div>`, p16.cadre);
+  const jour2 = h(`<div class="etiquette" style="position:absolute;left:760px;top:590px">${L('Mercredi 15 juillet', 'Wednesday, July 15')}</div>`, p16.cadre);
   PHOTOS.forEach(([illu, legende, qui], i) => {
     const [gx, gy] = grille[i];
     const e = h(`<div style="position:absolute;left:${gx}px;top:${gy}px;width:320px;padding:14px 14px 0;background:#fffef9;box-shadow:0 24px 46px -24px rgba(26,23,19,.5);border-radius:4px">
@@ -839,33 +868,33 @@
   const p17 = plan('souvenir');
   montrer(p17, 74.5, 81.3);
   feuille(p17, p16, 75.0, 0.9);
-  const st17 = h('<div class="sur-titre" style="position:absolute;left:140px;top:80px">04 — Se souvenir</div>', p17.cadre);
+  const st17 = h(`<div class="sur-titre" style="position:absolute;left:140px;top:80px">${L('04 — Se souvenir', '04 — Remember')}</div>`, p17.cadre);
   surgir(st17, 75.2, { son: null, y: 20 });
-  const t17 = titre(p17.cadre, 'Votre bilan à partager.<br><em>Votre passeport de voyageur.</em>', { x: 140, y: 122, classe: 'titre s', largeur: 1500 });
+  const t17 = titre(p17.cadre, L('Votre bilan à partager.<br><em>Votre passeport de voyageur.</em>', 'Your trip recap to share.<br><em>Your traveler’s passport.</em>'), { x: 140, y: 122, classe: 'titre s', largeur: 1500 });
   apparaitre(t17, 75.3);
   const bilan = h(`<div style="position:absolute;left:170px;top:370px;width:480px;transform:rotate(-4deg)">
-      <img src="captures/bilan-carte.jpg" style="width:480px;border-radius:26px;box-shadow:0 40px 80px -34px rgba(7,32,63,.7)">
-      <div class="partage" style="position:absolute;left:130px;bottom:-74px;display:flex;align-items:center;gap:12px;padding:16px 28px;border-radius:14px;background:var(--marque);color:#fff;font-weight:700;font-size:26px;box-shadow:0 16px 30px -16px rgba(26,95,180,.7)">${ico('share-2', 26, 2.4)}Partager</div></div>`, p17.cadre);
+      <img src="${CAPTURES}/bilan-carte.jpg" style="width:480px;border-radius:26px;box-shadow:0 40px 80px -34px rgba(7,32,63,.7)">
+      <div class="partage" style="position:absolute;left:130px;bottom:-74px;display:flex;align-items:center;gap:12px;padding:16px 28px;border-radius:14px;background:var(--marque);color:#fff;font-weight:700;font-size:26px;box-shadow:0 16px 30px -16px rgba(26,95,180,.7)">${ico('share-2', 26, 2.4)}${L('Partager', 'Share')}</div></div>`, p17.cadre);
   tl.fromTo(bilan, { y: 500, rotation: 6, autoAlpha: 0 }, { y: 0, rotation: -4, autoAlpha: 1, duration: 0.9, ease: ease.pose }, 75.5);
   sfx('souffle', 75.5, { doux: true });
   toucher(bilan.querySelector('.partage'), 110, 30, 76.7);
   const passeport = h(`<div style="position:absolute;left:820px;top:330px;width:960px;height:620px;display:flex;border-radius:18px;box-shadow:0 50px 90px -40px rgba(26,23,19,.55);background:#1d2f57;padding:16px">
       <div style="flex:1;background:#f8f1e2;border-radius:10px 0 0 10px;padding:40px 40px;position:relative;background-image:repeating-radial-gradient(circle at 0 100%,transparent 0 18px,rgba(26,95,180,.05) 18px 19px)">
-        <div class="etiquette">Passeport du voyageur</div>
-        <div style="display:flex;align-items:center;gap:20px;margin:26px 0">${avatar('ines', 110)}<div><div class="titre" style="font-size:46px">Inès</div><div style="font-size:22px;color:var(--muet);font-weight:600">depuis 2026</div></div></div>
+        <div class="etiquette">${L('Passeport du voyageur', 'Traveler’s passport')}</div>
+        <div style="display:flex;align-items:center;gap:20px;margin:26px 0">${avatar('ines', 110)}<div><div class="titre" style="font-size:46px">Inès</div><div style="font-size:22px;color:var(--muet);font-weight:600">${L('depuis 2026', 'since 2026')}</div></div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:26px">
-          ${[['Pays', '5'], ['Voyages', '8'], ['Km parcourus', '61 380'], ['Jours sur la route', '58']].map(([a, b]) => `<div><div style="font-size:18px;color:var(--muet);font-weight:600">${a}</div><div class="titre chiffre ${a === 'Pays' ? 'nb-pays' : ''}" style="font-size:40px">${b}</div></div>`).join('')}
+          ${L([['Pays', '5'], ['Voyages', '8'], ['Km parcourus', '61 380'], ['Jours sur la route', '58']], [['Countries', '5'], ['Trips', '8'], ['Km traveled', '61,380'], ['Days on the road', '58']]).map(([a, b], i) => `<div><div style="font-size:18px;color:var(--muet);font-weight:600">${a}</div><div class="titre chiffre ${i === 0 ? 'nb-pays' : ''}" style="font-size:40px">${b}</div></div>`).join('')}
         </div>
-        <div style="font-size:20px;font-weight:700;display:flex;justify-content:space-between"><span class="rang">Baroudeur</span><span class="suivant" style="color:var(--muet)">Grand voyageur</span></div>
+        <div style="font-size:20px;font-weight:700;display:flex;justify-content:space-between"><span class="rang">${L('Baroudeur', 'Adventurer')}</span><span class="suivant" style="color:var(--muet)">${L('Grand voyageur', 'Seasoned traveler')}</span></div>
         <div style="height:12px;border-radius:6px;background:#e6ddcb;margin-top:10px;overflow:hidden"><div class="niveau" style="height:100%;width:62%;background:var(--or);border-radius:6px"></div></div>
       </div>
       <div style="width:4px;background:linear-gradient(90deg,rgba(0,0,0,.18),rgba(0,0,0,0))"></div>
       <div class="tampons" style="flex:1;background:#f8f1e2;border-radius:0 10px 10px 0;position:relative;background-image:repeating-linear-gradient(0deg,transparent 0 46px,rgba(26,95,180,.06) 46px 47px)"></div></div>`, p17.cadre);
   tl.fromTo(passeport, { y: 120, autoAlpha: 0, rotationX: 30, transformPerspective: 1600 }, { y: 0, autoAlpha: 1, rotationX: 0, duration: 1, ease: ease.pose }, 75.8);
   const tampons = passeport.querySelector('.tampons');
-  [[{ haut: 'BALI · INDONÉSIE', bas: 'ARRIVÉE', centre: '07·26', couleur: '#c8463a', rotation: -12 }, 30, 30, 77.25],
-   [{ haut: 'LISBOA · PORTUGAL', bas: 'ARRIVÉE', centre: '10·25', couleur: '#2c4e8a', rotation: 9 }, 222, 178, 77.75],
-   [{ haut: 'BUDAPEST · HONGRIE', bas: 'ARRIVÉE', centre: '03·26', couleur: '#2f7a5e', rotation: -4 }, 44, 350, 78.25]].forEach(([o, x, y, t]) => {
+  [[{ haut: L('BALI · INDONÉSIE', 'BALI · INDONESIA'), bas: L('ARRIVÉE', 'ARRIVAL'), centre: '07·26', couleur: '#c8463a', rotation: -12 }, 30, 30, 77.25],
+   [{ haut: 'LISBOA · PORTUGAL', bas: L('ARRIVÉE', 'ARRIVAL'), centre: '10·25', couleur: '#2c4e8a', rotation: 9 }, 222, 178, 77.75],
+   [{ haut: L('BUDAPEST · HONGRIE', 'BUDAPEST · HUNGARY'), bas: L('ARRIVÉE', 'ARRIVAL'), centre: '03·26', couleur: '#2f7a5e', rotation: -4 }, 44, 350, 78.25]].forEach(([o, x, y, t]) => {
     const e = h(`<div style="position:absolute;left:${x}px;top:${y}px;width:220px;height:220px">${ILLU.tampon(o)}</div>`, tampons);
     tl.fromTo(e, { scale: 2.2, autoAlpha: 0 }, { scale: 1, autoAlpha: 0.9, duration: 0.18, ease: 'power4.in' }, t);
     tl.to(passeport, { y: '+=5', duration: 0.05, yoyo: true, repeat: 1 }, t + 0.18);
@@ -878,13 +907,13 @@
   const rang = passeport.querySelector('.rang'), suivant = passeport.querySelector('.suivant'), nbPays = passeport.querySelector('.nb-pays');
   parImage((t) => {
     const promu = t >= 79.5;
-    rang.textContent = promu ? 'Grand voyageur' : 'Baroudeur';
+    rang.textContent = promu ? L('Grand voyageur', 'Seasoned traveler') : L('Baroudeur', 'Adventurer');
     rang.style.color = promu ? '#c08a2e' : '';
-    suivant.textContent = promu ? 'Globe-trotter' : 'Grand voyageur';
+    suivant.textContent = promu ? L('Globe-trotter', 'Globetrotter') : L('Grand voyageur', 'Seasoned traveler');
     nbPays.textContent = promu ? '6' : '5';
   });
   sfx('niveau', 79.5);
-  const plusUn = h(`<div style="position:absolute;left:1640px;top:300px;padding:12px 22px;border-radius:999px;background:var(--or);color:#fff;font-weight:700;font-size:26px;box-shadow:0 16px 30px -16px rgba(0,0,0,.4)">Nouveau rang !</div>`, p17.cadre);
+  const plusUn = h(`<div style="position:absolute;left:1640px;top:300px;padding:12px 22px;border-radius:999px;background:var(--or);color:#fff;font-weight:700;font-size:26px;box-shadow:0 16px 30px -16px rgba(0,0,0,.4)">${L('Nouveau rang !', 'New rank!')}</div>`, p17.cadre);
   surgir(plusUn, 79.55, { son: null, echelle: 0.6 });
 
   /* =====================================================================
@@ -898,11 +927,12 @@
     const phase = hasard() * 6, vitesse = 1 + hasard() * 2;
     parImage((t) => { s.style.opacity = 0.15 + 0.45 * (0.5 + 0.5 * Math.sin(t * vitesse + phase)); });
   }
-  const pastilleB = h('<div style="position:absolute;left:50%;top:230px;transform:translateX(-50%);padding:14px 34px;border-radius:999px;border:2px solid var(--or-clair);color:var(--or-clair);font-weight:700;font-size:26px;letter-spacing:.24em;text-transform:uppercase">Bientôt</div>', p18.cadre);
+  const pastilleB = h(`<div style="position:absolute;left:50%;top:230px;transform:translateX(-50%);padding:14px 34px;border-radius:999px;border:2px solid var(--or-clair);color:var(--or-clair);font-weight:700;font-size:26px;letter-spacing:.24em;text-transform:uppercase">${L('Bientôt', 'Coming soon')}</div>`, p18.cadre);
   surgir(pastilleB, 81.2, { son: null, y: 20 });
-  const t18 = titre(p18.cadre, 'Et ce n’est que le début.', { x: 0, y: 320, classe: 'titre m', largeur: 1920, centre: true });
+  const t18 = titre(p18.cadre, L('Et ce n’est que le début.', 'And this is just the beginning.'), { x: 0, y: 320, classe: 'titre m', largeur: 1920, centre: true });
   apparaitre(t18, 81.35);
-  [['smartphone', 'L’app iPhone', 'sur l’App Store'], ['gift', 'Des récompenses', 'à chaque réservation'], ['bell', 'Les notifications', 'du groupe, en direct']].forEach(([i, a, b], k) => {
+  L([['smartphone', 'L’app iPhone', 'sur l’App Store'], ['gift', 'Des récompenses', 'à chaque réservation'], ['bell', 'Les notifications', 'du groupe, en direct']],
+    [['smartphone', 'The iPhone app', 'on the App Store'], ['gift', 'Rewards', 'with every booking'], ['bell', 'Notifications', 'from your group, live']]).forEach(([i, a, b], k) => {
     const e = h(`<div style="position:absolute;left:${480 + k * 480 - 200}px;top:520px;width:400px;display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center">
         <div style="width:118px;height:118px;border-radius:50%;border:2px solid rgba(232,195,122,.7);display:grid;place-items:center;color:var(--or-clair);background:rgba(232,195,122,.08)">${ico(i, 54, 1.8)}</div>
         <div class="titre" style="font-size:44px;color:#fbf7ee">${a}</div><div class="texte s" style="color:rgba(244,239,228,.75);margin-top:-12px">${b}</div></div>`, p18.cadre);
@@ -916,7 +946,7 @@
   const p19 = plan('fin');
   montrer(p19, 84.9, 94);
   tl.fromTo(p19.el, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, 84.9);
-  const PROMESSES = ['Gratuit.', 'Sans publicité.', 'Vos données ne sont jamais revendues.'];
+  const PROMESSES = L(['Gratuit.', 'Sans publicité.', 'Vos données ne sont jamais revendues.'], ['Free.', 'No ads.', 'Your data is never sold.']);
   const promesses = PROMESSES.map((p, i) => {
     const e = titre(p19.cadre, p, { x: 0, y: 300 + i * 130, classe: 'titre m', largeur: 1920, centre: true });
     apparaitre(e, 85.25 + i * 0.6, { stagger: 0.05 });
@@ -924,7 +954,7 @@
     effacer(e, 87.75);
     return e;
   });
-  const plateformes = titre(p19.cadre, 'Sur le web, Android et iPhone · en 14 langues', { x: 0, y: 720, classe: 'texte', largeur: 1920, centre: true });
+  const plateformes = titre(p19.cadre, L('Sur le web, Android et iPhone', 'On the web, Android and iPhone'), { x: 0, y: 720, classe: 'texte', largeur: 1920, centre: true });
   apparaitre(plateformes, 87.0, { stagger: 0.03 });
   effacer(plateformes, 87.75);
   const logoFin = h('<img src="/apps/web/public/icons/icon.svg" style="position:absolute;left:870px;top:210px;width:180px;height:180px;border-radius:42px;box-shadow:0 30px 60px -26px rgba(7,32,63,.55)">', p19.cadre);
@@ -932,9 +962,9 @@
   sfx('final', 88.0);
   const motFin = h(`<div class="titre" style="position:absolute;left:0;top:410px;width:1920px;text-align:center;font-size:150px;letter-spacing:-0.04em">${[...'Tripora'].map((c) => `<span class="m"><span class="mi">${c}</span></span>`).join('')}</div>`, p19.cadre);
   apparaitre([...motFin.querySelectorAll('.mi')], 88.2, { stagger: 0.04, duree: 1.1 });
-  const devFin = titre(p19.cadre, 'Partez <em>ensemble.</em>', { x: 0, y: 600, classe: 'titre s', largeur: 1920, centre: true, style: 'font-weight:500' });
+  const devFin = titre(p19.cadre, L('Partez <em>ensemble.</em>', 'Travel <em>together.</em>'), { x: 0, y: 600, classe: 'titre s', largeur: 1920, centre: true, style: 'font-weight:500' });
   apparaitre(devFin, 88.8);
-  const cta = h(`<div style="position:absolute;left:50%;top:740px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:22px 40px;border-radius:16px;background:var(--marque);color:#fff;font-weight:700;font-size:32px;white-space:nowrap;box-shadow:0 24px 44px -22px rgba(26,95,180,.75)">Créez votre premier voyage, sans compte ${ico('plane', 32, 2.2)}</div>`, p19.cadre);
+  const cta = h(`<div style="position:absolute;left:50%;top:740px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:22px 40px;border-radius:16px;background:var(--marque);color:#fff;font-weight:700;font-size:32px;white-space:nowrap;box-shadow:0 24px 44px -22px rgba(26,95,180,.75)">${L('Créez votre premier voyage, sans compte', 'Create your first trip — no account needed')} ${ico('plane', 32, 2.2)}</div>`, p19.cadre);
   surgir(cta, 89.3, { hauteur: 6 });
   const url = h('<div style="position:absolute;left:0;top:860px;width:1920px;text-align:center;font-size:34px;font-weight:650;letter-spacing:.04em;color:var(--encre-douce)">tripora-3rg.pages.dev</div>', p19.cadre);
   surgir(url, 89.7, { son: null, y: 16 });

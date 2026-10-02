@@ -240,7 +240,7 @@
       <path d="M${ax - 60},${ay + 46} L${ax},${ay - 34} L${ax + 64},${ay + 46} Z" fill="#c9b48a" opacity="0.75"/>
       <path d="M${ax - 14},${ay - 16} L${ax},${ay - 34} L${ax + 14},${ay - 16} Q${ax},${ay - 10} ${ax - 14},${ay - 16} Z" fill="#fffaf0"/>
       <path d="M${bx - 44},${by + 34} L${bx},${by - 24} L${bx + 46},${by + 34} Z" fill="#c9b48a" opacity="0.6"/>
-      <text x="${ax}" y="${ay + 72}" text-anchor="middle" font-family="Inter Tight" font-weight="650" font-size="15" letter-spacing="2" fill="#8a7c66">MONT AGUNG</text>
+      <text x="${ax}" y="${ay + 72}" text-anchor="middle" font-family="Inter Tight" font-weight="650" font-size="15" letter-spacing="2" fill="#8a7c66">${window.LANGUE === 'en' ? 'MOUNT AGUNG' : 'MONT AGUNG'}</text>
       <text x="830" y="600" text-anchor="end" font-family="Fraunces" font-weight="600" font-size="44" fill="#7d6f58" opacity="0.5">Bali</text>
       <g class="routes"></g><g class="epingles"></g>
     </svg>`;
