@@ -8,7 +8,6 @@ import { useAuth } from '@/lib/auth-context';
 import Accueil from '@/routes/Accueil';
 import Connexion from '@/routes/Connexion';
 import Trips from '@/routes/Trips';
-import TripDetail from '@/routes/TripDetail';
 import JoinTrip from '@/routes/JoinTrip';
 import NotFound from '@/routes/NotFound';
 import { retenirLaDestinationDemandee } from '@/lib/destinationDemandee';
@@ -27,10 +26,19 @@ const TripMapScreen = lazy(() => import('@/routes/TripMapScreen'));
  * ceux qui font le premier coup d'œil — l'accueil, un voyage, la connexion,
  * l'arrivée par un lien d'invitation.
  *
+ * L'écran d'un voyage en est sorti à son tour, le 2 octobre : alertes de prix,
+ * carte hors ligne, journal, coffre… il avait fini par peser plus que tout le
+ * reste du premier chargement (191 Ko compressés, dont 71 pour lui et ce qu'il
+ * entraîne). Une personne qui arrive sur l'accueil public, ou sur la liste de
+ * ses voyages, ne l'attend plus. Il est préchargé dès que l'application est
+ * ouverte et au repos (`TabbedRoutes`) : le temps de choisir un voyage, il est là.
+ *
  * Hors ligne, rien ne change : le service worker précharge tous les fichiers
  * JavaScript après la première visite. Ils cessent seulement de retarder le
  * premier écran.
  */
+const chargerLeVoyage = () => import('@/routes/TripDetail');
+const TripDetail = lazy(chargerLeVoyage);
 const TripMembers = lazy(() => import('@/routes/TripMembers'));
 const MyPreferences = lazy(() => import('@/routes/MyPreferences'));
 const Profile = lazy(() => import('@/routes/Profile'));
@@ -76,6 +84,17 @@ function FullScreenLoader() {
 /** Écrans à onglets. Les parcours qui demandent de l'attention en sortent :
  *  la navigation du bas y serait une porte de sortie accidentelle. */
 function TabbedRoutes() {
+  useEffect(() => {
+    // Au repos, pas avant : le premier écran passe d'abord. Safari n'a pas
+    // requestIdleCallback : un délai fixe y tient lieu de repos.
+    if (typeof window.requestIdleCallback === 'function') {
+      const attente = window.requestIdleCallback(() => void chargerLeVoyage(), { timeout: 3000 });
+      return () => window.cancelIdleCallback(attente);
+    }
+    const attente = window.setTimeout(() => void chargerLeVoyage(), 1500);
+    return () => window.clearTimeout(attente);
+  }, []);
+
   return (
     <AppShell>
       <Suspense fallback={<EcranEnChargement />}>
