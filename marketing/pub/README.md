@@ -68,6 +68,26 @@ Pour changer la musique : `sortie/musique-seule.wav` et
 `sortie/bruitages.wav` sont livrés à part ; on peut remplacer la première par
 un morceau sous licence et garder les bruitages, calés sur l'image.
 
+## La voix off et la version verticale
+
+- `voix/script-fr.json` : les 19 répliques, chacune avec sa fenêtre dans la
+  pub (vérifiée à 4,6 syllabes par seconde, une lecture posée). Le guide
+  d'enregistrement est dans `voix/ENREGISTRER.md`.
+- `python3 voix.py fr --prompteur` : la pub avec la réplique à lire en bas, pour
+  enregistrer d'une traite.
+- `python3 voix.py fr` : prend les enregistrements de `voix/fr/` (un fichier par
+  réplique, ou une seule prise découpée sur les silences), les nettoie
+  (passe-haut, réduction de bruit, compression, niveau commun), les pose sur
+  leur plan, les accélère au besoin sans changer la hauteur (rubberband,
+  15 % au plus — au-delà, il refuse et dit quoi refaire), puis efface la
+  musique sous la voix (−9 dB). Sous-titres en ASS et SRT.
+- `python3 polices.py` : les polices de l'app en TTF, pour les sous-titres.
+- `python3 vertical.py fr` : la version 9:16 par recadrage — la vidéo 16:9 au
+  milieu d'un écran papier, logo en haut, chapitre en cours, grands
+  sous-titres en bas, adresse à la fin. Rien n'est reconstruit.
+
+Les enregistrements (`voix/*/`) restent hors du dépôt.
+
 ## Crédits et licences
 
 - Animation : [GSAP](https://gsap.com) 3 (licence standard sans frais), outil
