@@ -20,6 +20,7 @@ import { signaler } from '@/lib/feedback';
 import { useAuth } from '@/lib/auth-context';
 import { resumeDuBrouillon } from '@/lib/resumeDuBrouillon';
 import { EnregistrerLeTrip } from '@/components/EnregistrerLeTrip';
+import { traduireDansLaLangueActive } from '@/i18n/traductionAuRendu';
 
 const TITLES: Record<StepId, { question: string; help: string }> = {
   groupe: { question: 'Avec qui partez-vous ?', help: 'On pourra inviter les autres juste après.' },
@@ -79,10 +80,13 @@ export default function CreateTrip() {
     setSaving(true);
     try {
       const firstDestination = draft.destinationIds[0];
-      const title = suggestTitle(
+      const suggere = suggestTitle(
         draft,
         firstDestination ? findDestination(firstDestination)?.name : undefined,
       );
+      // Le titre proposé par Tripora s'écrit dans la langue de la personne ;
+      // celui qu'elle a tapé elle-même reste tel quel.
+      const title = draft.title.trim() ? suggere : traduireDansLaLangueActive(suggere);
       const id = await getTripRepository().create(draft, title);
       // Sans cette invalidation, la liste et l'écran du voyage afficheraient
       // encore le cache d'avant la création : le voyage semblerait introuvable.

@@ -12,6 +12,7 @@
  */
 
 import type { EvenementDuProgramme } from './calendrier.js';
+import { localeActive } from './regional.js';
 
 export type TypeDeReservation = 'hebergement' | 'activite' | 'transport' | 'restaurant' | 'autre';
 
@@ -223,6 +224,11 @@ export function heureLisible(heure: string | null | undefined): string | null {
   const trouvee = /^(\d{1,2}):(\d{2})/u.exec(heure ?? '');
   if (!trouvee) return null;
   const heures = Number(trouvee[1]);
+  // Ailleurs qu'en français, l'heure s'écrit à la façon du pays (« 2:30 PM », « 14:30 »).
+  if (!localeActive().startsWith('fr')) {
+    return new Intl.DateTimeFormat(localeActive(), { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
+      .format(Date.UTC(2000, 0, 1, heures, Number(trouvee[2])));
+  }
   return trouvee[2] === '00' ? `${heures} h` : `${heures} h ${trouvee[2]}`;
 }
 

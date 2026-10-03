@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { REGION_PAR_DEFAUT, reglerLaRegion } from './regional.js';
 import {
   dateDuJour,
   decalageLisible,
@@ -125,6 +126,16 @@ describe('une période, dite comme on la dit', () => {
     expect(periodeLisible('2026-07-01', '2026-07-01')).toBe('le 1er juillet');
     expect(periodeLisible('2026-07-01', '2026-07-03')).toBe('du 1er au 3 juillet');
     expect(periodeLisible('2026-07-11', '2026-07-21')).toBe('du 11 au 21 juillet');
+  });
+
+  it('à la façon du pays hors du français', () => {
+    try {
+      reglerLaRegion({ locale: 'en-US' });
+      expect(periodeLisible('2026-07-12', '2026-07-15')).toMatch(/^July 12\s?–\s?15$/u);
+      expect(periodeLisible('2026-07-01', '2026-07-01')).toBe('July 1');
+    } finally {
+      reglerLaRegion(REGION_PAR_DEFAUT);
+    }
   });
 });
 

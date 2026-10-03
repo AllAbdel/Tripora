@@ -6,6 +6,7 @@
  * discussion du groupe, qu'on cherche à 23 h devant une porte fermée. Une
  * ligne par info, rangée par genre, à portée de pouce pendant le séjour.
  */
+import { formatNombre, localeActive } from './regional.js';
 
 export type GenreDInfo = 'adresse' | 'code' | 'wifi' | 'contact' | 'note';
 
@@ -220,6 +221,12 @@ export const TAILLE_MAX_D_UN_DOCUMENT = 10 * 1024 * 1024;
 
 /** « 850 Ko », « 1,2 Mo ». */
 export function tailleLisible(octets: number): string {
+  // Ailleurs qu'en français, les unités du pays (« 850 kB », « 1.2 MB »).
+  if (!localeActive().startsWith('fr')) {
+    const enKo = octets < 1024 * 1024;
+    const valeur = enKo ? Math.max(1, Math.round(octets / 1024)) : octets / (1024 * 1024);
+    return formatNombre(valeur, { style: 'unit', unit: enKo ? 'kilobyte' : 'megabyte', maximumFractionDigits: valeur < 10 ? 1 : 0 });
+  }
   if (octets < 1024 * 1024) return `${Math.max(1, Math.round(octets / 1024))} Ko`;
   const mo = octets / (1024 * 1024);
   return `${mo < 10 ? mo.toFixed(1).replace('.', ',') : Math.round(mo)} Mo`;

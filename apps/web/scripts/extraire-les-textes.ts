@@ -48,7 +48,7 @@ const ECARTES = [
   /\/vite-env\.d\.ts$/u,
 ];
 /** Les attributs JSX dont la valeur s'affiche (ou se lit à voix haute). */
-const ATTRIBUTS_LUS = new Set(['placeholder', 'aria-label', 'title', 'alt', 'label', 'aria-description', 'titre', 'texte', 'detail', 'description', 'libelle', 'message']);
+const ATTRIBUTS_LUS = new Set(['placeholder', 'aria-label', 'title', 'alt', 'label', 'aria-description', 'titre', 'texte', 'detail', 'description', 'libelle', 'message', 'vide', 'etiquette', 'terme']);
 /** Les propriétés d'objet qui ne sont jamais du texte affiché. */
 const PROPRIETES_TECHNIQUES = new Set(['className', 'class', 'style', 'variant', 'size', 'type', 'id', 'key', 'href', 'to', 'src', 'icon', 'name', 'role', 'mode', 'tone']);
 
@@ -82,6 +82,8 @@ function ressembleAuFrancais(texte: string): boolean {
   if (/^(https?:|mailto:|\/|\.\/|@|#|[a-z]+:\/\/)/u.test(propre)) return false;
   // Un tracé SVG, une liste de nombres : plus de chiffres que de lettres.
   if ((propre.match(/[\d.\-\s]/gu)?.length ?? 0) > propre.length * 0.5) return false;
+  // Une liste de colonnes pour Supabase (« id, trip_id, created_at ») : du code, pas du texte.
+  if (/_/u.test(propre) && /^[\w\s,*().:-]+$/u.test(propre)) return false;
   const mots = propre.split(/\s+/u);
   // « text-sm font-semibold px-4 » : des classes, pas une phrase.
   if (mots.every((mot) => /^[a-z0-9:[\]/.%()!#_,-]+$/u.test(mot)) && mots.some((mot) => /[-:[]/u.test(mot))) return false;
@@ -104,6 +106,17 @@ function extraire(chemin: string, dictionnaire: Dictionnaire | null, sortie: Ent
   /** Le texte d'une expression simple (« 'abc' », « `abc` », « ' ' »), ou null. */
   const litteral = (expression: ts.Expression | undefined): string | null =>
     expression && (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) ? expression.text : null;
+
+  /** `'a' + 'b'` (une longue phrase coupée en lignes) → « ab », ou null si l'un des morceaux n'est pas une chaîne. */
+  const concatenation = (noeud: ts.Expression): string | null => {
+    if (ts.isParenthesizedExpression(noeud)) return concatenation(noeud.expression);
+    if (ts.isBinaryExpression(noeud) && noeud.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+      const gauche = concatenation(noeud.left);
+      const droite = concatenation(noeud.right);
+      return gauche !== null && droite !== null ? gauche + droite : null;
+    }
+    return litteral(noeud);
+  };
 
   /** Un gabarit `a ${b} c` → « a {1} c ». */
   const gabarit = (noeud: ts.TemplateExpression): string =>
@@ -170,6 +183,14 @@ function extraire(chemin: string, dictionnaire: Dictionnaire | null, sortie: Ent
     if (ts.isJsxExpression(noeud) && noeud.parent && (ts.isJsxElement(noeud.parent) || ts.isJsxFragment(noeud.parent))) {
       const expression = noeud.expression;
       if (expression && (litteral(expression) !== null || ts.isTemplateExpression(expression))) return;
+    }
+    // Une phrase coupée en plusieurs lignes avec « + » se relève entière, telle qu'elle s'affiche.
+    if (ts.isBinaryExpression(noeud) && noeud.operatorToken.kind === ts.SyntaxKind.PlusToken && !ts.isBinaryExpression(noeud.parent)) {
+      const entiere = concatenation(noeud);
+      if (entiere !== null) {
+        noter(entiere, noeud, 'chaine');
+        return;
+      }
     }
     if (ts.isStringLiteral(noeud) || ts.isNoSubstitutionTemplateLiteral(noeud)) {
       if (!ts.isJsxAttribute(noeud.parent)) noter(noeud.text, noeud, 'chaine');

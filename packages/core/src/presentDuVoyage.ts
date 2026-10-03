@@ -135,6 +135,12 @@ function lue(date: string, options: Intl.DateTimeFormatOptions): string {
  */
 export function periodeLisible(de: string, a: string): string {
   if (!DATE.test(de) || !DATE.test(a)) return '';
+  // Ailleurs qu'en français, Intl sait écrire une période à la façon du pays (« October 12 – 15 »).
+  if (!localeActive().startsWith('fr')) {
+    const format = new Intl.DateTimeFormat(localeActive(), JOUR_ET_MOIS);
+    const debut = new Date(`${de}T00:00:00Z`);
+    return de === a ? format.format(debut) : format.formatRange(debut, new Date(`${a}T00:00:00Z`));
+  }
   if (de === a) return `le ${lue(de, JOUR_ET_MOIS)}`;
   const memeMois = de.slice(0, 7) === a.slice(0, 7);
   return `du ${lue(de, memeMois ? JOUR_SEUL : JOUR_ET_MOIS)} au ${lue(a, JOUR_ET_MOIS)}`;

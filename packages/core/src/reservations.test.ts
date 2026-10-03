@@ -9,6 +9,7 @@ import {
   trierLesReservations,
   type Reservation,
 } from './reservations.js';
+import { REGION_PAR_DEFAUT, reglerLaRegion } from './regional.js';
 
 const hotel: Reservation = {
   id: 'h1', tripId: 'v1', type: 'hebergement', fournisseur: 'booking', titre: 'Ubud Tropical Villas',
@@ -84,5 +85,16 @@ describe('les heures, comme on les écrit', () => {
     expect(heureLisible('09:30')).toBe('9 h 30');
     expect(heureLisible('02:00')).toBe('2 h');
     expect(heureLisible(null)).toBeNull();
+  });
+
+  it('à la façon du pays hors du français', () => {
+    try {
+      reglerLaRegion({ locale: 'en-US' });
+      expect(heureLisible('14:30')).toMatch(/^2:30\sPM$/u);
+      reglerLaRegion({ locale: 'en-GB' });
+      expect(heureLisible('09:05')).toMatch(/^0?9:05$/u);
+    } finally {
+      reglerLaRegion(REGION_PAR_DEFAUT);
+    }
   });
 });

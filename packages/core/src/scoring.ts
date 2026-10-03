@@ -344,9 +344,11 @@ function buildSummary(
   factors: readonly ScoreFactor[],
 ): string {
   const ranked = [...factors].sort((a, b) => b.score * b.weight - a.score * a.weight);
-  const best = ranked.slice(0, 2).map((factor) => factor.reason.toLowerCase());
+  // Seule la première lettre passe en minuscule : « 28 °C », pas « 28 °c ».
+  const enMinuscule = (texte: string) => texte.charAt(0).toLowerCase() + texte.slice(1);
+  const best = ranked.slice(0, 2).map((factor) => enMinuscule(factor.reason));
   const worst = ranked[ranked.length - 1];
-  const caveat = worst && worst.score < 55 ? ` En revanche : ${worst.reason.toLowerCase()}.` : '';
+  const caveat = worst && worst.score < 55 ? ` En revanche : ${enMinuscule(worst.reason)}.` : '';
   return `${destination.name} obtient ${total}/100 : ${best.join(', ')}.${caveat}`;
 }
 

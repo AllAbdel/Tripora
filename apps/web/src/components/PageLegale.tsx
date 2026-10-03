@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
 import { useTitreDuDocument } from '@/lib/useTitreDuDocument';
+import { useLangueActive } from '@/stores/langue';
 
 /**
  * Le gabarit des pages légales : confidentialité, mentions, conditions.
@@ -23,6 +24,7 @@ export function PageLegale({
   children: ReactNode;
 }) {
   const { identity } = useAuth();
+  const langue = useLangueActive();
   useTitreDuDocument(`${titre} — Tripora`);
 
   return (
@@ -37,6 +39,13 @@ export function PageLegale({
         </Link>
         <h1 className="text-lg font-semibold">{titre}</h1>
       </div>
+
+      {/* Traduite, une page légale reste une aide à la lecture : c'est le texte
+          français qui engage. La phrase n'apparaît qu'hors du français, et se
+          traduit comme le reste. */}
+      {langue !== 'fr' && (
+        <p className="text-muted px-1 text-xs">Ceci est une traduction : seule la version française de ce texte fait foi.</p>
+      )}
 
       {children}
 
