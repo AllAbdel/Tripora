@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, Loader2, Plus, Trash2, X } from 'lucide-react';
 import {
   computeBalances,
   currencyForCountry,
-  currencyName,
+  nomDeDevise,
   dateDuJour,
   describeRate,
   DESTINATIONS,
@@ -628,7 +628,7 @@ function Conversion({
     return (
       <p className="text-muted text-xs leading-relaxed">
         La Banque centrale européenne ne publie pas de taux pour le{' '}
-        {currencyName(deviseLocale)} : notez vos dépenses converties en euros. Tripora ne
+        {nomDeDevise(deviseLocale)} : notez vos dépenses converties en euros. Tripora ne
         peut pas le faire à votre place sans inventer un taux.
       </p>
     );

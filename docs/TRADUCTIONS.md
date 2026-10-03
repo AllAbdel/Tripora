@@ -1,150 +1,144 @@
-# Traductions — guide de passation
+# Traductions — le guide
 
-Ce guide s'adresse à qui reprend la traduction de Tripora, humain ou IA. Il
-dit où en est le multilingue, comment il marche, et comment y travailler sans
-casser les tests ni gêner le reste du développement, qui continue en parallèle.
+Ce guide s'adresse à qui traduit Tripora dans une nouvelle langue, humain ou
+agent (GitHub Copilot, Claude…). Le terrain est prêt : **chaque texte affiché
+peut être traduit sans toucher aux composants**. Une langue, c'est
+essentiellement **un fichier de dictionnaire**, sur le modèle de l'anglais.
 
-## L'anglais : traduit, par la traduction au rendu
+> En une phrase : copier `apps/web/src/i18n/phrases-en.ts` en
+> `phrases-<code>.ts`, traduire les valeurs (jamais les clés), adapter les
+> motifs, puis lister ce qui manque avec `traductions:extraire`.
 
-Depuis octobre 2026, l'application est en anglais presque partout. Le porteur
-du projet a levé, **pour l'anglais seulement**, la règle « ne pas traduire
-soi-même » ; elle tient toujours pour les autres langues.
+## Les trois étages
 
-- **Comment.** `apps/web/src/i18n/traductionAuRendu.ts` observe le document
-  et remplace chaque texte affiché (et `placeholder`, `aria-label`, `title`,
-  `alt`) par sa traduction, cherchée dans `phrases-en.ts` : un dictionnaire
-  dont la clé est **la phrase française exacte** (espaces normalisés), puis
-  des motifs (`MOTIFS_EN`) pour les phrases à nombre ou à nom (« 12 jours en
-  juillet », les explications du classement, les titres des journées). Le
-  français reste la source, dans les composants ; rien n'est touché sous
-  `translate="no"`, ni dans les champs de saisie. Retour au français :
-  chaque texte retrouve sa version d'origine.
-- **Ce qui reste en français en anglais** : les pages légales
-  (Confidentialité, Mentions légales, Conditions : à faire relire, pas à
-  traduire mot à mot) ; le carnet d'activités et les infos pratiques en
-  dehors de Bali, de l'Indonésie et des propositions de démonstration ; les
-  noms de destinations et de villes de départ du catalogue (« Abou Dabi ») ;
-  ce que les gens écrivent eux-mêmes.
-- **Trouver ce qui manque** : l'application construite en mode local,
-  parcourue en anglais par un navigateur, liste chaque texte resté en
-  français, écran par écran.
-  ```sh
-  cd apps/web
-  VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= npx vite build --outDir dist-e2e
-  pnpm traductions:recolte > /tmp/phrases-manquantes.json
-  ```
-  Puis compléter `phrases-en.ts` (ou `MOTIFS_EN`). Sur la dernière récolte, il
-  ne reste que des noms propres, des montants et des noms de langues.
-- **Pour qui écrit un nouvel écran** : une phrase tient dans **un seul nœud
-  texte** (un gabarit `` `${n} idées à ${ville}` ``, pas `{n} idées à {ville}`
-  en JSX, qui fait trois nœuds que le dictionnaire ne reconnaît pas) ; un nom
-  ou un texte saisi porte `translate="no"` ; une image dessinée (canvas) passe
-  ses textes par `traduireDansLaLangueActive`.
-- **Une autre langue** se brancherait de la même façon : un dictionnaire de
-  plus dans `DICTIONNAIRES`, sans toucher aux composants.
+1. **Les chiffres** — `packages/core/src/regional.ts`. Montants, dates,
+   nombres, températures (°C, °F, K), distances (km, mi) et tailles de fichier
+   s'écrivent déjà dans la langue et les unités de la personne (réglées dans
+   Profil › Unités et devise). **Un traducteur ne touche jamais un chiffre** :
+   dans les phrases, ils arrivent tout faits (« 1 450 € », « $1,450 »,
+   « 75 °F », « 7,688 mi », « October 2 »).
+2. **Les clés typées** — `apps/web/src/i18n/textes.ts`, lues par `useT()` :
+   navigation, actions, écrans d'entrée. Un dictionnaire partiel par langue ;
+   une clé absente affiche le français.
+3. **La traduction au rendu** — `apps/web/src/i18n/traductionAuRendu.ts`
+   (et son moteur sans navigateur, `moteur.ts`). Tout le reste. Une fois
+   l'écran rendu, chaque texte (et les attributs `placeholder`, `aria-label`,
+   `title`, `alt`) est cherché dans le dictionnaire de la langue active :
+   - **`PHRASES`** : la clé est **la phrase française exacte**, telle qu'elle
+     s'affiche, espaces resserrés (les espaces insécables comptent comme des
+     espaces) ; la valeur, sa traduction ;
+   - **`MOTIFS`** : pour les phrases qui portent un nombre ou un nom
+     (« 12 jours en juillet », « Départ demain pour Bali »). Une expression
+     régulière ancrée (`^…$`, drapeau `u`) qui lit le français, et un
+     remplacement (texte avec `$1`, ou fonction qui peut renoncer en
+     renvoyant `null`) ;
+   - une phrase écrite **en morceaux** dans le JSX (`{n} idée{s} à {ville}`)
+     est recollée avant la recherche : c'est la phrase entière qui est
+     cherchée (« 12 idées à Bali »), et c'est elle que les outils listent ;
+   - ce qui sort de la page (boîtes de confirmation, partage, rappels sur le
+     téléphone, image du bilan) passe par `traduireDansLaLangueActive`, avec
+     le même dictionnaire.
 
-## Où en est-on (les clés, toutes langues)
+Rien n'est touché sous `translate="no"` (noms, messages, ce que les gens
+écrivent), ni dans les champs de saisie. Le dictionnaire d'une langue n'est
+téléchargé que quand elle devient active.
 
-- **14 langues** déclarées : fr, en, es, it, de, pt, nl, pl, tr, ru, ar, zh,
-  ja, ko (`apps/web/src/i18n/langues.ts`). La langue suit celle du système,
-  réglable dans le profil ; l'arabe s'affiche de droite à gauche.
-- **Une cinquantaine de clés** seulement (`apps/web/src/i18n/textes.ts`) :
-  navigation, actions courantes, écrans d'entrée, états vides, trips ouverts.
-  Nouvelle clé à traduire : `nav.contenu` (« Aller au contenu », le lien
-  d'évitement lu au clavier et au lecteur d'écran ; faite en anglais).
-- Écrits en français en dur, à traduire comme le reste : l'accueil public
-  (`routes/Accueil.tsx`), la connexion par e-mail (`routes/Connexion.tsx`,
-  messages dans `lib/connexionEmail.ts`), le guide de démarrage
-  (`components/guide/etapesDuGuide.ts`), la dernière étape de la création
-  sans compte (`components/EnregistrerLeTrip.tsx`, `lib/resumeDuBrouillon.ts`),
-  les écrans ajoutés depuis — les ponts et vacances scolaires
-  (`components/OccasionsDePartir.tsx`), l'empreinte carbone
-  (`components/EmpreinteDuVoyage.tsx`, phrases dans `packages/core/src/carbone.ts`),
-  le partage vers Tripora (`routes/Partager.tsx`, `lib/partage.ts`), les alertes
-  de prix (`routes/AlertesDePrix.tsx`, `components/SuivreLePrix.tsx`,
-  `components/BaissesDuVoyage.tsx`, `lib/alertesDePrix.ts`, et le texte de la
-  notification dans `public/sw-alertes.js`), le scanner de tickets
-  (`components/ScannerUnTicket.tsx`), le journal photo
-  (`routes/TripJournal.tsx`, titres des jours dans `packages/core/src/journal.ts`), la carte
-  hors ligne (`components/CarteHorsLigne.tsx`, messages dans `lib/carteHorsLigne.ts`), la
-  réservation reçue par partage (`RangerLaReservation` dans `routes/Partager.tsx`) —,
-  le fichier pour les assistants (`llms.txt`, généré par
-  `seo/pagesPubliques.ts` : il a déjà un paragraphe en anglais), le pied de page et les pages légales
-  (`Confidentialite`, `MentionsLegales`, `Conditions`). Les pages légales
-  engagent : les faire relire plutôt que les traduire mot à mot.
-- **Presque tout le reste est écrit en français en dur** dans les composants :
-  environ 35 écrans de `apps/web/src/routes/` n'appellent pas `useT()`, ni la
-  plupart des composants de `apps/web/src/components/`.
-- Des **phrases destinées à l'écran sortent aussi de `packages/core`** :
-  messages de validation (`problemeDeLInfo`, `problemeDuFichier`,
-  `problemeDuSondage`…), phrases toutes faites (`phraseDesEnvies`,
-  `periodeLisible`, `decalageLisible`, `phraseDeReservation`…).
-- Le **carnet d'activités** (`packages/core/src/catalog/`, ~1 300 textes) et
-  les **infos pratiques des pays** sont en français. Leur traduction est un
-  chantier à part, à décider plus tard : ne pas s'y lancer sans en parler.
+## Ajouter une langue, pas à pas
 
-## Comment ça marche
+Les codes possibles sont ceux de `apps/web/src/i18n/langues.ts` : `es`, `it`,
+`de`, `pt`, `nl`, `pl`, `tr`, `ru`, `ar`, `zh`, `ja`, `ko`.
 
-```ts
-import { useT } from '@/i18n/useT';
-
-const t = useT();
-<h1>{t('trips.titre')}</h1>
-```
-
-- `FR` dans `textes.ts` est **la référence** : il définit toutes les clés (le
-  type `CleDeTexte` les énumère). Les autres langues sont des dictionnaires
-  **partiels** ; une clé absente affiche le français (`traduire`).
-- `useEtiquetteIntl()` donne l'étiquette à passer à `Intl` pour les dates et
-  les nombres, dans la langue choisie.
-- Pas de bibliothèque : ni interpolation, ni pluriels pour l'instant. Il
-  faudra les ajouter pour traduire les écrans profonds (« 3 idées à
-  glisser », « Départ dans 12 jours »). Recommandation : des jetons nommés
-  (`'Départ dans {n} jours'`) et `Intl.PluralRules` dans `traduire`, sans
-  dépendance (le poids du paquet principal est surveillé).
-
-## Règles d'écriture
-
-Elles sont déjà en tête de `textes.ts` et `langues.ts` ; les principales :
-
-- **Pas de phrase construite par morceaux.** « Il reste {n} places » se
-  traduit ; « Il reste » + n + « places » ne se traduit pas.
-- **« trip », pas « voyage »** dans les textes traduits (règle voulue par le
-  porteur du projet ; l'interface française dit encore souvent « voyage »,
-  ne pas la réécrire sans lui demander).
-- Le nom d'une langue s'écrit dans cette langue (« Deutsch »).
-- Mieux vaut peu de phrases justes que beaucoup de phrases approximatives.
-
-## Travailler sans rien casser
-
-1. **Ne pas changer le texte français en l'extrayant.** Les tests de bout en
-   bout (`apps/web/e2e/`, Playwright, `locale: 'fr-FR'`) trouvent les boutons
-   et les titres par leur texte français. Une clé dont la valeur FR est
-   identique à l'ancien texte en dur ne casse rien.
-2. **Ne pas toucher à la logique.** Une traduction ne change que des chaînes.
-3. **Un écran par commit**, messages de commit **en français**.
-4. Avant chaque envoi, depuis la racine :
+1. **Copier le modèle.** `phrases-en.ts` → `phrases-es.ts`, dans le même
+   dossier. Le fichier est trouvé et chargé tout seul : rien d'autre à
+   déclarer. Il doit exporter `PHRASES` et `MOTIFS` (le test
+   `dictionnaires.test.ts` le vérifie, ainsi que l'absence de valeur vide).
+2. **Les pays** se traduisent seuls : remplacer `'en'` par le code dans
+   `Intl.DisplayNames(['en'], { type: 'region' })` (`PAYS_EN` → `PAYS_ES`).
+3. **Traduire chaque valeur de `PHRASES_FIXES`.** Ne jamais modifier une clé :
+   c'est le texte français exact de l'écran ; une clé changée ne correspond
+   plus à rien.
+4. **Traduire les tables d'aide** (`MOIS`, `ENVIES`, `CRITERES`, `ARGUMENTS`,
+   rangs…) et **les remplacements des motifs**. Les expressions régulières,
+   elles, restent identiques : elles lisent le français.
+5. **Lister ce qui manque** — deux outils, complémentaires :
+   ```sh
+   cd apps/web
+   # Tout le code : chaque texte français, et s'il est déjà traduit.
+   LANGUE=es pnpm traductions:extraire > /tmp/a-traduire.json
+   # Ce qui s'affiche vraiment sur 31 écrans de démonstration.
+   VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= npx vite build --outDir dist-e2e
+   LANGUE=es pnpm traductions:recolte > /tmp/phrases-manquantes.json
+   ```
+   Dans l'extraction, `nature: "phrase"` signale une phrase à trous
+   (« {1} idées à {2} ») : elle demande un motif, et ne se vérifie qu'à
+   l'écran (`traduit: null`). La récolte liste aussi des noms propres et des
+   textes déjà dans la langue (`useT()`, noms de devises) : à ignorer.
+6. **Compléter `textes.ts`** : le dictionnaire de la langue (`ES`…), pour
+   les clés qui lui manquent.
+7. **La notification des alertes de prix** : une ligne dans `TEXTES`,
+   en tête de `apps/web/public/sw-alertes.js`.
+8. **Vérifier**, depuis la racine :
    ```sh
    pnpm lint && pnpm -r typecheck && pnpm -r test
    pnpm --filter @tripora/web exec playwright test
    ```
-   (`textes.test.ts` vérifie que chaque dictionnaire ne contient que des clés
-   connues.)
-5. **Le développement continue en parallèle** : de nouveaux écrans arrivent,
-   écrits directement en français. Pour limiter les conflits, travailler sur
-   sa propre branche, se remettre souvent à jour sur la branche principale de
-   développement, et commencer par les écrans qui ne bougent plus (voir
-   `git log -- apps/web/src/routes/<Ecran>.tsx`).
+9. **Committer par lots** (un écran, un dossier du carnet), messages en
+   français : « i18n(es) : l'écran du budget ».
+
+## Règles
+
+- **Le français ne bouge pas.** On ne réécrit pas un texte français en
+  traduisant : les tests de bout en bout le cherchent (`locale: 'fr-FR'`).
+- **Une phrase entière par entrée.** Pas de mot isolé quand le mot fait
+  partie d'une phrase : traduire « 12 idées à Bali » par un motif, pas
+  « idées » et « à » séparément.
+- **Les chiffres arrivent formatés.** Dans un motif, un montant, une date ou
+  une distance se capture tel quel (`(.+)`) et se recopie. Certaines langues
+  écrivent leurs propres chiffres : `\d` ne lit que 0-9, préférer `\p{Nd}` ou
+  `(.+?)` quand un nombre peut venir d'`Intl`.
+- **Ce qui ne se traduit pas** : les noms propres (personnes, marques des
+  partenaires), les codes (aéroports, devises), ce qui est sous
+  `translate="no"`.
+- **Ton** : celui de l'interface française — on vouvoie, phrases courtes,
+  casse de phrase. Vocabulaire tenu dans `phrases-en.ts` : « trip » pour
+  voyage, « wishes » pour envies, « vault » pour coffre ; trouver
+  l'équivalent naturel dans la langue, et s'y tenir.
+- **Mieux vaut le français qu'une traduction approximative.** Une entrée
+  absente laisse le français ; une entrée fausse trompe.
+- **Arabe** : l'interface passe de droite à gauche toute seule (`dir`) ; il
+  n'y a rien à faire dans les phrases.
 
 ## Par où commencer
 
-Les écrans les plus vus d'abord :
+Dans l'ordre où les gens les lisent (les chiffres viennent de l'extraction
+en anglais, octobre 2026) :
 
-1. `routes/TripDetail.tsx` et `components/OutilsDuVoyage.tsx` (l'accueil d'un
-   trip et sa grille) ;
-2. `components/LeVoyageAuPresent.tsx` (compte à rebours, jour du séjour) ;
-3. `routes/Decouvrir.tsx`, `routes/AFaire.tsx`, `routes/TripItinerary.tsx` ;
-4. `routes/TripBudget.tsx` (dépenses, qui doit quoi) ;
-5. `routes/TripCoffre.tsx`, `routes/TripTaches.tsx`, `routes/TripSondages.tsx` ;
-6. les messages de `packages/core` (faire renvoyer une clé ou un code plutôt
-   qu'une phrase, puis traduire côté application).
+1. **L'interface** — `apps/web/src/routes`, `components`, `lib` :
+   environ 1 500 textes et 300 phrases à trous.
+2. **Le cœur** — `packages/core/src` hors carnet (valise, préparation du
+   voyage, coffre, explications du classement, rappels…) : environ 600.
+3. **Le carnet** — `packages/core/src/catalog` : environ 6 500 textes
+   (titres et descriptions d'activités, infos pratiques, noms des
+   destinations). Le plus gros volume : par lots, destination par
+   destination.
+4. **Les pages légales** (`Confidentialite`, `MentionsLegales`,
+   `Conditions`) : elles engagent ; les faire relire plutôt que les traduire
+   mot à mot.
+
+## Où en est chaque langue
+
+- **Anglais** : le modèle. L'interface des écrans principaux (environ
+  800 textes, et les phrases composées qu'ils affichent) ; le carnet de Bali
+  seulement. Ce qui manque se liste avec `LANGUE=en pnpm traductions:extraire`.
+- **Les douze autres** : quelques dizaines de clés de `textes.ts` ; rien
+  encore en traduction au rendu.
+
+## Hors de ce mécanisme
+
+- **Les pages publiques du référencement** (`apps/web/src/seo/`) : un site
+  statique en français, généré au build. Une version par langue serait un
+  chantier à part (adresses, `hreflang`).
+- **Ce que le cœur envoie à l'IA** (`packages/core/src/ai/`) : en français
+  par construction.
+- **Les listes de mots des lecteurs** de tickets et d'e-mails de
+  réservation : ce sont des motifs de lecture, pas des textes affichés.

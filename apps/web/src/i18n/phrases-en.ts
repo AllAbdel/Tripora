@@ -1,4 +1,5 @@
 import { DESTINATIONS } from '@tripora/core';
+import type { Motif } from './moteur';
 
 /**
  * L'anglais de la traduction au rendu (voir `traductionAuRendu.ts`).
@@ -35,7 +36,7 @@ const PAYS_EN: Readonly<Record<string, string>> = (() => {
   return sortie;
 })();
 
-const PHRASES: Readonly<Record<string, string>> = {
+const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "Brouillon": "Draft",
   "Tripora — organisez un voyage entre amis": "Tripora — plan a trip with friends",
   "Navigation principale": "Main navigation",
@@ -660,6 +661,24 @@ const PHRASES: Readonly<Record<string, string>> = {
   "Quel mois ?": "Which month?",
   "Les bons moments pour partir": "Good times to go",
   "Unités et devise": "Units and currency",
+  "Afficher ou masquer les crédits": "Show or hide credits",
+  "Signaler une erreur sur la carte": "Report a map error",
+  "Plein écran": "Full screen",
+  "Quitter le plein écran": "Exit full screen",
+  "Me localiser": "Find my location",
+  "Position indisponible": "Location unavailable",
+  "Logo MapLibre": "MapLibre logo",
+  "Repère": "Marker",
+  "Remettre le nord en haut": "Reset north",
+  "Zoom avant": "Zoom in",
+  "Zoom arrière": "Zoom out",
+  "Régénérer effacera les ajouts du groupe. Continuer ?": "Regenerating will erase the group’s additions. Continue?",
+  "Départ demain": "Leaving tomorrow",
+  "Passeport, billets, chargeur : un dernier coup d’œil à la valise et au coffre.": "Passport, tickets, charger: one last look at the packing list and the vault.",
+  "Bon retour !": "Welcome back!",
+  "Il reste peut-être des comptes à solder : un coup d’œil à « Qui doit quoi ».": "There may be accounts left to settle: take a look at “Who owes what”.",
+  "À faire aujourd’hui": "To do today",
+  "L’adresse et les codes d’accès sont dans le coffre du voyage.": "The address and access codes are in the trip vault.",
   "Devise": "Currency",
   "Températures": "Temperatures",
   "Distances": "Distances",
@@ -733,7 +752,7 @@ const PHRASES: Readonly<Record<string, string>> = {
   "Impossible d’enregistrer le trip sur cet appareil pour le moment. Réessayez dans un instant.": "Couldn’t save the trip on this device right now. Try again in a moment."
 };
 
-export const PHRASES_EN: Readonly<Record<string, string>> = { ...PAYS_EN, ...PHRASES };
+export const PHRASES: Readonly<Record<string, string>> = { ...PAYS_EN, ...PHRASES_FIXES };
 
 const MOIS: Readonly<Record<string, string>> = {
   janvier: 'January', février: 'February', mars: 'March', avril: 'April', mai: 'May', juin: 'June',
@@ -822,14 +841,39 @@ function argument(morceau: string): string | null {
   return null;
 }
 
-type Traducteur = (francais: string) => string | null;
-type Remplacement = string | ((t: Traducteur, ...groupes: string[]) => string | null);
 
 const nombre = (n: string, un: string, plusieurs: string) => (n === '1' ? un : plusieurs);
 
-export const MOTIFS_EN: readonly (readonly [RegExp, Remplacement])[] = [
+export const MOTIFS: readonly Motif[] = [
   [/^Étape (\d+) sur (\d+)$/u, 'Step $1 of $2'],
   [/^Automatique \((.+)\)$/u, 'Automatic ($1)'],
+  [/^Actuellement : (.+)$/u, 'Currently: $1'],
+  [/^Départ de (.+)$/u, 'Leaving from $1'],
+  [/^Par personne, aller et retour, depuis (.+)\.$/u, 'Per person, round trip, from $1.'],
+  [/^(\d+) jours? · au départ de (.+)$/u, (_, n, ville) => `${n} ${nombre(n!, 'day', 'days')} · leaving from ${ville}`],
+  [/^· (.+) · (\d+) jours? à (\d+) personnes?$/u, (_, ville, j, n) =>
+    `· ${ville} · ${j} ${nombre(j!, 'day', 'days')} for ${n} ${nombre(n!, 'person', 'people')}`],
+  [/^(.+) · (\d+) jours?$/u, (_, ville, n) => `${ville} · ${n} ${nombre(n!, 'day', 'days')}`],
+  [/^(\d+) lieux? de (.+) (?:sont|est) posés? sur la carte, en petits points dorés\. Touchez-les pour les ouvrir\.$/u, (_, n, ville) =>
+    `${n} ${nombre(n!, 'place', 'places')} in ${ville} ${nombre(n!, 'is', 'are')} on the map, as small gold dots. Tap them to open.`],
+  [/^(.+), (.+) · (\d+) jours? · (\p{L}+) · départ de (.+)$/u, (_, ville, pays, n, mois, depart) =>
+    MOIS[mois!] ? `${ville}, ${PAYS_EN[pays!] ?? pays} · ${n} ${nombre(n!, 'day', 'days')} · ${MOIS[mois!]} · leaving from ${depart}` : null],
+  [/^Préparé avec Tripora · (.+)$/u, 'Made with Tripora · $1'],
+  [/^Pour (\p{Lu}[\p{L}’'-]*(?: \p{Lu}[\p{L}’'-]*)*)$/u, 'For $1'],
+  [/^Gardez la carte de (.+) sur cet appareil : les rues, les plages et les lieux du programme restent consultables sans réseau, à l’arrivée comme en itinérance\. Environ (.+), à télécharger de préférence en wifi\.$/u,
+    'Keep the map of $1 on this device: streets, beaches and the places on your plan stay available without signal, on arrival or while roaming. About $2, best downloaded over wifi.'],
+  [/^Bloquer (.+) \? Vous ne vous verrez plus dans les trips ouverts\.$/u, 'Block $1? You won’t see each other in open trips anymore.'],
+  [/^Retirer (.+) des trips ouverts \? Ses trips publiés se referment, ses candidatures tombent\. Ses voyages entre amis ne sont pas touchés\.$/u,
+    'Remove $1 from open trips? Their published trips close and their applications are dropped. Their trips with friends aren’t affected.'],
+  [/^Exclure (.+) \? La personne sort du voyage et ne pourra plus y revenir\.$/u, 'Remove $1? They leave the trip and can’t come back.'],
+  [/^Mon voyage à (.+)$/u, 'My trip to $1'],
+  [/^La carte de (.+) est sur cet appareil\.$/u, 'The map of $1 is on this device.'],
+  [/^(.+), gardée le (.+)\. Elle s’affiche même sans réseau\.$/u, '$1, saved on $2. It shows even without signal.'],
+  [/^Départ demain pour (.+)$/u, 'Leaving tomorrow for $1'],
+  [/^Arrivée aujourd’hui : (.+)$/u, 'Arriving today: $1'],
+  [/^Dans (\d+) h : (.+)$/u, 'In $1 h: $2'],
+  [/^Départ à (.+?)(?: · référence (.+))?$/u, (_, heure, ref) => `Departure at ${heure}${ref ? ` · reference ${ref}` : ''}`],
+  [/^À (\d{1,2}[:h]\d{2})$/u, 'At $1'],
   [/^Automatique : (.+)$/u, 'Automatic: $1'],
   [/^Épingler (.+)$/u, 'Pin $1'],
   [/^Supprimer (.+)$/u, 'Delete $1'],

@@ -1,5 +1,5 @@
 import type { Cents } from './money.js';
-import { formatNombre } from './regional.js';
+import { formatNombre, localeActive } from './regional.js';
 
 /**
  * Les devises, et la seule question qui compte : peut-on convertir honnêtement ?
@@ -178,6 +178,21 @@ const NON_PUBLIEES: Readonly<Record<string, string>> = {
 export function currencyName(code: string): string {
   const majuscule = code.toUpperCase();
   return PAR_CODE.get(majuscule)?.name ?? NON_PUBLIEES[majuscule] ?? majuscule;
+}
+
+/**
+ * Le nom d'une devise dans la langue de la personne : en français, celui de
+ * la table ci-dessus ; dans une autre langue, celui que le navigateur
+ * connaît (`Intl.DisplayNames`), et le français à défaut.
+ */
+export function nomDeDevise(code: string): string {
+  const locale = localeActive();
+  if (locale.startsWith('fr')) return currencyName(code);
+  try {
+    return new Intl.DisplayNames([locale], { type: 'currency' }).of(code.toUpperCase()) ?? currencyName(code);
+  } catch {
+    return currencyName(code);
+  }
 }
 
 /**

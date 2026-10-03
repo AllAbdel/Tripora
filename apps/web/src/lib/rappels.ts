@@ -10,6 +10,7 @@ import {
 } from '@tripora/core';
 import { estNatif } from './natif';
 import type { TripSummary } from './trips';
+import { traduireDansLaLangueActive } from '@/i18n/traductionAuRendu';
 
 /**
  * Les rappels posés sur le téléphone (application Android et iOS).
@@ -144,8 +145,9 @@ export async function poserLesRappels(
     await notifications.schedule({
       notifications: aPoser.map((rappel) => ({
         id: rappel.id,
-        title: rappel.titre,
-        body: rappel.texte,
+        // Une notification sort de la page : on la traduit avant de la confier au téléphone.
+        title: traduireDansLaLangueActive(rappel.titre),
+        body: traduireDansLaLangueActive(rappel.texte),
         schedule: { at: rappel.quand, allowWhileIdle: true },
         // Pas d'alarme exacte : voir l'en-tête du module.
         isExactNotification: false,

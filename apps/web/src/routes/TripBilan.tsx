@@ -29,6 +29,7 @@ import { dessinerLeBilan, type ContenuDuBilan } from '@/lib/imageDuBilan';
 import { estNatif, ouvrirUnFichier } from '@/lib/natif';
 import { signaler } from '@/lib/feedback';
 import { env } from '@/lib/env';
+import { traduireDansLaLangueActive } from '@/i18n/traductionAuRendu';
 
 /**
  * Le bilan du voyage : ce qu'on raconte en rentrant, en chiffres justes, et
@@ -179,13 +180,13 @@ export default function TripBilan() {
     if (!image) return;
     signaler('tape');
     if (estNatif) {
-      await ouvrirUnFichier({ nom: nomDuFichier, fichier: image.blob, titre: `Mon voyage à ${titre}` });
+      await ouvrirUnFichier({ nom: nomDuFichier, fichier: image.blob, titre: traduireDansLaLangueActive(`Mon voyage à ${titre}`) });
       return;
     }
     const fichier = new File([image.blob], nomDuFichier, { type: 'image/png' });
     if (navigator.canShare?.({ files: [fichier] })) {
       try {
-        await navigator.share({ files: [fichier], title: `Mon voyage à ${titre}` });
+        await navigator.share({ files: [fichier], title: traduireDansLaLangueActive(`Mon voyage à ${titre}`) });
       } catch {
         // Partage annulé : rien à faire.
       }

@@ -1,3 +1,4 @@
+import { traduireDansLaLangueActive } from '@/i18n/traductionAuRendu';
 /**
  * Ce qui change quand Tripora tourne dans l'application mobile.
  *
@@ -146,6 +147,9 @@ export async function partager({
   texte: string;
   url: string;
 }): Promise<IssueDuPartage> {
+  // Le partage sort de la page : la traduction au rendu ne le voit pas.
+  titre = traduireDansLaLangueActive(titre);
+  texte = traduireDansLaLangueActive(texte);
   if (estNatif) {
     const { Share } = await import('@capacitor/share');
     try {

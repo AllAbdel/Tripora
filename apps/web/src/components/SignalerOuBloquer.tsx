@@ -11,6 +11,7 @@ import {
 } from '@/lib/tripsOuverts';
 import { signaler as retour } from '@/lib/feedback';
 import { cn } from '@/lib/cn';
+import { traduireDansLaLangueActive } from '@/i18n/traductionAuRendu';
 
 /**
  * Se protéger de quelqu'un.
@@ -100,7 +101,7 @@ export function SignalerOuBloquer({
           type="button"
           disabled={bloquer.isPending}
           onClick={() => {
-            if (window.confirm(`Bloquer ${nom} ? Vous ne vous verrez plus dans les trips ouverts.`)) {
+            if (window.confirm(traduireDansLaLangueActive(`Bloquer ${nom} ? Vous ne vous verrez plus dans les trips ouverts.`))) {
               bloquer.mutate();
             }
           }}

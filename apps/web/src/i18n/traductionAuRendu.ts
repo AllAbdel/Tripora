@@ -1,8 +1,12 @@
 import { resoudre, useLangue } from '@/stores/langue';
 import type { Langue } from './langues';
+import { normaliser, traduireCle, type Dictionnaire, type ModuleDeDictionnaire } from './moteur';
+
+export { normaliser };
+export type { ModuleDeDictionnaire, Motif } from './moteur';
 
 /**
- * La traduction au rendu : l'anglais pour tout ce que `useT()` ne couvre pas.
+ * La traduction au rendu : toutes les langues, pour tout ce que `useT()` ne couvre pas.
  *
  * `useT()` et ses clés typées traduisent ce qu'on lit en premier (navigation,
  * actions, écrans d'entrée). Le reste de l'application — plus de huit cents
@@ -18,31 +22,39 @@ import type { Langue } from './langues';
  * la valeur du nœud texte change : React garde ses nœuds, et quand il réécrit
  * un texte (une donnée qui change), le nouveau français est traduit à son tour.
  *
+ * Une phrase écrite en morceaux dans le JSX (`{n} idée{s} à {ville}`) donne
+ * plusieurs nœuds texte voisins : ils sont recollés et traduits comme une
+ * seule phrase (la traduction va dans le premier, les autres se vident).
+ * Sans traduction de la phrase entière, chaque morceau est essayé seul.
+ *
  * Ce qui n'est jamais touché : les champs de saisie, et tout ce qui est marqué
  * `translate="no"` (les noms, les messages, ce que les gens écrivent eux-mêmes).
+ *
+ * **Ajouter une langue** : un fichier `phrases-<code>.ts` à côté de
+ * `phrases-en.ts`, qui exporte `PHRASES` et `MOTIFS` ; il est trouvé et chargé
+ * tout seul. Le guide : `docs/TRADUCTIONS.md`.
  *
  * Le dictionnaire ne se charge que pour sa langue : un francophone ne
  * télécharge pas l'anglais (une soixantaine de kilo-octets). Pendant ce
  * chargement, l'écran reste en français, puis se traduit d'un coup.
  *
  * Une phrase absente du dictionnaire reste en français, comme avec `useT()`.
- * Pour trouver celles qui manquent : `pnpm --filter @tripora/web traductions:recolte`
- * parcourt l'application en anglais et liste chaque texte resté en français.
+ * Pour trouver celles qui manquent : `LANGUE=es pnpm --filter @tripora/web traductions:recolte`
+ * parcourt l'application dans la langue et liste chaque texte resté en français.
  */
 
-/** Un traducteur de morceau, donné aux motifs qui composent leur phrase. */
-type Traducteur = (francais: string) => string | null;
-type Remplacement = string | ((t: Traducteur, ...groupes: string[]) => string | null);
-type Motif = readonly [RegExp, Remplacement];
-interface Dictionnaire {
-  phrases: Readonly<Record<string, string>>;
-  motifs: readonly Motif[];
-}
-
-const CHARGEURS: Partial<Record<Langue, () => Promise<Dictionnaire>>> = {
-  en: () => import('./phrases-en').then((module) => ({ phrases: module.PHRASES_EN, motifs: module.MOTIFS_EN })),
-};
+/** Chaque `phrases-<code>.ts` du dossier, chargé à la demande quand sa langue devient active. */
+const MODULES = import.meta.glob<ModuleDeDictionnaire>(['./phrases-*.ts', '!./phrases-*.test.ts']);
+const CHARGEURS: Partial<Record<string, () => Promise<Dictionnaire>>> = Object.fromEntries(
+  Object.entries(MODULES).map(([chemin, charger]) => [
+    /phrases-([a-z]{2,3})\.ts$/u.exec(chemin)?.[1] ?? chemin,
+    () => charger().then((module) => ({ phrases: module.PHRASES, motifs: module.MOTIFS })),
+  ]),
+);
 const DICTIONNAIRES: Partial<Record<Langue, Dictionnaire>> = {};
+
+/** Les langues qui ont un dictionnaire de traduction au rendu (le français n'en a pas besoin). */
+export const LANGUES_TRADUITES = Object.keys(CHARGEURS).sort();
 
 /** Charge le dictionnaire d'une langue ; faux si cette langue n'en a pas. */
 export async function chargerLeDictionnaire(langue: Langue): Promise<boolean> {
@@ -56,7 +68,6 @@ export async function chargerLeDictionnaire(langue: Langue): Promise<boolean> {
 const ATTRIBUTS = ['placeholder', 'aria-label', 'title', 'alt'] as const;
 const EXCLUS = '[translate="no"],script,style,textarea,code,pre,[contenteditable="true"]';
 
-export const normaliser = (texte: string) => texte.replace(/\s+/gu, ' ').trim();
 
 /** La traduction d'un texte, en gardant ses espaces de bord ; `null` si on ne la connaît pas. */
 export function traduireTexte(langue: Langue, texte: string): string | null {
@@ -77,21 +88,6 @@ export function traduireTexte(langue: Langue, texte: string): string | null {
  */
 export function traduireDansLaLangueActive(texte: string): string {
   return traduireTexte(resoudre(useLangue.getState().preference), texte) ?? texte;
-}
-
-function traduireCle(dictionnaire: Dictionnaire, cle: string): string | null {
-  const exacte = dictionnaire.phrases[cle];
-  if (exacte !== undefined) return exacte;
-  const morceau: Traducteur = (francais) => dictionnaire.phrases[normaliser(francais)] ?? null;
-  for (const [motif, remplacement] of dictionnaire.motifs) {
-    const trouve = motif.exec(cle);
-    if (!trouve) continue;
-    if (typeof remplacement === 'string') return cle.replace(motif, remplacement);
-    // Une fonction peut renoncer (null) : le motif suivant a sa chance.
-    const compose = remplacement(morceau, ...trouve.slice(1).map((g) => g ?? ''));
-    if (compose !== null) return compose;
-  }
-  return null;
 }
 
 interface Etat {
@@ -116,20 +112,65 @@ function noter(texte: string) {
   if (cle && /\p{L}{2}/u.test(cle)) manquantes.set(cle, (manquantes.get(cle) ?? 0) + 1);
 }
 
-function traiterTexte(noeud: Text) {
-  if (exclu(noeud.parentElement)) return;
+/** Le français d'un nœud : sa valeur, ou l'original si c'est notre traduction qui s'affiche. */
+function originalDe(noeud: Text): string {
   const valeur = noeud.nodeValue ?? '';
   const etat = etatsDesTextes.get(noeud);
-  if (etat && valeur === etat.traduit) return;
-  const traduction = traduireTexte(langue, valeur);
+  return etat && valeur === etat.traduit ? etat.original : valeur;
+}
+
+function ecrire(noeud: Text, original: string, traduit: string) {
+  etatsDesTextes.set(noeud, { original, traduit });
+  touches.add(new WeakRef(noeud));
+  // N'écrire que ce qui change : notre propre écriture redéclenche l'observateur.
+  if (noeud.nodeValue !== traduit) noeud.nodeValue = traduit;
+}
+
+/** Les nœuds texte voisins du nœud : ceux qu'une phrase en morceaux du JSX laisse côte à côte. */
+function voisinage(noeud: Text): Text[] {
+  let premier: Node = noeud;
+  while (premier.previousSibling?.nodeType === Node.TEXT_NODE) premier = premier.previousSibling;
+  const groupe: Text[] = [];
+  for (let n: Node | null = premier; n?.nodeType === Node.TEXT_NODE; n = n.nextSibling) groupe.push(n as Text);
+  return groupe;
+}
+
+/** Un nœud seul ; vrai s'il est traduit (ou n'a rien à traduire). */
+function traiterSeul(noeud: Text, signaler: boolean): boolean {
+  const original = originalDe(noeud);
+  const etat = etatsDesTextes.get(noeud);
+  const traduction = traduireTexte(langue, original);
   if (traduction === null) {
-    noter(valeur);
+    // Une traduction de groupe affichée ici n'a plus lieu d'être : le français revient.
+    if (etat) {
+      etatsDesTextes.delete(noeud);
+      if (noeud.nodeValue !== original) noeud.nodeValue = original;
+    }
+    if (signaler) noter(original);
+    return !/\p{L}{2}/u.test(original);
+  }
+  if (traduction !== original || etat) ecrire(noeud, original, traduction);
+  return true;
+}
+
+function traiterTexte(noeud: Text) {
+  if (exclu(noeud.parentElement)) return;
+  const groupe = voisinage(noeud);
+  if (groupe.length === 1) {
+    traiterSeul(noeud, true);
     return;
   }
-  if (traduction === valeur) return;
-  etatsDesTextes.set(noeud, { original: valeur, traduit: traduction });
-  touches.add(new WeakRef(noeud));
-  noeud.nodeValue = traduction;
+  const originaux = groupe.map(originalDe);
+  const phrase = originaux.join('');
+  const traduction = traduireTexte(langue, phrase);
+  if (traduction !== null) {
+    groupe.forEach((n, i) => ecrire(n, originaux[i]!, i === 0 ? traduction : ''));
+    return;
+  }
+  // Pas de traduction pour la phrase entière : chaque morceau tente sa chance,
+  // et c'est la phrase entière qu'on signale à la récolte.
+  const tous = groupe.map((n) => traiterSeul(n, false)).every(Boolean);
+  if (!tous) noter(phrase);
 }
 
 function traiterAttributs(element: Element) {
@@ -221,7 +262,14 @@ export function demarrerLaTraductionAuRendu() {
     for (const m of mutations) {
       if (m.type === 'characterData') traiterTexte(m.target as Text);
       else if (m.type === 'attributes') traiterAttributs(m.target as Element);
-      else m.addedNodes.forEach(parcourir);
+      else {
+        m.addedNodes.forEach(parcourir);
+        // Un morceau retiré d'une phrase (« idée{s} » au singulier) : la phrase se retraduit.
+        if ([...m.removedNodes].some((n) => n.nodeType === Node.TEXT_NODE)) {
+          const texte = [...m.target.childNodes].find((n) => n.nodeType === Node.TEXT_NODE);
+          if (texte) traiterTexte(texte as Text);
+        }
+      }
     }
   });
   observateur.observe(document.documentElement, {

@@ -16,6 +16,7 @@ import {
 import { signaler } from '@/lib/feedback';
 import { cn } from '@/lib/cn';
 import { SignalerOuBloquer } from '@/components/SignalerOuBloquer';
+import { traduireDansLaLangueActive } from '@/i18n/traductionAuRendu';
 
 /**
  * Les candidatures reçues, du côté de l'organisateur.
@@ -160,7 +161,9 @@ export default function CandidaturesRecues() {
                     () => {
                       if (
                         window.confirm(
-                          `Exclure ${c.nom} ? La personne sort du voyage et ne pourra plus y revenir.`,
+                          traduireDansLaLangueActive(
+                            `Exclure ${c.nom} ? La personne sort du voyage et ne pourra plus y revenir.`,
+                          ),
                         )
                       ) {
                         exclure.mutate(c.userId);

@@ -61,7 +61,7 @@ test('la carte de la destination se garde sur l’appareil, et s’en va d’un 
   await page.route('https://tiles.openfreemap.org/**', serveurDeCartes);
 
   const carte = page.getByText('Carte hors ligne').locator('xpath=ancestor::*[contains(@class,"space-y-3")][1]');
-  await expect(carte.getByText(/Environ \d+ Mo/u)).toBeVisible();
+  await expect(carte.getByText(/Environ \d+\sMo/u)).toBeVisible();
   await page.getByRole('button', { name: 'Télécharger la carte' }).click();
   await expect(page.getByText(/La carte de .+ est sur cet appareil/u)).toBeVisible({ timeout: 45_000 });
 

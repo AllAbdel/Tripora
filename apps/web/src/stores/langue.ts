@@ -47,6 +47,14 @@ export function appliquerLaLangue(preference: PreferenceDeLangue): void {
   const fiche = ficheDe(langue);
   document.documentElement.lang = langue;
   document.documentElement.dir = fiche.sens;
+  // Pour le service worker, qui affiche les notifications sans accès aux
+  // réglages : il lit la langue dans ce cache (public/sw-alertes.js).
+  if (typeof caches !== 'undefined') {
+    void caches
+      .open('tripora-reglages')
+      .then((cache) => cache.put('/langue', new Response(langue)))
+      .catch(() => {});
+  }
 }
 
 export const useLangue = create<EtatDeLangue>()(

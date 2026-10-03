@@ -1,13 +1,16 @@
 /**
- * Les phrases restées en français quand l'application est en anglais.
+ * Les phrases restées en français dans une langue.
  *
- * Parcourt les écrans en mode local (sans serveur), navigateur réglé en
- * anglais, avec deux trips de démonstration, et demande à la traduction au
- * rendu ce qu'elle n'a pas su traduire. Sortie : un JSON { phrase: [écrans] },
- * à compléter dans `src/i18n/phrases-en.ts`.
+ * Parcourt les écrans en mode local (sans serveur), navigateur et interface
+ * réglés dans la langue, avec deux trips de démonstration, et demande à la
+ * traduction au rendu ce qu'elle n'a pas su traduire. Sortie : un JSON
+ * { phrase: [écrans] }, à compléter dans `src/i18n/phrases-<langue>.ts`.
  *
  *   VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= npx vite build --outDir dist-e2e
- *   node scripts/recolter-traductions.mjs > /tmp/phrases-manquantes.json
+ *   LANGUE=es node scripts/recolter-traductions.mjs > /tmp/phrases-manquantes.json
+ *
+ * LANGUE vaut `en` par défaut. Sans fichier `phrases-<langue>.ts`, tout le
+ * texte affiché sort : c'est la liste de départ d'une nouvelle langue.
  */
 /* global document, window -- le code des `page.evaluate` tourne dans la page. */
 import { spawn } from 'node:child_process';
@@ -17,6 +20,9 @@ import { chromium } from '@playwright/test';
 
 const ICI = dirname(fileURLToPath(import.meta.url));
 const PORT = 4175;
+const LANGUE = process.env.LANGUE ?? 'en';
+// L'étiquette du navigateur : la langue et son pays le plus courant.
+const NAVIGATEUR = { en: 'en-US', es: 'es-ES', it: 'it-IT', de: 'de-DE', pt: 'pt-PT', nl: 'nl-NL', pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', ar: 'ar-SA', zh: 'zh-CN', ja: 'ja-JP', ko: 'ko-KR' }[LANGUE] ?? LANGUE;
 const BASE = `http://localhost:${PORT}`;
 const serveur = spawn('node', [resolve(ICI, '../e2e/serveur.mjs')], {
   env: { ...process.env, PORT_E2E: String(PORT) },
@@ -79,16 +85,18 @@ const GESTES = {
 const navigateur = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell',
 });
-const contexte = await navigateur.newContext({ viewport: { width: 390, height: 844 }, locale: 'en-US', serviceWorkers: 'block' });
+const contexte = await navigateur.newContext({ viewport: { width: 390, height: 844 }, locale: NAVIGATEUR, serviceWorkers: 'block' });
 await contexte.route(/^https?:\/\/(?!localhost[:/])/u, (r) => r.abort('internetdisconnected'));
 const page = await contexte.newPage();
 await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
-await page.evaluate((v) => {
+await page.evaluate(([v, langue]) => {
   localStorage.setItem('tripora.local-identity', JSON.stringify({ id: 'moi', displayName: 'Inès', isAnonymous: true, mode: 'local' }));
   localStorage.setItem('tripora.local-trips', JSON.stringify(v));
   localStorage.setItem('tripora.guide-vu', '1');
   localStorage.setItem('tripora.recolte-traductions', '1');
-}, VOYAGES);
+  // La langue choisie dans le profil (le format du magasin zustand persisté).
+  localStorage.setItem('tripora.langue', JSON.stringify({ state: { preference: langue }, version: 0 }));
+}, [VOYAGES, LANGUE]);
 
 const parPhrase = new Map();
 for (const ecran of ECRANS) {
@@ -114,4 +122,4 @@ serveur.kill();
 
 const sortie = Object.fromEntries([...parPhrase.entries()].map(([p, e]) => [p, [...e]]));
 process.stdout.write(JSON.stringify(sortie, null, 1) + '\n');
-console.error(`${parPhrase.size} phrases sans traduction sur ${ECRANS.length} écrans`);
+console.error(`${LANGUE} : ${parPhrase.size} phrases sans traduction sur ${ECRANS.length} écrans`);

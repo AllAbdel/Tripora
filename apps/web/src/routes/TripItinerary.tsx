@@ -50,6 +50,7 @@ import { chargerMeteo, cleMeteo } from '@/lib/weather';
 import { toFailure } from '@/lib/errors';
 import { cn } from '@/lib/cn';
 import { Icone } from '@/components/Icone';
+import { traduireDansLaLangueActive } from '@/i18n/traductionAuRendu';
 
 /** L'icône d'un moment de la journée, quand l'activité n'en porte pas. */
 const ICONES: Record<string, NomIcone> = {
@@ -528,7 +529,7 @@ export default function TripItinerary() {
             icon={<RotateCcw className="size-4" aria-hidden />}
             loading={regenerer.isPending}
             onClick={() => {
-              if (window.confirm('Régénérer effacera les ajouts du groupe. Continuer ?')) {
+              if (window.confirm(traduireDansLaLangueActive('Régénérer effacera les ajouts du groupe. Continuer ?'))) {
                 regenerer.mutate();
               }
             }}

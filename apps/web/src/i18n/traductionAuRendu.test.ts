@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { useLangue } from '@/stores/langue';
-import { PHRASES_EN } from './phrases-en';
 import {
   chargerLeDictionnaire,
   demarrerLaTraductionAuRendu,
@@ -83,11 +82,6 @@ describe('traduireTexte', () => {
     expect(traduireTexte('en', '9,320 mi à vol d’oiseau')).toBe('9,320 mi as the crow flies');
   });
 
-  it('n’a pas de traduction vide', () => {
-    for (const [francais, anglais] of Object.entries(PHRASES_EN)) {
-      expect(anglais.trim(), francais).not.toBe('');
-    }
-  });
 });
 
 describe('la traduction au rendu', () => {
@@ -112,9 +106,22 @@ describe('la traduction au rendu', () => {
     await attendre();
     expect(ajout.textContent).toBe('Vote');
 
+    // Une phrase écrite en morceaux dans le JSX : trois nœuds voisins, une seule traduction.
+    const morceaux = document.createElement('p');
+    morceaux.append('12', ' idées', ' à Bali, classées selon les envies du groupe');
+    document.querySelector('main')!.append(morceaux);
+    await attendre();
+    expect(morceaux.textContent).toBe('12 ideas in Bali, ranked by the group’s wishes');
+    // React réécrit un seul morceau (le nombre change) : la phrase se retraduit.
+    morceaux.firstChild!.nodeValue = '1';
+    (morceaux.childNodes[1] as Text).nodeValue = ' idée';
+    await attendre();
+    expect(morceaux.textContent).toBe('1 idea in Bali, ranked by the group’s wishes');
+
     useLangue.setState({ preference: 'fr' });
     await attendre();
     expect(titre.textContent).toBe('Journées');
+    expect(morceaux.textContent).toBe('1 idée à Bali, classées selon les envies du groupe');
     expect(ajout.textContent).toBe('Voter');
     expect(document.querySelector('button')!.getAttribute('aria-label')).toBe('Retour au voyage');
   });

@@ -9,6 +9,7 @@ import {
   MOTIFS_DE_SIGNALEMENT,
 } from '@/lib/tripsOuverts';
 import { signaler as retour } from '@/lib/feedback';
+import { traduireDansLaLangueActive } from '@/i18n/traductionAuRendu';
 
 /**
  * Les signalements, côté administration.
@@ -86,7 +87,9 @@ export function FileDeSignalements() {
               onClick={() => {
                 if (
                   window.confirm(
-                    `Retirer ${dossier.viseNom} des trips ouverts ? Ses trips publiés se referment, ses candidatures tombent. Ses voyages entre amis ne sont pas touchés.`,
+                    traduireDansLaLangueActive(
+                      `Retirer ${dossier.viseNom} des trips ouverts ? Ses trips publiés se referment, ses candidatures tombent. Ses voyages entre amis ne sont pas touchés.`,
+                    ),
                   )
                 ) {
                   trancher.mutate({ id: dossier.id, suspendre: true });

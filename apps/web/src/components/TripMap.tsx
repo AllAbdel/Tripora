@@ -139,6 +139,22 @@ export interface MapMarker {
   onSelect?: () => void;
 }
 
+const LIBELLES_DE_LA_CARTE = {
+  'AttributionControl.ToggleAttribution': 'Afficher ou masquer les crédits',
+  'AttributionControl.MapFeedback': 'Signaler une erreur sur la carte',
+  'FullscreenControl.Enter': 'Plein écran',
+  'FullscreenControl.Exit': 'Quitter le plein écran',
+  'GeolocateControl.FindMyLocation': 'Me localiser',
+  'GeolocateControl.LocationNotAvailable': 'Position indisponible',
+  'LogoControl.Title': 'Logo MapLibre',
+  'Map.Title': 'Carte',
+  'Marker.Title': 'Repère',
+  'NavigationControl.ResetBearing': 'Remettre le nord en haut',
+  'NavigationControl.ZoomIn': 'Zoom avant',
+  'NavigationControl.ZoomOut': 'Zoom arrière',
+  'Popup.Close': 'Fermer',
+};
+
 export function TripMap({
   markers,
   route,
@@ -204,6 +220,9 @@ export function TripMap({
       zoom: 4,
       attributionControl: { compact: true },
       transformRequest: passerParLAppareil,
+      // Les libellés des boutons de MapLibre, en français comme le reste ; la
+      // traduction au rendu les passe ensuite dans la langue de l'interface.
+      locale: LIBELLES_DE_LA_CARTE,
     });
     instance.addControl(new NavigationControl({ showCompass: false }), 'top-right');
     instance.on('error', (evenement: ErrorEvent) => {

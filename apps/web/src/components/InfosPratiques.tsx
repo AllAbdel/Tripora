@@ -3,7 +3,7 @@ import {
   besoinDAdaptateur,
   codeDuPays,
   currencyForCountry,
-  currencyName,
+  nomDeDevise,
   decalageLisible,
   ecartAvecUtc,
   infosPratiques,
@@ -109,7 +109,7 @@ export function InfosPratiques({
 
           {devise && (
             <Ligne icone={Wallet} titre="Monnaie">
-              {majuscule(currencyName(devise))} ({devise})
+              {majuscule(nomDeDevise(devise))} ({devise})
             </Ligne>
           )}
 

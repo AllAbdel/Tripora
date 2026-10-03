@@ -9,18 +9,47 @@
  * Chrome exige qu'une notification soit affichée à chaque réveil
  * (`userVisibleOnly`) : on ne filtre rien ici.
  */
+/* global self, caches -- le contexte d'un service worker. */
+
+/*
+ * Le texte de la notification, dans chaque langue traduite. Une langue sans
+ * entrée retombe sur le français. Pour en ajouter une : une ligne ici, sur le
+ * modèle de l'anglais (voir docs/TRADUCTIONS.md).
+ */
+const TEXTES = {
+  fr: { titre: 'Un prix que vous suivez a baissé', corps: 'Ouvrez Tripora pour voir de combien.' },
+  en: { titre: 'A price you’re watching just dropped', corps: 'Open Tripora to see by how much.' },
+};
+
+/*
+ * La langue de l'interface : l'application la dépose dans le cache
+ * `tripora-reglages` (stores/langue.ts), seul endroit que le service worker
+ * peut lire. À défaut, celle du navigateur.
+ */
+async function langueDeLInterface() {
+  try {
+    const cache = await caches.open('tripora-reglages');
+    const reponse = await cache.match('/langue');
+    const langue = reponse ? (await reponse.text()).trim() : (self.navigator.language || 'fr').slice(0, 2);
+    return TEXTES[langue] ? langue : 'fr';
+  } catch {
+    return 'fr';
+  }
+}
 
 self.addEventListener('push', (event) => {
   event.waitUntil(
-    self.registration.showNotification('Un prix que vous suivez a baissé', {
-      body: 'Ouvrez Tripora pour voir de combien.',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      lang: 'fr',
-      // Plusieurs baisses le même matin : une seule notification, remplacée.
-      tag: 'alertes-de-prix',
-      data: { url: '/alertes' },
-    }),
+    langueDeLInterface().then((langue) =>
+      self.registration.showNotification(TEXTES[langue].titre, {
+        body: TEXTES[langue].corps,
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        lang: langue,
+        // Plusieurs baisses le même matin : une seule notification, remplacée.
+        tag: 'alertes-de-prix',
+        data: { url: '/alertes' },
+      }),
+    ),
   );
 });
 
