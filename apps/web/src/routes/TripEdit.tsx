@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check } from 'lucide-react';
-import { MONTHS_FR, formatCents, parseAmountToCents } from '@tripora/core';
+import {
+  MONTHS_FR,
+  deviseDeSaisie,
+  eurosVersSaisie,
+  formatCents,
+  parseAmountToCents,
+  saisieVersEuros,
+} from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -44,11 +51,23 @@ function depuisLeVoyage(data: NonNullable<TripDetails>): Formulaire {
     titre: data.summary.title,
     jours: data.constraints.durationDays,
     participants: data.constraints.participants,
+    // Dans la devise de la personne ; enregistré en euros (voir `budgetEnregistre`).
     budget: data.constraints.budgetPerPersonCents
-      ? String(Math.round(data.constraints.budgetPerPersonCents / 100))
+      ? String(Math.round(eurosVersSaisie(data.constraints.budgetPerPersonCents) / 100))
       : '',
     mois: data.constraints.month ?? null,
   };
+}
+
+/**
+ * Le budget à enregistrer, en centimes d'euro. Inchangé dans le champ, il
+ * garde sa valeur d'origine : repasser par le taux du jour le décalerait de
+ * quelques centimes à chaque enregistrement.
+ */
+function budgetEnregistre(data: NonNullable<TripDetails>, saisi: string): number | null {
+  if (!saisi.trim()) return null;
+  if (saisi === depuisLeVoyage(data).budget) return data.constraints.budgetPerPersonCents ?? null;
+  return saisieVersEuros(parseAmountToCents(saisi));
 }
 
 export default function TripEdit() {
@@ -174,10 +193,11 @@ export default function TripEdit() {
                 onChange={(budget) => modifier({ budget })}
                 placeholder="500"
                 entier
+                devise={deviseDeSaisie()}
               />
               <p className="text-muted text-xs leading-relaxed">
                 {data.constraints.budgetPerPersonCents
-                  ? `Actuellement ${formatCents(data.constraints.budgetPerPersonCents, 'EUR', { hideCentimes: true, sansConversion: true })}.`
+                  ? `Actuellement ${formatCents(data.constraints.budgetPerPersonCents, 'EUR', { hideCentimes: true, sansConversion: deviseDeSaisie() === 'EUR' })}.`
                   : 'Aucun plafond pour l’instant : Tripora cherche le moins cher.'}{' '}
                 Laissez vide pour ne pas en fixer.
               </p>
@@ -201,9 +221,7 @@ export default function TripEdit() {
                 title: valeurs.titre.trim(),
                 durationDays: valeurs.jours,
                 participants: valeurs.participants,
-                budgetPerPersonCents: valeurs.budget.trim()
-                  ? parseAmountToCents(valeurs.budget)
-                  : null,
+                budgetPerPersonCents: budgetEnregistre(data, valeurs.budget),
                 ...(valeurs.mois === null
                   ? {}
                   : { dateMode: 'month' as const, month: valeurs.mois }),

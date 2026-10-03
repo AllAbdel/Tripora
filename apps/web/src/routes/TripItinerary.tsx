@@ -11,6 +11,7 @@ import {
   buildItinerary,
   dayVerdict,
   describeDay,
+  deviseDeSaisie,
   fillItinerary,
   findDestination,
   fold,
@@ -20,6 +21,7 @@ import {
   parseAmountToCents,
   phraseDeReservation,
   reservationsDuJour,
+  saisieVersEuros,
   suggestWeatherSwaps,
   weatherIcon,
   type DailyWeather,
@@ -271,7 +273,8 @@ export default function TripItinerary() {
       return itineraire.addItem(entree.dayId, {
         title: entree.title.trim(),
         startTime: heure,
-        costCents: entree.cost ? parseAmountToCents(entree.cost) : 0,
+        // Tapé dans la devise de la personne, gardé en euros comme le reste du programme.
+        costCents: entree.cost ? saisieVersEuros(parseAmountToCents(entree.cost)) : 0,
         // L'adresse d'une épingle suit l'élément : c'est ce qu'on cherche une
         // fois sur place, et la retaper serait la première chose oubliée.
         notes: entree.notes,
@@ -765,7 +768,7 @@ function Journee({
                 />
               </Field>
               <Field label="Combien ?">
-                <MoneyInput label="Coût" placeholder="15" value={cout} onChange={setCout} />
+                <MoneyInput label="Coût" placeholder="15" value={cout} onChange={setCout} devise={deviseDeSaisie()} />
               </Field>
             </div>
             <Button

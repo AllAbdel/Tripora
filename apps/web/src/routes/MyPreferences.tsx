@@ -3,8 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Loader2 } from 'lucide-react';
 import {
-  formatCents,
-  parseAmountToCents,
+  raccourciDeBudget,
   type PreferenceAxis,
   type PreferenceWeights,
 } from '@tripora/core';
@@ -12,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Chip } from '@/components/ui/Chip';
 import { Field } from '@/components/ui/Field';
-import { MoneyInput } from '@/components/ui/MoneyInput';
+import { SaisieEnDevise } from '@/components/SaisieEnDevise';
 import { PreferenceEditor } from '@/components/PreferenceEditor';
 import { getCollaboration } from '@/lib/collaboration';
 import { toFailure } from '@/lib/errors';
@@ -127,21 +126,19 @@ export default function MyPreferences() {
             label="Votre budget maximum, tout compris"
             hint="Tripora retient toujours le budget le plus serré du groupe. Personne ne doit se retrouver embarqué dans un voyage qu’il ne peut pas payer."
           >
-            <MoneyInput
+            <SaisieEnDevise
               label="Budget maximum"
               placeholder="400"
               entier
-              value={budget === null ? '' : String(budget / 100)}
-              onChange={(valeur) =>
-                modifier({ budget: valeur === '' ? null : parseAmountToCents(valeur) })
-              }
+              cents={budget}
+              onChange={(cents) => modifier({ budget: cents })}
             />
           </Field>
 
           <div className="flex flex-wrap gap-2">
-            {RACCOURCIS.map((cents) => (
+            {RACCOURCIS.map(raccourciDeBudget).map(({ cents, libelle }) => (
               <Chip key={cents} selected={budget === cents} onClick={() => modifier({ budget: cents })}>
-                {formatCents(cents, 'EUR', { hideCentimes: true, sansConversion: true })}
+                {libelle}
               </Chip>
             ))}
           </div>

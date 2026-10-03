@@ -122,6 +122,53 @@ export function formatMontant(cents: Cents, devise = 'EUR', options: OptionsDeMo
 export const formatCents = formatMontant;
 
 // ---------------------------------------------------------------------------
+// Les sommes que la personne tape
+// ---------------------------------------------------------------------------
+
+/**
+ * La devise dans laquelle la personne tape un budget : la sienne quand le taux
+ * du jour est connu, l'euro sinon.
+ *
+ * Les budgets restent stockés en euros — c'est en euros que le groupe se
+ * compare et que les prix sont relevés. Un Américain tape « 2000 » dans un
+ * champ en dollars ; Tripora garde l'équivalent en euros au taux du jour.
+ */
+export function deviseDeSaisie(): string {
+  return region.devise !== 'EUR' && region.tauxDeLaDevise !== null ? region.devise : 'EUR';
+}
+
+/** Une somme tapée dans la devise de saisie, en centimes d'euro, pour la stocker. */
+export function saisieVersEuros(cents: Cents): Cents {
+  return deviseDeSaisie() === 'EUR' ? cents : Math.round(cents / region.tauxDeLaDevise!);
+}
+
+/** Une somme stockée en centimes d'euro, dans la devise de saisie, pour préremplir un champ. */
+export function eurosVersSaisie(cents: Cents): Cents {
+  return deviseDeSaisie() === 'EUR' ? cents : Math.round(cents * region.tauxDeLaDevise!);
+}
+
+/**
+ * Un raccourci de budget (« 400 € ») dans la devise de saisie, arrondi à un
+ * montant qu'on taperait soi-même : 400 € deviennent 470 $, pas 468,24 $, et
+ * 64 000 ¥ plutôt que 63 861 ¥. `cents` est ce qu'il faut stocker (en euros),
+ * `libelle` ce qu'il faut afficher.
+ */
+export function raccourciDeBudget(centsEnEuros: Cents): { cents: Cents; libelle: string } {
+  const devise = deviseDeSaisie();
+  if (devise === 'EUR') {
+    return { cents: centsEnEuros, libelle: formatMontant(centsEnEuros, 'EUR', { hideCentimes: true, sansConversion: true }) };
+  }
+  const unites = eurosVersSaisie(centsEnEuros) / 100;
+  // Deux chiffres significatifs : 468 → 470, 63 861 → 64 000.
+  const pas = 10 ** Math.max(0, Math.floor(Math.log10(Math.max(unites, 1))) - 1);
+  const rond = Math.max(pas, Math.round(unites / pas) * pas);
+  return {
+    cents: saisieVersEuros(rond * 100),
+    libelle: formatMontant(rond * 100, devise, { hideCentimes: true, sansConversion: true }),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Températures et distances
 // ---------------------------------------------------------------------------
 

@@ -656,7 +656,6 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "Distances": "Distances",
   "Kilomètres": "Kilometers",
   "Exemple :": "Example:",
-  "Les prix sont relevés en euros ; dans une autre devise, ils sont convertis au taux du jour et précédés de « ≈ ». Les dépenses et les remboursements gardent leur devise.": "Prices are recorded in euros; in another currency they’re converted at today’s rate and shown with “≈”. Expenses and repayments keep their own currency.",
   "Ponts et vacances scolaires des mois qui viennent. Un appui remplit les dates.": "Long weekends and school holidays in the coming months. One tap fills in the dates.",
   "Les week-ends prolongés par un jour férié, dans les mois qui viennent. Un appui remplit les dates.": "Long weekends made by a public holiday, in the coming months. One tap fills in the dates.",
   "Jours fériés du pays de départ :": "Public holidays of the departure country:",
@@ -2045,7 +2044,9 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "Le reste": "Everything else",
   "Retirer des trips ouverts": "Remove from open trips",
   "Retirer la photo": "Remove the photo",
-  "Retirer cette photo ?": "Remove this photo?"
+  "Retirer cette photo ?": "Remove this photo?",
+  // Les budgets tapés dans la devise de la personne.
+  "Les prix sont relevés en euros ; dans une autre devise, ils sont convertis au taux du jour et précédés de « ≈ ». Les budgets se tapent dans cette devise et se gardent en euros. Les dépenses et les remboursements gardent leur devise.": "Prices are recorded in euros; in another currency they’re converted at today’s rate and shown with “≈”. Budgets are typed in this currency and saved in euros. Expenses and repayments keep their own currency."
 };
 
 export const PHRASES: Readonly<Record<string, string>> = { ...PAYS_EN, ...PHRASES_FIXES };
@@ -2304,6 +2305,7 @@ function ligneDeReservation(texte: string): string | null {
 }
 
 export const MOTIFS: readonly Motif[] = [
+  [/^Enregistré en euros au taux du jour : (.+)\.$/u, 'Saved in euros at today’s rate: $1.'],
   [/^Retirer (.+) des favoris$/u, 'Remove $1 from favorites'],
   // Le cœur, la fin.
   [/^Vous et (\d+) autres? en avez envie$/u, (_, n) => `You and ${n} ${nombre(n!, 'other', 'others')} want to go`],

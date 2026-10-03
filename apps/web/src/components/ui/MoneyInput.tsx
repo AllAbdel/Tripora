@@ -1,3 +1,4 @@
+import { currencyByCode } from '@tripora/core';
 import { cn } from '@/lib/cn';
 
 /**
@@ -11,7 +12,9 @@ import { cn } from '@/lib/cn';
  * nombre.
  *
  * La conversion en centimes reste faite par `parseAmountToCents`, qui accepte
- * les deux séparateurs.
+ * les deux séparateurs. Le champ affiche la devise qu'on lui donne (l'euro par
+ * défaut) ; pour un budget tapé dans la devise de la personne et gardé en
+ * euros, voir `SaisieEnDevise`.
  */
 export function MoneyInput({
   value,
@@ -20,6 +23,7 @@ export function MoneyInput({
   label,
   className,
   entier = false,
+  devise = 'EUR',
 }: {
   value: string;
   onChange: (valeur: string) => void;
@@ -28,8 +32,11 @@ export function MoneyInput({
   className?: string;
   /** Pas de décimales attendues : budgets, enveloppes. */
   entier?: boolean;
+  /** La devise de la somme tapée, dont le symbole s'affiche dans le champ. */
+  devise?: string;
 }) {
   const motif = entier ? /[^\d]/g : /[^\d.,]/g;
+  const symbole = currencyByCode(devise)?.symbol ?? devise;
 
   return (
     <div className="relative">
@@ -52,7 +59,8 @@ export function MoneyInput({
         }}
         className={cn(
           'h-12 w-full rounded-2xl border border-[color:var(--border-subtle)] surface-raised',
-          'pr-10 pl-4 text-[16px] outline-none transition-colors focus:border-brand-500',
+          symbole.length > 1 ? 'pr-14' : 'pr-10',
+          'pl-4 text-[16px] outline-none transition-colors focus:border-brand-500',
           className,
         )}
       />
@@ -60,7 +68,7 @@ export function MoneyInput({
         aria-hidden
         className="text-muted pointer-events-none absolute top-1/2 right-4 -translate-y-1/2"
       >
-        €
+        {symbole}
       </span>
     </div>
   );

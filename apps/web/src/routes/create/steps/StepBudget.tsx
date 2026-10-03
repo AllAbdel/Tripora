@@ -1,9 +1,9 @@
 import { BedDouble, Coins, PiggyBank, Sparkle } from 'lucide-react';
-import { formatCents, parseAmountToCents, type BudgetMode, type ComfortLevel } from '@tripora/core';
+import { formatCents, raccourciDeBudget, type BudgetMode, type ComfortLevel } from '@tripora/core';
 import { OptionCard } from '@/components/ui/OptionCard';
 import { Chip } from '@/components/ui/Chip';
 import { Field } from '@/components/ui/Field';
-import { MoneyInput } from '@/components/ui/MoneyInput';
+import { SaisieEnDevise } from '@/components/SaisieEnDevise';
 import { useTripDraft } from '@/stores/tripDraft';
 
 const MODES: { value: BudgetMode; label: string; description: string; icon: typeof Coins }[] = [
@@ -74,27 +74,23 @@ export function StepBudget() {
                 : 'Transport, hébergement, nourriture et activités compris.'
             }
           >
-            <MoneyInput
+            <SaisieEnDevise
               label="Budget par personne"
               placeholder="400"
               entier
-              value={budgetPerPersonCents === null ? '' : String(budgetPerPersonCents / 100)}
-              onChange={(valeur) =>
-                patch({
-                  budgetPerPersonCents: valeur === '' ? null : parseAmountToCents(valeur),
-                })
-              }
+              cents={budgetPerPersonCents}
+              onChange={(cents) => patch({ budgetPerPersonCents: cents })}
             />
           </Field>
 
           <div className="flex flex-wrap gap-2">
-            {RACCOURCIS.map((cents) => (
+            {RACCOURCIS.map(raccourciDeBudget).map(({ cents, libelle }) => (
               <Chip
                 key={cents}
                 selected={budgetPerPersonCents === cents}
                 onClick={() => patch({ budgetPerPersonCents: cents })}
               >
-                {formatCents(cents, 'EUR', { hideCentimes: true, sansConversion: true })}
+                {libelle}
               </Chip>
             ))}
           </div>

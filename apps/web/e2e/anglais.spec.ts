@@ -124,3 +124,18 @@ test('un téléphone en anglais américain lit Tripora en anglais, en miles et e
   await page.goto('/passeport', { waitUntil: 'networkidle' });
   await expect(page.getByText('mi traveled', { exact: true })).toBeVisible();
 });
+
+test('un budget se lit et se tape en dollars, et se garde en euros', async ({ page }) => {
+  await poser(page, VOYAGES, '/voyages/v1/modifier');
+  // Les taux du jour, comme si l'appareil les avait déjà relevés (le test est hors ligne).
+  await page.evaluate(() =>
+    localStorage.setItem('tripora.taux-du-jour', JSON.stringify({ date: '2026-10-02', rates: { USD: 1.17 } })),
+  );
+  await page.reload({ waitUntil: 'networkidle' });
+
+  // 1 800 € de budget par personne, lus en dollars.
+  const champ = page.getByRole('textbox', { name: 'Maximum budget per person' });
+  await expect(champ).toHaveValue('2106');
+  await expect(page.getByText('$', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Currently ≈ \$2,106\./u)).toBeVisible();
+});

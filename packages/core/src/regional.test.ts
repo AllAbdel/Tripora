@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  deviseDeSaisie,
+  eurosVersSaisie,
   formatCents,
   formatDate,
   formatDistance,
@@ -7,8 +9,10 @@ import {
   formatNombre,
   formatTaille,
   formatTemperature,
+  raccourciDeBudget,
   REGION_PAR_DEFAUT,
   reglerLaRegion,
+  saisieVersEuros,
   unitesDuPays,
 } from './regional.js';
 
@@ -62,5 +66,33 @@ describe('les tailles de fichier', () => {
     expect(lisible(formatTaille(9.4 * 1024 * 1024))).toBe('9 Mo');
     reglerLaRegion({ locale: 'en-US' });
     expect(formatTaille(200)).toBe('1 MB');
+  });
+});
+
+describe('les budgets tapés dans sa devise', () => {
+  it('restent en euros quand la personne compte en euros', () => {
+    expect(deviseDeSaisie()).toBe('EUR');
+    expect(saisieVersEuros(40_000)).toBe(40_000);
+    expect(lisible(raccourciDeBudget(40_000).libelle)).toBe('400 €');
+  });
+
+  it('se tapent en dollars et se gardent en euros, au taux du jour', () => {
+    reglerLaRegion({ locale: 'en-US', devise: 'USD', tauxDeLaDevise: 1.17 });
+    expect(deviseDeSaisie()).toBe('USD');
+    expect(saisieVersEuros(200_000)).toBe(170_940);
+    expect(eurosVersSaisie(170_940)).toBe(200_000);
+    // Un raccourci s'arrondit à ce qu'on taperait : 400 € ≈ 468 $ → 470 $.
+    expect(raccourciDeBudget(40_000)).toEqual({ cents: saisieVersEuros(47_000), libelle: '$470' });
+  });
+
+  it('arrondit aussi les grandes devises', () => {
+    reglerLaRegion({ locale: 'ja-JP', devise: 'JPY', tauxDeLaDevise: 159.65 });
+    expect(lisible(raccourciDeBudget(40_000).libelle)).toMatch(/64,000/u);
+  });
+
+  it('reste en euros sans taux du jour : pas de conversion inventée', () => {
+    reglerLaRegion({ locale: 'en-US', devise: 'USD', tauxDeLaDevise: null });
+    expect(deviseDeSaisie()).toBe('EUR');
+    expect(saisieVersEuros(40_000)).toBe(40_000);
   });
 });

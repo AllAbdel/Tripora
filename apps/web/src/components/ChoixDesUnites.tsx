@@ -22,8 +22,9 @@ function nomDeDevise(code: string): string {
  * « 75 °F » avant d'avoir à se demander ce que veut dire « Fahrenheit ».
  *
  * Les prix sont relevés en euros : dans une autre devise, ils sont convertis
- * au taux BCE du jour et précédés de « ≈ ». Les dépenses, les remboursements
- * et ce qu'on tape dans un champ restent dans leur devise d'origine.
+ * au taux BCE du jour et précédés de « ≈ ». Les budgets se tapent dans la
+ * devise choisie et se gardent en euros (`SaisieEnDevise`) ; les dépenses et
+ * les remboursements restent dans leur devise d'origine.
  */
 export function ChoixDesUnites() {
   const langue = useLangueActive();
@@ -69,7 +70,8 @@ export function ChoixDesUnites() {
           </select>
           <p className="text-muted text-xs leading-relaxed">
             Les prix sont relevés en euros ; dans une autre devise, ils sont convertis au taux du jour et
-            précédés de « ≈ ». Les dépenses et les remboursements gardent leur devise.
+            précédés de « ≈ ». Les budgets se tapent dans cette devise et se gardent en euros. Les
+            dépenses et les remboursements gardent leur devise.
           </p>
           <p className="text-muted text-xs">
             Exemple : <span className="chiffres font-medium">{formatCents(145000, 'EUR', { hideCentimes: true })}</span>
