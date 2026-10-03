@@ -62,8 +62,20 @@ create trigger limiter_les_erreurs_client
   before insert on public.erreurs_client
   for each row execute function public.limiter_les_erreurs_client();
 
-select cron.schedule(
-  'purger-les-erreurs-client',
-  '47 3 * * *',
-  $$delete from public.erreurs_client where cree_le < now() - interval '30 days'$$
-);
+-- pg_cron n'existe que sur la plateforme : sur le Postgres nu des tests, on passe.
+do $planification$
+begin
+  if not exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    raise notice 'pg_cron absent : purge des erreurs non planifiée (base de test).';
+    return;
+  end if;
+
+  create extension if not exists pg_cron with schema pg_catalog;
+
+  perform cron.schedule(
+    'purger-les-erreurs-client',
+    '47 3 * * *',
+    $job$delete from public.erreurs_client where cree_le < now() - interval '30 days'$job$
+  );
+end;
+$planification$;
