@@ -11,7 +11,7 @@ const attendre = () => new Promise((ok) => setTimeout(ok, 0));
 
 beforeAll(async () => {
   expect(await chargerLeDictionnaire('en')).toBe(true);
-  expect(await chargerLeDictionnaire('es')).toBe(false);
+  expect(await chargerLeDictionnaire('es')).toBe(true);
 });
 
 describe('traduireTexte', () => {
@@ -22,10 +22,10 @@ describe('traduireTexte', () => {
     expect(traduireTexte('en', 'Avec qui partez-vous ?')).toBe('Who are you traveling with?');
   });
 
-  it('laisse le français quand il ne sait pas, et ne touche à rien hors anglais', () => {
+  it('laisse le français quand il ne sait pas', () => {
     expect(traduireTexte('en', 'Une phrase que personne n’a traduite')).toBeNull();
     expect(traduireTexte('fr', 'Continuer')).toBeNull();
-    expect(traduireTexte('es', 'Continuer')).toBeNull();
+    expect(traduireTexte('es', 'Continuer')).toBe('Continuar');
     expect(traduireTexte('en', '1 800 €')).toBeNull();
   });
 
