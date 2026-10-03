@@ -2365,7 +2365,14 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "Retirer la photo": "Remove the photo",
   "Retirer cette photo ?": "Remove this photo?",
   // Les budgets tapés dans la devise de la personne.
-  "Les prix sont relevés en euros ; dans une autre devise, ils sont convertis au taux du jour et précédés de « ≈ ». Les budgets se tapent dans cette devise et se gardent en euros. Les dépenses et les remboursements gardent leur devise.": "Prices are recorded in euros; in another currency they’re converted at today’s rate and shown with “≈”. Budgets are typed in this currency and saved in euros. Expenses and repayments keep their own currency."
+  "Les prix sont relevés en euros ; dans une autre devise, ils sont convertis au taux du jour et précédés de « ≈ ». Les budgets se tapent dans cette devise et se gardent en euros. Les dépenses et les remboursements gardent leur devise.": "Prices are recorded in euros; in another currency they’re converted at today’s rate and shown with “≈”. Budgets are typed in this currency and saved in euros. Expenses and repayments keep their own currency.",
+  // L'écran de secours et la remontée des erreurs.
+  "Cet écran a rencontré un problème": "This screen ran into a problem",
+  "Vos voyages ne sont pas touchés. Le problème nous a été signalé, sans rien qui vous désigne ; recharger l’application suffit le plus souvent.": "Your trips aren’t affected. The problem has been reported to us, with nothing that identifies you; reloading the app is usually enough.",
+  "Recharger": "Reload",
+  "Les erreurs de l’application": "App errors",
+  "Les erreurs de l’application.": "App errors.",
+  "Quand un écran plante, Tripora garde le message d’erreur technique, la page concernée (sans ses identifiants), la version de l’application, la langue et le nom du navigateur. Ni nom, ni adresse e-mail, ni contenu de voyage, ni compte, ni adresse IP : ces traces servent à corriger le problème, puis s’effacent au bout de trente jours.": "When a screen crashes, Tripora keeps the technical error message, the page concerned (without its IDs), the app version, the language and the browser name. No name, email address, trip content, account or IP address: these traces are used to fix the problem, then deleted after thirty days."
 };
 
 export const PHRASES: Readonly<Record<string, string>> = { ...PAYS_EN, ...DESTINATIONS_EN, ...PHRASES_FIXES };

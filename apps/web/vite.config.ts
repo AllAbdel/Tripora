@@ -89,6 +89,13 @@ export default defineConfig(({ mode }) => {
    */
   const mobile = mode === 'mobile';
   return {
+    // La version construite (le commit, court), jointe aux erreurs remontées :
+    // savoir si une erreur vient de la dernière mise en ligne ou d'un cache.
+    define: {
+      __VERSION__: JSON.stringify(
+        (process.env['CF_PAGES_COMMIT_SHA'] ?? process.env['VERCEL_GIT_COMMIT_SHA'] ?? process.env['GITHUB_SHA'] ?? 'locale').slice(0, 7),
+      ),
+    },
     plugins: [
       react(),
       tailwindcss(),

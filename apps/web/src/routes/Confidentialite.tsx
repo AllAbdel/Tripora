@@ -16,7 +16,7 @@ import { Bloc, Definition, LienDeContact, PageLegale } from '@/components/PageLe
  */
 export default function Confidentialite() {
   return (
-    <PageLegale titre="Confidentialité" miseAJour="2 octobre 2026">
+    <PageLegale titre="Confidentialité" miseAJour="3 octobre 2026">
       <Bloc titre="En une phrase">
         <p>
           Tripora conserve le minimum nécessaire pour qu’un voyage fonctionne à plusieurs,
@@ -80,6 +80,12 @@ export default function Confidentialite() {
           la photo n’est ni envoyée ni conservée, seuls le montant, la date et le nom du commerce
           lus remplissent le formulaire. Une carte téléchargée pour le hors-ligne reste dans
           l’appareil, et se supprime d’un geste. Rien de tout cela ne part sur le serveur.
+        </Definition>
+        <Definition terme="Les erreurs de l’application">
+          Quand un écran plante, Tripora garde le message d’erreur technique, la page concernée
+          (sans ses identifiants), la version de l’application, la langue et le nom du
+          navigateur. Ni nom, ni adresse e-mail, ni contenu de voyage, ni compte, ni adresse IP :
+          ces traces servent à corriger le problème, puis s’effacent au bout de trente jours.
         </Definition>
         <Definition terme="Ce que Tripora ne conserve pas">
           Aucune position GPS, aucun historique de navigation, aucun identifiant publicitaire,

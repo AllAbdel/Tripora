@@ -11,6 +11,8 @@ import { appliquerLaLangue, useLangue } from '@/stores/langue';
 import { demarrerLaTraductionAuRendu } from '@/i18n/traductionAuRendu';
 import { suivreLaRegion } from '@/stores/region';
 import { SuitLaRegion } from '@/components/SuitLaRegion';
+import { FiletDeSecurite } from '@/components/FiletDeSecurite';
+import { surveillerLesErreurs } from '@/lib/remonterLesErreurs';
 import './index.css';
 
 applyTheme(useTheme.getState().preference);
@@ -22,6 +24,8 @@ appliquerLaLangue(useLangue.getState().preference);
 demarrerLaTraductionAuRendu();
 // Devise, degrés, distances et écriture des nombres : avant le premier chiffre affiché.
 suivreLaRegion();
+// Les erreurs que personne ne rattrape partent au serveur, nettoyées (en production seulement).
+surveillerLesErreurs();
 
 
 const container = document.getElementById('root');
@@ -29,26 +33,28 @@ if (!container) throw new Error('Élément racine introuvable');
 
 createRoot(container).render(
   <StrictMode>
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{
-        persister,
-        // Au-delà d'une semaine, ce qu'on a gardé ne décrit plus le voyage :
-        // les prix ont bougé, les autres ont voté. Mieux vaut repartir de zéro.
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        // La version change avec le format du cache : une mise à jour de
-        // Tripora ne doit pas relire des données qu'elle ne comprend plus.
-        buster: VERSION_DU_CACHE,
-      }}
-    >
-      <AuthProvider>
-        <BrowserRouter>
-          <PontNatif />
-          <SuitLaRegion>
-            <App />
-          </SuitLaRegion>
-        </BrowserRouter>
-      </AuthProvider>
-    </PersistQueryClientProvider>
+    <FiletDeSecurite>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          // Au-delà d'une semaine, ce qu'on a gardé ne décrit plus le voyage :
+          // les prix ont bougé, les autres ont voté. Mieux vaut repartir de zéro.
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          // La version change avec le format du cache : une mise à jour de
+          // Tripora ne doit pas relire des données qu'elle ne comprend plus.
+          buster: VERSION_DU_CACHE,
+        }}
+      >
+        <AuthProvider>
+          <BrowserRouter>
+            <PontNatif />
+            <SuitLaRegion>
+              <App />
+            </SuitLaRegion>
+          </BrowserRouter>
+        </AuthProvider>
+      </PersistQueryClientProvider>
+    </FiletDeSecurite>
   </StrictMode>,
 );
