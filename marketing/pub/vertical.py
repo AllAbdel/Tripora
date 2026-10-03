@@ -18,7 +18,7 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-from voix import couper_en_lignes, horodatage
+from voix import charger_script, couper_en_lignes, echelle, horodatage
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 SORTIE = os.path.join(ICI, 'sortie')
@@ -81,8 +81,7 @@ def sous_titres(langue, video_y, avec_voix=True):
         with open(chemin_voix, encoding='utf-8') as f:
             lignes = json.load(f)
     else:
-        with open(os.path.join(ICI, 'voix', f'script-{langue}.json'), encoding='utf-8') as f:
-            lignes = json.load(f)['lignes']
+        lignes = charger_script(langue)
         for l, suivante in zip(lignes, lignes[1:] + [None]):
             l['fin_sous_titre'] = min(l['fin'] + 0.25, suivante['debut'] - 0.05) if suivante else l['fin'] + 0.3
     entete = f"""[Script Info]
@@ -105,10 +104,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     corps = ''
     for l in lignes if avec_voix else []:
         corps += f"Dialogue: 0,{horodatage(l['debut'])},{horodatage(l['fin_sous_titre'])},Voix,,0,0,0,,{{\\fad(120,120)}}{couper_en_lignes(l['texte'], 24)}\n"
-    for (a, b), nom in zip(BORNES, textes['chapitres']):
+    e = echelle(langue)
+    for (a, b), nom in zip(((a * e, b * e) for a, b in BORNES), textes['chapitres']):
         corps += f"Dialogue: 0,{horodatage(a)},{horodatage(b)},Chapitre,,0,0,0,,{{\\fad(250,250)}}{nom.upper()}\n"
-    corps += f"Dialogue: 0,{horodatage(88.9)},{horodatage(93.4)},Adresse,,0,0,0,,{{\\fad(300,0)}}tripora-3rg.pages.dev\n"
-    corps += f"Dialogue: 0,{horodatage(89.3)},{horodatage(93.4)},Appel,,0,0,0,,{{\\fad(300,0)}}{textes['appel']}\n"
+    corps += f"Dialogue: 0,{horodatage(88.9 * e)},{horodatage(93.4 * e)},Adresse,,0,0,0,,{{\\fad(300,0)}}tripora-3rg.pages.dev\n"
+    corps += f"Dialogue: 0,{horodatage(89.3 * e)},{horodatage(93.4 * e)},Appel,,0,0,0,,{{\\fad(300,0)}}{textes['appel']}\n"
     chemin = os.path.join(SORTIE, f'vertical-{langue}.ass')
     with open(chemin, 'w', encoding='utf-8') as f:
         f.write(entete + corps)

@@ -167,15 +167,30 @@ Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour,
         f.write(entete + corps)
 
 
-def charger_script(langue, entier=False):
-    with open(os.path.join(ICI, 'voix', f'script-{langue}.json'), encoding='utf-8') as f:
-        script = json.load(f)
-    return script if entier else script['lignes']
-
-
 def suffixe(langue):
     """Les fichiers de la musique : sans suffixe pour le français, -en pour l'anglais (sa frappe suit sa phrase)."""
     return '' if langue == 'fr' else f'-{langue}'
+
+
+def echelle(langue):
+    """Le rythme de la vidéo (scenes.js, ECHELLE), lu dans les bruitages exportés : 1 à défaut."""
+    try:
+        with open(os.path.join(SORTIE, f'cues{suffixe(langue)}.json'), encoding='utf-8') as f:
+            return float(json.load(f).get('echelle', 1.0))
+    except (OSError, ValueError):
+        return 1.0
+
+
+def charger_script(langue, entier=False):
+    """Le script, fenêtres passées en temps de vidéo : elles sont écrites en temps de scène."""
+    with open(os.path.join(ICI, 'voix', f'script-{langue}.json'), encoding='utf-8') as f:
+        script = json.load(f)
+    e = echelle(langue)
+    for l in script['lignes']:
+        for cle in ('debut', 'fin', 'cible'):
+            if cle in l:
+                l[cle] = round(l[cle] * e, 3)
+    return script if entier else script['lignes']
 
 
 def fichier_de(dossier, nom):
@@ -202,7 +217,7 @@ def preparer(langue):
         for l in lignes:
             repliques.append(lire(fichier_de(dossier, l['id']), nettoyage))
 
-    piste = np.zeros(int(96 * SR))
+    piste = np.zeros(int(96 * echelle(langue) * SR))
     rapport, trop_longues = [], []
     for l, x in zip(lignes, repliques):
         x = rogner(x)

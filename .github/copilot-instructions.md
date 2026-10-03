@@ -31,6 +31,14 @@ Lire d'abord **`docs/TRADUCTIONS.md`** : il décrit le mécanisme et la marche
 - Compléter aussi le dictionnaire de la langue dans `apps/web/src/i18n/textes.ts`
   et sa ligne dans `apps/web/public/sw-alertes.js`.
 - Mieux vaut laisser une phrase en français que la traduire approximativement.
+- Une seule forme d'adresse par langue, partout (espagnol : tú, jamais
+  vosotros) : la table est dans le guide, section « Règles ».
+- Pas de clé qui soit un morceau de phrase (« sur », « Départ de ») : les
+  morceaux voisins sont recollés avant la recherche, c'est la phrase entière
+  qu'il faut traduire.
+- Livrer chaque lot en pull request vers `claude/tripora-travel-planning-app-r3pv5t`
+  (la branche de développement), avec
+  la sortie de `traductions:extraire` avant et après (textes traduits).
 
 ## Avant de proposer un changement
 

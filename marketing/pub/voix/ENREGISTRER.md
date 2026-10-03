@@ -1,6 +1,6 @@
 # Enregistrer la voix off
 
-19 répliques, environ 1 min 30 de pub. Comptez une demi-heure, prises ratées
+19 répliques, environ 1 min 50 de pub. Comptez une demi-heure, prises ratées
 comprises. Un téléphone suffit.
 
 ## Avant de commencer
@@ -39,25 +39,25 @@ silences entre les phrases : c'est sur eux que je découpe.
 
 | N° | Réplique | Au plus | Dans la pub à |
 |---|---|---|---|
-| 01 | Partir entre amis, le rêve. L’organiser… beaucoup moins. | 3.8 s | 0:06.1 |
-| 02 | Tripora. Le voyage de groupe, de l’idée au souvenir. | 3.9 s | 0:10.1 |
-| 03 | Une envie, une phrase : votre voyage est créé. Sans compte. | 4.4 s | 0:14.4 |
-| 04 | Invitez la bande : chacun ses envies, chacun son budget. | 4.6 s | 0:19.2 |
-| 05 | Tripora compare les destinations : vols, climat, coût total… et explique chaque choix. | 6.4 s | 0:24.4 |
-| 06 | Le groupe vote. La destination se choisit ensemble. | 4.5 s | 0:31.3 |
-| 07 | Swipez les activités : le classement se fait seul. | 3.7 s | 0:36.3 |
-| 08 | Le prix baisse ? Vous êtes prévenus. | 2.6 s | 0:40.3 |
-| 09 | Un itinéraire jour par jour, avec de vrais lieux. Il pleut ? Tripora propose d’échanger. | 6.3 s | 0:43.4 |
-| 10 | Vu sur les réseaux ? Partagez, c’est épinglé. | 3.8 s | 0:50.2 |
-| 11 | Billets, réservations, codes : tout le groupe a tout. Même hors ligne. | 4.6 s | 0:54.3 |
-| 12 | Et tout ce qui va avec. | 2.6 s | 0:59.2 |
-| 13 | Un ticket ? Une photo : la dépense est notée et partagée. | 4.5 s | 1:02.3 |
-| 14 | Qui doit quoi ? Réglé en deux virements. | 3.5 s | 1:07.3 |
-| 15 | Vos photos, réunies dans le journal du groupe. | 3.5 s | 1:11.3 |
-| 16 | Au retour, un bilan à partager, et un passeport qui se remplit. | 5.4 s | 1:15.3 |
-| 17 | Et ce n’est que le début. | 3.5 s | 1:21.3 |
-| 18 | Gratuit, et sans publicité. | 2.3 s | 1:25.3 |
-| 19 | Tripora. Partez ensemble. | 3.3 s | 1:28.3 |
+| 01 | Partir entre amis, le rêve. L’organiser… beaucoup moins. | 4.6 s | 0:07.3 |
+| 02 | Tripora. Le voyage de groupe, de l’idée au souvenir. | 4.7 s | 0:12.1 |
+| 03 | Une envie, une phrase : votre voyage est créé. Sans compte. | 5.3 s | 0:17.3 |
+| 04 | Invitez la bande : chacun ses envies, chacun son budget. | 5.5 s | 0:23.1 |
+| 05 | Tripora compare les destinations : vols, climat, coût total… et explique chaque choix. | 7.7 s | 0:29.3 |
+| 06 | Le groupe vote. La destination se choisit ensemble. | 5.4 s | 0:37.6 |
+| 07 | Swipez les activités : le classement se fait seul. | 4.4 s | 0:43.6 |
+| 08 | Le prix baisse ? Vous êtes prévenus. | 3.1 s | 0:48.4 |
+| 09 | Un itinéraire jour par jour, avec de vrais lieux. Il pleut ? Tripora propose d’échanger. | 7.6 s | 0:52.1 |
+| 10 | Vu sur les réseaux ? Partagez, c’est épinglé. | 4.5 s | 1:00.2 |
+| 11 | Billets, réservations, codes : tout le groupe a tout. Même hors ligne. | 5.5 s | 1:05.2 |
+| 12 | Et tout ce qui va avec. | 3.2 s | 1:11.0 |
+| 13 | Un ticket ? Une photo : la dépense est notée et partagée. | 5.5 s | 1:14.8 |
+| 14 | Qui doit quoi ? Réglé en deux virements. | 4.3 s | 1:20.8 |
+| 15 | Vos photos, réunies dans le journal du groupe. | 4.3 s | 1:25.6 |
+| 16 | Au retour, un bilan à partager, et un passeport qui se remplit. | 6.5 s | 1:30.4 |
+| 17 | Et ce n’est que le début. | 4.1 s | 1:37.6 |
+| 18 | Gratuit, et sans publicité. | 2.8 s | 1:42.4 |
+| 19 | Tripora. Partez ensemble. | 4.0 s | 1:46.0 |
 
 Quelques repères de prononciation : « Tripora » se dit *tri-po-ra*, accent sur
 la fin ; « swipez » à l'anglaise (*souaïpé*).

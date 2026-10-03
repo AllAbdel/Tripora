@@ -23,13 +23,34 @@ SORTIE = os.path.join(ICI, 'sortie')
 LANGUE = os.environ.get('LANGUE', 'fr')
 # La version française garde ses noms ; une autre langue a ses propres bruitages (la frappe suit sa phrase).
 SUFFIXE = '' if LANGUE == 'fr' else f'-{LANGUE}'
+
+
+def lire_l_echelle():
+    """Le rythme de la vidéo (scenes.js, ECHELLE) : la pub est jouée ×1,2 plus lentement que ses plans."""
+    try:
+        with open(os.path.join(SORTIE, f'cues{SUFFIXE}.json'), encoding='utf-8') as f:
+            return float(json.load(f).get('echelle', 1.0))
+    except (OSError, ValueError):
+        return 1.0
+
+
+# Le morceau est écrit en « temps de scène » (tempo 120, une mesure = 2 s) ;
+# S() le passe en temps de vidéo, et le tempo ralentit d'autant (120 → 100) :
+# les coupes tombent toujours sur les temps, et rien n'est étiré après coup.
+ECHELLE = lire_l_echelle()
+
+
+def S(secondes):
+    return secondes * ECHELLE
+
+
 SR = 44100
-DUREE = 95.0
+DUREE = S(95.0)
 N = int(DUREE * SR)
-BPM = 120
-TEMPS = 60 / BPM          # 0,5 s
-MESURE = 4 * TEMPS        # 2 s
-DOUBLE = TEMPS / 4        # double croche, 0,125 s
+BPM = 120 / ECHELLE
+TEMPS = 60 / BPM          # 0,5 s de scène
+MESURE = 4 * TEMPS        # 2 s de scène
+DOUBLE = TEMPS / 4        # double croche
 rng = np.random.default_rng(2026)
 
 
@@ -437,7 +458,8 @@ def accord_a(t):
         return 'A'
     if t >= 88:
         return 'D'
-    return GRILLE[int((t - 10) // MESURE) % 4]
+    # t est en temps de scène : une mesure y dure 2 s.
+    return GRILLE[int((t - 10) // 2) % 4]
 
 
 THEME_1 = [(0, 1, 69), (1, .5, 71), (1.5, 1.5, 74), (3, 1, 76), (4, 1.5, 76), (5.5, .5, 74), (6, 1, 73), (7, 1, 69),
@@ -465,9 +487,9 @@ def composer():
         sidechain[i:fin] = np.minimum(sidechain[i:fin], courbe[:fin - i])
 
     # -- 0 → 5,6 s : la conversation qui déborde. Une pulsation qui s'impatiente.
-    for k in range(int(5.6 / (TEMPS / 2))):
+    for k in range(int(S(5.6) / (TEMPS / 2))):
         t = k * TEMPS / 2
-        progression = t / 5.6
+        progression = t / S(5.6)
         b = basse(38, TEMPS / 2 * 0.8, 0.35 + 0.4 * progression)
         poser(basses, t, passe_bas(b, 220 + 1600 * progression ** 2), 1, 0)
         poser(batterie, t, charleston(0.25 + 0.5 * progression), 1, 0.25 if k % 2 else -0.25)
@@ -475,25 +497,26 @@ def composer():
             poser(batterie, t, clic(0.12, 1200), 1, 0)
 
     # -- 6 → 10 s : le constat. Piano seul, dans l'espace.
-    for t0, nom in ((6.0, 'Em'), (8.0, 'Asus')):
+    for t0, nom in ((S(6.0), 'Em'), (S(8.0), 'Asus')):
         _, notes = ACCORDS[nom]
         for k, m in enumerate(notes):
-            poser(keys, t0 + k * 0.03, piano_electrique(m, 1.8, 0.55), 1.8, -0.3 + 0.15 * k)
-        poser(keys, t0 + 1.5, piano_electrique(notes[-1] + 12, 0.4, 0.3), 1, 0.3)
-    poser(nappes, 6.0, nappe(ACCORDS['Em'][1], 2.0, 1200), 0.6)
-    poser(nappes, 8.0, nappe(ACCORDS['Asus'][1], 1.8, 1400), 0.6)
-    poser(batterie, 8.6, montee(1.4, 0.7), 1, 0)
-    rev = cymbale(1.4, 0.7)[::-1]
-    poser(batterie, 10.0 - rev.size / SR, rev, 1, 0)
+            poser(keys, t0 + k * 0.03, piano_electrique(m, S(1.8), 0.55), 1.8, -0.3 + 0.15 * k)
+        poser(keys, t0 + S(1.5), piano_electrique(notes[-1] + 12, 0.4, 0.3), 1, 0.3)
+    poser(nappes, S(6.0), nappe(ACCORDS['Em'][1], S(2.0), 1200), 0.6)
+    poser(nappes, S(8.0), nappe(ACCORDS['Asus'][1], S(1.8), 1400), 0.6)
+    poser(batterie, S(8.6), montee(S(1.4), 0.7), 1, 0)
+    rev = cymbale(S(1.4), 0.7)[::-1]
+    poser(batterie, S(10.0) - rev.size / SR, rev, 1, 0)
 
     # -- 10 → 88 s : le corps du morceau.
     for mesure in range(39):
-        t0 = 10 + mesure * MESURE
-        nom = accord_a(t0)
+        t0 = S(10) + mesure * MESURE
+        ts = round(t0 / ECHELLE, 6)   # la même mesure, en temps de scène
+        nom = accord_a(ts)
         racine, notes = ACCORDS[nom]
-        breakdown = 80 <= t0 < 84
-        vivre = 62 <= t0 < 75
-        promesses = 84 <= t0 < 88
+        breakdown = 80 <= ts < 84
+        vivre = 62 <= ts < 75
+        promesses = 84 <= ts < 88
         plein = not breakdown and not promesses
 
         # Nappe, toujours.
@@ -510,7 +533,7 @@ def composer():
         # Arpège pincé, en croches.
         haut = [m + 12 for m in notes[:4]]
         motif = [0, 1, 2, 3, 2, 1, 2, 3]
-        if t0 >= 14 or breakdown:
+        if ts >= 14 or breakdown:
             for k, i in enumerate(motif):
                 v = 0.55 if k % 2 == 0 else 0.4
                 p = pincement(haut[i], 0.6, v, 0.7 if breakdown else 1.0)
@@ -537,11 +560,11 @@ def composer():
                 for pas in (2, 6, 10, 14):
                     poser(batterie, t0 + pas * DOUBLE, charleston(0.5, True), 1, -0.3)
             # Roulement avant les grands changements.
-            if t0 + MESURE in (44, 62, 76, 80):
+            if round(ts + 2) in (44, 62, 76, 80):
                 for pas in range(8, 16):
                     poser(batterie, t0 + pas * DOUBLE, claquement(0.25 + 0.07 * (pas - 8)), 1, 0)
-            if t0 in (14, 44, 62, 76):
-                poser(batterie, t0, cymbale(2.0, 0.6), 1, 0)
+            if round(ts) in (14, 44, 62, 76):
+                poser(batterie, t0, cymbale(S(2.0), 0.6), 1, 0)
         elif promesses:
             for pas in (0, 8):
                 poser(batterie, t0 + pas * DOUBLE, grosse_caisse(0.7), 1, 0)
@@ -551,26 +574,26 @@ def composer():
             for pas in range(0, 16, 2):
                 poser(batterie, t0 + pas * DOUBLE, charleston(0.3), 1, 0.3)
 
-    poser(batterie, 82.6, montee(2.4, 0.6), 1, 0)
+    poser(batterie, S(82.6), montee(S(2.4), 0.6), 1, 0)
 
     # -- La mélodie sifflée : le thème, sa réponse, puis la signature finale.
-    for debut, theme in ((22.0, THEME_1), (30.0, THEME_2), (46.0, THEME_1), (54.0, THEME_2), (66.0, THEME_1), (74.0, [(n[0], n[1], n[2]) for n in THEME_2])):
+    for debut, theme in ((S(22.0), THEME_1), (S(30.0), THEME_2), (S(46.0), THEME_1), (S(54.0), THEME_2), (S(66.0), THEME_1), (S(74.0), [(n[0], n[1], n[2]) for n in THEME_2])):
         son, t0 = sifflet(theme, debut)
         poser(lead, t0, son, 1, 0.08)
-    son, t0 = sifflet([(n[0], n[1], n[2] + 12) for n in THEME_1[:8]], 66.0)
+    son, t0 = sifflet([(n[0], n[1], n[2] + 12) for n in THEME_1[:8]], S(66.0))
     poser(lead, t0, son, 0.35, -0.2)
 
     # -- 88 s : la résolution sur ré, et la signature.
     _, notes = ACCORDS['D']
     for k, m in enumerate(notes):
-        poser(keys, 88.0 + k * 0.03, piano_electrique(m, 3.5, 0.6), 1, -0.3 + 0.15 * k)
-        poser(keys, 88.0 + k * 0.03, piano_electrique(m + 12, 3.0, 0.3), 1, 0.3 - 0.15 * k)
-    poser(nappes, 88.0, nappe(notes, 4.0, 2200), 0.8)
-    poser(basses, 88.0, basse(38, 3.0, 0.8), 1, 0)
-    son, t0 = sifflet(SIGNATURE, 88.6)
+        poser(keys, S(88.0) + k * 0.03, piano_electrique(m, S(3.5), 0.6), 1, -0.3 + 0.15 * k)
+        poser(keys, S(88.0) + k * 0.03, piano_electrique(m + 12, S(3.0), 0.3), 1, 0.3 - 0.15 * k)
+    poser(nappes, S(88.0), nappe(notes, S(4.0), 2200), 0.8)
+    poser(basses, S(88.0), basse(38, S(3.0), 0.8), 1, 0)
+    son, t0 = sifflet(SIGNATURE, S(88.6))
     poser(lead, t0, son, 1, 0)
     for k, m in enumerate((86, 90, 93, 98)):
-        poser(pinc, 88.6 + k * 0.12, pincement(m, 1.6, 0.4), 1, -0.3 + 0.2 * k)
+        poser(pinc, S(88.6) + k * 0.12, pincement(m, 1.6, 0.4), 1, -0.3 + 0.2 * k)
 
     # -- Mixage.
     plan_reverb = keys * 0.5 + nappes * 0.6 + lead * 0.7 + pinc * 0.35 + batterie * 0.08
@@ -609,7 +632,7 @@ def main():
     sfx = sfx + reverb(sfx * 0.35, 1.2) * 0.4
     # La musique se tait net à la saturation du groupe (5,6 s), puis s'éteint à la fin.
     t = temps(N)
-    musique *= np.where((t > 5.62) & (t < 6.0), 0.0, 1.0)
+    musique *= np.where((t > S(5.62)) & (t < S(6.0)), 0.0, 1.0)
     fin = pub['duree']
     musique *= np.clip((fin + 0.6 - t) / 1.8, 0, 1)
     sfx *= np.clip((fin + 0.6 - t) / 1.2, 0, 1)

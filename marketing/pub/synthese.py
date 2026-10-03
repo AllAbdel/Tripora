@@ -15,12 +15,13 @@ Il faut le paquet Python `kokoro-onnx`, le modèle quantifié
 (`model_quantized.onnx`, ~90 Mo) et les voix (`voices.bin`) : voir le README,
 « La version anglaise ». Leurs chemins : KOKORO_MODELE et KOKORO_VOIX.
 """
-import json
 import os
 import sys
 
 import numpy as np
 from scipy.io import wavfile
+
+from voix import charger_script
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 VOIX = {'en': ('af_heart', 'en-us')}
@@ -47,8 +48,8 @@ def main():
 
     kokoro = Kokoro(os.environ.get('KOKORO_MODELE', 'model_quantized.onnx'), os.environ.get('KOKORO_VOIX', 'voices.bin'))
     voix, accent = VOIX[langue]
-    with open(os.path.join(ICI, 'voix', f'script-{langue}.json'), encoding='utf-8') as f:
-        lignes = json.load(f)['lignes']
+    # Les fenêtres en temps de vidéo (la pub est jouée plus lentement que ses plans).
+    lignes = charger_script(langue)
     dossier = os.path.join(ICI, 'voix', langue)
     os.makedirs(dossier, exist_ok=True)
     for l in lignes:

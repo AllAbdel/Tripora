@@ -99,10 +99,34 @@ Les codes possibles sont ceux de `apps/web/src/i18n/langues.ts` : `es`, `it`,
 - **Ce qui ne se traduit pas** : les noms propres (personnes, marques des
   partenaires), les codes (aéroports, devises), ce qui est sous
   `translate="no"`.
-- **Ton** : celui de l'interface française — on vouvoie, phrases courtes,
+- **Ton** : celui de l'interface française — chaleureux, phrases courtes,
   casse de phrase. Vocabulaire tenu dans `phrases-en.ts` : « trip » pour
   voyage, « wishes » pour envies, « vault » pour coffre ; trouver
   l'équivalent naturel dans la langue, et s'y tenir.
+- **Registre : une seule forme d'adresse par langue, partout** (boutons,
+  phrases, notification de `sw-alertes.js`). Le français vouvoie ; ailleurs,
+  on suit l'usage des applications grand public :
+
+  | Langue | Forme | Exemple |
+  |---|---|---|
+  | es | tú (jamais vosotros ni usted) | « Elige tu ciudad de salida » |
+  | it | tu | « Scegli la tua città di partenza » |
+  | de | du | « Wähle deine Abfahrtsstadt » |
+  | pt (Portugal) | tu | « Escolhe a tua cidade de partida » |
+  | nl | je | « Kies je vertrekstad » |
+  | pl | ty, ou l'impersonnel | « Wybierz miasto wyjazdu » |
+  | tr | sen | « Kalkış şehrini seç » |
+  | ru | вы | « Выберите город отправления » |
+  | ar | المخاطَب، صيغة محايدة ومهذبة | « اختر مدينة المغادرة » |
+  | zh | 你 | « 选择出发城市 » |
+  | ja | です・ます調 | « 出発する都市を選んでください » |
+  | ko | 해요체 | « 출발 도시를 선택해요 » |
+- **Pas de morceaux de phrase en clé.** `phrases-en.ts` contient encore
+  quelques clés héritées d'une ancienne récolte (« sur », « Départ de »,
+  « , classées selon les envies du groupe ») : depuis que les morceaux
+  voisins sont recollés, elles ne servent plus. Ne pas les recopier ;
+  traduire la phrase entière que listent `traductions:extraire` et
+  `traductions:recolte`, par un motif si elle porte un nombre ou un nom.
 - **Mieux vaut le français qu'une traduction approximative.** Une entrée
   absente laisse le français ; une entrée fausse trompe.
 - **Arabe** : l'interface passe de droite à gauche toute seule (`dir`) ; il

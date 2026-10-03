@@ -185,10 +185,14 @@
      ===================================================================== */
   const p1 = plan('chaos');
   montrer(p1, 0, 6.5);
-  const entete = h(`<div style="position:absolute;left:50%;top:70px;transform:translateX(-50%);display:flex;align-items:center;gap:16px;padding:14px 26px;border-radius:999px;background:var(--feuille);border:1px solid var(--filet);box-shadow:0 16px 30px -20px rgba(26,23,19,.4);font-weight:650;font-size:26px">
+  const entete = h(`<div style="position:absolute;left:50%;top:70px;display:flex;align-items:center;gap:16px;padding:14px 26px;border-radius:999px;background:var(--feuille);border:1px solid var(--filet);box-shadow:0 16px 30px -20px rgba(26,23,19,.4);font-weight:650;font-size:26px">
       <span style="display:flex">${['hugo', 'sarah', 'malik', 'lea'].map((q, i) => `<span style="margin-left:${i ? -14 : 0}px">${avatar(q, 44)}</span>`).join('')}</span>
       ${L('Vacances 2026', 'Summer 2026')} <span style="color:var(--muet);font-weight:500">${L('· 6 membres', '· 6 members')}</span>
       <span class="badge-non-lus chiffre" style="background:var(--corail);color:#fff;border-radius:999px;padding:4px 14px;font-size:22px;font-weight:700">0</span></div>`, p1.cadre);
+  // Centré par xPercent : un translateX(-50%) écrit dans le style serait mesuré
+  // en pixels par GSAP dès la construction, avant le chargement des polices, et
+  // l'élément finirait décalé.
+  gsap.set(entete, { xPercent: -50 });
   surgir(entete, 0.15, { son: null });
   const badge = entete.querySelector('.badge-non-lus');
   const MESSAGES = L([
@@ -355,12 +359,14 @@
         ${avatar(qui, 104)}
         <div class="titre" style="font-size:40px">${AMIS[qui].nom}</div>
         <div style="display:flex;flex-direction:column;gap:10px;align-items:center">${envies.map(([e, c]) => `<span style="padding:8px 18px;border-radius:999px;background:${c}1f;color:${c};font-weight:650;font-size:22px">${e}</span>`).join('')}</div>
-        <div class="budget" style="margin-top:auto;font-size:22px;color:var(--muet);font-weight:600">${L('Budget max', 'Max budget')}<br><b class="chiffre" style="font-size:36px;color:var(--encre)">${L(`${budget} €`, `€${budget}`)}</b></div></div>`, p5.cadre);
+        <div class="budget" style="margin-top:auto;font-size:22px;color:var(--muet);font-weight:600">${L('Budget max', 'Max budget')}<br><span class="montant" style="position:relative;display:inline-block"><b class="chiffre" style="font-size:36px;color:var(--encre)">${L(`${budget} €`, `€${budget}`)}</b></span></div></div>`, p5.cadre);
     tl.fromTo(c, { x: 330 - x, y: 120, scale: 0.4, rotation: -10, autoAlpha: 0 }, { x: 0, y: 0, scale: 1, rotation: 0, autoAlpha: 1, duration: 0.9, ease: ease.pose }, 20.0 + i * 0.22);
     sfx('souffle', 20.0 + i * 0.22, { doux: true, hauteur: i });
     return c;
   });
-  const anneau = h('<div style="position:absolute;left:1245px;top:722px;width:180px;height:58px;border-radius:18px;border:4px solid var(--or)"></div>', p5.cadre);
+  // Le budget le plus serré, entouré : le cadre vit dans le montant lui-même,
+  // il en prend donc la taille et la place, quelle que soit la police.
+  const anneau = h('<span style="position:absolute;inset:-5px -16px;border:4px solid var(--or);border-radius:14px;pointer-events:none"></span>', cartesMembres[2].querySelector('.montant'));
   tl.fromTo(anneau, { scale: 1.4, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.5, ease: ease.pose }, 22.1);
   const groupe5 = h(`<div class="carte" style="left:600px;top:840px;width:1170px;height:96px;display:flex;align-items:center;gap:22px;padding:0 34px;font-size:30px;font-weight:600">
       <span style="color:var(--or)">${ico('users', 36, 2.2)}</span>${L('Budget du groupe :', 'Group budget:')} <b class="chiffre" style="color:var(--marque)">${L('450 € par personne', '€450 per person')}</b>
@@ -927,7 +933,8 @@
     const phase = hasard() * 6, vitesse = 1 + hasard() * 2;
     parImage((t) => { s.style.opacity = 0.15 + 0.45 * (0.5 + 0.5 * Math.sin(t * vitesse + phase)); });
   }
-  const pastilleB = h(`<div style="position:absolute;left:50%;top:230px;transform:translateX(-50%);padding:14px 34px;border-radius:999px;border:2px solid var(--or-clair);color:var(--or-clair);font-weight:700;font-size:26px;letter-spacing:.24em;text-transform:uppercase">${L('Bientôt', 'Coming soon')}</div>`, p18.cadre);
+  const pastilleB = h(`<div style="position:absolute;left:50%;top:230px;padding:14px 34px;border-radius:999px;border:2px solid var(--or-clair);color:var(--or-clair);font-weight:700;font-size:26px;letter-spacing:.24em;text-transform:uppercase">${L('Bientôt', 'Coming soon')}</div>`, p18.cadre);
+  gsap.set(pastilleB, { xPercent: -50 });
   surgir(pastilleB, 81.2, { son: null, y: 20 });
   const t18 = titre(p18.cadre, L('Et ce n’est que le début.', 'And this is just the beginning.'), { x: 0, y: 320, classe: 'titre m', largeur: 1920, centre: true });
   apparaitre(t18, 81.35);
@@ -964,7 +971,8 @@
   apparaitre([...motFin.querySelectorAll('.mi')], 88.2, { stagger: 0.04, duree: 1.1 });
   const devFin = titre(p19.cadre, L('Partez <em>ensemble.</em>', 'Travel <em>together.</em>'), { x: 0, y: 600, classe: 'titre s', largeur: 1920, centre: true, style: 'font-weight:500' });
   apparaitre(devFin, 88.8);
-  const cta = h(`<div style="position:absolute;left:50%;top:740px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:22px 40px;border-radius:16px;background:var(--marque);color:#fff;font-weight:700;font-size:32px;white-space:nowrap;box-shadow:0 24px 44px -22px rgba(26,95,180,.75)">${L('Créez votre premier voyage, sans compte', 'Create your first trip — no account needed')} ${ico('plane', 32, 2.2)}</div>`, p19.cadre);
+  const cta = h(`<div style="position:absolute;left:50%;top:740px;display:flex;align-items:center;gap:14px;padding:22px 40px;border-radius:16px;background:var(--marque);color:#fff;font-weight:700;font-size:32px;white-space:nowrap;box-shadow:0 24px 44px -22px rgba(26,95,180,.75)">${L('Créez votre premier voyage, sans compte', 'Create your first trip — no account needed')} ${ico('plane', 32, 2.2)}</div>`, p19.cadre);
+  gsap.set(cta, { xPercent: -50 });
   surgir(cta, 89.3, { hauteur: 6 });
   const url = h('<div style="position:absolute;left:0;top:860px;width:1920px;text-align:center;font-size:34px;font-weight:650;letter-spacing:.04em;color:var(--encre-douce)">tripora-3rg.pages.dev</div>', p19.cadre);
   surgir(url, 89.7, { son: null, y: 16 });
@@ -973,12 +981,27 @@
   const DUREE = 93.4;
   tl.set({}, {}, DUREE);
 
-  /* ---------- Interface pour le rendu ---------- */
+  /* ---------- Le rythme ----------
+     Les plans sont écrits en « temps de scène » (les secondes ci-dessus). La
+     vidéo les joue ECHELLE fois plus lentement, pour laisser le temps de lire :
+     ×1,2, 93,4 s de scène → 1 min 52 de vidéo. Les bruitages, la musique (dont
+     le tempo suit : 120 → 100), la voix et les sous-titres prennent la même
+     échelle, lue dans sortie/cues.json. */
+  const ECHELLE = 1.2;
+  const enVideo = (t) => Math.round(t * ECHELLE * 1000) / 1000;
+
+  /* ---------- Interface pour le rendu (en temps de vidéo) ---------- */
   window.allerA = (t) => {
-    tl.seek(t, false);
-    for (const fn of PAR_IMAGE) fn(t);
+    const scene = t / ECHELLE;
+    tl.seek(scene, false);
+    for (const fn of PAR_IMAGE) fn(scene);
   };
-  window.PUB = { duree: DUREE, cues: CUES.sort((a, b) => a.t - b.t), plans: PLANS };
+  window.PUB = {
+    duree: enVideo(DUREE),
+    echelle: ECHELLE,
+    cues: CUES.map((c) => ({ ...c, t: enVideo(c.t), ...(c.fin !== undefined ? { fin: enVideo(c.fin) } : {}) })).sort((a, b) => a.t - b.t),
+    plans: PLANS.map((p) => ({ ...p, debut: enVideo(p.debut), fin: enVideo(p.fin) })),
+  };
   window.pret = (async () => {
     await Promise.all([
       document.fonts.load('600 96px Fraunces'), document.fonts.load('500 96px Fraunces'),

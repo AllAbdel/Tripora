@@ -1,6 +1,6 @@
 # La pub de Tripora
 
-Une vidéo de 1 min 33, 1920×1080, 30 images par seconde, dans l'identité
+Une vidéo de 1 min 52, 1920×1080, 30 images par seconde, dans l'identité
 « carnet de voyage » de l'application : papier crème, encre brune, Fraunces et
 Inter Tight, les couleurs de l'app. Tout est fabriqué ici, sans banque d'images
 ni musique sous licence : les écrans sont de vraies captures de Tripora, les
@@ -9,7 +9,13 @@ synthétisés par `musique.py`.
 
 ## Le découpage
 
-Tempo 120 : une mesure dure 2 s, et les coupes tombent sur les temps.
+Les plans sont écrits en « temps de scène » (93,4 s, tempo 120 : une mesure
+dure 2 s). La vidéo les joue **1,2 fois plus lentement** (`ECHELLE` dans
+`scenes.js`), pour laisser le temps de lire : 1 min 52, tempo 100. Rien n'est
+étiré après coup — l'animation, les bruitages (`cues.json` porte l'échelle),
+la musique, la voix, les sous-titres et la version verticale lisent tous la
+même échelle. Pour changer le rythme, ne changer que `ECHELLE`. Les temps
+ci-dessous sont en temps de scène.
 
 | Temps | Plan | Ce qu'on voit |
 |---|---|---|
