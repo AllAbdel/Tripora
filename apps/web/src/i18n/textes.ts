@@ -142,6 +142,7 @@ const EN: Dictionnaire = {
 
 const ES: Dictionnaire = {
   'nav.trips': 'Viajes', 'nav.carte': 'Mapa', 'nav.budget': 'Presupuesto', 'nav.profil': 'Perfil',
+  'nav.contenu': 'Ir al contenido',
   'action.creer': 'Crear un trip', 'action.retour': 'Volver', 'action.annuler': 'Cancelar',
   'action.enregistrer': 'Guardar', 'action.continuer': 'Continuar', 'action.chercher': 'Buscar',
   'action.publier': 'Publicar', 'action.rejoindre': 'Unirse', 'action.nouveau': 'Nuevo',

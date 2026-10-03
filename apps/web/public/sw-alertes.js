@@ -19,6 +19,7 @@
 const TEXTES = {
   fr: { titre: 'Un prix que vous suivez a baissé', corps: 'Ouvrez Tripora pour voir de combien.' },
   en: { titre: 'A price you’re watching just dropped', corps: 'Open Tripora to see by how much.' },
+  es: { titre: 'Un precio que sigues acaba de bajar', corps: 'Abre Tripora para ver cuánto.' },
 };
 
 /*
