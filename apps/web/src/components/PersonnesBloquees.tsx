@@ -1,3 +1,4 @@
+import { localeActive } from '@tripora/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -45,7 +46,7 @@ export function PersonnesBloquees() {
                 <span className="block truncate">{personne.nom}</span>
                 <span className="text-muted block text-xs">
                   depuis le{' '}
-                  {new Date(personne.depuis).toLocaleDateString('fr-FR', {
+                  {new Date(personne.depuis).toLocaleDateString(localeActive(), {
                     day: 'numeric',
                     month: 'long',
                   })}

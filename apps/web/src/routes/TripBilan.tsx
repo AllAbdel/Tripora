@@ -5,10 +5,13 @@ import { ArrowLeft, Download, ExternalLink, Share2 } from 'lucide-react';
 import {
   affilierLiens,
   bilanDuVoyage,
+  convertirDistance,
   dateDuJour,
   findDestination,
+  formatNombre,
   liensDeRubrique,
   periodeLisible,
+  uniteDeDistance,
   type Bilan,
 } from '@tripora/core';
 import { Button } from '@/components/ui/Button';
@@ -114,7 +117,7 @@ export default function TripBilan() {
   const chiffres = bilan
     ? [
         bilan.jours !== null && { valeur: String(bilan.jours), libelle: bilan.jours > 1 ? 'jours' : 'jour' },
-        bilan.km !== null && bilan.km >= 10 && { valeur: bilan.km.toLocaleString('fr-FR'), libelle: 'km' },
+        bilan.km !== null && bilan.km >= 10 && { valeur: formatNombre(Math.round(convertirDistance(bilan.km))), libelle: uniteDeDistance() },
         bilan.activites > 0 && {
           valeur: String(bilan.activites),
           libelle: bilan.activites > 1 ? 'activités' : 'activité',

@@ -1,4 +1,4 @@
-import { findDestination, formatCents, MONTHS_FR } from '@tripora/core';
+import { findDestination, formatCents, localeActive, MONTHS_FR } from '@tripora/core';
 import type { TripDraft } from '@/stores/tripDraft';
 
 export interface LigneDuResume {
@@ -55,7 +55,7 @@ export function resumeDuBrouillon(draft: TripDraft): LigneDuResume[] {
 function periode(draft: TripDraft): string {
   const duree = `${draft.durationDays} jour${draft.durationDays > 1 ? 's' : ''}`;
   const jour = (iso: string) =>
-    new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    new Date(`${iso}T12:00:00`).toLocaleDateString(localeActive(), { day: 'numeric', month: 'long' });
 
   if (draft.dateMode === 'exact' && draft.startDate && draft.endDate) {
     return `Du ${jour(draft.startDate)} au ${jour(draft.endDate)}`;

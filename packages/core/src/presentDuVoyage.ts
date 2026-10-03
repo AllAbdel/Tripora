@@ -12,6 +12,7 @@
  */
 
 import type { DonneesDeReservation } from './reservations.js';
+import { localeActive } from './regional.js';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
 const JOUR = 86_400_000;
@@ -116,13 +117,14 @@ export function nuitsSansHebergement(
   return trous;
 }
 
-const JOUR_ET_MOIS = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
-const JOUR_SEUL = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', timeZone: 'UTC' });
+const JOUR_ET_MOIS: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', timeZone: 'UTC' };
+const JOUR_SEUL: Intl.DateTimeFormatOptions = { day: 'numeric', timeZone: 'UTC' };
 
-function lue(date: string, format: Intl.DateTimeFormat): string {
-  // « le 1er juillet », pas « le 1 juillet » : le premier du mois s'écrit en
-  // ordinal, et Intl ne le fait pas.
-  return format.format(new Date(`${date}T00:00:00Z`)).replace(/^1(?=\s|$)/u, '1er');
+function lue(date: string, options: Intl.DateTimeFormatOptions): string {
+  const texte = new Intl.DateTimeFormat(localeActive(), options).format(new Date(`${date}T00:00:00Z`));
+  // « le 1er juillet », pas « le 1 juillet » : en français, le premier du mois
+  // s'écrit en ordinal, et Intl ne le fait pas.
+  return localeActive().startsWith('fr') ? texte.replace(/^1(?=\s|$)/u, '1er') : texte;
 }
 
 /**

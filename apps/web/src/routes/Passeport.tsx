@@ -1,6 +1,12 @@
 import { Link } from 'react-router';
 import { ArrowLeft, ArrowRight, Lock, Stamp } from 'lucide-react';
-import { NOMS_DES_CONTINENTS, type Tampon } from '@tripora/core';
+import {
+  convertirDistance,
+  formatNombre,
+  NOMS_DES_CONTINENTS,
+  uniteDeDistance,
+  type Tampon,
+} from '@tripora/core';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Drapeau } from '@/components/Drapeau';
 import { CarteDuMonde } from '@/components/CarteDuMonde';
@@ -19,8 +25,6 @@ import { cn } from '@/lib/cn';
  * ce qui lui donne sa valeur, et ce qui en fera une base honnête pour des
  * points échangeables le jour où il y en aura.
  */
-
-const NOMBRE = new Intl.NumberFormat('fr-FR');
 
 export default function Passeport() {
   const { passeport: p } = usePasseport();
@@ -68,7 +72,7 @@ export default function Passeport() {
         <Chiffre valeur={p.faits.length} libelle={p.faits.length > 1 ? 'voyages' : 'voyage'} />
         <Chiffre valeur={p.pays.length} libelle="pays" />
         <Chiffre valeur={p.jours} libelle={p.jours > 1 ? 'jours sur la route' : 'jour sur la route'} />
-        <Chiffre valeur={p.kilometres} libelle="km parcourus" />
+        <Chiffre valeur={Math.round(convertirDistance(p.kilometres))} libelle={`${uniteDeDistance()} parcourus`} />
       </dl>
 
       <Card>
@@ -171,7 +175,7 @@ function Chiffre({ valeur, libelle }: { valeur: number; libelle: string }) {
   return (
     <div className="rounded-2xl bg-[color:var(--surface)] px-4 py-3 shadow-[var(--shadow-card)]">
       <dt className="text-muted text-xs">{libelle}</dt>
-      <dd className="font-display text-2xl font-bold tabular-nums">{NOMBRE.format(valeur)}</dd>
+      <dd className="font-display text-2xl font-bold tabular-nums">{formatNombre(valeur)}</dd>
     </div>
   );
 }
@@ -220,7 +224,7 @@ function TamponVu({ tampon }: { tampon: Tampon }) {
       <p className="text-muted text-xs leading-snug">{tampon.detail}</p>
       {!tampon.obtenu && tampon.progression && tampon.progression.fait > 0 && (
         <p className="text-muted text-xs tabular-nums">
-          {NOMBRE.format(tampon.progression.fait)} / {NOMBRE.format(tampon.progression.objectif)}
+          {formatNombre(tampon.progression.fait)} / {formatNombre(tampon.progression.objectif)}
         </p>
       )}
     </li>

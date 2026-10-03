@@ -9,7 +9,7 @@ import {
   toReferenceCents,
 } from './currency.js';
 import { DESTINATIONS } from './catalog/destinations.js';
-import { formatCents } from './money.js';
+import { formatCents } from './regional.js';
 
 describe('catalogue des devises', () => {
   it('ne contient que des codes ISO à trois lettres, sans doublon', () => {

@@ -1,3 +1,4 @@
+import { localeActive } from '@tripora/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Flag } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -66,7 +67,7 @@ export function FileDeSignalements() {
           </header>
           <p className="text-muted mt-1 text-xs">
             Signalé par {dossier.auteurNom} le{' '}
-            {new Date(dossier.creeLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+            {new Date(dossier.creeLe).toLocaleDateString(localeActive(), { day: 'numeric', month: 'long' })}
             {dossier.dejaSignale > 1 && (
               <strong className="text-gold-700 dark:text-gold-300">
                 {' '}

@@ -13,6 +13,7 @@
  */
 
 import type { NomIcone } from './icons.js';
+import { convertirTemperature, formatNombre } from './regional.js';
 
 export interface DailyWeather {
   /** Jour local à destination, au format ISO. */
@@ -96,7 +97,7 @@ export function dayVerdict(jour: DailyWeather): DayVerdict {
 
 /** « pluie, 18 ° » — la phrase courte d'un jour d'itinéraire. */
 export function describeDay(jour: DailyWeather): string {
-  return `${weatherLabel(jour.code)}, ${Math.round(jour.maxC)} °`;
+  return `${weatherLabel(jour.code)}, ${formatNombre(convertirTemperature(jour.maxC))} °`;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { REGION_PAR_DEFAUT, reglerLaRegion } from '@tripora/core';
 import { useLangue } from '@/stores/langue';
 import { CePendant, OccasionsDePartir } from './OccasionsDePartir';
 
@@ -13,7 +14,10 @@ describe('les bons moments pour partir', () => {
     vi.setSystemTime(new Date('2026-09-30T10:00:00Z'));
     useLangue.setState({ preference: 'fr' });
   });
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    reglerLaRegion({ ...REGION_PAR_DEFAUT });
+  });
 
   it('devine la zone du départ, et propose ponts et vacances qui arrivent', async () => {
     const choisir = vi.fn();
@@ -53,6 +57,8 @@ describe('les bons moments pour partir', () => {
 
   it('nomme les fériés et écrit la phrase en anglais quand l’interface est en anglais', () => {
     useLangue.setState({ preference: 'en' });
+    // Dans l'application, les dates suivent la langue (stores/region.ts) ; ici, on le pose à la main.
+    reglerLaRegion({ locale: 'en-US' });
     render(<OccasionsDePartir origin={LONDRES} onChoisir={vi.fn()} />);
     expect(screen.getByRole('button', { name: /Christmas Day and Boxing Day/ })).toBeInTheDocument();
     render(<CePendant debut="2026-10-28" fin="2026-11-02" origin={LYON} />);

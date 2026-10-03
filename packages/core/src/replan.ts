@@ -1,5 +1,6 @@
 import type { PreferenceAxis } from './preferences.js';
 import { dayVerdict, skyFor, type DailyWeather } from './weather.js';
+import { localeActive } from './regional.js';
 
 /**
  * Échanger deux journées quand la météo s'en mêle.
@@ -141,6 +142,6 @@ function nommer(jour: DayPlan): string {
   if (!jour.date) return `Le jour ${jour.dayIndex}`;
   const quand = new Date(`${jour.date}T00:00:00Z`);
   if (Number.isNaN(quand.getTime())) return `Le jour ${jour.dayIndex}`;
-  const nom = quand.toLocaleDateString('fr-FR', { weekday: 'long', timeZone: 'UTC' });
+  const nom = quand.toLocaleDateString(localeActive(), { weekday: 'long', timeZone: 'UTC' });
   return nom.charAt(0).toUpperCase() + nom.slice(1);
 }

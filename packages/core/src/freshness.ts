@@ -2,6 +2,7 @@
  * Règle produit non négociable : un prix n'est jamais présenté comme exact
  * s'il ne vient pas d'une source datée. Trois états, et seulement trois.
  */
+import { formatDate } from './regional.js';
 
 export type PriceSource =
   /** Prix relevé sur une source réelle (cache Aviasales, Hotellook, SerpApi…). */
@@ -98,7 +99,7 @@ function quandCelaAEteVu(iso: string, now: Date): string {
   const jours = Math.floor(heures / 24);
   if (jours === 1) return 'hier';
   if (jours <= 7) return `il y a ${jours} jours`;
-  return `le ${new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
+  return `le ${formatDate(iso, { day: 'numeric', month: 'short' })}`;
 }
 
 /** D'où vient ce prix, en une phrase qui nomme le site. */
@@ -170,7 +171,7 @@ function decrireLesDates(depart: string | undefined, retour: string | undefined)
     const date = new Date(iso);
     return Number.isNaN(date.getTime())
       ? null
-      : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      : formatDate(date, { day: 'numeric', month: 'short' });
   };
   const aller = jour(depart);
   const rentree = jour(retour);

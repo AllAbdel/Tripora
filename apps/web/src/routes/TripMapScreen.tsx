@@ -6,6 +6,7 @@ import {
   estimateTransportOptions,
   findDestination,
   formatCents,
+  formatDistance,
   haversineKm,
   TRANSPORT_LABELS_FR,
 } from '@tripora/core';
@@ -109,9 +110,9 @@ export default function TripMapScreen() {
         <TitreDePage pastille="carte" className="mt-2">{data.summary.title}</TitreDePage>
         <p className="text-muted text-sm">
           {retenue
-            ? `Vous partez à ${findDestination(retenue)?.name}, à ${Math.round(
+            ? `Vous partez à ${findDestination(retenue)?.name}, à ${formatDistance(
                 haversineKm(data.constraints.origin, findDestination(retenue)!),
-              ).toLocaleString('fr-FR')} km de ${data.constraints.origin.name}`
+              )} de ${data.constraints.origin.name}`
             : `${proposals?.scores.length ?? 0} destination${
                 (proposals?.scores.length ?? 0) > 1 ? 's' : ''
               } en lice au départ de ${data.constraints.origin.name}`}
@@ -182,9 +183,7 @@ export default function TripMapScreen() {
               <Rangee
                 icone={<Drapeau code={villeRetenue.countryCode} />}
                 titre={villeRetenue.name}
-                detail={`${Math.round(
-                  haversineKm(data.constraints.origin, villeRetenue),
-                ).toLocaleString('fr-FR')} km · ${villeRetenue.country}`}
+                detail={`${formatDistance(haversineKm(data.constraints.origin, villeRetenue))} · ${villeRetenue.country}`}
                 marque={<Star className="text-lagoon-500 size-4 fill-current" aria-label="Retenue" />}
               />
             </li>
@@ -202,7 +201,7 @@ export default function TripMapScreen() {
                 <Rangee
                   icone={<Drapeau code={ville.countryCode} />}
                   titre={ville.name}
-                  detail={`${km.toLocaleString('fr-FR')} km${
+                  detail={`${formatDistance(km)}${
                     rapide
                       ? ` · ${TRANSPORT_LABELS_FR[rapide.mode].toLowerCase()} ${heures(
                           rapide.durationMin / 2,

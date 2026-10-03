@@ -6,6 +6,7 @@ import {
   dateDuJour,
   findDestination,
   lireUneConfirmation,
+  localeActive,
   ressembleAUneReservation,
   type LectureDeConfirmation,
 } from '@tripora/core';
@@ -371,7 +372,7 @@ function ordonner(trips: readonly TripSummary[]): TripSummary[] {
 }
 
 function dateLisible(jour: string): string {
-  return new Date(`${jour}T12:00:00Z`).toLocaleDateString('fr-FR', {
+  return new Date(`${jour}T12:00:00Z`).toLocaleDateString(localeActive(), {
     weekday: 'short',
     day: 'numeric',
     month: 'long',

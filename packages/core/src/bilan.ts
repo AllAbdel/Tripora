@@ -1,7 +1,7 @@
 import { haversineKm } from './geo.js';
 import type { GeoPoint } from './types.js';
 import type { SlotKind } from './itinerary.js';
-import { formatCents } from './money.js';
+import { formatCents, formatDistance, formatNombre } from './regional.js';
 import { TOUR_DU_MONDE_KM } from './passeport.js';
 
 /**
@@ -63,7 +63,7 @@ function joursEntre(de: string, a: string): number {
 }
 
 function pluriel(nombre: number, singulier: string, plurielDuMot = `${singulier}s`): string {
-  return `${nombre.toLocaleString('fr-FR')} ${nombre > 1 ? plurielDuMot : singulier}`;
+  return `${formatNombre(nombre)} ${nombre > 1 ? plurielDuMot : singulier}`;
 }
 
 /** « 61 % du tour de la Terre », « le tour de la Terre », « 2,5 fois le tour de la Terre ». */
@@ -72,7 +72,7 @@ export function commeLeTourDeLaTerre(km: number): string | null {
   if (part < 0.05) return null;
   if (part < 0.95) return `${Math.round(part * 100)} % du tour de la Terre`;
   if (part < 1.1) return 'le tour de la Terre';
-  return `${(Math.round(part * 10) / 10).toLocaleString('fr-FR')} fois le tour de la Terre`;
+  return `${formatNombre(Math.round(part * 10) / 10)} fois le tour de la Terre`;
 }
 
 export function bilanDuVoyage(donnees: DonneesDuBilan): Bilan {
@@ -115,7 +115,7 @@ export function bilanDuVoyage(donnees: DonneesDuBilan): Bilan {
   if (jours !== null) dire('duree', nuits! > 0 ? `${pluriel(jours, 'jour')}, ${pluriel(nuits!, 'nuit')}` : 'Une journée');
   if (km !== null && km >= 10) {
     const comparaison = commeLeTourDeLaTerre(km);
-    dire('distance', `${km.toLocaleString('fr-FR')} km aller-retour${comparaison ? `, ${comparaison}` : ''}`);
+    dire('distance', `${formatDistance(km)} aller-retour${comparaison ? `, ${comparaison}` : ''}`);
   }
   const programme = [
     activites > 0 && pluriel(activites, 'activité'),

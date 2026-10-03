@@ -5,6 +5,7 @@ import {
   dateDuJour,
   decaler,
   feriesConnus,
+  localeActive,
   paysDeDepart,
   pontsEntre,
   vacancesAVenir,
@@ -20,8 +21,8 @@ import { useLangueActive } from '@/stores/langue';
 const ZONES: readonly (ZoneScolaire | null)[] = ['A', 'B', 'C', null];
 
 /** « jeu. 14 mai », « sam. 4 juil. 2027 » quand l'année change. */
-function jour(iso: string, avecAnnee: boolean, etiquette = 'fr-FR'): string {
-  return new Date(`${iso}T12:00:00`).toLocaleDateString(etiquette, {
+function jour(iso: string, avecAnnee: boolean): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(localeActive(), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -224,7 +225,7 @@ export function CePendant({ debut, fin, origin }: { debut: string; fin: string; 
         ? `During ${noms.join(' and ')}${precision}: busier, and prices often higher.`
         : `Pendant ${noms.join(' et ')}${precision} : plus de monde, et des prix souvent plus hauts.`;
   const liste = feries
-    .map((ferie) => `${enAnglais ? ferie.en : ferie.nom} (${jour(ferie.date, false, enAnglais ? 'en-US' : 'fr-FR')})`)
+    .map((ferie) => `${enAnglais ? ferie.en : ferie.nom} (${jour(ferie.date, false)})`)
     .join(', ');
   const phraseDesFeries =
     feries.length === 0

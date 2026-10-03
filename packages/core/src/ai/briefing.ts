@@ -1,4 +1,4 @@
-import { formatCents } from '../money.js';
+import { formatCents } from '../regional.js';
 import { monthNameFr, targetMonth } from '../dates.js';
 import { AXIS_LABELS_FR, PREFERENCE_AXES, type PreferenceAxis } from '../preferences.js';
 import { bindingBudgetCents } from '../scoring.js';
@@ -122,7 +122,8 @@ const CONFORT = {
   comfort: 'confortable',
 } as const;
 
-const euros = (cents: number): string => formatCents(cents, 'EUR', { hideCentimes: true });
+// Le briefing part à l'IA, en français et en euros, quels que soient les réglages de l'écran.
+const euros = (cents: number): string => formatCents(cents, 'EUR', { hideCentimes: true, locale: 'fr-FR' });
 
 /** « Participant A », puis B, C… et au-delà de 26, A2, B2. */
 function lettre(index: number): string {

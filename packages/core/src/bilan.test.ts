@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bilanDuVoyage, commeLeTourDeLaTerre, type DonneesDuBilan } from './bilan.js';
-import { formatCents } from './money.js';
+import { formatCents } from './regional.js';
 
 const PARIS = { lat: 48.8566, lng: 2.3522 };
 const UBUD = { lat: -8.5069, lng: 115.2625 };

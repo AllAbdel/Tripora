@@ -553,7 +553,6 @@ const PHRASES: Readonly<Record<string, string>> = {
   "voyage": "trip",
   "pays": "countries",
   "jour sur la route": "day on the road",
-  "km parcourus": "km traveled",
   "Carte du monde : aucun pays visité pour l’instant.": "World map: no country visited yet.",
   "Les pays visités s’allumeront ici, avec un arc depuis chez vous.": "Visited countries will light up here, with an arc from home.",
   "Votre passeport est encore vierge": "Your passport is still blank",
@@ -573,7 +572,6 @@ const PHRASES: Readonly<Record<string, string>> = {
   "Quatre continents": "Four continents",
   "Des voyages sur quatre continents.": "Trips on four continents.",
   "Long-courrier": "Long haul",
-  "Un voyage à plus de 5 000 km de chez soi.": "A trip more than 5,000 km from home.",
   "Grande tablée": "Big table",
   "Un voyage à six ou plus.": "A trip with six or more people.",
   "Organisateur": "Organizer",
@@ -583,7 +581,6 @@ const PHRASES: Readonly<Record<string, string>> = {
   "Week-end éclair": "Lightning weekend",
   "Un voyage de trois jours ou moins.": "A trip of three days or less.",
   "Tour du monde": "Around the world",
-  "40 075 km parcourus, la circonférence de la Terre.": "40,075 km traveled, the circumference of the Earth.",
   "Un voyage compte quand sa destination est retenue et que ses dates exactes sont arrivées. Les kilomètres sont des allers-retours à vol d’oiseau depuis la ville de départ de chaque voyage.": "A trip counts once its destination is chosen and its exact dates have arrived. Distances are round trips as the crow flies from each trip’s departure city.",
   "Alertes de prix": "Price alerts",
   "Les alertes demandent Tripora en ligne": "Alerts need Tripora online",
@@ -662,6 +659,13 @@ const PHRASES: Readonly<Record<string, string>> = {
   "Du vendredi soir au dimanche.": "Friday evening to Sunday.",
   "Quel mois ?": "Which month?",
   "Les bons moments pour partir": "Good times to go",
+  "Unités et devise": "Units and currency",
+  "Devise": "Currency",
+  "Températures": "Temperatures",
+  "Distances": "Distances",
+  "Kilomètres": "Kilometers",
+  "Exemple :": "Example:",
+  "Les prix sont relevés en euros ; dans une autre devise, ils sont convertis au taux du jour et précédés de « ≈ ». Les dépenses et les remboursements gardent leur devise.": "Prices are recorded in euros; in another currency they’re converted at today’s rate and shown with “≈”. Expenses and repayments keep their own currency.",
   "Ponts et vacances scolaires des mois qui viennent. Un appui remplit les dates.": "Long weekends and school holidays in the coming months. One tap fills in the dates.",
   "Les week-ends prolongés par un jour férié, dans les mois qui viennent. Un appui remplit les dates.": "Long weekends made by a public holiday, in the coming months. One tap fills in the dates.",
   "Jours fériés du pays de départ :": "Public holidays of the departure country:",
@@ -825,11 +829,13 @@ const nombre = (n: string, un: string, plusieurs: string) => (n === '1' ? un : p
 
 export const MOTIFS_EN: readonly (readonly [RegExp, Remplacement])[] = [
   [/^Étape (\d+) sur (\d+)$/u, 'Step $1 of $2'],
+  [/^Automatique \((.+)\)$/u, 'Automatic ($1)'],
+  [/^Automatique : (.+)$/u, 'Automatic: $1'],
   [/^Épingler (.+)$/u, 'Pin $1'],
   [/^Supprimer (.+)$/u, 'Delete $1'],
   [/^Drapeau : (.+)$/u, (_, p) => (PAYS_EN[p!] ? `Flag: ${PAYS_EN[p!]}` : null)],
   [/^(.+) · ([A-Z]{3}(?:, [A-Z]{3})*)$/u, (_, p, codes) => (PAYS_EN[p!] ? `${PAYS_EN[p!]} · ${codes}` : null)],
-  [/^(.+) km · (.+)$/u, (_, km, p) => (PAYS_EN[p!] ? `${km} km · ${PAYS_EN[p!]}` : null)],
+  [/^(.+ (?:km|mi)) · (.+)$/u, (_, distance, p) => (PAYS_EN[p!] ? `${distance} · ${PAYS_EN[p!]}` : null)],
   [/^(.+), (.+)$/u, (_, lieu, p) => (PAYS_EN[p!] ? `${lieu}, ${PAYS_EN[p!]}` : null)],
   [/^(\d+) jours? en (\p{L}+)$/u, (_, n, m) => (MOIS[m!] ? `${n} ${nombre(n!, 'day', 'days')} in ${MOIS[m!]}` : null)],
   [/^(\d+) personnes? n’(?:a|ont) pas encore rejoint$/u, (_, n) => `${n} ${nombre(n!, 'person hasn’t', 'people haven’t')} joined yet`],
@@ -860,14 +866,14 @@ export const MOTIFS_EN: readonly (readonly [RegExp, Remplacement])[] = [
     const mots = envies(tout!);
     return mots && mots.length > 1 ? majuscule(mots.join(' and ')) : null;
   }],
-  [/^(.+) km aller-retour, (\d+) % du tour de la Terre$/u, '$1 km round trip, $2% of the way around the Earth'],
+  [/^(.+ (?:km|mi)) aller-retour, (\d+) % du tour de la Terre$/u, '$1 round trip, $2% of the way around the Earth'],
+  [/^(.+ (?:km|mi)) aller-retour, (.+) fois le tour de la Terre$/u, '$1 round trip, $2 times around the Earth'],
+  [/^(.+ (?:km|mi)) aller-retour$/u, '$1 round trip'],
   [/^(\d+) activités?, (\d+) repas$/u, (_, a, r) => `${a} ${nombre(a!, 'activity', 'activities')}, ${r} ${nombre(r!, 'meal', 'meals')}`],
   [/^Il reste (.+) sur les (.+) prévus pour (\d+) personnes?\.$/u, (_, reste, prevu, n) =>
     `${reste} left of the ${prevu} planned for ${n} ${nombre(n!, 'person', 'people')}.`],
   [/^(\d+) jours\.$/u, '$1 days.'],
   [/^(\d+) jours\. Prévoyez-en une paire de plus si vous marchez beaucoup\.$/u, '$1 days. Pack an extra pair if you walk a lot.'],
-  [/^On marche facilement quinze kilomètres par jour en ville\. Des chaussures neuves sur (\d+) jours, c’est des ampoules dès le deuxième\.$/u,
-    'You easily walk fifteen kilometers a day in a city. New shoes on a $1-day trip mean blisters by day two.'],
   [/^(\d+) jours : une lessive à mi-séjour permet d’emporter moitié moins de vêtements\.$/u, '$1 days: one load of laundry halfway lets you pack half the clothes.'],
   [/^(\d+) (.+?)( \(essentiel\))?$/u, (t, n, quoi, essentiel) => {
     const anglais = t(quoi!);
@@ -877,7 +883,24 @@ export const MOTIFS_EN: readonly (readonly [RegExp, Remplacement])[] = [
     const anglais = t(quoi!);
     return anglais ? `${anglais} (essential)` : null;
   }],
-  [/^Vous partez à (.+), à (.+) km de (.+)$/u, 'You’re off to $1, $2 km from $3'],
+  [/^Vous partez à (.+), à (.+ (?:km|mi)) de (.+)$/u, 'You’re off to $1, $2 from $3'],
+  // Les distances et les températures arrivent déjà écrites dans l'unité de la personne (regional.ts) :
+  // les motifs les gardent telles quelles.
+  [/^(km|mi) parcourus$/u, '$1 traveled'],
+  [/^Un voyage à plus de (.+) de chez soi\.$/u, 'A trip more than $1 from home.'],
+  [/^(.+) parcourus, la circonférence de la Terre\.$/u, '$1 traveled, the circumference of the Earth.'],
+  [/^(.+) à vol d’oiseau$/u, '$1 as the crow flies'],
+  [/^(.+), à (.+ (?:km|mi)) de (.+)\.$/u, (t, quoi, distance, ancre) => `${t(quoi!) ?? quoi}, ${distance} from ${ancre}.`],
+  [/^(.+ (?:°C|°F|K)) en journée, (.+ (?:°C|°F|K)) la nuit, (.+)$/u, (_, jour, nuit, reste) => {
+    const pluie = /^(\d+) jours? de pluie dans le mois$/u.exec(reste!);
+    return pluie ? `${jour} by day, ${nuit} at night, ${pluie[1]} rainy ${nombre(pluie[1]!, 'day', 'days')} in the month` : null;
+  }],
+  [/^(.+ (?:°C|°F|K)) le jour, (.+ (?:°C|°F|K)) la nuit(?:, (\d+) jours de pluie dans le mois)?$/u, (_, jour, nuit, pluie) =>
+    `${jour} by day, ${nuit} at night${pluie ? `, ${pluie} rainy days in the month` : ''}`],
+  [/^L’amplitude atteint (.+) : le soir tombe plus frais qu’on ne l’imagine\.$/u, 'The day–night swing reaches $1: evenings get cooler than you’d think.'],
+  [/^Amplitude de (.+) entre le jour et la nuit\.$/u, 'A $1 swing between day and night.'],
+  [/^On marche facilement (.+) par jour en ville\. Des chaussures neuves sur (\d+) jours, c’est des ampoules dès le deuxième\.$/u,
+    'You easily walk $1 a day in a city. New shoes on a $2-day trip mean blisters by day two.'],
   [/^· (\d+) jours? à (\d+) personnes?$/u, (_, j, n) =>
     `· ${j} ${nombre(j!, 'day', 'days')} for ${n} ${nombre(n!, 'person', 'people')}`],
   [/^(\d+) idées? à (.+), classées selon les envies du groupe$/u, (t, n, ville) =>

@@ -141,7 +141,7 @@ export default function MyPreferences() {
           <div className="flex flex-wrap gap-2">
             {RACCOURCIS.map((cents) => (
               <Chip key={cents} selected={budget === cents} onClick={() => modifier({ budget: cents })}>
-                {formatCents(cents, 'EUR', { hideCentimes: true })}
+                {formatCents(cents, 'EUR', { hideCentimes: true, sansConversion: true })}
               </Chip>
             ))}
           </div>

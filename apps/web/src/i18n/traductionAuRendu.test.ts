@@ -72,6 +72,17 @@ describe('traduireTexte', () => {
     expect(traduireDansLaLangueActive('activités')).toBe('activités');
   });
 
+  it('garde les unités de la personne dans les phrases à distance ou température', () => {
+    expect(traduireTexte('en', '24 745 km aller-retour, 62 % du tour de la Terre')).toBe('24 745 km round trip, 62% of the way around the Earth');
+    expect(traduireTexte('en', '15 376 mi aller-retour')).toBe('15 376 mi round trip');
+    expect(traduireTexte('en', 'Un voyage à plus de 3,107 mi de chez soi.')).toBe('A trip more than 3,107 mi from home.');
+    expect(traduireTexte('en', '75 °F le jour, 59 °F la nuit')).toBe('75 °F by day, 59 °F at night');
+    expect(traduireTexte('en', '297 K en journée, 288 K la nuit, 3 jours de pluie dans le mois')).toBe(
+      '297 K by day, 288 K at night, 3 rainy days in the month',
+    );
+    expect(traduireTexte('en', '9,320 mi à vol d’oiseau')).toBe('9,320 mi as the crow flies');
+  });
+
   it('n’a pas de traduction vide', () => {
     for (const [francais, anglais] of Object.entries(PHRASES_EN)) {
       expect(anglais.trim(), francais).not.toBe('');

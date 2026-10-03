@@ -4,8 +4,10 @@ import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ChevronLeft, ChevronRight, ImagePlus, Pencil, Trash2, X } from 'lucide-react';
 import {
-  LONGUEUR_MAX_DE_LEGENDE,
   findDestination,
+  formatTaille,
+  localeActive,
+  LONGUEUR_MAX_DE_LEGENDE,
   regrouperParJour,
   type PhotoDuVoyage,
 } from '@tripora/core';
@@ -27,7 +29,7 @@ function messageDe(raison: unknown): string {
 }
 
 function megaoctets(octets: number): string {
-  return `${Math.round(octets / (1024 * 1024))} Mo`;
+  return formatTaille(octets);
 }
 
 /**
@@ -321,7 +323,7 @@ function VisionneuseDuJournal({
     return () => window.removeEventListener('keydown', surTouche);
   }, [enEdition, confirmation, precedente, suivante, surAller, surFermer]);
 
-  const quand = new Date(photo.priseLe ?? photo.ajouteLe).toLocaleString('fr-FR', {
+  const quand = new Date(photo.priseLe ?? photo.ajouteLe).toLocaleString(localeActive(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

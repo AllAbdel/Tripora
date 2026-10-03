@@ -1,3 +1,4 @@
+import { localeActive } from '@tripora/core';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -161,7 +162,7 @@ export default function AlertesDePrix() {
 }
 
 function LigneDAlerte({ alerte, nouvelle }: { alerte: AlerteDePrix; nouvelle: boolean }) {
-  const quand = new Date(alerte.creeLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  const quand = new Date(alerte.creeLe).toLocaleDateString(localeActive(), { day: 'numeric', month: 'long' });
   return (
     <Card>
       <CardBody className="flex items-start gap-3">

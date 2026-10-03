@@ -3,6 +3,7 @@ import {
   describeSource,
   detaillerTrajet,
   formatCents,
+  formatDistance,
   kgLisibles,
   TRANSPORT_LABELS_FR,
   type EmpreinteDuTrajet,
@@ -64,7 +65,7 @@ export function DetailDuTrajet({
       </div>
 
       <p className="text-muted mt-1 text-xs">
-        {trajet.distanceKm.toLocaleString('fr-FR')} km à vol d’oiseau
+        {`${formatDistance(trajet.distanceKm)} à vol d’oiseau`}
         {trajet.escales === null
           ? ''
           : trajet.escales === 0

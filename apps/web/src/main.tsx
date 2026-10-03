@@ -9,6 +9,8 @@ import { persister, queryClient, VERSION_DU_CACHE } from '@/lib/cache';
 import { applyTheme, useTheme, watchSystemTheme } from '@/stores/theme';
 import { appliquerLaLangue, useLangue } from '@/stores/langue';
 import { demarrerLaTraductionAuRendu } from '@/i18n/traductionAuRendu';
+import { suivreLaRegion } from '@/stores/region';
+import { SuitLaRegion } from '@/components/SuitLaRegion';
 import './index.css';
 
 applyTheme(useTheme.getState().preference);
@@ -18,6 +20,9 @@ watchSystemTheme();
 appliquerLaLangue(useLangue.getState().preference);
 // L'anglais de tout ce que `useT()` ne couvre pas, posé sur le texte rendu.
 demarrerLaTraductionAuRendu();
+// Devise, degrés, distances et écriture des nombres : avant le premier chiffre affiché.
+suivreLaRegion();
+
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Élément racine introuvable');
@@ -39,7 +44,9 @@ createRoot(container).render(
       <AuthProvider>
         <BrowserRouter>
           <PontNatif />
-          <App />
+          <SuitLaRegion>
+            <App />
+          </SuitLaRegion>
         </BrowserRouter>
       </AuthProvider>
     </PersistQueryClientProvider>

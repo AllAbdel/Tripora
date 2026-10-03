@@ -6,12 +6,28 @@ import {
   Plus, RotateCcw, Ticket, Trash2, X,
 } from 'lucide-react';
 import {
-  awaitsPlace, AXIS_ICON, buildItinerary, dayVerdict, describeDay, fillItinerary,
-  findDestination, fold, formatCents, groupWeights, parseAmountToCents, suggestWeatherSwaps,
-  phraseDeReservation, reservationsDuJour, weatherIcon,
+  awaitsPlace,
+  AXIS_ICON,
+  buildItinerary,
+  dayVerdict,
+  describeDay,
+  fillItinerary,
+  findDestination,
+  fold,
+  formatCents,
+  groupWeights,
+  localeActive,
+  parseAmountToCents,
+  phraseDeReservation,
+  reservationsDuJour,
+  suggestWeatherSwaps,
+  weatherIcon,
+  type DailyWeather,
+  type Destination,
+  type MemberPreference,
   type MomentDeReservation,
   type NomIcone,
-  type DailyWeather, type Destination, type MemberPreference, type Poi,
+  type Poi,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
@@ -575,7 +591,7 @@ function Journee({
           {jour.date && (
             <p className="text-muted flex flex-wrap items-center gap-x-2 text-sm">
               <span>
-                {new Date(`${jour.date}T00:00:00`).toLocaleDateString('fr-FR', {
+                {new Date(`${jour.date}T00:00:00`).toLocaleDateString(localeActive(), {
                   weekday: 'long',
                   day: 'numeric',
                   month: 'long',

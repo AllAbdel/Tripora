@@ -33,28 +33,24 @@ export function parseAmountToCents(input: string | number): Cents {
 const FORMATTER_CACHE = new Map<string, Intl.NumberFormat>();
 
 /**
- * Affichage localisé, arrondi à l'unité pour les gros montants estimés.
+ * L'écriture d'une somme dans une langue donnée, sans conversion.
  *
  * Le nombre de décimales suit la devise plutôt qu'une constante : le yen, le
  * won et la couronne islandaise n'ont pas de subdivision, et « 1 234,00 ISK »
  * a l'air d'une erreur de saisie. `Intl` connaît déjà la règle de chaque
  * devise ; on la lui demande au lieu de tenir une table de plus.
+ *
+ * Pour afficher une somme à l'écran : `formatCents` (regional.ts), qui suit
+ * la langue et la devise choisies par la personne.
  */
-export function formatCents(
-  cents: Cents,
-  currency = 'EUR',
-  options: { locale?: string; hideCentimes?: boolean } = {},
-): string {
-  const locale = options.locale ?? 'fr-FR';
-  const key = `${locale}|${currency}|${options.hideCentimes ? 0 : 'devise'}`;
+export function formatterLeMontant(cents: Cents, currency: string, locale: string, hideCentimes = false): string {
+  const key = `${locale}|${currency}|${hideCentimes ? 0 : 'devise'}`;
   let formatter = FORMATTER_CACHE.get(key);
   if (!formatter) {
     const base: Intl.NumberFormatOptions = { style: 'currency', currency };
     formatter = new Intl.NumberFormat(
       locale,
-      options.hideCentimes
-        ? { ...base, minimumFractionDigits: 0, maximumFractionDigits: 0 }
-        : base,
+      hideCentimes ? { ...base, minimumFractionDigits: 0, maximumFractionDigits: 0 } : base,
     );
     FORMATTER_CACHE.set(key, formatter);
   }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { convertCents, formatCents, money, parseAmountToCents, splitCents, sumCents } from './money.js';
+import { convertCents, money, parseAmountToCents, splitCents, sumCents } from './money.js';
+import { formatCents } from './regional.js';
 
 describe('money', () => {
   it('refuse un montant qui n’est pas en centimes entiers', () => {

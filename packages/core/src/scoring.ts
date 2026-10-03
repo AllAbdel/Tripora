@@ -13,6 +13,7 @@ import type {
   ScoreFactor,
   TripConstraints,
 } from './types.js';
+import { formatNombre, formatTemperature } from './regional.js';
 
 /**
  * Poids des six facteurs dans la note finale. Ils sont exposés pour être
@@ -166,7 +167,7 @@ function climateFactor(
     const score = Math.round(tempScore * (0.7 + 0.3 * (rainScore / 100)));
     return {
       score,
-      reason: `${Math.round(jour)} °C en journée, ${Math.round(climate.avgLowC)} °C la nuit, ${climate.rainyDays} jour${climate.rainyDays > 1 ? 's' : ''} de pluie dans le mois`,
+      reason: `${formatTemperature(jour)} en journée, ${formatTemperature(climate.avgLowC)} la nuit, ${climate.rainyDays} jour${climate.rainyDays > 1 ? 's' : ''} de pluie dans le mois`,
     };
   }
 
@@ -197,9 +198,7 @@ function travelFactor(minutes: number): { score: number; reason: string } {
   const readable =
     hours < 1.5
       ? `${Math.round(minutes)} min de trajet`
-      : `environ ${hours.toLocaleString('fr-FR', {
-          maximumFractionDigits: hours < 10 ? 1 : 0,
-        })} h de trajet porte à porte`;
+      : `environ ${formatNombre(hours, { maximumFractionDigits: hours < 10 ? 1 : 0 })} h de trajet porte à porte`;
   return { score, reason: readable.charAt(0).toUpperCase() + readable.slice(1) };
 }
 

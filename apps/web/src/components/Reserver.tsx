@@ -1,15 +1,16 @@
 import { ExternalLink } from 'lucide-react';
 import {
   activityLinks,
-  liensDeRubrique,
-  sejourDe,
   affilierLiens,
+  liensDeRubrique,
+  localeActive,
+  sejourDe,
   stayLinks,
   TITRES_DES_RUBRIQUES,
-  type RubriqueDePartenaire,
   travelLinks,
   type BookingLink,
   type Destination,
+  type RubriqueDePartenaire,
   type TripConstraints,
 } from '@tripora/core';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -200,7 +201,7 @@ function SurPlace({
 
 function jour(date: string | null): string {
   if (!date) return '';
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString('fr-FR', {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString(localeActive(), {
     day: 'numeric',
     month: 'long',
     timeZone: 'UTC',

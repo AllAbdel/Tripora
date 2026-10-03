@@ -3,18 +3,19 @@ import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Lock, LockOpen, MapPin, Pencil, Users, Wallet } from 'lucide-react';
 import {
+  dateDuJour,
   estimateTransportOptions,
   findDestination,
   formatCents,
   hasAnswered,
-  dateDuJour,
+  localeActive,
   MONTHS_FR,
   paysDuPoint,
-  trajetEnFrance,
   resumerLeCoffre,
   resumerLesTaches,
   sondagesEnAttente,
   targetMonth,
+  trajetEnFrance,
   tripReadiness,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
@@ -589,11 +590,11 @@ function describePeriod(constraints: {
     return `${duree} en ${MONTHS_FR[constraints.month - 1]}`;
   }
   if (constraints.dateMode === 'exact' && constraints.startDate) {
-    return `${duree} à partir du ${new Date(constraints.startDate).toLocaleDateString('fr-FR')}`;
+    return `${duree} à partir du ${new Date(constraints.startDate).toLocaleDateString(localeActive())}`;
   }
   if (constraints.dateMode === 'window' && constraints.windowStart && constraints.windowEnd) {
-    const from = new Date(constraints.windowStart).toLocaleDateString('fr-FR');
-    const to = new Date(constraints.windowEnd).toLocaleDateString('fr-FR');
+    const from = new Date(constraints.windowStart).toLocaleDateString(localeActive());
+    const to = new Date(constraints.windowEnd).toLocaleDateString(localeActive());
     return `${duree} entre le ${from} et le ${to}`;
   }
   return `${duree}, dates souples`;

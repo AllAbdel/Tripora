@@ -19,6 +19,7 @@ import {
 import {
   formatCents,
   heureLisible,
+  localeActive,
   nuitsDe,
   trierLesReservations,
   trouverFournisseur,
@@ -265,7 +266,7 @@ function CarteDeReservation({
           </div>
           {reservation.prixCents !== null && reservation.prixCents !== undefined && (
             <p className="shrink-0 text-sm font-semibold tabular-nums">
-              {formatCents(reservation.prixCents, reservation.devise, { hideCentimes: true })}
+              {formatCents(reservation.prixCents, reservation.devise, { hideCentimes: true, sansConversion: true })}
             </p>
           )}
         </div>
@@ -344,7 +345,7 @@ function CarteDeReservation({
 function dateLongue(date: string): string {
   const jour = new Date(`${date}T12:00:00Z`);
   if (Number.isNaN(jour.getTime())) return date;
-  return new Intl.DateTimeFormat('fr-FR', {
+  return new Intl.DateTimeFormat(localeActive(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -355,7 +356,7 @@ function dateLongue(date: string): string {
 function dateCourte(date: string): string {
   const jour = new Date(`${date}T12:00:00Z`);
   if (Number.isNaN(jour.getTime())) return date;
-  return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(jour);
+  return new Intl.DateTimeFormat(localeActive(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(jour);
 }
 
 /** « arrivée 14:00 → départ jeu. 16 juil. 12:00 », « 02:00 ». */
@@ -384,5 +385,5 @@ function totauxParDevise(reservations: readonly Reservation[]): string[] {
     if (!reservation.prixCents) continue;
     sommes.set(reservation.devise, (sommes.get(reservation.devise) ?? 0) + reservation.prixCents);
   }
-  return [...sommes].map(([devise, cents]) => formatCents(cents, devise, { hideCentimes: true }));
+  return [...sommes].map(([devise, cents]) => formatCents(cents, devise, { hideCentimes: true, sansConversion: true }));
 }

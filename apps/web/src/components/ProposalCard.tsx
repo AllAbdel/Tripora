@@ -13,11 +13,12 @@ import {
   correspondanceAuxEnvies,
   costLines,
   empreinteDuTrajet,
-  phraseDeComparaison,
   formatCents,
+  formatTemperature,
   freshnessLabel,
-  type DestinationScore,
+  phraseDeComparaison,
   type Destination,
+  type DestinationScore,
   type LieuNomme,
   type MemberPreference,
   type PricedValue,
@@ -188,7 +189,7 @@ export function ProposalCard({
             <p className="text-muted flex items-center gap-2.5 text-xs font-medium">
               <span className="flex items-center gap-1">
                 <Thermometer className="size-3.5" aria-hidden />
-                <span className="tabular-nums">{Math.round(climat.avgHighC)} °C</span>
+                <span className="tabular-nums">{formatTemperature(climat.avgHighC)}</span>
               </span>
               <span className="flex items-center gap-1">
                 <CloudRain className="size-3.5" aria-hidden />

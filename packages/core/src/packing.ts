@@ -5,6 +5,7 @@ import { targetMonth } from './dates.js';
 import type { NomIcone } from './icons.js';
 import type { PreferenceAxis, PreferenceWeights } from './preferences.js';
 import type { Destination, MonthlyClimate, TripConstraints } from './types.js';
+import { formatDistance, formatEcartDeTemperature, formatTemperature } from './regional.js';
 
 /**
  * Ce qu'il faut mettre dans la valise, et en quelle quantité.
@@ -201,9 +202,7 @@ export function lireLeClimat(climat: MonthlyClimate | undefined): LectureDuClima
   const pluvieux = climat.rainyDays >= 10;
   const gel = climat.avgLowC <= 1;
 
-  const jour = Math.round(climat.avgHighC);
-  const nuit = Math.round(climat.avgLowC);
-  const parties = [`${jour} °C le jour, ${nuit} °C la nuit`];
+  const parties = [`${formatTemperature(climat.avgHighC)} le jour, ${formatTemperature(climat.avgLowC)} la nuit`];
   if (pluvieux) parties.push(`${climat.rainyDays} jours de pluie dans le mois`);
 
   return { temps, amplitude, pluvieux, gel, resume: parties.join(', ') };
@@ -591,7 +590,7 @@ function ajouterVetementsSelonLeTemps(
       rubrique: 'vetements',
       quantite: q.bas,
       pourquoi: chaud
-        ? `L’amplitude atteint ${climat.amplitude} °C : le soir tombe plus frais qu’on ne l’imagine.`
+        ? `L’amplitude atteint ${formatEcartDeTemperature(climat.amplitude)} : le soir tombe plus frais qu’on ne l’imagine.`
         : `${meteo}.`,
     });
   }
@@ -636,7 +635,7 @@ function ajouterVetementsSelonLeTemps(
       label: 'Veste légère',
       rubrique: 'vetements',
       quantite: 1,
-      pourquoi: `Amplitude de ${climat.amplitude} °C entre le jour et la nuit.`,
+      pourquoi: `Amplitude de ${formatEcartDeTemperature(climat.amplitude)} entre le jour et la nuit.`,
     });
   }
 
@@ -662,7 +661,7 @@ function ajouterChaussures(
     label: 'Chaussures de marche confortables',
     rubrique: 'chaussures',
     quantite: 1,
-    pourquoi: `On marche facilement quinze kilomètres par jour en ville. Des chaussures neuves sur ${jours} jours, c’est des ampoules dès le deuxième.`,
+    pourquoi: `On marche facilement ${formatDistance(15)} par jour en ville. Des chaussures neuves sur ${jours} jours, c’est des ampoules dès le deuxième.`,
   });
 
   if (climat && (climat.temps === 'chaud' || climat.temps === 'caniculaire')) {

@@ -15,6 +15,7 @@
 
 import { continentDe, type Continent } from './continents.js';
 import { haversineKm } from './geo.js';
+import { formatDistance } from './regional.js';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
 
@@ -165,7 +166,7 @@ export function passeport(voyages: readonly VoyageDuPasseport[], aujourdhui: str
     exploit(
       'long-courrier',
       'Long-courrier',
-      'Un voyage à plus de 5 000 km de chez soi.',
+      `Un voyage à plus de ${formatDistance(5000)} de chez soi.`,
       faits.some((voyage) => allerRetourKm(voyage) / 2 >= 5000),
     ),
     exploit('grande-tablee', 'Grande tablée', 'Un voyage à six ou plus.', faits.some((voyage) => voyage.participants >= 6)),
@@ -180,7 +181,7 @@ export function passeport(voyages: readonly VoyageDuPasseport[], aujourdhui: str
     compte(
       'tour-du-monde',
       'Tour du monde',
-      `${TOUR_DU_MONDE_KM.toLocaleString('fr-FR')} km parcourus, la circonférence de la Terre.`,
+      `${formatDistance(TOUR_DU_MONDE_KM)} parcourus, la circonférence de la Terre.`,
       kilometres,
       TOUR_DU_MONDE_KM,
     ),

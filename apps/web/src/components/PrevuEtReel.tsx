@@ -72,7 +72,7 @@ export function PrevuEtReel({
         <div className="filet flex items-end justify-between gap-3 border-b-2 pb-2">
           <span className="etiquette">Dépensé jusqu’ici</span>
           <span className="titre chiffres text-[2rem] leading-none">
-            {formatCents(depenseCents)}
+            {formatCents(depenseCents, 'EUR', { sansConversion: true })}
           </span>
         </div>
 
@@ -96,8 +96,8 @@ export function PrevuEtReel({
             </div>
             <p className={cn('text-xs', depasse ? 'text-gold-700 dark:text-gold-300' : 'text-muted')}>
               {depasse
-                ? `Vous avez dépassé de ${formatCents(depenseCents - reference)} ce qui était prévu (${formatCents(reference)} pour ${participants}).`
-                : `Il reste ${formatCents(reference - depenseCents)} sur les ${formatCents(reference)} prévus pour ${participants} personne${participants > 1 ? 's' : ''}.`}
+                ? `Vous avez dépassé de ${formatCents(depenseCents - reference, 'EUR', { sansConversion: true })} ce qui était prévu (${formatCents(reference, 'EUR', { sansConversion: true })} pour ${participants}).`
+                : `Il reste ${formatCents(reference - depenseCents, 'EUR', { sansConversion: true })} sur les ${formatCents(reference, 'EUR', { sansConversion: true })} prévus pour ${participants} personne${participants > 1 ? 's' : ''}.`}
             </p>
           </div>
         )}
@@ -123,14 +123,14 @@ export function PrevuEtReel({
                 <li key={ligne.key} className="filet flex justify-between gap-4 border-b py-1.5">
                   <span className="text-muted">{ligne.label}</span>
                   <span className="chiffres">
-                    {formatCents(ligne.cents, 'EUR', { hideCentimes: true })}
+                    {formatCents(ligne.cents, 'EUR', { hideCentimes: true, sansConversion: true })}
                   </span>
                 </li>
               ))}
               <li className="filet flex justify-between gap-4 border-b-2 py-2 font-semibold">
                 <span>Total estimé</span>
                 <span className="chiffres">
-                  {formatCents(estimation.totalCents, 'EUR', { hideCentimes: true })}
+                  {formatCents(estimation.totalCents, 'EUR', { hideCentimes: true, sansConversion: true })}
                 </span>
               </li>
             </ul>
@@ -147,13 +147,14 @@ export function PrevuEtReel({
           <p className="text-muted pt-1 text-xs">
             Budget annoncé à la création :{' '}
             <strong className="text-[color:var(--text-strong)]">
-              {formatCents(budgetParPersonne, 'EUR', { hideCentimes: true })} par personne
+              {formatCents(budgetParPersonne, 'EUR', { hideCentimes: true, sansConversion: true })} par personne
             </strong>
             {estimation && estimation.totalCents > budgetParPersonne && (
               <>
                 {' '}— l’estimation le dépasse de{' '}
                 {formatCents(estimation.totalCents - budgetParPersonne, 'EUR', {
                   hideCentimes: true,
+                  sansConversion: true,
                 })}
                 .
               </>

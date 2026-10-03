@@ -1,4 +1,5 @@
 import type { Cents } from './money.js';
+import { formatNombre } from './regional.js';
 
 /**
  * Les devises, et la seule question qui compte : peut-on convertir honnêtement ?
@@ -284,7 +285,7 @@ export function referenceRate(unitsPerReference: number): number {
 export function describeRate(code: string, unitsPerReference: number): string {
   const devise = currencyByCode(code);
   const arrondi = unitsPerReference >= 100
-    ? Math.round(unitsPerReference).toLocaleString('fr-FR')
-    : unitsPerReference.toLocaleString('fr-FR', { maximumFractionDigits: 3 });
+    ? formatNombre(Math.round(unitsPerReference))
+    : formatNombre(unitsPerReference, { maximumFractionDigits: 3 });
   return `1 € = ${arrondi} ${devise?.symbol ?? code}`;
 }

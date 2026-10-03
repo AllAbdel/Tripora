@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+  convertirTemperature,
+  formatTemperature,
   dayVerdict,
   forecastForTrip,
+  formatNombre,
+  localeActive,
   weatherIcon,
   weatherLabel,
   type DailyWeather,
@@ -94,21 +98,20 @@ function Jour({ jour }: { jour: DailyWeather }) {
         {jourCourt(jour.date)}
       </span>
       <Icone nom={weatherIcon(jour.code)} className="text-brand-500 size-5" />
-      <span className="text-sm font-bold tabular-nums">{Math.round(jour.maxC)}°</span>
-      <span className="text-muted text-[10px] tabular-nums">{Math.round(jour.minC)}°</span>
+      <span className="text-sm font-bold tabular-nums">{formatNombre(convertirTemperature(jour.maxC))}°</span>
+      <span className="text-muted text-[10px] tabular-nums">{formatNombre(convertirTemperature(jour.minC))}°</span>
       <span className="sr-only">
-        {longDate(jour.date)} : {weatherLabel(jour.code)}, {Math.round(jour.maxC)} degrés le
-        jour, {Math.round(jour.minC)} la nuit
+        {`${longDate(jour.date)} : ${weatherLabel(jour.code)}, ${formatTemperature(jour.maxC)} le jour, ${formatTemperature(jour.minC)} la nuit`}
       </span>
     </div>
   );
 }
 
 const jourCourt = (iso: string): string =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
+  new Date(`${iso}T00:00:00`).toLocaleDateString(localeActive(), { weekday: 'short' }).replace('.', '');
 
 const longDate = (iso: string): string =>
-  new Date(`${iso}T00:00:00`).toLocaleDateString('fr-FR', {
+  new Date(`${iso}T00:00:00`).toLocaleDateString(localeActive(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -117,7 +120,7 @@ const longDate = (iso: string): string =>
 /** « Mardi et jeudi », plutôt qu'une liste à puces pour deux jours. */
 function enFrancais(jours: readonly DailyWeather[]): string {
   const noms = jours.map((jour) =>
-    new Date(`${jour.date}T00:00:00`).toLocaleDateString('fr-FR', { weekday: 'long' }),
+    new Date(`${jour.date}T00:00:00`).toLocaleDateString(localeActive(), { weekday: 'long' }),
   );
   const phrase =
     noms.length === 1

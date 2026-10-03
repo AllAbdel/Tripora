@@ -1,6 +1,9 @@
 import {
   climateFromSeries,
   climateYear,
+  convertirTemperature,
+  formatNombre,
+  formatTemperature,
   monthNameFr,
   type MonthlyClimate,
 } from '@tripora/core';
@@ -52,7 +55,7 @@ export function ClimateStrip({
           return (
             <li key={mois.month} className="flex flex-1 flex-col items-center gap-1">
               <span className="text-muted text-[10px] leading-none tabular-nums">
-                {Math.round(mois.avgHighC)}
+                {formatNombre(convertirTemperature(mois.avgHighC))}
               </span>
               <span
                 className={cn(
@@ -98,5 +101,5 @@ function decrire(mois: MonthlyClimate): string {
     mois.rainyDays === 0
       ? 'aucun jour de pluie'
       : `${mois.rainyDays} jour${mois.rainyDays > 1 ? 's' : ''} de pluie`;
-  return `${monthNameFr(mois.month)} : ${Math.round(mois.avgHighC)} °C en journée, ${Math.round(mois.avgLowC)} °C la nuit, ${pluie}`;
+  return `${monthNameFr(mois.month)} : ${formatTemperature(mois.avgHighC)} en journée, ${formatTemperature(mois.avgLowC)} la nuit, ${pluie}`;
 }

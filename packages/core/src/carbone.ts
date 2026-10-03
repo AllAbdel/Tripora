@@ -2,6 +2,7 @@ import { paysDuPoint } from './catalog/origins.js';
 import { haversineKm } from './geo.js';
 import { DETOUR_ROUTIER } from './transport.js';
 import type { GeoPoint, TransportMode } from './types.js';
+import { formatNombre } from './regional.js';
 
 /**
  * L'empreinte carbone d'un trajet, par personne, aller-retour.
@@ -136,9 +137,9 @@ function arrondi(kg: number): number {
 /** « 2,9 kg », « 38 kg », « 1,2 t » : lisible sans calculer. */
 export function kgLisibles(kg: number): string {
   if (kg >= 1000) {
-    return `${(kg / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} t`;
+    return `${formatNombre(kg / 1000, { maximumFractionDigits: 1 })} t`;
   }
-  return `${kg.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} kg`;
+  return `${formatNombre(kg, { maximumFractionDigits: 1 })} kg`;
 }
 
 /** La part de l'objectif annuel de 2 tonnes, en pourcentage entier. */

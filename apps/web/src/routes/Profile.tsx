@@ -26,6 +26,7 @@ import { EtatDesServices } from '@/components/EtatDesServices';
 import { MonProfilDeclare } from '@/components/MonProfilDeclare';
 import { PersonnesBloquees } from '@/components/PersonnesBloquees';
 import { ChoixDeLangue } from '@/components/ChoixDeLangue';
+import { ChoixDesUnites } from '@/components/ChoixDesUnites';
 import { ApercuDuPasseport } from '@/components/ApercuDuPasseport';
 import { MesMoyensDePaiement } from '@/components/MesMoyensDePaiement';
 import { ReglageDesRappels } from '@/components/ReglageDesRappels';
@@ -157,6 +158,10 @@ export default function Profile() {
 
         <Section titre="Langue">
           <ChoixDeLangue />
+        </Section>
+
+        <Section titre="Unités et devise">
+          <ChoixDesUnites />
         </Section>
 
         <Section titre="Apparence">

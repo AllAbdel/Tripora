@@ -177,7 +177,7 @@ export default function TripEdit() {
               />
               <p className="text-muted text-xs leading-relaxed">
                 {data.constraints.budgetPerPersonCents
-                  ? `Actuellement ${formatCents(data.constraints.budgetPerPersonCents, 'EUR', { hideCentimes: true })}.`
+                  ? `Actuellement ${formatCents(data.constraints.budgetPerPersonCents, 'EUR', { hideCentimes: true, sansConversion: true })}.`
                   : 'Aucun plafond pour l’instant : Tripora cherche le moins cher.'}{' '}
                 Laissez vide pour ne pas en fixer.
               </p>

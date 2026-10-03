@@ -1,3 +1,4 @@
+import { formatTaille, localeActive } from '@tripora/core';
 import { useRef, useState } from 'react';
 import { CloudDownload, MapPinned, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -14,7 +15,7 @@ import {
 import { signaler } from '@/lib/feedback';
 
 function megaoctets(octets: number): string {
-  return `${Math.max(1, Math.round(octets / (1024 * 1024)))} Mo`;
+  return formatTaille(octets);
 }
 
 /**
@@ -110,7 +111,7 @@ export function CarteHorsLigne({ destination }: { destination: DestinationACarte
               <span className="font-semibold">La carte de {gardee.nom} est sur cet appareil.</span>{' '}
               <span className="text-muted">
                 {megaoctets(gardee.octets)}, gardée le{' '}
-                {new Date(gardee.telechargeeLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}. Elle
+                {new Date(gardee.telechargeeLe).toLocaleDateString(localeActive(), { day: 'numeric', month: 'long' })}. Elle
                 s’affiche même sans réseau.
               </span>
             </p>

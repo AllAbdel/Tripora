@@ -3,11 +3,12 @@ import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Printer, Share2 } from 'lucide-react';
 import {
-  MONTHS_FR,
   computeBalances,
   findDestination,
   formatCents,
   infosPratiques,
+  localeActive,
+  MONTHS_FR,
   preparerLaValise,
   simplifyDebts,
   targetMonth,
@@ -337,7 +338,7 @@ export default function TripRecapitulatif() {
         </Section>
 
         <footer className="text-muted border-t border-[color:var(--border-subtle)] pt-3 text-xs">
-          Préparé avec Tripora · {new Date().toLocaleDateString('fr-FR', { dateStyle: 'long' })}
+          Préparé avec Tripora · {new Date().toLocaleDateString(localeActive(), { dateStyle: 'long' })}
         </footer>
       </article>
     </div>

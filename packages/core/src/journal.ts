@@ -5,6 +5,7 @@
  * photo appartient, et comment titrer ce jour — « Jour 3 · mardi 12 mai »
  * pendant le séjour, la date seule avant ou après.
  */
+import { localeActive } from './regional.js';
 
 export interface PhotoDuVoyage {
   id: string;
@@ -55,7 +56,7 @@ function joursEntre(debut: string, fin: string): number {
 }
 
 function dateLisible(jour: string, avecAnnee: boolean): string {
-  return new Date(`${jour}T12:00:00Z`).toLocaleDateString('fr-FR', {
+  return new Date(`${jour}T12:00:00Z`).toLocaleDateString(localeActive(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

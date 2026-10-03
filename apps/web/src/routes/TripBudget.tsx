@@ -3,9 +3,22 @@ import { Link, useParams, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Loader2, Plus, Trash2, X } from 'lucide-react';
 import {
-  computeBalances, currencyForCountry, currencyName, dateDuJour, describeRate, DESTINATIONS,
-  findDestination, formatCents, isConvertible, parseAmountToCents, referenceRate,
-  simplifyDebts, toReferenceCents, totalSpent, type FxRates,
+  computeBalances,
+  currencyForCountry,
+  currencyName,
+  dateDuJour,
+  describeRate,
+  DESTINATIONS,
+  findDestination,
+  formatCents,
+  isConvertible,
+  localeActive,
+  parseAmountToCents,
+  referenceRate,
+  simplifyDebts,
+  toReferenceCents,
+  totalSpent,
+  type FxRates,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
@@ -216,8 +229,8 @@ export default function TripBudget() {
                   {solde.cents === 0
                     ? 'à jour'
                     : solde.cents > 0
-                      ? `+${formatCents(solde.cents)}`
-                      : formatCents(solde.cents)}
+                      ? `+${formatCents(solde.cents, 'EUR', { sansConversion: true })}`
+                      : formatCents(solde.cents, 'EUR', { sansConversion: true })}
                 </span>
               </li>
             ))}
@@ -247,7 +260,7 @@ export default function TripBudget() {
                   {noms.get(virement.to) ?? 'Quelqu’un'}
                 </span>
                 <span className="chiffres shrink-0 font-semibold">
-                  {formatCents(virement.cents)}
+                  {formatCents(virement.cents, 'EUR', { sansConversion: true })}
                 </span>
                 {/* Celui qui doit payer a de quoi le faire tout de suite ; celui
                     qu'on doit rembourser, de quoi le rendre possible. */}
@@ -331,7 +344,7 @@ export default function TripBudget() {
                       <p className="truncate font-medium">{entree.label}</p>
                       <p className="text-muted text-xs">
                         {noms.get(entree.paidBy) ?? 'Quelqu’un'} ·{' '}
-                        {new Date(`${entree.spentOn}T00:00:00`).toLocaleDateString('fr-FR', {
+                        {new Date(`${entree.spentOn}T00:00:00`).toLocaleDateString(localeActive(), {
                           day: 'numeric',
                           month: 'short',
                         })}
@@ -339,7 +352,7 @@ export default function TripBudget() {
                       </p>
                     </div>
                     <span className="chiffres shrink-0 text-right font-semibold">
-                      {formatCents(entree.amountCents)}
+                      {formatCents(entree.amountCents, 'EUR', { sansConversion: true })}
                       {/* Payé dans une autre monnaie : on montre la somme
                           reconnaissable, celle qui est sur le ticket. */}
                       {entree.currency !== 'EUR' && (
@@ -627,12 +640,12 @@ function Conversion({
     <p className="text-muted text-xs leading-relaxed">
       {enEuros !== null && (
         <span className="text-ink-800 dark:text-ink-100 font-semibold">
-          ≈ {formatCents(enEuros)}
+          ≈ {formatCents(enEuros, 'EUR', { sansConversion: true })}
         </span>
       )}
       {enEuros !== null && ' · '}
       {describeRate(devise, parEuro)} · taux BCE du{' '}
-      {new Date(`${date}T00:00:00`).toLocaleDateString('fr-FR', {
+      {new Date(`${date}T00:00:00`).toLocaleDateString(localeActive(), {
         day: 'numeric',
         month: 'long',
       })}

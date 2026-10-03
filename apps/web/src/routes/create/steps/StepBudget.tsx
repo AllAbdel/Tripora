@@ -94,7 +94,7 @@ export function StepBudget() {
                 selected={budgetPerPersonCents === cents}
                 onClick={() => patch({ budgetPerPersonCents: cents })}
               >
-                {formatCents(cents, 'EUR', { hideCentimes: true })}
+                {formatCents(cents, 'EUR', { hideCentimes: true, sansConversion: true })}
               </Chip>
             ))}
           </div>

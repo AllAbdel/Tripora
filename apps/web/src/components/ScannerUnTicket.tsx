@@ -104,7 +104,7 @@ export function ScannerUnTicket({ onLu }: { onLu: (lecture: LectureDuTicket) => 
             <p>
               Total lu :{' '}
               <strong className="chiffres">
-                {formatCents(etat.lecture.montantCents, etat.lecture.devise ?? 'EUR')}
+                {formatCents(etat.lecture.montantCents, etat.lecture.devise ?? 'EUR', { sansConversion: true })}
               </strong>
               {etat.lecture.commerce ? ` chez ${etat.lecture.commerce}` : ''}. Vérifiez-le avant
               d’enregistrer.

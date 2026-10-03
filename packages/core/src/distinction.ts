@@ -1,4 +1,4 @@
-import { formatCents } from './money.js';
+import { formatCents } from './regional.js';
 import type { DestinationScore, ScoreFactor } from './types.js';
 
 /**

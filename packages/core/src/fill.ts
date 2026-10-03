@@ -3,6 +3,7 @@ import { SLOT_TITLES } from './itinerary.js';
 import { rankPois, type MomentDeLaJournee, type Poi } from './places.js';
 import type { PreferenceAxis } from './preferences.js';
 import { direLaDuree } from './duree.js';
+import { formatDistance } from './regional.js';
 
 /**
  * Poser de vrais lieux sur la structure du séjour.
@@ -283,7 +284,7 @@ function situer(lieu: Poi, ancre: Poi | undefined): string {
   if (km <= PROCHE_KM) {
     return km < 0.6
       ? `${quoi}, à deux pas de ${ancre.name}.`
-      : `${quoi}, à ${km.toFixed(1)} km de ${ancre.name}.`;
+      : `${quoi}, à ${formatDistance(km, 1)} de ${ancre.name}.`;
   }
   return `${quoi}. Pas dans le même quartier que ${ancre.name} — comptez un trajet.`;
 }

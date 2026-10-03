@@ -2,7 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ExternalLink, MapPin, Pin, Search, Send, Trash2, X } from 'lucide-react';
-import { fragmenterMessage, nomPropose, premierLien, type FragmentMessage } from '@tripora/core';
+import {
+  fragmenterMessage,
+  localeActive,
+  nomPropose,
+  premierLien,
+  type FragmentMessage,
+} from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
 import { TitreDePage } from '@/components/TitreDePage';
@@ -443,7 +449,7 @@ function FormulaireEpingle({
 
 function heure(iso: string): string {
   try {
-    return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleTimeString(localeActive(), { hour: '2-digit', minute: '2-digit' });
   } catch {
     return '';
   }

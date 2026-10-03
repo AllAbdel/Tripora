@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Link2, Loader2, QrCode as QrIcon, Share2, UserPlus } from 'lucide-react';
-import { AXIS_LABELS_FR, formatCents } from '@tripora/core';
+import { AXIS_LABELS_FR, formatCents, localeActive } from '@tripora/core';
 import { Button } from '@/components/ui/Button';
 import { TitreDePage } from '@/components/TitreDePage';
 import { Banner } from '@/components/ui/Banner';
@@ -226,7 +226,7 @@ export default function TripMembers() {
               )}
 
               <p className="text-muted text-xs">
-                Valable jusqu’au {new Date(invite.expiresAt).toLocaleDateString('fr-FR')} ·{' '}
+                Valable jusqu’au {new Date(invite.expiresAt).toLocaleDateString(localeActive())} ·{' '}
                 {invite.remainingUses} utilisation{invite.remainingUses > 1 ? 's' : ''} restante
                 {invite.remainingUses > 1 ? 's' : ''}
               </p>
