@@ -121,12 +121,20 @@ Les codes possibles sont ceux de `apps/web/src/i18n/langues.ts` : `es`, `it`,
   | zh | 你 | « 选择出发城市 » |
   | ja | です・ます調 | « 出発する都市を選んでください » |
   | ko | 해요체 | « 출발 도시를 선택해요 » |
-- **Pas de morceaux de phrase en clé.** `phrases-en.ts` contient encore
-  quelques clés héritées d'une ancienne récolte (« sur », « Départ de »,
-  « , classées selon les envies du groupe ») : depuis que les morceaux
-  voisins sont recollés, elles ne servent plus. Ne pas les recopier ;
-  traduire la phrase entière que listent `traductions:extraire` et
-  `traductions:recolte`, par un motif si elle porte un nombre ou un nom.
+- **Pas de morceaux de phrase en clé.** Les morceaux voisins sont recollés
+  avant la recherche : traduire la phrase entière que listent
+  `traductions:extraire` et `traductions:recolte`, par un motif si elle
+  porte un nombre ou un nom. Les seuls morceaux légitimes sont ceux qu'un
+  élément sépare dans le JSX (un lien, un `<strong>`) : « Les votes
+  désignent » + **Bali** + « , avec 3 personnes pour. ».
+- **Un motif large se contraint.** `^(.+) doit (.+) à (.+)$` traduisait
+  aussi « « Qui doit quoi » est un calcul… » en « Qui owes quoi… ». Exiger
+  un chiffre, une longueur, ou passer le complément par `complement()`
+  (qui renonce devant « la », « sur »…), et ajouter le cas à
+  `phrases-<code>.test.ts`. Les motifs récents vont en tête de la liste.
+- **Les pages légales** se traduisent comme le reste ; elles affichent hors
+  du français « Ceci est une traduction : seule la version française de ce
+  texte fait foi. », phrase à traduire aussi.
 - **Mieux vaut le français qu'une traduction approximative.** Une entrée
   absente laisse le français ; une entrée fausse trompe.
 - **Arabe** : l'interface passe de droite à gauche toute seule (`dir`) ; il
@@ -151,9 +159,13 @@ en anglais, octobre 2026) :
 
 ## Où en est chaque langue
 
-- **Anglais** : le modèle. L'interface des écrans principaux (environ
-  800 textes, et les phrases composées qu'ils affichent) ; le carnet de Bali
-  seulement. Ce qui manque se liste avec `LANGUE=en pnpm traductions:extraire`.
+- **Anglais** : le modèle, complet hors carnet. Toute l'interface
+  (routes, composants, messages d'erreur, pages légales) et le cœur
+  (valise, classement, coffre, bilan…) : environ 1 900 textes et les
+  phrases composées qu'ils affichent ; la récolte ne trouve plus de
+  français sur les 31 écrans de démonstration, hormis des noms de
+  destinations. Le carnet : Bali seulement. Un test de bout en bout
+  (`e2e/anglais.spec.ts`) parcourt les écrans principaux en `en-US`.
 - **Les douze autres** : quelques dizaines de clés de `textes.ts` ; rien
   encore en traduction au rendu.
 
