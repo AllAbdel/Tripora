@@ -200,14 +200,16 @@ export default defineConfig(({ mode }) => {
           // jamais être remplacée par Tripora : le site, voyant un code sans
           // sa preuve PKCE, relancerait la connexion dans le navigateur.
           //
-          // Les pages publiques du carnet (/destinations…) et les fichiers pour
-          // les robots sont de vrais fichiers : l'application ne doit pas les
-          // remplacer par son propre écran.
+          // Les pages publiques du carnet (/destinations…, et leur version
+          // anglaise sous /en/) et les fichiers pour les robots sont de vrais
+          // fichiers : l'application ne doit pas les remplacer par son propre
+          // écran.
           navigateFallbackDenylist: [
             /^\/api\//,
             /^\/retour-app\//,
             /^\/destinations(\/|$)/,
             /^\/ou-partir-en\//,
+            /^\/en\//,
             /^\/(sitemap\.xml|robots\.txt|llms\.txt)$/,
           ],
           runtimeCaching: [

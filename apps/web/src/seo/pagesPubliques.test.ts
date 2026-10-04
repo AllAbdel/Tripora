@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { findDestination } from '@tripora/core';
+import { DESTINATIONS, findDestination } from '@tripora/core';
 import { activitesDe } from '@tripora/core/activites';
+import { NOMS_ET_RESUMES } from '../i18n/carnet-en';
+import { NOMS_DES_DESTINATIONS, PHRASES } from '../i18n/phrases-en';
 import {
   adresseWikipedia,
   budgetParJour,
@@ -28,13 +30,16 @@ describe('les pages publiques du carnet', () => {
   it('écrit une page par destination du carnet, le sommaire, le plan du site et les robots', () => {
     const publiees = destinationsPubliees();
     expect(publiees.length).toBeGreaterThan(250);
-    // Les destinations, douze pages de mois, le sommaire, le plan du site, les
-    // robots et le fichier pour les assistants.
-    expect(fichiers).toHaveLength(publiees.length + 12 + 4);
+    // Dans chaque langue : les destinations, douze pages de mois et le
+    // sommaire ; puis le plan du site, les robots et le fichier pour les
+    // assistants.
+    expect(fichiers).toHaveLength(2 * (publiees.length + 12 + 1) + 3);
     for (const destination of publiees) {
       expect(parChemin.has(`destinations/${destination.id}.html`), destination.id).toBe(true);
+      expect(parChemin.has(`en/destinations/${destination.id}.html`), destination.id).toBe(true);
     }
     expect(parChemin.has('destinations.html')).toBe(true);
+    expect(parChemin.has('en/destinations.html')).toBe(true);
   });
 
   it('dit sur chaque page ce qu’un moteur doit en retenir', () => {
@@ -76,8 +81,11 @@ describe('les pages publiques du carnet', () => {
   it('liste toutes les pages dans le plan du site, en adresses complètes', () => {
     const plan = parChemin.get('sitemap.xml')!;
     expect(plan).toContain('<loc>https://tripora.exemple/destinations/bergen</loc>');
-    expect(plan.match(/<loc>/gu)).toHaveLength(destinationsPubliees().length + 12 + 3);
+    // L'accueil, le sommaire, les mois et les destinations, en deux langues.
+    expect(plan.match(/<loc>/gu)).toHaveLength(2 * (destinationsPubliees().length + 14));
     expect(plan).toContain('<loc>https://tripora.exemple/ou-partir-en/aout</loc>');
+    expect(plan).toContain('<loc>https://tripora.exemple/en/where-to-go-in/august</loc>');
+    expect(plan).toContain('<loc>https://tripora.exemple/en/destinations/bergen</loc>');
   });
 
   it('annonce l’accueil en anglais à sa propre adresse, versions croisées', () => {
@@ -85,7 +93,8 @@ describe('les pages publiques du carnet', () => {
     expect(plan).toContain('<loc>https://tripora.exemple/?langue=en</loc>');
     // Chaque version de l'accueil nomme les deux, plus celle par défaut.
     expect(plan.match(/hreflang="en" href="https:\/\/tripora\.exemple\/\?langue=en"/gu)).toHaveLength(2);
-    expect(plan.match(/hreflang="x-default"/gu)).toHaveLength(2);
+    // Chaque adresse du plan a sa version par défaut, le français.
+    expect(plan.match(/hreflang="x-default"/gu)).toHaveLength(plan.match(/<loc>/gu)!.length);
     expect(robots(CONTEXTE)).toContain('Allow: /?langue=');
   });
 
@@ -203,5 +212,99 @@ describe('les petits calculs des pages', () => {
       'https://en.wikipedia.org/wiki/Fish_Market%2C_Bergen',
     );
     expect(adresseWikipedia('fr:Val d\'Orcia')).toBe("https://fr.wikipedia.org/wiki/Val_d'Orcia");
+  });
+});
+
+describe('les pages en anglais', () => {
+  const fichiers = genererLesPages(CONTEXTE);
+  const parChemin = new Map(fichiers.map((fichier) => [fichier.chemin, fichier.contenu]));
+  const bergen = parChemin.get('en/destinations/bergen.html')!;
+
+  it('ont leur adresse, leur langue et leurs versions croisées', () => {
+    expect(bergen).toContain('<html lang="en">');
+    expect(bergen).toContain('<title>Things to do in Bergen and the fjords: ');
+    expect(bergen).toContain('<link rel="canonical" href="https://tripora.exemple/en/destinations/bergen">');
+    for (const page of [bergen, parChemin.get('destinations/bergen.html')!]) {
+      expect(page).toContain('<link rel="alternate" hreflang="fr" href="https://tripora.exemple/destinations/bergen">');
+      expect(page).toContain('<link rel="alternate" hreflang="en" href="https://tripora.exemple/en/destinations/bergen">');
+      expect(page).toContain('<link rel="alternate" hreflang="x-default" href="https://tripora.exemple/destinations/bergen">');
+    }
+    expect(parChemin.get('destinations/bergen.html')).toContain('href="/en/destinations/bergen" hreflang="en" lang="en">In English</a>');
+    expect(bergen).toContain('href="/destinations/bergen" hreflang="fr" lang="fr">En français</a>');
+  });
+
+  it('montrent le carnet traduit, et ouvrent l’application en anglais', () => {
+    for (const activite of activitesDe('bergen')) {
+      expect(bergen).toContain(`<h3>${esc(NOMS_ET_RESUMES[activite.id]![0])}</h3>`);
+    }
+    expect(bergen).toContain('href="/voyages/nouveau?destination=bergen&amp;langue=en"');
+    expect(bergen).toContain('°F');
+  });
+
+  it('se relient entre elles, sans renvoyer vers le français', () => {
+    const liens = [...bergen.matchAll(/href="(\/[^"]*)"/gu)].map((m) => m[1]!);
+    for (const lien of liens.filter((l) => /^\/(?:destinations|ou-partir-en)\//u.test(l))) {
+      // Seul le lien « En français » mène à la version française.
+      expect(lien).toBe('/destinations/bergen');
+    }
+    for (const id of liens.flatMap((l) => /^\/en\/destinations\/([a-z0-9-]+)$/u.exec(l)?.[1] ?? [])) {
+      expect(parChemin.has(`en/destinations/${id}.html`), id).toBe(true);
+    }
+    const aout = parChemin.get('en/where-to-go-in/august.html')!;
+    expect(aout).toContain('<h1>Where to go in August?</h1>');
+    expect(aout).toContain('href="/en/where-to-go-in/september"');
+  });
+
+  it('ne gardent aucun texte français hors des noms propres', () => {
+    // Les noms propres viennent du carnet (traduit ou non) : un nom seul dans
+    // sa balise est connu ; tout autre texte doit être anglais.
+    const connus = new Set<string>([
+      ...Object.values(NOMS_ET_RESUMES).flat(),
+      ...Object.values(NOMS_DES_DESTINATIONS),
+      ...DESTINATIONS.map((destination) => destination.name),
+      ...Object.values(PHRASES),
+    ]);
+    const FRANCAIS =
+      /(?:^|[\s'’(«])(?:le|la|les|des|une|est|sont|pour|vous|votre|avec|dans|sur|pas|qui|que|du|au|aux|et|ou|à|ce|cette|leur|sans|très|plus|de|en|jours?|idées|mois|pluie|plutôt|gratuit)(?=$|[\s,.;:!?»)])/iu;
+    // Les noms qui se lisent comme du français (« Rio de Janeiro ») sont
+    // effacés des phrases qui les citent avant la recherche.
+    const nomsTrompeurs = [...connus]
+      .filter((nom) => nom.length < 60 && FRANCAIS.test(nom))
+      .sort((a, b) => b.length - a.length);
+    const restes = new Set<string>();
+    for (const [chemin, contenu] of parChemin) {
+      if (!chemin.startsWith('en/')) continue;
+      const corps = contenu
+        .replace(/<script[\s\S]*?<\/script>/gu, '')
+        .replace(/<a [^>]*lang="fr"[^>]*>[^<]*<\/a>/gu, '');
+      for (const [, brut] of corps.matchAll(/>([^<>]+)</gu)) {
+        const texte = brut!.replaceAll('&amp;', '&').replaceAll('&quot;', '"').trim();
+        if (!texte || connus.has(texte) || !FRANCAIS.test(texte)) continue;
+        const sansLesNoms = nomsTrompeurs.reduce((reste, nom) => reste.replaceAll(nom, ''), texte);
+        if (FRANCAIS.test(sansLesNoms)) restes.add(`${chemin} : ${texte}`);
+      }
+    }
+    expect([...restes].slice(0, 20)).toEqual([]);
+  });
+
+  it('chiffrent à l’anglaise', () => {
+    expect(periodeLisible([5, 6, 7, 8, 9], 'en')).toBe('from May to September');
+    expect(periodeLisible([4, 5, 9, 10], 'en')).toBe('in April, May, September and October');
+    expect(periodeLisible([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 'en')).toBe('all year round');
+    const rio = parChemin.get('en/destinations/rio-de-janeiro.html')!;
+    expect(rio).toContain('127 or 220 V');
+    expect(rio).toContain('193 (fire)');
+    expect(rio).toMatch(/<dt>Budget<\/dt><dd>€\d+<\/dd>/u);
+  });
+
+  it('disent la langue d’un article de Wikipédia qui n’est pas la leur', () => {
+    expect(bergen).toMatch(/hreflang="en" rel="noopener">On Wikipedia<\/a>/u);
+    expect(parChemin.get('destinations/bergen.html')).toMatch(/hreflang="en" rel="noopener">Sur Wikipédia \(en anglais\)<\/a>/u);
+  });
+
+  it('ne répètent pas le pays quand il porte le nom de la destination', () => {
+    expect(parChemin.get('en/destinations/malte.html')).toContain('content="Valletta and Malta (Malta):');
+    expect(parChemin.get('en/destinations/maldives.html')).toContain('content="Maldives: ');
+    expect(parChemin.get('destinations/maldives.html')).toContain('content="Maldives : ');
   });
 });

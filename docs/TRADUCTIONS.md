@@ -174,19 +174,28 @@ en anglais, octobre 2026) :
   classement, coffre, bilan…) et tout le carnet : les noms des
   destinations et les 2 166 activités (`carnet-en.ts`). La récolte ne
   trouve plus de français sur les 31 écrans de démonstration. Un test de bout en bout
-  (`e2e/anglais.spec.ts`) parcourt les écrans principaux en `en-US`.
+  (`e2e/anglais.spec.ts`) parcourt les écrans principaux en `en-US`. Les
+  pages publiques du référencement existent aussi en anglais (`/en/`).
 - **Les douze autres** : quelques dizaines de clés de `textes.ts` ; rien
   encore en traduction au rendu.
 
 ## Hors de ce mécanisme
 
 - **Les pages publiques du référencement** (`apps/web/src/seo/`) : un site
-  statique en français, généré au build. Une version par langue serait un
-  chantier à part (adresses, `hreflang`). L'accueil, lui, fait partie de
-  l'application : `/?langue=en` l'ouvre dans une langue précise, et le plan
-  du site annonce cette adresse. Les robots des moteurs lisent le français à
-  l'adresse nue, quelle que soit la langue de leur navigateur
-  (`estUnRobot`, `stores/langue.ts`).
+  statique généré au build, en français et en anglais (sous `/en/`, adresses
+  traduites : `/en/where-to-go-in/october`). Les phrases de ces pages sont
+  écrites dans `pagesPubliques.ts` même, une branche par langue ; les
+  libellés du cœur (envies, catégories, transports, rubriques de liens) et
+  les noms des pays passent par le dictionnaire de l'application, le carnet
+  par `carnet-en.ts`. Ajouter une langue à ces pages, c'est ajouter une
+  branche et des adresses : un chantier à part, à faire seulement pour une
+  langue dont le carnet est traduit. Un test (`pagesPubliques.test.ts`)
+  vérifie qu'aucune page anglaise ne garde de français hors des noms
+  propres. L'accueil, lui, fait partie de l'application : `/?langue=en`
+  l'ouvre dans une langue précise, et le plan du site annonce cette
+  adresse. Les robots des moteurs lisent le français à l'adresse nue,
+  quelle que soit la langue de leur navigateur (`estUnRobot`,
+  `stores/langue.ts`).
 - **Ce que le cœur envoie à l'IA** (`packages/core/src/ai/`) : en français
   par construction.
 - **Les listes de mots des lecteurs** de tickets et d'e-mails de

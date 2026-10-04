@@ -25,6 +25,18 @@ import { traduireCle, type Motif, type Traducteur } from './moteur';
  * (l'écran) listent ce qui reste en français.
  */
 
+/**
+ * Les rares noms qu'`Intl` donne sous une forme administrative ou abrégée
+ * (« Hong Kong SAR China », « St. Vincent & Grenadines ») ; « & » et « St. »
+ * sont, eux, développés pour tous.
+ */
+const PAYS_REECRITS: Readonly<Record<string, string>> = {
+  HK: 'Hong Kong',
+  MO: 'Macao',
+  SJ: 'Svalbard',
+  VC: 'Saint Vincent and the Grenadines',
+};
+
 /** Les pays du catalogue, en anglais : le navigateur connaît leur nom (Intl), il suffit du code. */
 const PAYS_EN: Readonly<Record<string, string>> = (() => {
   const noms = typeof Intl !== 'undefined' && 'DisplayNames' in Intl ? new Intl.DisplayNames(['en'], { type: 'region' }) : null;
@@ -34,7 +46,7 @@ const PAYS_EN: Readonly<Record<string, string>> = (() => {
     const code = destination.countryCode?.toUpperCase();
     if (!code || sortie[destination.country]) continue;
     try {
-      const nom = noms.of(code);
+      const nom = PAYS_REECRITS[code] ?? noms.of(code)?.replaceAll(' & ', ' and ').replace(/^St\. /u, 'Saint ');
       if (nom && nom !== code) sortie[destination.country] = nom;
     } catch {
       // Un code inconnu de cette version du navigateur : le nom français reste.
@@ -48,7 +60,7 @@ const PAYS_EN: Readonly<Record<string, string>> = (() => {
  * ceux qui diffèrent du français (« Lisbonne » → « Lisbon » ; « Porto » reste
  * « Porto »). L'identifiant tient même si le nom français change d'orthographe.
  */
-const NOMS_DES_DESTINATIONS: Readonly<Record<string, string>> = {
+export const NOMS_DES_DESTINATIONS: Readonly<Record<string, string>> = {
   abha: "Abha and Asir",
   "abou-dabi": "Abu Dhabi",
   achgabat: "Ashgabat and Darvaza",

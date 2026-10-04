@@ -104,9 +104,14 @@ une déclaration faite en ton nom.
 
 Déjà en place dans le code :
 
-- 389 pages publiques « Que faire à … » (`/destinations/<id>`), leur
+- 391 pages publiques « Que faire à … » (`/destinations/<id>`), leur
   sommaire (`/destinations`) et 12 pages « Où partir en <mois> ? »
   (`/ou-partir-en/octobre`…), écrites en HTML au moment du build ;
+- les mêmes pages en anglais sous `/en/` (`/en/destinations/<id>`,
+  `/en/destinations`, `/en/where-to-go-in/october`…), avec le carnet
+  traduit, les températures aussi en °F, et des liens `hreflang` croisés
+  (le français reste la version par défaut) ; elles ouvrent l'application
+  en anglais (`?langue=en`) ;
 - `sitemap.xml` et `robots.txt` à la racine du site ;
 - liens canoniques vers https://tripora-3rg.pages.dev (le même site servi par
   Vercel ne fait pas doublon) ;
