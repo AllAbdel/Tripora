@@ -16,7 +16,7 @@ import { Bloc, Definition, LienDeContact, PageLegale } from '@/components/PageLe
  */
 export default function Confidentialite() {
   return (
-    <PageLegale titre="Confidentialité" miseAJour="3 octobre 2026">
+    <PageLegale titre="Confidentialité" miseAJour="4 octobre 2026">
       <Bloc titre="En une phrase">
         <p>
           Tripora conserve le minimum nécessaire pour qu’un voyage fonctionne à plusieurs,
@@ -71,6 +71,13 @@ export default function Confidentialite() {
           Si vous activez les notifications, l’adresse d’abonnement que fournit votre navigateur
           est conservée pour pouvoir le réveiller ; la notification elle-même ne contient ni
           destination ni prix.
+        </Definition>
+        <Definition terme="Les notifications du groupe">
+          Si vous les activez sur un appareil : l’adresse d’abonnement de son navigateur, et vos
+          réglages par catégorie, visibles de vous seul. Ce qu’une notification dira — un nom, le
+          début d’un message, un montant — attend quelques minutes au plus sur nos serveurs, puis
+          est effacé dès l’envoi ; la trace qui évite de prévenir deux fois disparaît au bout de
+          sept jours. Une notification ne dit jamais qui a voté quoi.
         </Definition>
         <Definition terme="Sur votre appareil seulement">
           Le thème, la couleur choisie et les retours sonores restent dans le navigateur. Les
@@ -137,10 +144,10 @@ export default function Confidentialite() {
           prix des vols. Rien sur vous ni sur votre groupe.
         </Definition>
         <Definition terme="Le service de notification de votre navigateur">
-          Uniquement si vous activez les notifications des alertes de prix : Google (Chrome,
-          Android), Mozilla (Firefox) ou Apple (Safari) reçoit un signal vide qui réveille votre
-          navigateur. Ni destination, ni prix, ni nom : le message affiché est toujours le même,
-          et le détail se lit dans Tripora.
+          Uniquement si vous activez les notifications : Google (Chrome, Android), Mozilla
+          (Firefox) ou Apple (Safari) transporte jusqu’à votre appareil soit un signal vide (les
+          alertes de prix, dont le message est toujours le même), soit une notification du groupe
+          chiffrée pour cet appareil seul, qu’il ne peut pas lire.
         </Definition>
         <Definition terme="Les services que vous ouvrez vous-même">
           Cliquer sur un lien vers une application recommandée ou un site de réservation vous

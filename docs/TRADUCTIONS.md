@@ -85,8 +85,10 @@ Les codes possibles sont ceux de `apps/web/src/i18n/langues.ts` : `es`, `it`,
    textes déjà dans la langue (`useT()`, noms de devises) : à ignorer.
 6. **Compléter `textes.ts`** : le dictionnaire de la langue (`ES`…), pour
    les clés qui lui manquent.
-7. **La notification des alertes de prix** : une ligne dans `TEXTES`,
-   en tête de `apps/web/public/sw-alertes.js`.
+7. **Les notifications** (alertes de prix et notifications du groupe) : un
+   bloc dans `TEXTES`, en tête de `apps/web/public/sw-alertes.js`, sur le
+   modèle de l'anglais. Les noms, les messages et les titres de voyage y
+   arrivent tout faits ; les montants se mettent en forme dans la langue.
 8. **Vérifier**, depuis la racine :
    ```sh
    pnpm lint && pnpm -r typecheck && pnpm -r test

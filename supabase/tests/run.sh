@@ -55,6 +55,9 @@ psql_run -q -d "$DB" -f "$ROOT/supabase/tests/envies_test.sql"
 echo "→ Tests des votes secrets"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/votes_secrets_test.sql"
 
+echo "→ Tests des notifications du groupe"
+psql_run -q -d "$DB" -f "$ROOT/supabase/tests/notifications_test.sql"
+
 echo "→ Tests du coffre"
 psql_run -q -d "$DB" -f "$ROOT/supabase/tests/coffre_test.sql"
 
