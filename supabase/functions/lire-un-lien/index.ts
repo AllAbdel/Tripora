@@ -8,6 +8,7 @@ import {
   corpusDuLien,
   distanceKm,
   estUneCarte,
+  ipPublique,
   lieuxCites,
   metaDeLaPage,
   oEmbedDe,
@@ -146,6 +147,7 @@ async function suivre(depart: URL): Promise<URL> {
     // lue plus tard, en une seule requête.
     if (!estUnRaccourci(courante)) return courante;
 
+    await exigerLeWebPublic(courante);
     const reponse = await fetch(courante, {
       redirect: 'manual',
       headers: { 'user-agent': AGENT, accept: 'text/html,*/*' },
@@ -159,6 +161,25 @@ async function suivre(depart: URL): Promise<URL> {
     courante = prochaine;
   }
   throw new Error('trop de redirections');
+}
+
+/**
+ * Où mène vraiment le nom, juste avant d'y aller. Un nom ordinaire peut
+ * pointer vers une adresse interne : on résout, et la moindre adresse qui
+ * n'est pas publique arrête tout. Un type d'enregistrement absent (pas
+ * d'IPv6) ou une résolution impossible ici ne bloque rien : la requête elle-
+ * même échouera si le nom ne mène nulle part.
+ */
+async function exigerLeWebPublic(url: URL): Promise<void> {
+  for (const type of ['A', 'AAAA'] as const) {
+    let adresses: string[];
+    try {
+      adresses = await Deno.resolveDns(url.hostname, type);
+    } catch {
+      continue;
+    }
+    if (!adresses.every(ipPublique)) throw new Error('adresse interne refusée');
+  }
 }
 
 function estUnRaccourci(url: URL): boolean {
@@ -329,6 +350,7 @@ async function recupererJson(url: URL): Promise<Record<string, unknown> | null> 
 
 /** Une page, lue en une requête, sans suivre de redirection et sans dépasser 600 Ko. */
 async function recupererTexte(url: URL, accept = 'text/html,application/xhtml+xml'): Promise<string> {
+  await exigerLeWebPublic(url);
   const reponse = await fetch(url, {
     redirect: 'manual',
     headers: { 'user-agent': AGENT, accept, 'accept-language': 'fr,en;q=0.8' },
