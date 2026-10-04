@@ -23,11 +23,10 @@
 
 -- ---------------------------------------------------------- 1. Destination --
 
-drop policy if exists "votes : lecture par les membres, sauf les envies des autres" on public.votes;
-
-create policy "votes : chacun ne lit que les siens"
-  on public.votes for select to authenticated
+alter policy "votes : lecture par les membres, sauf les envies des autres" on public.votes
   using (user_id = (select auth.uid()) and public.is_trip_member(trip_id));
+alter policy "votes : lecture par les membres, sauf les envies des autres" on public.votes
+  rename to "votes : chacun ne lit que les siens";
 
 -- Les totaux du vote sur la destination, destination par destination : combien
 -- d'« j'aime », de « mon préféré », de « pas pour moi », mon propre vote, et
@@ -122,39 +121,29 @@ begin
 end;
 $$;
 
-create or replace function public.sondage_votes_rattaches()
+-- Le bulletin prend la nature de son sondage. Ce déclencheur passe après
+-- `sondage_votes_rattaches` (ordre alphabétique), qui a déjà retrouvé le
+-- sondage de l'option.
+create or replace function public.sondage_votes_secret()
 returns trigger language plpgsql set search_path = public as $$
-declare
-  multiple boolean;
 begin
-  select o.sondage_id, o.trip_id into new.sondage_id, new.trip_id
-  from public.sondage_options o where o.id = new.option_id;
-
-  select s.choix_multiple, s.secret into multiple, new.secret
-  from public.sondages s where s.id = new.sondage_id;
+  select coalesce(s.secret, false) into new.secret from public.sondages s where s.id = new.sondage_id;
   new.secret := coalesce(new.secret, false);
-  if not coalesce(multiple, false) then
-    delete from public.sondage_votes
-    where sondage_id = new.sondage_id and user_id = new.user_id and option_id <> new.option_id;
-  end if;
   return new;
 end;
 $$;
 
-drop policy if exists "votes : lecture par les membres" on public.sondage_votes;
+create trigger sondage_votes_secret before insert on public.sondage_votes
+  for each row execute function public.sondage_votes_secret();
 
-create policy "votes : lecture par les membres, sauf les bulletins secrets des autres"
-  on public.sondage_votes for select to authenticated
+alter policy "votes : lecture par les membres" on public.sondage_votes
   using (public.is_trip_member(trip_id) and (not secret or user_id = (select auth.uid())));
+alter policy "votes : lecture par les membres" on public.sondage_votes
+  rename to "votes : lecture par les membres, sauf les bulletins secrets des autres";
 
 -- Le signal des votes : la ligne du sondage est touchée, sans rien dire de
--- plus, et les membres qui l'écoutent recomptent.
---
--- Les votes eux-mêmes ne sont plus diffusés en temps réel, secrets ou non.
--- Le temps réel applique les règles de lecture aux ajouts, pas aux
--- suppressions : il envoie à tous les abonnés la clé de la ligne retirée, et
--- celle d'un vote, c'est (option, personne). Retirer son bulletin secret
--- aurait dit à tout le groupe pour quoi on avait voté.
+-- plus, et les membres qui l'écoutent recomptent. Les votes eux-mêmes ne
+-- sont plus diffusés en temps réel (migration suivante).
 create or replace function public.signaler_une_voix()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
@@ -196,12 +185,6 @@ grant execute on function public.decompte_des_sondages_secrets(uuid) to authenti
 
 do $$
 begin
-  if exists (
-    select 1 from pg_publication_tables
-    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'sondage_votes'
-  ) then
-    alter publication supabase_realtime drop table public.sondage_votes;
-  end if;
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
      and not exists (
        select 1 from pg_publication_tables
