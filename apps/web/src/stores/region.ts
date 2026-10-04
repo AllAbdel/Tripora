@@ -11,7 +11,7 @@ import {
 } from '@tripora/core';
 import { etiquetteIntl, type Langue } from '@/i18n/langues';
 import { chargerTaux } from '@/lib/fx';
-import { resoudre, useLangue } from '@/stores/langue';
+import { languesAnnoncees as annoncees, resoudre, useLangue } from '@/stores/langue';
 
 /**
  * Comment la personne veut lire les chiffres : sa devise, ses degrés, ses
@@ -38,11 +38,6 @@ interface EtatDeRegion {
   setDevise: (valeur: Choix<string>) => void;
   setTemperature: (valeur: Choix<UniteDeTemperature>) => void;
   setDistance: (valeur: Choix<UniteDeDistance>) => void;
-}
-
-function annoncees(): string[] {
-  if (typeof navigator === 'undefined') return [];
-  return [...(navigator.languages ?? []), navigator.language].filter(Boolean) as string[];
 }
 
 /** Le pays que le navigateur annonce (« US » pour « en-US »), s'il en annonce un. */

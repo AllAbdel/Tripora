@@ -9,6 +9,7 @@ import {
   adressePublique,
   carteDerriereLeConsentement,
   corpusDuLien,
+  ipPublique,
   lieuxCites,
   metaDeLaPage,
   oEmbedDe,
@@ -39,6 +40,39 @@ Deno.test('refuse les adresses qui ne sont pas du web public', () => {
     egal(adressePublique(interdite), null, interdite);
   }
   egal(adressePublique('https://www.tiktok.com/@a/video/1')?.hostname, 'www.tiktok.com', 'tiktok');
+});
+
+Deno.test('juge où mène un nom : une adresse interne est refusée, même déguisée', () => {
+  for (const interne of [
+    '127.0.0.1',
+    '10.1.2.3',
+    '172.16.0.1',
+    '172.31.255.255',
+    '192.168.1.1',
+    '169.254.169.254',
+    '100.64.0.1',
+    '0.0.0.0',
+    '224.0.0.1',
+    '255.255.255.255',
+    '::',
+    '::1',
+    'fe80::1',
+    'fd00::1234',
+    'ff02::1',
+    '::ffff:127.0.0.1',
+    '::ffff:7f00:1',
+    '::ffff:a9fe:a9fe',
+    '::10.0.0.1',
+    '64:ff9b::a00:1',
+    '2001:db8::1',
+    'pas-une-adresse',
+    '1:2:3',
+  ]) {
+    egal(ipPublique(interne), false, interne);
+  }
+  for (const publique of ['8.8.8.8', '151.101.1.140', '172.32.0.1', '2a00:1450:4007:80e::200e', '::ffff:8.8.8.8', '64:ff9b::808:808']) {
+    egal(ipPublique(publique), true, publique);
+  }
 });
 
 Deno.test('trouve le lien dans un texte partagé, sans la ponctuation', () => {

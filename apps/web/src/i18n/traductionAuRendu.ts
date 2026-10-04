@@ -66,6 +66,8 @@ export async function chargerLeDictionnaire(langue: Langue): Promise<boolean> {
 }
 
 const ATTRIBUTS = ['placeholder', 'aria-label', 'title', 'alt'] as const;
+/** La description de la page, que les moteurs affichent sous son titre dans leurs résultats. */
+const DESCRIPTION = 'meta[name="description"]';
 const EXCLUS = '[translate="no"],script,style,textarea,code,pre,[contenteditable="true"]';
 
 
@@ -175,7 +177,7 @@ function traiterTexte(noeud: Text) {
 
 function traiterAttributs(element: Element) {
   if (exclu(element)) return;
-  for (const nom of ATTRIBUTS) {
+  for (const nom of element.matches(DESCRIPTION) ? ['content'] : ATTRIBUTS) {
     const valeur = element.getAttribute(nom);
     if (!valeur) continue;
     const etats = etatsDesAttributs.get(element) ?? new Map<string, Etat>();
@@ -277,7 +279,7 @@ export function demarrerLaTraductionAuRendu() {
     childList: true,
     characterData: true,
     attributes: true,
-    attributeFilter: [...ATTRIBUTS],
+    attributeFilter: [...ATTRIBUTS, 'content'],
   });
   appliquer(resoudre(useLangue.getState().preference));
   useLangue.subscribe((etat) => appliquer(resoudre(etat.preference)));

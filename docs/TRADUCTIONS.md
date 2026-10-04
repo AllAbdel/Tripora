@@ -163,8 +163,8 @@ en anglais, octobre 2026) :
   (routes, composants, messages d'erreur, pages légales) et le cœur
   (valise, classement, coffre, bilan…) : environ 1 900 textes et les
   phrases composées qu'ils affichent ; la récolte ne trouve plus de
-  français sur les 31 écrans de démonstration, hormis des noms de
-  destinations. Le carnet : Bali seulement. Un test de bout en bout
+  français sur les 31 écrans de démonstration. Le carnet : les noms des
+  destinations, et les activités de Bali seulement. Un test de bout en bout
   (`e2e/anglais.spec.ts`) parcourt les écrans principaux en `en-US`.
 - **Les douze autres** : quelques dizaines de clés de `textes.ts` ; rien
   encore en traduction au rendu.
@@ -173,7 +173,11 @@ en anglais, octobre 2026) :
 
 - **Les pages publiques du référencement** (`apps/web/src/seo/`) : un site
   statique en français, généré au build. Une version par langue serait un
-  chantier à part (adresses, `hreflang`).
+  chantier à part (adresses, `hreflang`). L'accueil, lui, fait partie de
+  l'application : `/?langue=en` l'ouvre dans une langue précise, et le plan
+  du site annonce cette adresse. Les robots des moteurs lisent le français à
+  l'adresse nue, quelle que soit la langue de leur navigateur
+  (`estUnRobot`, `stores/langue.ts`).
 - **Ce que le cœur envoie à l'IA** (`packages/core/src/ai/`) : en français
   par construction.
 - **Les listes de mots des lecteurs** de tickets et d'e-mails de

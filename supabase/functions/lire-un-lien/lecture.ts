@@ -39,6 +39,80 @@ export function adressePublique(brute: string): URL | null {
   return url;
 }
 
+/**
+ * Une adresse IP du web public.
+ *
+ * `adressePublique` ne juge que le nom, et un nom ordinaire peut mener à une
+ * adresse interne : « 127.0.0.1.nip.io », ou un domaine dont on tient le DNS.
+ * Le serveur résout donc le nom avant chaque requête et passe ici chaque
+ * adresse obtenue. Refusées : les réseaux privés, la boucle locale, le lien
+ * local (dont les métadonnées des hébergeurs, 169.254.169.254), le partage
+ * d'adresses des opérateurs, la documentation, la multidiffusion, et les
+ * mêmes cachées dans une IPv6 (encapsulée, compatible ou NAT64).
+ */
+export function ipPublique(ip: string): boolean {
+  const v4 = octetsIPv4(ip);
+  if (v4) return ipv4Publique(v4);
+  const g = groupesIPv6(ip.toLowerCase().replace(/^\[|\]$/gu, ''));
+  if (!g) return false;
+  const debutNul = (n: number) => g.slice(0, n).every((x) => x === 0);
+  const ipv4Finale = () => ipv4Publique([g[6]! >> 8, g[6]! & 0xff, g[7]! >> 8, g[7]! & 0xff]);
+  if (debutNul(8)) return false; // ::
+  if (debutNul(7) && g[7] === 1) return false; // ::1
+  if (debutNul(5) && g[5] === 0xffff) return ipv4Finale(); // ::ffff:a.b.c.d
+  if (debutNul(6)) return ipv4Finale(); // ::a.b.c.d
+  if (g[0] === 0x64 && g[1] === 0xff9b) return ipv4Finale(); // NAT64
+  if ((g[0]! & 0xfe00) === 0xfc00) return false; // fc00::/7, adresses locales uniques
+  if ((g[0]! & 0xffc0) === 0xfe80) return false; // fe80::/10, lien local
+  if ((g[0]! & 0xff00) === 0xff00) return false; // multidiffusion
+  if (g[0] === 0x2001 && g[1] === 0x0db8) return false; // documentation
+  return true;
+}
+
+function octetsIPv4(ip: string): number[] | null {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/u.exec(ip);
+  if (!m) return null;
+  const octets = m.slice(1).map(Number);
+  return octets.every((o) => o <= 255) ? octets : null;
+}
+
+function ipv4Publique([a, b, c]: number[]): boolean {
+  return !(
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b! >= 64 && b! <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b! >= 16 && b! <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 192 && b === 0 && (c === 0 || c === 2)) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    (a === 198 && b === 51 && c === 100) ||
+    (a === 203 && b === 0 && c === 113) ||
+    a! >= 224
+  );
+}
+
+/** Les huit groupes de 16 bits d'une IPv6, « :: » et IPv4 finale dépliés ; `null` si illisible. */
+function groupesIPv6(ip: string): number[] | null {
+  let texte = ip;
+  const v4 = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/u.exec(texte);
+  if (v4) {
+    const o = octetsIPv4(v4[1]!);
+    if (!o) return null;
+    texte = `${texte.slice(0, v4.index)}${((o[0]! << 8) | o[1]!).toString(16)}:${((o[2]! << 8) | o[3]!).toString(16)}`;
+  }
+  const moities = texte.split('::');
+  if (moities.length > 2) return null;
+  const gauche = moities[0] ? moities[0].split(':') : [];
+  const droite = moities[1] ? moities[1].split(':') : [];
+  const manquants = 8 - gauche.length - droite.length;
+  if (moities.length === 1 ? manquants !== 0 : manquants < 1) return null;
+  const groupes = [...gauche, ...Array<string>(moities.length === 2 ? manquants : 0).fill('0'), ...droite];
+  if (!groupes.every((x) => /^[0-9a-f]{1,4}$/u.test(x))) return null;
+  return groupes.map((x) => parseInt(x, 16));
+}
+
 /** Le premier lien d'un texte partagé (« Regarde ça https://vm.tiktok.com/… »). */
 export function premierLienDuTexte(texte: string): string | null {
   const trouve = texte.match(/https?:\/\/[^\s<>"']+/u)?.[0];

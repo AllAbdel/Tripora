@@ -112,7 +112,11 @@ Déjà en place dans le code :
   Vercel ne fait pas doublon) ;
 - données structurées schema.org sur chaque page ;
 - un accueil lisible sans compte (`/`), et les pages légales :
-  `/mentions-legales`, `/confidentialite`, `/conditions`.
+  `/mentions-legales`, `/confidentialite`, `/conditions` ;
+- l'accueil en anglais à sa propre adresse (`/?langue=en`, n'importe quelle
+  langue de l'application marche), annoncé dans le plan du site avec
+  `hreflang`. Les robots des moteurs lisent toujours le français à l'adresse
+  nue : Googlebot se dit « en-US », et l'accueil aurait été indexé en anglais.
 
 À faire de ton côté, une seule fois :
 

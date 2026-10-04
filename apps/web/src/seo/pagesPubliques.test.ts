@@ -76,8 +76,17 @@ describe('les pages publiques du carnet', () => {
   it('liste toutes les pages dans le plan du site, en adresses complètes', () => {
     const plan = parChemin.get('sitemap.xml')!;
     expect(plan).toContain('<loc>https://tripora.exemple/destinations/bergen</loc>');
-    expect(plan.match(/<loc>/gu)).toHaveLength(destinationsPubliees().length + 12 + 2);
+    expect(plan.match(/<loc>/gu)).toHaveLength(destinationsPubliees().length + 12 + 3);
     expect(plan).toContain('<loc>https://tripora.exemple/ou-partir-en/aout</loc>');
+  });
+
+  it('annonce l’accueil en anglais à sa propre adresse, versions croisées', () => {
+    const plan = parChemin.get('sitemap.xml')!;
+    expect(plan).toContain('<loc>https://tripora.exemple/?langue=en</loc>');
+    // Chaque version de l'accueil nomme les deux, plus celle par défaut.
+    expect(plan.match(/hreflang="en" href="https:\/\/tripora\.exemple\/\?langue=en"/gu)).toHaveLength(2);
+    expect(plan.match(/hreflang="x-default"/gu)).toHaveLength(2);
+    expect(robots(CONTEXTE)).toContain('Allow: /?langue=');
   });
 
   it('ferme aux robots ce qui est derrière une connexion', () => {

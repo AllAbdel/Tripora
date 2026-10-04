@@ -23,14 +23,42 @@ interface EtatDeLangue {
   setPreference: (valeur: PreferenceDeLangue) => void;
 }
 
-/** Ce que le navigateur annonce, dans l'ordre où il l'annonce. */
-function annoncees(): string[] {
-  if (typeof navigator === 'undefined') return [];
+/**
+ * Les robots des moteurs de recherche et des aperçus de lien. Ils n'ont pas de
+ * langue à eux — Googlebot rend les pages en « en-US » — : sans ce garde-fou,
+ * l'accueil serait indexé en anglais et en dollars, puis proposé ainsi à des
+ * Français. Ils lisent donc la langue de référence ; chaque autre version a sa
+ * propre adresse (`?langue=en`), annoncée par le plan du site.
+ */
+const ROBOTS =
+  /googlebot|google-inspectiontool|storebot-google|adsbot-google|bingbot|bingpreview|yandex|baiduspider|duckduckbot|applebot|slurp|qwantbot|petalbot|seznambot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|whatsapp/iu;
+
+export function estUnRobot(agent = typeof navigator === 'undefined' ? '' : navigator.userAgent): boolean {
+  return ROBOTS.test(agent);
+}
+
+/** Ce que le navigateur annonce, dans l'ordre où il l'annonce ; rien pour un robot. */
+export function languesAnnoncees(): string[] {
+  if (typeof navigator === 'undefined' || estUnRobot()) return [];
   return [...(navigator.languages ?? []), navigator.language].filter(Boolean) as string[];
 }
 
-export function resoudre(preference: PreferenceDeLangue): Langue {
-  return preference === 'systeme' ? langueDuSysteme(annoncees()) : preference;
+/**
+ * La langue que demande l'adresse (`?langue=en`) : un résultat de recherche ou
+ * un lien partagé dans une langue précise. Lue une fois, au chargement : le
+ * paramètre disparaît à la première navigation, la langue reste.
+ */
+export function langueDeLAdresse(recherche = typeof location === 'undefined' ? '' : location.search): Langue | null {
+  const demandee = new URLSearchParams(recherche).get('langue');
+  return estUneLangue(demandee) ? demandee : null;
+}
+
+const LANGUE_DEMANDEE = langueDeLAdresse();
+
+/** Un choix fait dans le profil l'emporte ; sinon l'adresse, sinon le système. */
+export function resoudre(preference: PreferenceDeLangue, demandee: Langue | null = LANGUE_DEMANDEE): Langue {
+  if (preference !== 'systeme') return preference;
+  return demandee ?? langueDuSysteme(languesAnnoncees());
 }
 
 /**
