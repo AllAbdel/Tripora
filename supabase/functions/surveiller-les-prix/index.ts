@@ -2,7 +2,8 @@ import { preflight, json } from '../_shared/cors.ts';
 import { serviceClient } from '../_shared/supabase.ts';
 import { QuotaEpuise } from '../_shared/budget.ts';
 import { premierTarifConnu, tarifsDepuis, type TarifBrut } from '../_shared/travelpayouts.ts';
-import { baisseASignaler, creerClesVapid, reveiller, type ClesVapid } from './push.ts';
+import { clesVapid } from '../_shared/clesVapid.ts';
+import { baisseASignaler, reveiller, type ClesVapid } from './push.ts';
 
 /**
  * Le relevé du matin des prix suivis.
@@ -122,18 +123,6 @@ Deno.serve(async (request) => {
   const envoyees = cles ? await reveillerLesAbonnes(client, cles, [...aReveiller]) : 0;
   return json({ configured: true, releves, alertes, notifications: envoyees });
 });
-
-/** La paire VAPID, créée au premier passage et gardée côté serveur. */
-async function clesVapid(client: ReturnType<typeof serviceClient>): Promise<ClesVapid | null> {
-  const { data } = await client.from('cles_push').select('publique, privee').eq('id', 1).maybeSingle();
-  if (data) return { publique: data.publique as string, privee: data.privee as JsonWebKey };
-  const cles = await creerClesVapid();
-  // Deux appels simultanés : le second échoue sur la clé primaire et relit.
-  const { error } = await client.from('cles_push').insert({ id: 1, publique: cles.publique, privee: cles.privee });
-  if (!error) return cles;
-  const { data: relue } = await client.from('cles_push').select('publique, privee').eq('id', 1).maybeSingle();
-  return relue ? { publique: relue.publique as string, privee: relue.privee as JsonWebKey } : null;
-}
 
 async function reveillerLesAbonnes(
   client: ReturnType<typeof serviceClient>,

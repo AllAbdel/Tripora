@@ -2,22 +2,18 @@ import { localeActive } from '@tripora/core';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, BellOff, BellRing, TrendingDown } from 'lucide-react';
+import { Bell, TrendingDown } from 'lucide-react';
 import { ScreenHeader } from '@/components/AppShell';
-import { Button } from '@/components/ui/Button';
+import { NotificationsDeCetAppareil } from '@/components/NotificationsDeCetAppareil';
 import { Card, CardBody } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ListeFantome } from '@/components/ui/Squelette';
 import { useTitreDuDocument } from '@/lib/useTitreDuDocument';
-import { estNatif } from '@/lib/natif';
 import {
   CLE_DES_ALERTES,
   CLE_DES_SUIVIS,
-  activerLesNotifications,
   alertesPossibles,
   arreterDeSuivre,
-  couperLesNotifications,
-  etatDesNotifications,
   euros,
   libelleDuMois,
   marquerCommeVues,
@@ -154,7 +150,10 @@ export default function AlertesDePrix() {
           <h2 id="notifications" className="etiquette px-1">
             Sur cet appareil
           </h2>
-          <NotificationsDeCetAppareil />
+          <NotificationsDeCetAppareil
+            explication="Une notification quand un prix suivi baisse d’au moins 10 % et d’au moins 15 €. Elle ne contient ni destination ni prix : rien de personnel ne passe par le service de notification de votre navigateur."
+            dansLApplication="Dans l’application, les baisses s’affichent ici et sur l’écran du voyage. Pour être prévenu application fermée, ouvrez Tripora dans Chrome et activez les notifications depuis cet écran."
+          />
         </section>
       </div>
     </>
@@ -240,88 +239,6 @@ function LigneDeSuivi({
             {enArret ? 'Arrêt…' : 'Arrêter le suivi'}
           </button>
         </div>
-      </CardBody>
-    </Card>
-  );
-}
-
-/**
- * Les notifications de ce navigateur. La permission n'est demandée qu'au
- * geste : demandée d'office, elle est refusée, et le refus est définitif.
- */
-function NotificationsDeCetAppareil() {
-  const queryClient = useQueryClient();
-  const etat = useQuery({ queryKey: ['etat-des-notifications'], queryFn: etatDesNotifications });
-  const basculer = useMutation({
-    mutationFn: async (activer: boolean) => {
-      if (activer) return activerLesNotifications();
-      await couperLesNotifications();
-      return 'a-demander' as const;
-    },
-    onSuccess: (nouvelEtat) => queryClient.setQueryData(['etat-des-notifications'], nouvelEtat),
-  });
-
-  if (etat.isLoading) return null;
-
-  if (etat.data === 'impossibles') {
-    return (
-      <Card>
-        <CardBody className="flex items-start gap-3">
-          <BellOff className="text-muted mt-0.5 size-5 shrink-0" aria-hidden />
-          <p className="text-muted text-sm leading-relaxed">
-            {estNatif
-              ? 'Dans l’application, les baisses s’affichent ici et sur l’écran du voyage. Pour être prévenu application fermée, ouvrez Tripora dans Chrome et activez les notifications depuis cet écran.'
-              : 'Ce navigateur ne reçoit pas de notifications de site. Sur iPhone, ajoutez d’abord Tripora à l’écran d’accueil (Partager › Sur l’écran d’accueil), puis revenez ici depuis l’icône.'}
-          </p>
-        </CardBody>
-      </Card>
-    );
-  }
-
-  const actives = etat.data === 'actives';
-  const refusees = etat.data === 'refusees' || basculer.data === 'refusees';
-
-  return (
-    <Card>
-      <CardBody className="space-y-3">
-        <div className="flex items-start gap-3">
-          {actives ? (
-            <BellRing className="text-brand-500 mt-0.5 size-5 shrink-0" aria-hidden />
-          ) : (
-            <BellOff className="text-muted mt-0.5 size-5 shrink-0" aria-hidden />
-          )}
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">
-              {actives ? 'Vous êtes prévenu sur cet appareil' : 'Pas de notification sur cet appareil'}
-            </p>
-            <p className="text-muted text-sm leading-relaxed">
-              Une notification quand un prix suivi baisse d’au moins 10 % et d’au moins 15 €. Elle
-              ne contient ni destination ni prix : rien de personnel ne passe par le service de
-              notification de votre navigateur.
-            </p>
-          </div>
-        </div>
-        {refusees && !actives ? (
-          <p className="text-gold-700 dark:text-gold-300 text-sm" role="status">
-            Les notifications de Tripora sont bloquées dans ce navigateur : autorisez-les dans les
-            réglages du site, puis revenez ici.
-          </p>
-        ) : (
-          <Button
-            variant={actives ? 'secondary' : 'primary'}
-            block
-            loading={basculer.isPending}
-            icon={actives ? undefined : <Bell className="size-4" aria-hidden />}
-            onClick={() => basculer.mutate(!actives)}
-          >
-            {actives ? 'Couper sur cet appareil' : 'Me prévenir sur cet appareil'}
-          </Button>
-        )}
-        {basculer.error && (
-          <p role="alert" className="text-sm text-red-700 dark:text-red-300">
-            {messageDesAlertes(basculer.error)}
-          </p>
-        )}
       </CardBody>
     </Card>
   );

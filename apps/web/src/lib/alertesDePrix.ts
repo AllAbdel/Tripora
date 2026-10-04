@@ -311,6 +311,9 @@ export function requeteDesAlertes(actif = true) {
  */
 export type EtatDesNotifications = 'impossibles' | 'refusees' | 'actives' | 'a-demander';
 
+/** La clé de cet état dans le cache : le profil, la discussion et les alertes la partagent. */
+export const CLE_DE_L_ETAT_DES_NOTIFICATIONS = ['etat-des-notifications'] as const;
+
 export function notificationsPossibles(): boolean {
   return (
     alertesPossibles &&

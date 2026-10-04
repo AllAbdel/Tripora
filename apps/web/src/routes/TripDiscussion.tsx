@@ -12,6 +12,7 @@ import {
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
 import { TitreDePage } from '@/components/TitreDePage';
+import { PropositionDeNotifications } from '@/components/NotificationsDuGroupe';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Field, TextInput } from '@/components/ui/Field';
 import { getDiscussion, type Epingle, type Message } from '@/lib/discussion';
@@ -123,6 +124,8 @@ export default function TripDiscussion() {
           <Search className="size-4" aria-hidden />
           Des lieux dans une vidéo ? Épinglez-les depuis le lien
         </Link>
+
+        <PropositionDeNotifications />
 
         {(envoyer.error || messages.error) && (
           <Banner tone="warning" title="Un problème est survenu">

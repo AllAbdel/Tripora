@@ -30,10 +30,12 @@ import { ChoixDesUnites } from '@/components/ChoixDesUnites';
 import { ApercuDuPasseport } from '@/components/ApercuDuPasseport';
 import { MesMoyensDePaiement } from '@/components/MesMoyensDePaiement';
 import { ReglageDesRappels } from '@/components/ReglageDesRappels';
+import { NotificationsDuGroupe } from '@/components/NotificationsDuGroupe';
 import { SupprimerMonCompte } from '@/components/SupprimerMonCompte';
 import { GarderMesVoyages } from '@/components/GarderMesVoyages';
 import { rappelsPossibles } from '@/lib/rappels';
 import { alertesPossibles } from '@/lib/alertesDePrix';
+import { requeteDesReglages } from '@/lib/notificationsDuGroupe';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -82,6 +84,9 @@ export default function Profile() {
   const { identity, signOut, backendReady } = useAuth();
   const ouvrirLeGuide = useGuide((etat) => etat.ouvrir);
   const apps = getApps();
+
+  // Les notifications du groupe n'apparaissent que si le serveur les connaît.
+  const reglagesDesNotifications = useQuery(requeteDesReglages(identity?.mode === 'supabase'));
 
   const jeModere = useQuery({
     queryKey: ['suis-je-admin'],
@@ -133,6 +138,12 @@ export default function Profile() {
         {rappelsPossibles && (
           <Section titre="Rappels">
             <ReglageDesRappels />
+          </Section>
+        )}
+
+        {identity?.mode === 'supabase' && reglagesDesNotifications.data && (
+          <Section titre="Notifications">
+            <NotificationsDuGroupe />
           </Section>
         )}
 
