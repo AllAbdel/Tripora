@@ -139,3 +139,17 @@ test('un budget se lit et se tape en dollars, et se garde en euros', async ({ pa
   await expect(page.getByText('$', { exact: true })).toBeVisible();
   await expect(page.getByText(/^Currently ≈ \$2,106\./u)).toBeVisible();
 });
+
+test('le carnet d’une autre destination arrive en anglais, juste après l’interface', async ({ page }) => {
+  // Bali était traduit avec l'interface ; Lisbonne vient du carnet, chargé à part.
+  const lisbonne: VoyagePose = {
+    id: 'v3',
+    titre: 'Lisbon long weekend',
+    cree: '2026-09-10T10:00:00.000Z',
+    draft: brouillon({ title: 'Lisbon long weekend', destinationIds: ['lisbonne'], durationDays: 4 }),
+  };
+  await poser(page, [lisbonne], '/voyages/v3/a-faire');
+  await expect(page.getByText('The Jerónimos Monastery', { exact: true }).first()).toBeAttached();
+  await expect(page.getByText('Le monastère des Hiéronymites', { exact: true })).toHaveCount(0);
+  expect(await francaisAffiche(page)).toEqual([]);
+});

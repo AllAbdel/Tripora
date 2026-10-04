@@ -8,6 +8,11 @@ describe('le carnet en anglais', () => {
     expect(Object.keys(NOMS_ET_RESUMES).filter((id) => !connues.has(id))).toEqual([]);
   });
 
+  it('traduit toutes les activités du catalogue', () => {
+    // Une activité ajoutée au catalogue sans sa ligne ici resterait en français.
+    expect(ACTIVITES.filter((activite) => !NOMS_ET_RESUMES[activite.id]).map((activite) => activite.id)).toEqual([]);
+  });
+
   it('rattache chaque traduction au français du catalogue', () => {
     const phrases = phrasesDuCarnet();
     expect(phrases['Borobudur au lever du jour']).toBe('Borobudur at daybreak');
