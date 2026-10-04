@@ -35,16 +35,35 @@ export interface Sondage {
   genre: GenreDeSondage;
   choixMultiple: boolean;
   clos: boolean;
+  /**
+   * À bulletin secret : personne ne voit qui a voté quoi, et les voix restent
+   * cachées jusqu'à la clôture. `votes` ne contient alors que les miens.
+   */
+  secret?: boolean;
+  /**
+   * Le décompte d'un sondage secret, tel que le serveur le donne : combien de
+   * personnes ont voté, et les voix par option une fois le sondage clos.
+   * Absent sans serveur : les votes, tous visibles, suffisent.
+   */
+  decompte?: DecompteSecret | null;
   creePar?: string | null;
   creeLe: string;
   options: OptionDeSondage[];
   votes: VoteDeSondage[];
 }
 
+export interface DecompteSecret {
+  votants: number;
+  /** Les voix par option ; `null` tant que le sondage est ouvert. */
+  voix: Record<string, number> | null;
+}
+
 /** Une option, avec ses voix. */
 export interface OptionDepouillee {
   option: OptionDeSondage;
-  voix: number;
+  /** `null` : un vote secret encore ouvert, dont les voix sont cachées. */
+  voix: number | null;
+  /** Qui a voté pour elle ; toujours vide pour un vote secret. */
   votants: string[];
   /** Ai-je voté pour elle ? */
   moi: boolean;
@@ -59,6 +78,8 @@ export interface Depouillement {
   /** Combien de personnes ont voté, pas combien de voix : à choix multiple, ce n'est pas pareil. */
   votants: number;
   aVote: boolean;
+  /** Un vote secret encore ouvert : on sait combien ont voté, pas pour quoi. */
+  resultatsCaches: boolean;
 }
 
 /**
@@ -68,6 +89,7 @@ export interface Depouillement {
  * place sous le doigt au moment où quelqu'un d'autre vote.
  */
 export function depouiller(sondage: Sondage, moi?: string | null): Depouillement {
+  if (sondage.secret) return depouillerEnSecret(sondage, moi);
   const personnes = new Set(sondage.votes.map((vote) => vote.userId));
   const parOption = new Map<string, string[]>();
   for (const vote of sondage.votes) {
@@ -89,7 +111,49 @@ export function depouiller(sondage: Sondage, moi?: string | null): Depouillement
       };
     });
 
-  return { options, votants: personnes.size, aVote: Boolean(moi && personnes.has(moi)) };
+  return {
+    options,
+    votants: personnes.size,
+    aVote: Boolean(moi && personnes.has(moi)),
+    resultatsCaches: false,
+  };
+}
+
+/**
+ * Un vote secret : mes choix, le nombre de votants, et les voix seulement à
+ * la clôture — jamais qui.
+ *
+ * Avec un serveur, le décompte vient de lui (les bulletins des autres ne
+ * sont pas lisibles) ; sans serveur, les votes de ce navigateur suffisent.
+ */
+function depouillerEnSecret(sondage: Sondage, moi?: string | null): Depouillement {
+  const mesChoix = new Set(sondage.votes.filter((vote) => moi && vote.userId === moi).map((vote) => vote.optionId));
+  const local = sondage.decompte === undefined;
+  const votants = local ? new Set(sondage.votes.map((vote) => vote.userId)).size : (sondage.decompte?.votants ?? 0);
+  const voixConnues = (() => {
+    if (!sondage.clos) return null;
+    if (!local) return sondage.decompte?.voix ?? null;
+    const comptes: Record<string, number> = {};
+    for (const vote of sondage.votes) comptes[vote.optionId] = (comptes[vote.optionId] ?? 0) + 1;
+    return comptes;
+  })();
+  const max = voixConnues ? Math.max(0, ...Object.values(voixConnues)) : 0;
+
+  const options = [...sondage.options]
+    .sort((a, b) => a.position - b.position)
+    .map((option) => {
+      const voix = voixConnues ? (voixConnues[option.id] ?? 0) : null;
+      return {
+        option,
+        voix,
+        votants: [],
+        moi: mesChoix.has(option.id),
+        part: voix !== null && votants > 0 ? voix / votants : 0,
+        enTete: voix !== null && max > 0 && voix === max,
+      };
+    });
+
+  return { options, votants, aVote: mesChoix.size > 0, resultatsCaches: voixConnues === null };
 }
 
 /** Les sondages ouverts où je n'ai pas encore voté : ce qui m'attend. */

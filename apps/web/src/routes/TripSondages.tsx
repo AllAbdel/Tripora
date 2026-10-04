@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, ExternalLink, Lock, LockOpen, Plus, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, ExternalLink, EyeOff, Lock, LockOpen, Plus, Trash2, X } from 'lucide-react';
 import {
   depouiller,
   MODELES_DE_SONDAGE,
@@ -39,6 +39,9 @@ import { cn } from '@/lib/cn';
  * options — un texte, un lien, des dates — et un geste pour voter. Tout le
  * monde peut proposer une option tant que le sondage est ouvert ; celui qui
  * l'a lancé, ou l'organisateur, le clôt.
+ *
+ * Un sondage peut être à bulletin secret : personne ne voit qui a voté quoi,
+ * et les voix restent cachées jusqu'à la clôture, qui est alors définitive.
  */
 export default function TripSondages() {
   const { id } = useParams<{ id: string }>();
@@ -207,7 +210,9 @@ function CarteDeSondage({
   surSupprimer: () => void;
 }) {
   const [propose, setPropose] = useState(false);
+  const [confirmerLaCloture, setConfirmerLaCloture] = useState(false);
   const depouillement = depouiller(sondage, moi);
+  const secret = Boolean(sondage.secret);
   const auteur = sondage.creePar ? nomDe(sondage.creePar, noms, moi) : null;
 
   const voter = useMutation({
@@ -224,7 +229,10 @@ function CarteDeSondage({
 
   const clore = useMutation({
     mutationFn: () => getSondages().clore(sondage.id, !sondage.clos),
-    onSuccess: surChangement,
+    onSuccess: async () => {
+      setConfirmerLaCloture(false);
+      await surChangement();
+    },
   });
 
   const proposer = useMutation({
@@ -244,6 +252,7 @@ function CarteDeSondage({
             {[
               auteur && `Lancé par ${auteur}`,
               sondage.choixMultiple ? 'plusieurs choix possibles' : 'un seul choix',
+              secret && 'vote secret',
               depouillement.votants === 0
                 ? 'aucun vote'
                 : `${depouillement.votants} votant${depouillement.votants > 1 ? 's' : ''}`,
@@ -271,6 +280,15 @@ function CarteDeSondage({
 
         {voter.error && <p className="text-sm text-red-600">{toFailure(voter.error).message}</p>}
 
+        {secret && (
+          <p className="text-muted flex items-start gap-2 text-xs leading-relaxed">
+            <EyeOff className="mt-px size-3.5 shrink-0" aria-hidden />
+            {depouillement.resultatsCaches
+              ? 'Vote secret : personne ne voit qui a voté quoi. Les résultats s’afficheront à la clôture.'
+              : 'Vote secret : seuls les totaux sont connus, jamais qui a voté quoi.'}
+          </p>
+        )}
+
         {!sondage.clos &&
           (propose ? (
             <PropositionDOption
@@ -291,17 +309,22 @@ function CarteDeSondage({
             </button>
           ))}
 
+        {clore.error && <p className="text-sm text-red-600">{toFailure(clore.error).message}</p>}
+
         {gerable && (
           <div className="flex flex-wrap gap-x-5 border-t border-[color:var(--border-subtle)] pt-2">
-            <button
-              type="button"
-              onClick={() => clore.mutate()}
-              disabled={clore.isPending}
-              className="text-muted hover:text-brand-600 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium"
-            >
-              {sondage.clos ? <LockOpen className="size-4" aria-hidden /> : <Lock className="size-4" aria-hidden />}
-              {sondage.clos ? 'Rouvrir' : 'Clore le sondage'}
-            </button>
+            {/* Un vote secret clos ne se rouvre pas : de nouveaux votes se liraient par différence. */}
+            {!(secret && sondage.clos) && (
+              <button
+                type="button"
+                onClick={() => (secret ? setConfirmerLaCloture(true) : clore.mutate())}
+                disabled={clore.isPending}
+                className="text-muted hover:text-brand-600 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium"
+              >
+                {sondage.clos ? <LockOpen className="size-4" aria-hidden /> : <Lock className="size-4" aria-hidden />}
+                {sondage.clos ? 'Rouvrir' : secret ? 'Clore et dévoiler les résultats' : 'Clore le sondage'}
+              </button>
+            )}
             <button
               type="button"
               onClick={surSupprimer}
@@ -313,6 +336,25 @@ function CarteDeSondage({
           </div>
         )}
       </CardBody>
+
+      {secret && (
+        <BoiteDeConfirmation
+          ouverte={confirmerLaCloture}
+          titre="Clore le vote secret ?"
+          message={`Les résultats s’affichent pour tout le groupe, sans les noms. ${
+            depouillement.votants === 0
+              ? 'Personne n’a encore voté.'
+              : depouillement.votants === 1
+                ? '1 personne a voté.'
+                : `${depouillement.votants} personnes ont voté.`
+          } Un vote secret clos ne peut plus être rouvert.`}
+          action="Clore et dévoiler"
+          actionEnCours="Clôture…"
+          enCours={clore.isPending}
+          surConfirmer={() => clore.mutate()}
+          surAnnuler={() => setConfirmerLaCloture(false)}
+        />
+      )}
     </Card>
   );
 }
@@ -392,7 +434,7 @@ function LigneDOption({
               </span>
             )}
           </span>
-          <span className="shrink-0 text-sm font-semibold tabular-nums">{option.voix}</span>
+          {option.voix !== null && <span className="shrink-0 text-sm font-semibold tabular-nums">{option.voix}</span>}
         </button>
         {o.lien && (
           <a
@@ -429,6 +471,7 @@ function FormulaireDeSondage({
 }) {
   const [question, setQuestion] = useState(modele.question);
   const [choixMultiple, setChoixMultiple] = useState(modele.choixMultiple);
+  const [secret, setSecret] = useState(false);
   const [options, setOptions] = useState<NouvelleOption[]>([OPTION_VIDE, OPTION_VIDE]);
   const [tente, setTente] = useState(false);
 
@@ -510,6 +553,22 @@ function FormulaireDeSondage({
           Chacun peut cocher plusieurs options
         </label>
 
+        <label className="flex min-h-11 items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={secret}
+            onChange={(event) => setSecret(event.target.checked)}
+            className="accent-brand-500 mt-0.5 size-5 shrink-0"
+            aria-describedby="vote-secret-aide"
+          />
+          <span className="space-y-0.5">
+            <span className="block">Vote secret</span>
+            <span id="vote-secret-aide" className="text-muted block text-xs leading-relaxed">
+              Personne, pas même vous, ne verra qui a voté quoi. Les résultats s’afficheront à la clôture.
+            </span>
+          </span>
+        </label>
+
         {tente && probleme && (
           <p role="alert" className="text-sm text-red-600">
             {probleme}
@@ -522,7 +581,7 @@ function FormulaireDeSondage({
           onClick={() => {
             setTente(true);
             if (!probleme) {
-              surEnregistrer({ question: question.trim(), genre: modele.genre, choixMultiple, options });
+              surEnregistrer({ question: question.trim(), genre: modele.genre, choixMultiple, secret, options });
             }
           }}
         >

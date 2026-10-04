@@ -74,3 +74,34 @@ test('un sondage de logement : les liens se nomment seuls, un seul choix', async
   await expect(page.getByRole('button', { name: /Sur Hostelworld/u })).toBeVisible();
   await page.screenshot({ path: 'test-results/sondages.png', fullPage: true });
 });
+
+test('un vote secret : mon choix seul, les voix à la clôture, sans retour', async ({ page }) => {
+  await poser(page, [BALI], '/voyages/v1/sondages');
+  await page.getByRole('button', { name: 'Lancer un sondage' }).click();
+  await page.getByRole('button', { name: 'Le dîner' }).click();
+  await page.getByRole('textbox', { name: 'Option 1', exact: true }).fill('Warung Babi Guling');
+  await page.getByRole('textbox', { name: 'Option 2', exact: true }).fill('Locavore');
+  await page.getByRole('checkbox', { name: /Vote secret/u }).check();
+  await page.getByRole('button', { name: 'Lancer le sondage' }).click();
+
+  await expect(page.getByText(/un seul choix · vote secret · aucun vote/u)).toBeVisible();
+  const warung = page.getByRole('button', { name: /Warung Babi Guling/u });
+  await warung.click();
+  await expect(warung).toHaveAttribute('aria-pressed', 'true');
+  // Ouvert : on sait combien ont voté, pas pour quoi.
+  await expect(page.getByText(/vote secret · 1 votant/u)).toBeVisible();
+  await expect(page.getByText('Vote secret : personne ne voit qui a voté quoi. Les résultats s’afficheront à la clôture.')).toBeVisible();
+  await expect(warung).not.toContainText('1');
+
+  // La clôture se confirme : elle est définitive.
+  await page.getByRole('button', { name: 'Clore et dévoiler les résultats' }).click();
+  const boite = page.getByRole('dialog', { name: 'Clore le vote secret ?' });
+  await expect(boite).toContainText('1 personne a voté.');
+  await boite.getByRole('button', { name: 'Clore et dévoiler' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Clos' })).toBeVisible();
+  await expect(warung).toContainText('Retenu');
+  await expect(warung).toContainText('1');
+  await expect(page.getByText('Vote secret : seuls les totaux sont connus, jamais qui a voté quoi.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Rouvrir' })).toHaveCount(0);
+});

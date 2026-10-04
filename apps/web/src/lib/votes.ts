@@ -9,6 +9,10 @@ import { supabase } from './supabase';
  * rattachés directement à l'identifiant de la destination : ils survivent à un
  * changement de classement, et retrouvent leur place si une destination
  * ressort après que quelqu'un a modifié ses envies.
+ *
+ * Les votes sont anonymes, et pas seulement à l'écran : chacun ne lit que les
+ * siens, les totaux viennent de `votes_du_voyage`, et le temps réel passe par
+ * un signal sans contenu, `votes_modifies` (`votes_secrets_test.sql`).
  */
 
 export type VoteValue = 'like' | 'dislike' | 'favorite';
@@ -126,34 +130,10 @@ export function getVoting(): VotingApi {
   if (!client) return voteLocal;
 
   return {
-    async listTallies(tripId, userId) {
-      const { data, error } = await client
-        .from('votes')
-        .select('subject_id, user_id, value')
-        .eq('trip_id', tripId)
-        .eq('subject_type', 'proposal');
+    async listTallies(tripId) {
+      const { data, error } = await client.rpc('votes_du_voyage', { p_trip_id: tripId });
       if (error) throw error;
-
-      const tallies: Record<string, VoteTally> = {};
-      const votants = new Set<string>();
-      for (const row of data ?? []) {
-        votants.add(row.user_id as string);
-        const id = row.subject_id as string;
-        const tally = tallies[id] ?? {
-          destinationId: id,
-          likes: 0,
-          dislikes: 0,
-          favorites: 0,
-          mine: null,
-        };
-        const value = row.value as VoteValue;
-        if (value === 'like') tally.likes += 1;
-        else if (value === 'dislike') tally.dislikes += 1;
-        else tally.favorites += 1;
-        if (row.user_id === userId) tally.mine = value;
-        tallies[id] = tally;
-      }
-      return { tallies, voters: votants.size };
+      return resultatsDepuisLaBase((data ?? []) as LigneDeVotes[]);
     },
 
     async cast(tripId, destinationId, value) {
@@ -209,7 +189,7 @@ export function getVoting(): VotingApi {
         .channel(`votes:${tripId}`)
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'votes', filter: `trip_id=eq.${tripId}` },
+          { event: '*', schema: 'public', table: 'votes_modifies', filter: `trip_id=eq.${tripId}` },
           onChange,
         )
         .subscribe();
@@ -218,6 +198,34 @@ export function getVoting(): VotingApi {
       };
     },
   };
+}
+
+/** Une ligne de `votes_du_voyage`, lue sans lui faire confiance. */
+export interface LigneDeVotes {
+  subject_id: string;
+  aime: number | null;
+  prefere: number | null;
+  contre: number | null;
+  moi: string | null;
+  votants: number | null;
+}
+
+const VALEURS: readonly VoteValue[] = ['like', 'dislike', 'favorite'];
+
+export function resultatsDepuisLaBase(lignes: readonly LigneDeVotes[]): VoteResults {
+  const tallies: Record<string, VoteTally> = {};
+  let voters = 0;
+  for (const ligne of lignes) {
+    tallies[ligne.subject_id] = {
+      destinationId: ligne.subject_id,
+      likes: ligne.aime ?? 0,
+      favorites: ligne.prefere ?? 0,
+      dislikes: ligne.contre ?? 0,
+      mine: (VALEURS as readonly (string | null)[]).includes(ligne.moi) ? (ligne.moi as VoteValue) : null,
+    };
+    voters = Math.max(voters, ligne.votants ?? 0);
+  }
+  return { tallies, voters };
 }
 
 /**
