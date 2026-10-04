@@ -2,7 +2,8 @@ import { Link } from 'react-router';
 import { Logo } from '@/components/Logo';
 import { estNatif } from '@/lib/natif';
 import { useGuide } from '@/stores/guide';
-import { cheminDuMois } from '@/seo/mois';
+import { useLangueActive } from '@/stores/langue';
+import { cheminDuMois, cheminDuSommaire, langueDesPages } from '@/seo/mois';
 import { insecables } from '@/lib/typographie';
 
 /**
@@ -23,6 +24,7 @@ import { insecables } from '@/lib/typographie';
  */
 export function PiedDePage({ variante = 'complet' }: { variante?: 'complet' | 'discret' }) {
   const ouvrirLeGuide = useGuide((etat) => etat.ouvrir);
+  const pages = langueDesPages(useLangueActive());
   if (estNatif) return null;
 
   if (variante === 'discret') {
@@ -76,8 +78,8 @@ export function PiedDePage({ variante = 'complet' }: { variante?: 'complet' | 'd
         <Colonne titre="Voyager">
           <Lien to="/voyages/nouveau">Créer un voyage</Lien>
           <Lien to="/rejoindre">Rejoindre avec un code</Lien>
-          <LienDuSite href="/destinations">Toutes les destinations</LienDuSite>
-          <LienDuSite href={cheminDuMois(mois)}>Où partir ce mois-ci</LienDuSite>
+          <LienDuSite href={cheminDuSommaire(pages)}>Toutes les destinations</LienDuSite>
+          <LienDuSite href={cheminDuMois(mois, pages)}>Où partir ce mois-ci</LienDuSite>
         </Colonne>
 
         <Colonne titre="Tripora">

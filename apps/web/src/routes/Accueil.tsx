@@ -9,7 +9,8 @@ import { classesDeBouton } from '@/components/ui/classesDeBouton';
 import { estNatif } from '@/lib/natif';
 import { destinationsDuMois, niveauDePrix } from '@/lib/vitrine';
 import { useGuide } from '@/stores/guide';
-import { cheminDuMois } from '@/seo/mois';
+import { useLangueActive } from '@/stores/langue';
+import { cheminDuMois, cheminDuSommaire, langueDesPages } from '@/seo/mois';
 import { cn } from '@/lib/cn';
 import { insecables } from '@/lib/typographie';
 
@@ -28,6 +29,7 @@ import { insecables } from '@/lib/typographie';
  */
 export default function Accueil() {
   const ouvrirLeGuide = useGuide((etat) => etat.ouvrir);
+  const pages = langueDesPages(useLangueActive());
   const mois = new Date().getMonth() + 1;
   const vitrine = destinationsDuMois(mois);
 
@@ -113,14 +115,14 @@ export default function Accueil() {
             {!estNatif && (
               <p className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
                 <a
-                  href={cheminDuMois(mois)}
+                  href={cheminDuMois(mois, pages)}
                   className="text-brand-700 dark:text-brand-200 inline-flex items-center gap-1.5 underline-offset-4 hover:underline"
                 >
                   Toutes les idées pour {MONTHS_FR[mois - 1]}
                   <ArrowRight className="size-4" aria-hidden />
                 </a>
                 <a
-                  href="/destinations"
+                  href={cheminDuSommaire(pages)}
                   className="text-brand-700 dark:text-brand-200 inline-flex items-center gap-1.5 underline-offset-4 hover:underline"
                 >
                   Toutes les destinations du carnet

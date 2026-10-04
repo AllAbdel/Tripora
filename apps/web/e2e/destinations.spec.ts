@@ -69,3 +69,41 @@ test('les pages par mois se lisent et mènent aux destinations', async ({ page }
   await expect(page).toHaveURL(/\/destinations\/[a-z0-9-]+$/);
   await expect(page.getByRole('heading', { name: 'Réserver sur place' })).toBeVisible();
 });
+
+test('la version anglaise se lit, renvoie au français et ouvre l’application en anglais', async ({
+  page,
+}) => {
+  const plantages: string[] = [];
+  page.on('pageerror', (erreur) => plantages.push(erreur.message));
+
+  // Le lien « In English » de la page française mène à sa traduction.
+  await page.goto('/destinations/bergen');
+  await page.getByRole('link', { name: 'In English' }).click();
+  await expect(page).toHaveURL(/\/en\/destinations\/bergen$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Things to do in Bergen and the fjords');
+  await expect(page.getByRole('heading', { name: 'When to go' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'Plan this trip' }).first().click();
+  await expect(page).toHaveURL(/\/voyages\/nouveau\?destination=bergen&langue=en$/);
+  // Un navigateur réglé en français, mais l'adresse demande l'anglais.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Who are you traveling with?');
+  const brouillon = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem('tripora.trip-draft') ?? '{}') as {
+        state?: { destinationIds?: string[] };
+      },
+  );
+  expect(brouillon.state?.destinationIds).toEqual(['bergen']);
+  expect(plantages).toEqual([]);
+});
+
+test('les mois en anglais se suivent et mènent aux destinations anglaises', async ({ page }) => {
+  await page.goto('/en/where-to-go-in/october');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Where to go in October?');
+  await page.getByRole('link', { name: 'November', exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/where-to-go-in\/november$/);
+  await page.locator('main a[href^="/en/destinations/"]').first().click();
+  await expect(page).toHaveURL(/\/en\/destinations\/[a-z0-9-]+$/);
+  await expect(page.getByRole('heading', { name: 'Book on the ground' })).toBeVisible();
+});
