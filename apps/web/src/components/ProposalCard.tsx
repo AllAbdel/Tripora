@@ -1,0 +1,337 @@
+import { useMemo, useState, type ReactNode } from 'react';
+import {
+  ChevronDown,
+  CloudRain,
+  Crown,
+  Loader2,
+  Lock,
+  Sparkles,
+  Thermometer,
+} from 'lucide-react';
+import {
+  climateFor,
+  correspondanceAuxEnvies,
+  costLines,
+  empreinteDuTrajet,
+  formatCents,
+  formatTemperature,
+  freshnessLabel,
+  phraseDeComparaison,
+  type Destination,
+  type DestinationScore,
+  type LieuNomme,
+  type MemberPreference,
+  type PricedValue,
+  type TransportEstimate,
+} from '@tripora/core';
+import { Card, CardBody } from '@/components/ui/Card';
+import { ClimateStrip } from '@/components/ClimateStrip';
+import { Notation } from '@/components/Notation';
+import { messageIA, rediger } from '@/lib/ai';
+import { faitsPourExplication } from '@/lib/explication';
+import { cn } from '@/lib/cn';
+import { Drapeau } from '@/components/Drapeau';
+import { DetailDesEnvies, ResumeDesEnvies } from '@/components/CorrespondanceEnvies';
+import { DetailDuTrajet } from '@/components/DetailDuTrajet';
+
+export function ProposalCard({
+  rank,
+  destination,
+  score,
+  transport,
+  normalesAnnee,
+  month,
+  participants,
+  membres,
+  depart,
+  prixReleve,
+  vote,
+  choixDuGroupe = false,
+  verrouillee = false,
+  enFrance = false,
+  suiviDuPrix,
+}: {
+  rank: number;
+  destination: Destination;
+  score: DestinationScore;
+  transport: TransportEstimate[];
+  /** Les douze mois relevés de cette ville, si le serveur les a fournis. */
+  normalesAnnee?: readonly number[] | undefined;
+  /** Mois visé, quand le groupe en a fixé un : sert à situer le climat. */
+  month?: number | undefined;
+  /** Taille du groupe, transmise à l'explication rédigée. Aucun nom ne l'est. */
+  participants: number;
+  /** Les envies saisies, pour dire ce que cette ville-là en couvre. */
+  membres: readonly MemberPreference[];
+  /** Le point de départ, pour décrire le trajet plutôt que d'en donner le prix seul. */
+  depart: LieuNomme;
+  /**
+   * Le prix de vol réellement relevé, quand il y en a un.
+   *
+   * Il porte ce que l'estimation ne peut pas savoir : le nombre d'escales, le
+   * site qui vend, les dates du trajet. On le substitue au prix estimé sur la
+   * seule ligne « avion », les autres modes restant des estimations.
+   */
+  prixReleve?: PricedValue | undefined;
+  /** Barre de vote, absente quand on voyage seul. */
+  vote?: ReactNode;
+  /** Celle que les votes désignent, distincte de celle que le calcul classe en tête. */
+  choixDuGroupe?: boolean;
+  verrouillee?: boolean;
+  /** Départ et arrivée en France : le train y a l'empreinte du TGV. */
+  enFrance?: boolean;
+  /** « Suivre le prix du vol », sous les trajets quand l'avion en fait partie. */
+  suiviDuPrix?: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const climat = month === undefined ? undefined : climateFor(destination.id, month);
+  const correspondance = useMemo(
+    () => correspondanceAuxEnvies(destination, membres),
+    [destination, membres],
+  );
+  const empreintes = useMemo(
+    () =>
+      transport
+        .map((option) => empreinteDuTrajet(option.mode, depart, destination, { participants, enFrance }))
+        .filter((empreinte) => empreinte !== null),
+    [transport, depart, destination, participants, enFrance],
+  );
+  const comparaison = phraseDeComparaison(empreintes);
+  const [texte, setTexte] = useState<string | null>(null);
+  const [redaction, setRedaction] = useState(false);
+
+  /**
+   * Explication rédigée, à la demande seulement.
+   *
+   * Jamais automatique : chaque carte qui se rédigerait toute seule brûlerait
+   * six appels d'IA pour un écran que personne n'a demandé à lire. Et la note
+   * est déjà expliquée facteur par facteur juste au-dessus — c'est le calcul
+   * qui explique, l'IA ne fait que le mettre en phrases.
+   */
+  async function demanderTexte() {
+    if (redaction) return;
+    setRedaction(true);
+    const etat = await rediger(
+      faitsPourExplication(destination, score, month, participants),
+    );
+    setRedaction(false);
+    setTexte(etat.statut === 'ok' && 'texte' in etat ? etat.texte : messageIA(etat));
+  }
+  const label = freshnessLabel({
+    cents: score.cost.transportCents,
+    source: score.cost.transportSource,
+    ...(score.cost.transportFetchedAt ? { fetchedAt: score.cost.transportFetchedAt } : {}),
+    ...(score.cost.transportProvider ? { provider: score.cost.transportProvider } : {}),
+  });
+
+  return (
+    <Card
+      className={cn(
+        'animate-rise overflow-hidden',
+        verrouillee && 'border-lagoon-500 ring-1 ring-lagoon-500',
+        choixDuGroupe && !verrouillee && 'border-gold-500',
+      )}
+    >
+      <CardBody className="space-y-3">
+        {(verrouillee || choixDuGroupe) && (
+          <p
+            className={cn(
+              'etiquette flex items-center gap-1.5',
+              verrouillee
+                ? '!text-lagoon-700 dark:!text-lagoon-300'
+                : '!text-gold-700 dark:!text-gold-300',
+            )}
+          >
+            {verrouillee ? (
+              <>
+                <Lock className="size-3.5" aria-hidden />
+                Destination retenue
+              </>
+            ) : (
+              <>
+                <Crown className="size-3.5" aria-hidden />
+                Le groupe préfère celle-ci
+              </>
+            )}
+          </p>
+        )}
+
+        {/* Le rang était une gommette numérotée devant le nom. C'est une liste
+            classée : le rang mérite d'être le repère qu'on suit du pouce en
+            descendant, pas une décoration de huit pixels. Il passe donc en
+            grand chiffre, en retrait derrière le nom — présent sans disputer
+            la vedette à la ville. */}
+        <div className="flex items-start gap-3">
+          <span
+            aria-hidden
+            className="titre chiffres w-8 shrink-0 text-[1.75rem] leading-none
+                       text-[color:var(--color-paper-400)] dark:text-[color:var(--color-ink-500)]"
+          >
+            {String(rank).padStart(2, '0')}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="titre-lieu truncate text-[1.375rem]">{destination.name}</h3>
+            <p className="etiquette mt-1 flex items-center gap-1.5">
+              <Drapeau code={destination.countryCode} />
+              <span className="truncate">{destination.country}</span>
+            </p>
+          </div>
+          <Notation note={score.total} />
+        </div>
+
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5
+                        border-t pt-3 filet">
+          <p className="titre chiffres text-[1.75rem] leading-none">
+            {formatCents(score.cost.totalCents, 'EUR', { hideCentimes: true })}
+            <span className="etiquette ms-2">par personne</span>
+          </p>
+          {climat && (
+            <p className="text-muted flex items-center gap-2.5 text-xs font-medium">
+              <span className="flex items-center gap-1">
+                <Thermometer className="size-3.5" aria-hidden />
+                <span className="tabular-nums">{formatTemperature(climat.avgHighC)}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <CloudRain className="size-3.5" aria-hidden />
+                <span className="tabular-nums">{climat.rainyDays} j</span>
+              </span>
+              <span className="sr-only">
+                en journée et jours de pluie sur le mois, en moyenne
+              </span>
+            </p>
+          )}
+        </div>
+
+        {/* Ce qui la distingue plutôt que ce qu'elle partage : six cartes qui
+            disent « tient dans le budget, forte en gastronomie » ne donnent
+            rien à décider. Le détail des facteurs est juste en dessous. */}
+        <p className="text-sm leading-relaxed">{score.edge ?? score.summary}</p>
+
+        <ResumeDesEnvies correspondance={correspondance} />
+
+        {vote}
+
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          className="text-brand-600 dark:text-brand-300 flex min-h-11 w-full items-center justify-between rounded-xl px-1 text-sm font-semibold"
+        >
+          {open ? 'Masquer le détail' : 'Voir le détail du prix et de la note'}
+          <ChevronDown
+            className={cn('size-4 transition-transform', open && 'rotate-180')}
+            aria-hidden
+          />
+        </button>
+
+        {open && (
+          <div className="animate-rise space-y-4 border-t border-[color:var(--border-subtle)] pt-3">
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold">Ce que ça donne sur vos envies</h4>
+              <DetailDesEnvies correspondance={correspondance} />
+            </section>
+
+            <section className="space-y-1.5">
+              <h4 className="text-sm font-semibold">Ce que coûte le voyage</h4>
+              <ul className="space-y-1 text-sm">
+                {costLines(score.cost).map((line) => (
+                  <li key={line.key} className="flex justify-between gap-4">
+                    <span className="text-muted">{line.label}</span>
+                    <span className="tabular-nums">
+                      {formatCents(line.cents, 'EUR', { hideCentimes: true })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-muted pt-1 text-xs">{label} · le reste est estimé.</p>
+            </section>
+
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold">Comment la note est calculée</h4>
+              <ul className="space-y-2">
+                {score.factors.map((factor) => (
+                  <li key={factor.key} className="space-y-1">
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="font-medium">{factor.label}</span>
+                      <span className="text-muted tabular-nums">
+                        {Math.round(factor.score)}/100
+                        <span className="ml-1 text-xs">
+                          · {Math.round(factor.weight * 100)} %
+                        </span>
+                      </span>
+                    </div>
+                    <div
+                      className="h-1.5 overflow-hidden rounded-full bg-[color:var(--border-subtle)]"
+                      aria-hidden
+                    >
+                      <div
+                        className="bg-brand-500 h-full rounded-full transition-[width] duration-500"
+                        style={{ width: `${Math.round(factor.score)}%` }}
+                      />
+                    </div>
+                    <p className="text-muted text-xs">{factor.reason}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold">En une phrase</h4>
+              {texte ? (
+                <p className="text-muted text-sm leading-relaxed">{texte}</p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void demanderTexte()}
+                  disabled={redaction}
+                  className="text-brand-600 dark:text-brand-300 flex min-h-11 items-center gap-2 text-sm font-semibold disabled:opacity-60"
+                >
+                  {redaction ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Sparkles className="size-4" aria-hidden />
+                  )}
+                  {redaction ? 'Rédaction…' : 'Résumer cette note en une phrase'}
+                </button>
+              )}
+            </section>
+
+            <section className="space-y-1.5">
+              <h4 className="text-sm font-semibold">Quand y aller</h4>
+              <ClimateStrip destinationId={destination.id} serie={normalesAnnee} month={month} />
+            </section>
+
+            {transport.length > 0 && (
+              <section className="space-y-2.5">
+                <h4 className="text-sm font-semibold">Comment y aller</h4>
+                {comparaison && (
+                  <p className="text-lagoon-700 dark:text-lagoon-300 text-xs font-medium">
+                    {comparaison}
+                  </p>
+                )}
+                <ul className="space-y-2.5">
+                  {transport.map((option) => (
+                    <li key={option.mode}>
+                      <DetailDuTrajet
+                        depart={depart}
+                        arrivee={destination}
+                        empreinte={empreintes.find((empreinte) => empreinte.mode === option.mode)}
+                        option={
+                          option.mode === 'plane' && prixReleve
+                            ? { ...option, price: prixReleve }
+                            : option
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+                {transport.some((option) => option.mode === 'plane') && suiviDuPrix}
+              </section>
+            )}
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+

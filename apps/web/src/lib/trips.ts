@@ -1,0 +1,587 @@
+import {
+  findDestination,
+  normalizeWeights,
+  rememberDestination,
+  type MemberPreference,
+  type PreferenceAxis,
+  type PreferenceWeights,
+  type TripConstraints,
+} from '@tripora/core';
+import { supabase } from './supabase';
+import { destinationLocaleRetenue } from './votes';
+import type { TripDraft } from '@/stores/tripDraft';
+
+/**
+ * Accès aux voyages.
+ *
+ * Deux implémentations derrière la même interface : la base Supabase quand elle
+ * est configurée, le stockage de l'appareil sinon. L'interface ne peut pas
+ * exposer de fonctions de collaboration, puisque le mode local ne saurait pas
+ * les tenir — c'est volontaire : mieux vaut une capacité absente qu'une
+ * capacité qui ment.
+ */
+export interface TripSummary {
+  id: string;
+  title: string;
+  status: string;
+  participants: number;
+  destinationName: string | null;
+  /** Code ISO du pays de la destination retenue, pour en afficher le drapeau. */
+  destinationCountryCode: string | null;
+  coverImageUrl: string | null;
+  createdAt: string;
+  /** Vrai quand le voyage ne vit que sur cet appareil. */
+  localOnly: boolean;
+  /**
+   * De quoi situer le voyage dans le temps et l'espace, pour le passeport :
+   * la destination retenue, les dates exactes s'il y en a, la ville de
+   * départ, et qui l'organise.
+   */
+  destinationId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  origin?: { lat: number; lng: number } | null;
+  isOwner?: boolean;
+}
+
+/** Un voyage complet : de quoi recalculer des propositions sans rien inventer. */
+export interface TripDetails {
+  summary: TripSummary;
+  constraints: TripConstraints;
+  members: MemberPreference[];
+  /** Seul l'organisateur peut verrouiller la destination du groupe. */
+  isOwner: boolean;
+  /** Destination tranchée par le groupe, si le vote a abouti. */
+  lockedDestinationId: string | null;
+  /**
+   * D'où vient la destination.
+   *
+   * `fixed` : elle a été choisie à la création. Le moteur de suggestion n'a
+   * alors rien à dire, et ses propositions ne s'affichent pas — elles seraient
+   * sans rapport, et bornées à la distance raisonnable pour la durée du
+   * séjour, donc toutes proches du départ. `suggest` : le groupe compare et
+   * vote.
+   */
+  destinationMode: 'fixed' | 'suggest';
+  /** Les étapes choisies à la création, dans l'ordre. Vide en mode `suggest`. */
+  shortlist: readonly string[];
+}
+
+/** Ce qu'on peut corriger après coup, et rien d'autre. */
+export interface ModificationVoyage {
+  title?: string;
+  durationDays?: number;
+  participants?: number;
+  budgetPerPersonCents?: number | null;
+  dateMode?: TripConstraints['dateMode'];
+  month?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  windowStart?: string | null;
+  windowEnd?: string | null;
+}
+
+export interface TripRepository {
+  readonly kind: 'supabase' | 'local';
+  list(): Promise<TripSummary[]>;
+  get(id: string): Promise<TripDetails | null>;
+  create(draft: TripDraft, title: string): Promise<string>;
+  /**
+   * Corrige ce qui se corrige : le titre, la période, la durée, le budget.
+   *
+   * Pas la destination, pas le statut — ces deux-là sont la décision du
+   * groupe, et un déclencheur en base les réserve à l'organisateur. Pas le
+   * nombre de participants non plus tant que des gens ont rejoint : le
+   * réduire en dessous du compte réel ferait mentir tous les calculs.
+   */
+  update(id: string, valeurs: ModificationVoyage): Promise<void>;
+  remove(id: string): Promise<void>;
+  /** Quitter le voyage. L'organisateur ne peut pas : il le supprime ou le passe. */
+  leave(id: string): Promise<void>;
+  /** Retirer quelqu'un. Réservé à l'organisateur, et vérifié en base. */
+  removeMember(id: string, userId: string): Promise<void>;
+}
+
+/** Reconstitue les contraintes du moteur depuis un brouillon enregistré. */
+function constraintsFromDraft(draft: TripDraft): TripConstraints | null {
+  if (!draft.origin) return null;
+  return {
+    participants: draft.participants,
+    origin: draft.origin,
+    durationDays: draft.durationDays,
+    dateMode: draft.dateMode,
+    ...(draft.startDate ? { startDate: draft.startDate } : {}),
+    ...(draft.endDate ? { endDate: draft.endDate } : {}),
+    ...(draft.windowStart ? { windowStart: draft.windowStart } : {}),
+    ...(draft.windowEnd ? { windowEnd: draft.windowEnd } : {}),
+    ...(draft.month !== null ? { month: draft.month } : {}),
+    budgetMode: draft.budgetMode,
+    budgetPerPersonCents: draft.budgetPerPersonCents,
+    comfortLevel: draft.comfortLevel,
+    groupType: draft.groupType,
+  };
+}
+
+const LOCAL_KEY = 'tripora.local-trips';
+
+interface LocalTrip {
+  id: string;
+  title: string;
+  createdAt: string;
+  draft: TripDraft;
+}
+
+function readLocal(): LocalTrip[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as LocalTrip[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocal(trips: LocalTrip[]): void {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(trips));
+}
+
+/**
+ * Le dépôt local, exporté pour les tests.
+ *
+ * C'est le mode dans lequel tourne l'application tant que Supabase n'est pas
+ * configuré, et celui où le bug de la destination choisie était le plus
+ * visible : le voyage s'affichait sans sa destination, sous une liste de
+ * propositions sans rapport.
+ */
+/**
+ * La fiche d'un voyage local, telle que l'accueil et l'écran du voyage la
+ * montrent tous les deux.
+ *
+ * Elle était écrite deux fois, et les deux versions avaient divergé :
+ * l'écran du voyage savait retrouver la destination choisie, l'accueil
+ * renvoyait `null` sans condition. Une carte affichait donc « Brouillon » et
+ * pas de drapeau pour un voyage dont la destination était arrêtée depuis le
+ * premier écran. Un seul endroit, maintenant : les deux ne peuvent plus
+ * raconter des choses différentes du même voyage.
+ */
+function ficheLocale(trip: LocalTrip): TripSummary {
+  const choisi = trip.draft.destinationMode === 'fixed' ? trip.draft.destinationIds : [];
+  const retenue = destinationLocaleRetenue(trip.id) ?? choisi[0] ?? null;
+  const destination = retenue ? findDestination(retenue) : undefined;
+  return {
+    id: trip.id,
+    title: trip.title,
+    status: retenue ? 'planned' : 'draft',
+    participants: trip.draft.participants,
+    destinationName: retenue ? (destination?.name ?? retenue) : null,
+    destinationCountryCode: destination?.countryCode ?? null,
+    coverImageUrl: null,
+    createdAt: trip.createdAt,
+    localOnly: true,
+    destinationId: retenue,
+    startDate: trip.draft.dateMode === 'exact' ? (trip.draft.startDate ?? null) : null,
+    endDate: trip.draft.dateMode === 'exact' ? (trip.draft.endDate ?? null) : null,
+    origin: trip.draft.origin ? { lat: trip.draft.origin.lat, lng: trip.draft.origin.lng } : null,
+    isOwner: true,
+  };
+}
+
+export const depotLocal: TripRepository = {
+  kind: 'local',
+
+  async list() {
+    return readLocal()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(ficheLocale);
+  },
+
+  async get(id) {
+    const trip = readLocal().find((entry) => entry.id === id);
+    if (!trip) return null;
+    const constraints = constraintsFromDraft(trip.draft);
+    if (!constraints) return null;
+    const choisi = trip.draft.destinationMode === 'fixed' ? trip.draft.destinationIds : [];
+    // En mode « on sait déjà où aller », la destination est celle qu'on a
+    // choisie : elle n'attend aucun vote. C'est ce qui manquait ici, et le
+    // voyage s'affichait sans sa destination, sous une liste de propositions
+    // qui n'avaient rien à voir avec elle.
+    const retenue = destinationLocaleRetenue(trip.id) ?? choisi[0] ?? null;
+    return {
+      summary: ficheLocale(trip),
+      constraints,
+      isOwner: true,
+      lockedDestinationId: retenue,
+      destinationMode: trip.draft.destinationMode,
+      shortlist: choisi,
+      members: [
+        {
+          userId: 'moi',
+          displayName: 'Vous',
+          weights: normalizeWeights(trip.draft.weights),
+          budgetMaxCents: trip.draft.budgetPerPersonCents,
+          avoid: trip.draft.avoid,
+        },
+      ],
+    };
+  },
+
+  async create(draft, title) {
+    const trip: LocalTrip = {
+      id: crypto.randomUUID(),
+      title,
+      createdAt: new Date().toISOString(),
+      draft,
+    };
+    writeLocal([trip, ...readLocal()]);
+    return trip.id;
+  },
+
+  async update(id, valeurs) {
+    writeLocal(
+      readLocal().map((trip) =>
+        trip.id === id
+          ? {
+              ...trip,
+              title: valeurs.title ?? trip.title,
+              draft: { ...trip.draft, ...brouillonModifie(valeurs) },
+            }
+          : trip,
+      ),
+    );
+  },
+
+  async remove(id) {
+    writeLocal(readLocal().filter((trip) => trip.id !== id));
+  },
+
+  // Un voyage local n'a qu'un membre, soi-même : le quitter, c'est le
+  // supprimer, et il n'y a personne à en retirer.
+  async leave(id) {
+    writeLocal(readLocal().filter((trip) => trip.id !== id));
+  },
+
+  async removeMember() {
+    throw new Error('Un voyage local n’a qu’un participant.');
+  },
+};
+
+/** Les champs d'un brouillon local que la modification peut toucher. */
+function brouillonModifie(valeurs: ModificationVoyage): Partial<TripDraft> {
+  const change: Partial<TripDraft> = {};
+  if (valeurs.durationDays !== undefined) change.durationDays = valeurs.durationDays;
+  if (valeurs.participants !== undefined) change.participants = valeurs.participants;
+  if (valeurs.budgetPerPersonCents !== undefined) {
+    change.budgetPerPersonCents = valeurs.budgetPerPersonCents;
+  }
+  if (valeurs.dateMode !== undefined) change.dateMode = valeurs.dateMode;
+  if (valeurs.month !== undefined) change.month = valeurs.month ?? undefined;
+  if (valeurs.startDate !== undefined) change.startDate = valeurs.startDate ?? undefined;
+  if (valeurs.endDate !== undefined) change.endDate = valeurs.endDate ?? undefined;
+  if (valeurs.windowStart !== undefined) change.windowStart = valeurs.windowStart ?? undefined;
+  if (valeurs.windowEnd !== undefined) change.windowEnd = valeurs.windowEnd ?? undefined;
+  return change;
+}
+
+/**
+ * Résout les villes découvertes avant d'afficher quoi que ce soit.
+ *
+ * Le catalogue curé est compilé dans l'application : il est là dès le premier
+ * rendu. Une ville venue du géocodage ne l'est pas — elle vit dans la base.
+ * Sans cette relecture, un voyage vers Kyoto rouvert le lendemain, ou ouvert
+ * par un autre membre du groupe, n'afficherait que son identifiant technique.
+ *
+ * Silencieux en cas d'échec : le voyage s'affiche sans son nom de destination,
+ * ce qui reste très au-dessus d'un écran vide.
+ */
+async function hydraterDecouvertes(
+  client: NonNullable<typeof supabase>,
+  ids: (string | null)[],
+): Promise<void> {
+  const manquantes = [...new Set(ids)].filter(
+    (id): id is string => typeof id === 'string' && id !== '' && !findDestination(id),
+  );
+  if (manquantes.length === 0) return;
+
+  const { data } = await client
+    .from('destinations')
+    .select('id, name, country, country_code, lat, lng, iata, tags, cost_index, poi_richness, best_months, timezone, image_url, discovered')
+    .in('id', manquantes);
+
+  for (const row of data ?? []) {
+    rememberDestination({
+      id: row.id as string,
+      name: row.name as string,
+      country: row.country as string,
+      countryCode: row.country_code as string,
+      lat: row.lat as number,
+      lng: row.lng as number,
+      iata: (row.iata ?? []) as string[],
+      tags: normalizeWeights((row.tags ?? {}) as Record<string, number>),
+      costIndex: Number(row.cost_index),
+      poiRichness: Number(row.poi_richness),
+      bestMonths: (row.best_months ?? []) as number[],
+      ...(row.timezone ? { timezone: row.timezone as string } : {}),
+      ...(row.image_url ? { imageUrl: row.image_url as string } : {}),
+      discovered: Boolean(row.discovered),
+    });
+  }
+}
+
+function supabaseRepository(client: NonNullable<typeof supabase>): TripRepository {
+  return {
+    kind: 'supabase',
+
+    async list() {
+      const { data, error } = await client
+        .from('trips')
+        // Une seule chaîne littérale : le client en déduit le type des lignes,
+        // ce qu'une concaténation l'empêcherait de faire.
+        .select(
+          'id, title, status, participants, cover_image_url, created_at, destination_locked_id, owner_id, date_mode, start_date, end_date, origin_lat, origin_lng',
+        )
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      // Lue dans le stockage de la session, sans aller-retour au serveur.
+      const moi = (await client.auth.getSession()).data.session?.user.id ?? null;
+
+      await hydraterDecouvertes(
+        client,
+        (data ?? []).map((row) => (row.destination_locked_id as string | null) ?? null),
+      );
+
+      return (data ?? []).map((row) => {
+        const lockedId = (row.destination_locked_id as string | null) ?? null;
+        return {
+        id: row.id as string,
+        title: row.title as string,
+        status: row.status as string,
+        participants: row.participants as number,
+        // La colonne stocke un identifiant technique : on affiche le nom.
+        destinationName: lockedId ? (findDestination(lockedId)?.name ?? lockedId) : null,
+        destinationCountryCode: lockedId ? (findDestination(lockedId)?.countryCode ?? null) : null,
+        coverImageUrl: (row.cover_image_url as string | null) ?? null,
+        createdAt: row.created_at as string,
+        localOnly: false,
+        destinationId: lockedId,
+        startDate: row.date_mode === 'exact' ? ((row.start_date as string | null) ?? null) : null,
+        endDate: row.date_mode === 'exact' ? ((row.end_date as string | null) ?? null) : null,
+        origin:
+          typeof row.origin_lat === 'number' && typeof row.origin_lng === 'number'
+            ? { lat: row.origin_lat, lng: row.origin_lng }
+            : null,
+        isOwner: moi !== null && row.owner_id === moi,
+        };
+      });
+    },
+
+    async get(id) {
+      const { data, error } = await client
+        .from('trips')
+        .select('*, member_preferences(*)')
+        .eq('id', id)
+        .is('deleted_at', null)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+
+      const originLat = data.origin_lat as number | null;
+      const originLng = data.origin_lng as number | null;
+      if (originLat === null || originLng === null) return null;
+
+      const { data: session } = await client.auth.getUser();
+      const lockedId = (data.destination_locked_id as string | null) ?? null;
+      const mode = (data.destination_mode as 'fixed' | 'suggest' | null) ?? 'suggest';
+      const liste = (data.destination_shortlist as string[] | null) ?? [];
+      await hydraterDecouvertes(client, [lockedId, ...liste]);
+
+      const preferences = (data.member_preferences ?? []) as {
+        user_id: string;
+        weights: Record<string, number>;
+        budget_max_cents: number | null;
+        avoid: string[] | null;
+      }[];
+
+      return {
+        isOwner: data.owner_id === session.user?.id,
+        lockedDestinationId: lockedId,
+        destinationMode: mode,
+        shortlist: liste,
+        summary: {
+          id: data.id as string,
+          title: data.title as string,
+          status: data.status as string,
+          participants: data.participants as number,
+          destinationName: lockedId ? (findDestination(lockedId)?.name ?? lockedId) : null,
+          destinationCountryCode: lockedId
+            ? (findDestination(lockedId)?.countryCode ?? null)
+            : null,
+          coverImageUrl: (data.cover_image_url as string | null) ?? null,
+          createdAt: data.created_at as string,
+          localOnly: false,
+        },
+        constraints: {
+          participants: data.participants as number,
+          origin: {
+            name: (data.origin_name as string) ?? 'Départ',
+            lat: originLat,
+            lng: originLng,
+            ...(data.origin_iata ? { iata: data.origin_iata as string[] } : {}),
+          },
+          durationDays: data.duration_days as number,
+          dateMode: data.date_mode as TripConstraints['dateMode'],
+          ...(data.start_date ? { startDate: data.start_date as string } : {}),
+          ...(data.end_date ? { endDate: data.end_date as string } : {}),
+          ...(data.window_start ? { windowStart: data.window_start as string } : {}),
+          ...(data.window_end ? { windowEnd: data.window_end as string } : {}),
+          ...(data.target_month ? { month: data.target_month as number } : {}),
+          budgetMode: data.budget_mode as TripConstraints['budgetMode'],
+          budgetPerPersonCents: data.budget_per_person_cents as number | null,
+          comfortLevel: data.comfort_level as TripConstraints['comfortLevel'],
+          groupType: data.group_type as TripConstraints['groupType'],
+        },
+        members: preferences.map((row) => ({
+          userId: row.user_id,
+          weights: normalizeWeights(row.weights),
+          budgetMaxCents: row.budget_max_cents,
+          avoid: (row.avoid ?? []) as PreferenceAxis[],
+        })),
+      };
+    },
+
+    async create(draft, title) {
+      const { data: session } = await client.auth.getUser();
+      const userId = session.user?.id;
+      if (!userId) throw new Error('Connexion requise pour créer un voyage');
+
+      const { data, error } = await client
+        .from('trips')
+        .insert({
+          owner_id: userId,
+          title,
+          status: draft.destinationMode === 'suggest' ? 'proposing' : 'planned',
+          origin_name: draft.origin?.name ?? null,
+          origin_lat: draft.origin?.lat ?? null,
+          origin_lng: draft.origin?.lng ?? null,
+          origin_iata: draft.origin?.iata ?? null,
+          destination_mode: draft.destinationMode,
+          // Toutes les étapes, dans l'ordre : l'écran de création annonce
+          // qu'un voyage peut en enchaîner plusieurs, et n'en gardait qu'une.
+          destination_shortlist: draft.destinationMode === 'fixed' ? draft.destinationIds : [],
+          destination_locked_id:
+            draft.destinationMode === 'fixed' ? (draft.destinationIds[0] ?? null) : null,
+          participants: draft.participants,
+          group_type: draft.groupType,
+          date_mode: draft.dateMode,
+          start_date: draft.startDate,
+          end_date: draft.endDate,
+          window_start: draft.windowStart,
+          window_end: draft.windowEnd,
+          target_month: draft.month,
+          duration_days: draft.durationDays,
+          budget_mode: draft.budgetMode,
+          budget_per_person_cents: draft.budgetPerPersonCents,
+          comfort_level: draft.comfortLevel,
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+
+      const tripId = data.id as string;
+
+      // Les envies du créateur sont ses préférences personnelles, pas celles du
+      // groupe : elles sont enregistrées comme celles de n'importe quel membre.
+      const { error: preferenceError } = await client.from('member_preferences').insert({
+        trip_id: tripId,
+        user_id: userId,
+        weights: pruneWeights(draft.weights),
+        budget_max_cents: draft.budgetPerPersonCents,
+        avoid: draft.avoid,
+        submitted: true,
+      });
+      if (preferenceError) throw preferenceError;
+
+      return tripId;
+    },
+
+    async update(id, valeurs) {
+      const ligne: Record<string, unknown> = {};
+      if (valeurs.title !== undefined) ligne['title'] = valeurs.title.trim();
+      if (valeurs.durationDays !== undefined) ligne['duration_days'] = valeurs.durationDays;
+      if (valeurs.participants !== undefined) ligne['participants'] = valeurs.participants;
+      if (valeurs.budgetPerPersonCents !== undefined) {
+        ligne['budget_per_person_cents'] = valeurs.budgetPerPersonCents;
+      }
+      if (valeurs.dateMode !== undefined) ligne['date_mode'] = valeurs.dateMode;
+      if (valeurs.month !== undefined) ligne['target_month'] = valeurs.month;
+      if (valeurs.startDate !== undefined) ligne['start_date'] = valeurs.startDate;
+      if (valeurs.endDate !== undefined) ligne['end_date'] = valeurs.endDate;
+      if (valeurs.windowStart !== undefined) ligne['window_start'] = valeurs.windowStart;
+      if (valeurs.windowEnd !== undefined) ligne['window_end'] = valeurs.windowEnd;
+      if (Object.keys(ligne).length === 0) return;
+
+      const { error } = await client.from('trips').update(ligne).eq('id', id);
+      if (error) throw error;
+    },
+
+    async leave(id) {
+      const { data: session } = await client.auth.getUser();
+      const userId = session.user?.id;
+      if (!userId) throw new Error('Connexion requise');
+      const { error } = await client
+        .from('trip_members')
+        .delete()
+        .eq('trip_id', id)
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+
+    async removeMember(id, userId) {
+      const { error } = await client
+        .from('trip_members')
+        .delete()
+        .eq('trip_id', id)
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+
+    async remove(id) {
+      // Passe par une fonction plutôt que par un `update` direct : Postgres
+      // exige qu'une ligne modifiée reste visible à la politique de lecture
+      // après l'écriture, même sans réclamer la ligne en retour. Cette
+      // politique exige `deleted_at is null` — exactement ce que la
+      // suppression douce vient de rendre faux — donc l'update échouait pour
+      // tout le monde, y compris le créateur. La fonction contourne la
+      // politique de lecture et vérifie elle-même l'autorisation.
+      const { error } = await client.rpc('soft_delete_trip', { p_trip_id: id });
+      if (error) throw error;
+    },
+  };
+}
+
+/** N'enregistre que les axes réellement exprimés : le reste est du bruit. */
+function pruneWeights(weights: Partial<PreferenceWeights>): Record<string, number> {
+  return Object.fromEntries(
+    Object.entries(weights).filter(
+      (entry): entry is [string, number] => typeof entry[1] === 'number' && entry[1] > 0,
+    ),
+  );
+}
+
+/**
+ * La clé de cache d'un voyage, en un seul endroit.
+ *
+ * Elle porte le type de dépôt parce qu'un voyage local et un voyage serveur ne
+ * doivent jamais se mélanger dans le cache. Ce détail a coûté un bug : les
+ * écrans construisaient leur clé chacun de leur côté, l'un avec le type,
+ * l'autre sans, et une invalidation ne retrouvait pas l'autre. Le voyage était
+ * bien modifié en base, et l'écran affichait encore l'ancien titre.
+ *
+ * D'où cette fonction : une seule façon de nommer un voyage dans le cache.
+ */
+export function cleVoyage(id: string | undefined): readonly unknown[] {
+  return ['trip', getTripRepository().kind, id];
+}
+
+export function getTripRepository(): TripRepository {
+  return supabase ? supabaseRepository(supabase) : depotLocal;
+}

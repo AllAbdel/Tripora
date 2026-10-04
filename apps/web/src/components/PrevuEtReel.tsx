@@ -1,0 +1,167 @@
+import {
+  cheapestTransport,
+  costLines,
+  describeSource,
+  estimateTripCost,
+  formatCents,
+  type Destination,
+  type PricedValue,
+  type TripConstraints,
+} from '@tripora/core';
+import { cn } from '@/lib/cn';
+
+/**
+ * Ce qui était prévu, et ce qui a été dépensé.
+ *
+ * L'écran des dépenses savait très bien compter ce qu'on avait sorti, et pas
+ * du tout le rapporter à quoi que ce soit. « 640 € dépensés » ne dit rien sans
+ * le budget annoncé au départ : c'est la moitié de l'enveloppe ou le double,
+ * et c'est toute la différence.
+ *
+ * Le prévu vient de deux endroits, et les deux sont affichés pour ce qu'ils
+ * sont : le budget que le groupe s'est donné, qui est une décision, et
+ * l'estimation du coût de la destination, qui est un calcul.
+ */
+export function PrevuEtReel({
+  constraints,
+  destination,
+  prixDuVol,
+  depenseCents,
+  participants,
+}: {
+  constraints: TripConstraints;
+  /** La destination retenue. Sans elle, on ne peut estimer que le budget annoncé. */
+  destination?: Destination | undefined;
+  /** Prix de vol relevé, quand il y en a un : il remplace l'estimation. */
+  prixDuVol?: PricedValue | undefined;
+  /** Total réellement dépensé par le groupe, en centimes. */
+  depenseCents: number;
+  /** Nombre de personnes qui partagent la note. */
+  participants: number;
+}) {
+  const budgetParPersonne = constraints.budgetPerPersonCents;
+  const budgetGroupe = budgetParPersonne === null ? null : budgetParPersonne * participants;
+
+  const transport: PricedValue | null =
+    prixDuVol && prixDuVol.cents !== null
+      ? prixDuVol
+      : destination
+        ? (cheapestTransport(constraints.origin, destination, participants)?.price ?? null)
+        : null;
+
+  const estimation = destination
+    ? estimateTripCost({
+        destination,
+        durationDays: constraints.durationDays,
+        comfortLevel: constraints.comfortLevel,
+        transport: transport ?? { cents: 0, source: 'estimated' },
+      })
+    : null;
+
+  const reference = budgetGroupe ?? (estimation ? estimation.totalCents * participants : null);
+  const part = reference && reference > 0 ? Math.min(150, (depenseCents / reference) * 100) : null;
+  const depasse = reference !== null && depenseCents > reference;
+
+  return (
+    <section className="space-y-4">
+      <div className="space-y-4">
+        {/* Le chiffre du haut est le sujet de l'écran : il prend la romane et
+            la taille qui va avec, et l'étiquette passe en petites capitales
+            au-dessus. C'était l'inverse — un libellé gris et un chiffre gras
+            de même hauteur que le reste. */}
+        <div className="filet flex items-end justify-between gap-3 border-b-2 pb-2">
+          <span className="etiquette">Dépensé jusqu’ici</span>
+          <span className="titre chiffres text-[2rem] leading-none">
+            {formatCents(depenseCents, 'EUR', { sansConversion: true })}
+          </span>
+        </div>
+
+        {reference !== null && (
+          <div className="space-y-1.5">
+            {/* Une jauge à un pixel, pas une gélule. La barre arrondie de deux
+                millimètres est la forme par défaut de tous les tableaux de
+                bord ; un filet qui se remplit appartient à la même grammaire
+                que le reste de la page. */}
+            <div
+              className="h-px overflow-hidden bg-[color:var(--border-subtle)]"
+              aria-hidden
+            >
+              <div
+                className={cn(
+                  'h-px transition-[width] duration-700',
+                  depasse ? 'bg-gold-600' : 'bg-brand-500',
+                )}
+                style={{ width: `${Math.max(2, part ?? 0)}%` }}
+              />
+            </div>
+            <p className={cn('text-xs', depasse ? 'text-gold-700 dark:text-gold-300' : 'text-muted')}>
+              {depasse
+                ? `Vous avez dépassé de ${formatCents(depenseCents - reference, 'EUR', { sansConversion: true })} ce qui était prévu (${formatCents(reference, 'EUR', { sansConversion: true })} pour ${participants}).`
+                : `Il reste ${formatCents(reference - depenseCents, 'EUR', { sansConversion: true })} sur les ${formatCents(reference, 'EUR', { sansConversion: true })} prévus pour ${participants} personne${participants > 1 ? 's' : ''}.`}
+            </p>
+          </div>
+        )}
+
+        {reference === null && (
+          <p className="text-muted text-xs">
+            Aucun budget n’a été renseigné à la création, et aucune destination n’est arrêtée :
+            il n’y a rien à quoi comparer ces dépenses.
+          </p>
+        )}
+
+        {estimation && (
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="etiquette">Ce que le voyage devrait coûter</h3>
+              <span className="text-muted text-xs">par personne</span>
+            </div>
+            {/* Un devis : les postes réglés, le total séparé par un filet plus
+                appuyé. C'est la mise en page d'une note de frais, et c'est
+                exactement ce que c'est. */}
+            <ul className="text-sm">
+              {costLines(estimation).map((ligne) => (
+                <li key={ligne.key} className="filet flex justify-between gap-4 border-b py-1.5">
+                  <span className="text-muted">{ligne.label}</span>
+                  <span className="chiffres">
+                    {formatCents(ligne.cents, 'EUR', { hideCentimes: true, sansConversion: true })}
+                  </span>
+                </li>
+              ))}
+              <li className="filet flex justify-between gap-4 border-b-2 py-2 font-semibold">
+                <span>Total estimé</span>
+                <span className="chiffres">
+                  {formatCents(estimation.totalCents, 'EUR', { hideCentimes: true, sansConversion: true })}
+                </span>
+              </li>
+            </ul>
+            {transport && (
+              <p className="text-muted pt-0.5 text-xs">
+                Transport : {describeSource(transport).court.toLowerCase()}. Le reste est estimé
+                à partir du niveau de confort choisi et du coût de la vie sur place.
+              </p>
+            )}
+          </div>
+        )}
+
+        {budgetParPersonne !== null && (
+          <p className="text-muted pt-1 text-xs">
+            Budget annoncé à la création :{' '}
+            <strong className="text-[color:var(--text-strong)]">
+              {formatCents(budgetParPersonne, 'EUR', { hideCentimes: true, sansConversion: true })} par personne
+            </strong>
+            {estimation && estimation.totalCents > budgetParPersonne && (
+              <>
+                {' '}— l’estimation le dépasse de{' '}
+                {formatCents(estimation.totalCents - budgetParPersonne, 'EUR', {
+                  hideCentimes: true,
+                  sansConversion: true,
+                })}
+                .
+              </>
+            )}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}

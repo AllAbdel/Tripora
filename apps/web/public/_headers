@@ -1,0 +1,72 @@
+# En-têtes de sécurité, servis par Cloudflare Pages.
+#
+# Une politique de sécurité du contenu (CSP) n'est utile que si elle est
+# assez stricte pour bloquer un script injecté, et assez juste pour ne rien
+# casser. Chaque origine listée ici correspond à un appel réel, vérifié en
+# ouvrant l'application dans un navigateur et en lisant la console : une CSP
+# trop serrée ne produit pas d'erreur visible à l'utilisateur, seulement une
+# carte qui ne s'affiche plus.
+#
+# Ce qui est autorisé, et pourquoi :
+#
+#  - `*.supabase.co` : la base, l'authentification, le temps réel (wss) et les
+#    fonctions serveur. C'est le seul serveur auquel Tripora parle vraiment.
+#  - `tiles.openfreemap.org` : le fond de carte vectoriel.
+#  - `*.wikimedia.org` : les photos de couverture et les images des lieux.
+#  - `*.wikipedia.org` en `connect-src` : l'API qui dit quelle image illustre
+#    un article. Elle manquait : les photos du carnet d'activités étaient
+#    refusées par le navigateur avant même de partir, sans erreur visible.
+#    Toutes les langues, parce qu'OpenStreetMap nomme l'article dans celle du
+#    pays (`pt:`, `id:`, `ja:`…).
+#  - `blob:` en `worker-src` et `child-src` : MapLibre charge normalement son
+#    ouvrier de rendu comme un fichier voisin — c'est le chemin nominal, et il
+#    ne demande aucune permission particulière depuis qu'on lui donne
+#    l'adresse émise par le build. Mais quand le navigateur ne sait pas
+#    exécuter un ouvrier de type module, la bibliothèque récupère le script et
+#    le rejoue depuis un blob. `child-src` double `worker-src` pour les moteurs
+#    qui ne connaissent que le premier. Sans ces deux-là, la carte reste noire
+#    sur ces navigateurs, et sans le moindre message : privé d'ouvrier,
+#    MapLibre n'affiche que la couleur de fond du style, et ne signale rien.
+#  - `'unsafe-inline'` en `style-src` : Tailwind et MapLibre posent des styles
+#    en ligne. Elle ne permet pas d'exécuter du code — seulement de colorer
+#    des éléments.
+#  - `'wasm-unsafe-eval'` en `script-src` : la lecture des tickets de caisse
+#    tourne en WebAssembly sur l'appareil (la photo n'est envoyée nulle part).
+#    Compiler du WebAssembly demande ce mot-clé ; il n'autorise ni `eval` ni
+#    aucun script en ligne, et le moteur vient de Tripora (`/ocr/…`).
+#
+# Ce qui est refusé sans exception : tout script d'une autre origine, tout
+# cadre, et l'inclusion de Tripora dans un cadre étranger.
+/*
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://*.wikimedia.org https://*.wikipedia.org https://tiles.openfreemap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://*.wikimedia.org https://*.wikipedia.org; manifest-src 'self'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Rien de tout cela n'est utilisé, sauf la position : les refuser évite
+  # qu'un script injecté puisse seulement demander. La position, elle, sert
+  # au bouton « Ma position » de la création d'un voyage — et à la seule page
+  # elle-même (`self`), jamais à un cadre étranger. Elle était refusée ici
+  # comme le reste : le bouton répondait « position refusée » sans que le
+  # navigateur ait jamais rien demandé à personne.
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  X-Frame-Options: DENY
+
+# Les fichiers versionnés par leur nom ne changent jamais : un an de cache.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Le service worker, lui, doit être revérifié à chaque visite, sinon une
+# correction reste invisible plusieurs jours.
+/sw.js
+  Cache-Control: no-cache
+
+# Ce qu'il importe (les notifications des alertes de prix) : le navigateur
+# relit les scripts importés à travers le cache HTTP, il faut donc le même régime.
+/sw-alertes.js
+  Cache-Control: no-cache
+
+# La lecture des tickets : le dossier porte la version, le contenu ne change
+# jamais sous un même chemin.
+/ocr/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Le bleu du dégradé de l'icône, derrière son premier plan. -->
+    <color name="ic_launcher_background">#0A5AA8</color>
+    <!-- Le fond de l'application au démarrage, celui du site installé. -->
+    <color name="fond_lancement">#0B1220</color>
+</resources>

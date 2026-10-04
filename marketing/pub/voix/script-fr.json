@@ -1,0 +1,139 @@
+{
+  "langue": "fr",
+  "note": "Fenêtres en secondes : la réplique doit commencer après « debut » et finir avant « fin ». « cible » = durée de lecture visée, en lisant naturellement.",
+  "lignes": [
+    {
+      "id": "01",
+      "debut": 6.1,
+      "fin": 9.95,
+      "texte": "Partir entre amis, le rêve. L’organiser… beaucoup moins.",
+      "cible": 3.8
+    },
+    {
+      "id": "02",
+      "debut": 10.05,
+      "fin": 13.95,
+      "texte": "Tripora. Le voyage de groupe, de l’idée au souvenir.",
+      "cible": 3.4
+    },
+    {
+      "id": "03",
+      "debut": 14.45,
+      "fin": 18.85,
+      "texte": "Une envie, une phrase : votre voyage est créé. Sans compte.",
+      "cible": 3.4
+    },
+    {
+      "id": "04",
+      "debut": 19.25,
+      "fin": 23.85,
+      "texte": "Invitez la bande : chacun ses envies, chacun son budget.",
+      "cible": 3.6
+    },
+    {
+      "id": "05",
+      "debut": 24.45,
+      "fin": 30.85,
+      "texte": "Tripora compare les destinations : vols, climat, coût total… et explique chaque choix.",
+      "cible": 5.7
+    },
+    {
+      "id": "06",
+      "debut": 31.3,
+      "fin": 35.8,
+      "texte": "Le groupe vote. La destination se choisit ensemble.",
+      "cible": 3.2
+    },
+    {
+      "id": "07",
+      "debut": 36.3,
+      "fin": 39.95,
+      "texte": "Swipez les activités : le classement se fait seul.",
+      "cible": 3.2
+    },
+    {
+      "id": "08",
+      "debut": 40.3,
+      "fin": 42.85,
+      "texte": "Le prix baisse ? Vous êtes prévenus.",
+      "cible": 2.1
+    },
+    {
+      "id": "09",
+      "debut": 43.4,
+      "fin": 49.7,
+      "texte": "Un itinéraire jour par jour, avec de vrais lieux. Il pleut ? Tripora propose d’échanger.",
+      "cible": 5.5
+    },
+    {
+      "id": "10",
+      "debut": 50.2,
+      "fin": 53.95,
+      "texte": "Vu sur les réseaux ? Partagez, c’est épinglé.",
+      "cible": 3.0
+    },
+    {
+      "id": "11",
+      "debut": 54.3,
+      "fin": 58.85,
+      "texte": "Billets, réservations, codes : tout le groupe a tout. Même hors ligne.",
+      "cible": 3.8
+    },
+    {
+      "id": "12",
+      "debut": 59.2,
+      "fin": 61.85,
+      "texte": "Et tout ce qui va avec.",
+      "cible": 1.7
+    },
+    {
+      "id": "13",
+      "debut": 62.3,
+      "fin": 66.85,
+      "texte": "Un ticket ? Une photo : la dépense est notée et partagée.",
+      "cible": 4.2
+    },
+    {
+      "id": "14",
+      "debut": 67.3,
+      "fin": 70.85,
+      "texte": "Qui doit quoi ? Réglé en deux virements.",
+      "cible": 2.5
+    },
+    {
+      "id": "15",
+      "debut": 71.3,
+      "fin": 74.85,
+      "texte": "Vos photos, réunies dans le journal du groupe.",
+      "cible": 2.6
+    },
+    {
+      "id": "16",
+      "debut": 75.3,
+      "fin": 80.7,
+      "texte": "Au retour, un bilan à partager, et un passeport qui se remplit.",
+      "cible": 4.3
+    },
+    {
+      "id": "17",
+      "debut": 81.3,
+      "fin": 84.75,
+      "texte": "Et ce n’est que le début.",
+      "cible": 1.7
+    },
+    {
+      "id": "18",
+      "debut": 85.3,
+      "fin": 87.6,
+      "texte": "Gratuit, et sans publicité.",
+      "cible": 1.9
+    },
+    {
+      "id": "19",
+      "debut": 88.3,
+      "fin": 91.6,
+      "texte": "Tripora. Partez ensemble.",
+      "cible": 1.9
+    }
+  ]
+}

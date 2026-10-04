@@ -1,0 +1,60 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import App from './App';
+import { AuthProvider } from '@/lib/auth';
+import { PontNatif } from '@/components/PontNatif';
+import { persister, queryClient, VERSION_DU_CACHE } from '@/lib/cache';
+import { applyTheme, useTheme, watchSystemTheme } from '@/stores/theme';
+import { appliquerLaLangue, useLangue } from '@/stores/langue';
+import { demarrerLaTraductionAuRendu } from '@/i18n/traductionAuRendu';
+import { suivreLaRegion } from '@/stores/region';
+import { SuitLaRegion } from '@/components/SuitLaRegion';
+import { FiletDeSecurite } from '@/components/FiletDeSecurite';
+import { surveillerLesErreurs } from '@/lib/remonterLesErreurs';
+import './index.css';
+
+applyTheme(useTheme.getState().preference);
+watchSystemTheme();
+// Avant le premier rendu : `lang` et `dir` sur <html>. Poser `dir="rtl"` après
+// coup ferait sauter toute la page d'un côté à l'autre sous les yeux.
+appliquerLaLangue(useLangue.getState().preference);
+// L'anglais de tout ce que `useT()` ne couvre pas, posé sur le texte rendu.
+demarrerLaTraductionAuRendu();
+// Devise, degrés, distances et écriture des nombres : avant le premier chiffre affiché.
+suivreLaRegion();
+// Les erreurs que personne ne rattrape partent au serveur, nettoyées (en production seulement).
+surveillerLesErreurs();
+
+
+const container = document.getElementById('root');
+if (!container) throw new Error('Élément racine introuvable');
+
+createRoot(container).render(
+  <StrictMode>
+    <FiletDeSecurite>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          // Au-delà d'une semaine, ce qu'on a gardé ne décrit plus le voyage :
+          // les prix ont bougé, les autres ont voté. Mieux vaut repartir de zéro.
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          // La version change avec le format du cache : une mise à jour de
+          // Tripora ne doit pas relire des données qu'elle ne comprend plus.
+          buster: VERSION_DU_CACHE,
+        }}
+      >
+        <AuthProvider>
+          <BrowserRouter>
+            <PontNatif />
+            <SuitLaRegion>
+              <App />
+            </SuitLaRegion>
+          </BrowserRouter>
+        </AuthProvider>
+      </PersistQueryClientProvider>
+    </FiletDeSecurite>
+  </StrictMode>,
+);

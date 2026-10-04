@@ -1,0 +1,105 @@
+import {
+  climateFromSeries,
+  climateYear,
+  convertirTemperature,
+  formatNombre,
+  formatTemperature,
+  monthNameFr,
+  type MonthlyClimate,
+} from '@tripora/core';
+import { cn } from '@/lib/cn';
+
+const INITIALES = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+
+/**
+ * Les douze mois d'une destination, d'un coup d'œil.
+ *
+ * Chaque barre monte avec la température de journée et se colore selon qu'on
+ * peut y marcher sans y penser. Le mois visé est encadré. C'est la réponse
+ * visuelle à « et si on partait plutôt en mai ? », sans avoir à relancer le
+ * calcul : la réponse est déjà là, mesurée.
+ */
+export function ClimateStrip({
+  destinationId,
+  serie,
+  month,
+  className,
+}: {
+  destinationId: string;
+  /**
+   * Normales relevées côté serveur. Sans elles on retombe sur les normales
+   * embarquées, qui ne couvrent que les cinquante-cinq premières villes : la
+   * bande resterait vide sur les quatre cent quarante-cinq autres.
+   */
+  serie?: readonly number[] | undefined;
+  month?: number | undefined;
+  className?: string;
+}) {
+  const annee = serie
+    ? Array.from({ length: 12 }, (_, index) => climateFromSeries(serie, index + 1)).filter(
+        (mois): mois is MonthlyClimate => mois !== undefined,
+      )
+    : climateYear(destinationId);
+  if (annee.length !== 12) return null;
+
+  const maxi = Math.max(...annee.map((mois) => mois.avgHighC));
+  const mini = Math.min(...annee.map((mois) => mois.avgLowC));
+  const amplitude = Math.max(1, maxi - mini);
+
+  return (
+    <div className={className}>
+      <ul className="flex items-end gap-1" role="list">
+        {annee.map((mois) => {
+          const cible = mois.month === month;
+          const hauteur = 24 + ((mois.avgHighC - mini) / amplitude) * 40;
+          return (
+            <li key={mois.month} className="flex flex-1 flex-col items-center gap-1">
+              <span className="text-muted text-[10px] leading-none tabular-nums">
+                {formatNombre(convertirTemperature(mois.avgHighC))}
+              </span>
+              <span
+                className={cn(
+                  'w-full rounded-sm',
+                  couleur(mois),
+                  cible &&
+                    'ring-2 ring-[color:var(--text-strong)] ring-offset-1 ring-offset-[color:var(--surface-raised)]',
+                )}
+                style={{ height: `${Math.round(hauteur)}px` }}
+                aria-hidden
+              />
+              <span
+                className={cn(
+                  'text-[10px] leading-none',
+                  cible ? 'font-bold' : 'text-muted',
+                )}
+              >
+                {INITIALES[mois.month - 1]}
+              </span>
+              <span className="sr-only">{decrire(mois)}</span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="text-muted pt-2 text-xs">
+        Maximum moyen de la journée, en degrés. Normales mesurées sur 2023-2025.
+      </p>
+    </div>
+  );
+}
+
+/** Même lecture du confort que la note : ni trop frais, ni écrasant. */
+function couleur(mois: MonthlyClimate): string {
+  if (mois.avgHighC >= 33) return 'bg-red-500/80';
+  if (mois.avgHighC >= 28) return 'bg-gold-500/80';
+  if (mois.avgHighC >= 17) return 'bg-lagoon-500/80';
+  if (mois.avgHighC >= 10) return 'bg-brand-400/70';
+  return 'bg-brand-700/60';
+}
+
+function decrire(mois: MonthlyClimate): string {
+  const pluie =
+    mois.rainyDays === 0
+      ? 'aucun jour de pluie'
+      : `${mois.rainyDays} jour${mois.rainyDays > 1 ? 's' : ''} de pluie`;
+  return `${monthNameFr(mois.month)} : ${formatTemperature(mois.avgHighC)} en journée, ${formatTemperature(mois.avgLowC)} la nuit, ${pluie}`;
+}

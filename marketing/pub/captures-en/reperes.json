@@ -1,0 +1,33 @@
+{
+  "propositions": {
+    "entete": 1110,
+    "budapest": 1247,
+    "cracovie": 1655,
+    "prague": 2039,
+    "hauteur": 3986
+  },
+  "itineraire": {
+    "lieux": 173,
+    "jour1": 562,
+    "ajouter": 1003,
+    "hauteur": 1297
+  },
+  "afaire": {
+    "rizieres": 414,
+    "singes": 657,
+    "penida": 901,
+    "hauteur": 3553
+  },
+  "bilan": {
+    "image": 419,
+    "hauteur": 1631
+  },
+  "voyage": {
+    "avancement": 385,
+    "outils": 533,
+    "destination": 1332,
+    "empreinte": 1441,
+    "infos": 1664,
+    "hauteur": 4014
+  }
+}

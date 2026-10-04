@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Tripora">
+  <title>Tripora</title>
+  <desc>Une montagne enneigée, un soleil, et un avion qui décolle en suivant la vallée.</desc>
+  <defs>
+    <linearGradient id="ciel" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#153f88"/>
+      <stop offset="0.55" stop-color="#0b4c99"/>
+      <stop offset="1" stop-color="#0571a7"/>
+    </linearGradient>
+    <linearGradient id="vallee" x1="0.15" y1="0.15" x2="0.9" y2="0.95">
+      <stop offset="0" stop-color="#2f8fe0"/>
+      <stop offset="0.5" stop-color="#2ec5cf"/>
+      <stop offset="1" stop-color="#41dfa4"/>
+    </linearGradient>
+    <linearGradient id="astre" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc85a"/>
+      <stop offset="1" stop-color="#f39a1c"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="118" fill="url(#ciel)"/>
+  <circle cx="358" cy="139" r="42" fill="url(#astre)"/>
+
+  <!-- La montagne : sommet enneigé à gauche, versant bleu qui plonge à droite. -->
+  <path d="M104 318 214 152l60 90 34-44 96 120z" fill="#eef4fa"/>
+  <path d="M274 242l34-44 96 120H236z" fill="#1c68c8"/>
+  <path d="M214 152l30 45-31 24-27-22z" fill="#ffffff"/>
+
+  <!--
+    La vallée, en deux temps : un liseré blanc qui borde le creux par
+    l'extérieur, puis la courbe turquoise par-dessus. C'est ce liseré qui
+    détache la forme du fond bleu et donne son relief à l'ensemble.
+  -->
+  <path d="M92 262c-14 96 44 172 148 172 84 0 152-46 214-146-30 122-116 194-222 194C122 482 68 396 92 262z"
+        fill="#f2f8fd"/>
+  <path d="M122 268c-10 80 40 142 128 142 76 0 138-42 196-132-24 104-100 164-196 164-96 0-142-70-128-174z"
+        fill="url(#vallee)"/>
+
+  <!--
+    L'avion, dessiné droit puis incliné.
+
+    Un fuselage tracé directement en oblique demande de placer une dizaine de
+    points à la main sur une diagonale, et le moindre écart se voit : on
+    obtient un chevron, pas un avion. Dessiné nez en haut dans son propre
+    repère, il reste juste, et la rotation fait le reste.
+  -->
+  <g transform="translate(360 212) rotate(46) scale(1.28) translate(-50 -60)">
+    <path d="M50 4c8 0 14 16 14 36l32 26v11L64 63v25l13 13v9L50 101l-27 9v-9l13-13V63L4 77V66l32-26C36 20 42 4 50 4z"
+          fill="#ffffff"/>
+  </g>
+</svg>

@@ -1,0 +1,132 @@
+name: Intégration continue
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    name: Application (lint, types, tests, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sans `version` : la version vient de `packageManager` dans le
+      # package.json, et l'indiquer aux deux endroits est une erreur fatale
+      # de l'action — « Multiple versions of pnpm specified ». C'est ce qui
+      # arrêtait ce travail avant même l'installation des dépendances.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Types
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  fonctions:
+    name: Fonctions edge (couverture et requête préalable)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Seuls les modules sans dépendance sont testés : le reste des fonctions
+      # importe le client Supabase, et l'installer ici coûterait plus que ce
+      # que ça vérifierait. Les erreurs qu'on a livrées venaient toutes d'ici —
+      # les couvertures fausses, puis la requête préalable qui refusait en
+      # silence tous les appels aux fonctions depuis le navigateur.
+      - name: Tests
+        run: |
+          deno test supabase/functions/cover/choix.test.ts
+          deno test supabase/functions/_shared/cors.test.ts
+          deno test supabase/functions/lire-un-lien/lecture.test.ts
+          deno test supabase/functions/surveiller-les-prix/push.test.ts
+
+  navigateur:
+    name: Navigateur (parcours de bout en bout)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sans `version` : la version vient de `packageManager` dans le
+      # package.json, et l'indiquer aux deux endroits est une erreur fatale
+      # de l'action — « Multiple versions of pnpm specified ». C'est ce qui
+      # arrêtait ce travail avant même l'installation des dépendances.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Chromium seul : les trois défauts que ces tests attrapent ne dépendent
+      # d'aucun moteur en particulier, et installer Firefox et WebKit
+      # triplerait le temps d'installation pour rien.
+      - name: Chromium
+        run: pnpm --filter @tripora/web exec playwright install --with-deps chromium
+
+      - name: Parcours
+        run: pnpm --filter @tripora/web test:e2e
+
+      # La trace rejoue un échec clic par clic, avec le réseau et la console.
+      # Sans elle, un échec en intégration continue n'est qu'un nom de test.
+      - name: Traces des échecs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-playwright
+          path: apps/web/test-results/
+          retention-days: 7
+
+  base_de_donnees:
+    name: Base de données (schéma et politiques RLS)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Client PostgreSQL
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Schéma et tests RLS
+        env:
+          PGHOST: localhost
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: ./supabase/tests/run.sh

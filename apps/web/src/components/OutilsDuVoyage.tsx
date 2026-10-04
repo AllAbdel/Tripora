@@ -1,0 +1,246 @@
+import { Link } from 'react-router';
+import { cn } from '@/lib/cn';
+import { signaler } from '@/lib/feedback';
+import { Pastille } from '@/components/Pastille';
+
+/**
+ * Les écrans du voyage, en une grille compacte.
+ *
+ * Ils étaient six cartes pleine largeur empilées, chacune avec un titre et une
+ * phrase d'explication. C'est très lisible la première fois et pénible les
+ * vingt suivantes : deux écrans de défilement pour atteindre un menu qu'on
+ * connaît déjà par cœur.
+ *
+ * En grille, l'ensemble tient dans un regard. La phrase d'explication devient
+ * une ligne courte sous le titre, et disparaît là où elle n'apprenait rien.
+ * L'information vraiment vivante — combien d'amis manquent à l'appel — reste,
+ * parce que c'est la seule qui change d'un jour à l'autre.
+ *
+ * Une seule case est mise en avant à la fois : celle de l'étape en cours. Tout
+ * mettre en avant revient à ne rien mettre en avant.
+ */
+export function OutilsDuVoyage({
+  tripId,
+  destinationVerrouillee,
+  collaborationActive,
+  attente,
+  destinationConnue,
+  estOrganisateur,
+  candidaturesEnAttente,
+  nombreDActivites,
+  nombreDeReservations = 0,
+  nombreDeSondages = 0,
+  sondagesAVoter = 0,
+  taches,
+  aDecouvrir = 0,
+  coffre = null,
+  nombreDePhotos = 0,
+  termine = false,
+}: {
+  tripId: string;
+  destinationVerrouillee: boolean;
+  collaborationActive: boolean;
+  /** Ce qu'il manque encore au groupe, en une ligne. */
+  attente: string;
+  /** Vrai quand l'encart d'applications de l'aperçu tient déjà ce rôle. */
+  destinationConnue: boolean;
+  estOrganisateur: boolean;
+  /** Combien de gens attendent une réponse. Zéro quand le voyage n'est pas ouvert. */
+  candidaturesEnAttente: number;
+  /** Ce que le carnet d'activités connaît de la destination. Zéro : pas de case. */
+  nombreDActivites: number;
+  /** Ce que le groupe a déjà réservé. */
+  nombreDeReservations?: number;
+  /** Les sondages du voyage, et ceux qui attendent mon vote. */
+  nombreDeSondages?: number;
+  sondagesAVoter?: number;
+  /** Ce qui reste à faire avant de partir, et ce qui m'est confié. */
+  taches?: { aFaire: number; pourMoi: number; enRetard: number; total: number };
+  /** Les idées du carnet que je n'ai pas encore jugées. */
+  aDecouvrir?: number;
+  /** « 2 codes · 1 wifi », ou `null` quand le coffre est vide. */
+  coffre?: string | null;
+  /** Les photos du journal. */
+  nombreDePhotos?: number;
+  /** Le séjour est fini : place au bilan. */
+  termine?: boolean;
+}) {
+  const aDesActivites = nombreDActivites > 0;
+  const cases = [
+    // Rentré : le bilan passe en tête, c'est ce qu'on vient chercher.
+    termine && {
+      to: `/voyages/${tripId}/bilan`,
+      pastille: 'bilan' as const,
+      titre: 'Bilan',
+      detail: 'Le voyage en chiffres',
+      accent: true,
+    },
+    collaborationActive && {
+      to: `/voyages/${tripId}/participants`,
+      pastille: 'participants' as const,
+      titre: 'Participants',
+      detail: attente,
+      accent: false,
+    },
+    // « À faire » avant l'itinéraire : on choisit ce qu'on veut voir, puis on
+    // le range dans les journées. L'ordre inverse demandait de savoir quoi
+    // mettre dans un créneau avant d'avoir vu ce qui existait.
+    // Découvrir d'abord : une idée à la fois, plein écran, qu'on garde d'un
+    // glissement. C'est le plus rapide pour dire ce qui nous tente.
+    destinationVerrouillee &&
+      aDesActivites && {
+        to: `/voyages/${tripId}/decouvrir`,
+        pastille: 'decouvrir' as const,
+        titre: 'Découvrir',
+        detail: aDecouvrir > 0 ? `${aDecouvrir} idée${aDecouvrir > 1 ? 's' : ''} à glisser` : 'Le classement du groupe',
+        accent: false,
+      },
+    destinationVerrouillee &&
+      aDesActivites && {
+        to: `/voyages/${tripId}/a-faire`,
+        pastille: 'meteo' as const,
+        titre: 'À faire',
+        detail: `${nombreDActivites} idées sur place`,
+        accent: false,
+      },
+    destinationVerrouillee && {
+      to: `/voyages/${tripId}/itineraire`,
+      pastille: 'itineraire' as const,
+      titre: 'Itinéraire',
+      detail: 'Jour par jour',
+      accent: true,
+    },
+    // Les réservations dès le départ : on réserve parfois le vol avant que
+    // le groupe ait fini de choisir le reste.
+    {
+      to: `/voyages/${tripId}/reservations`,
+      pastille: 'hebergements' as const,
+      titre: 'Réservations',
+      detail:
+        nombreDeReservations > 0
+          ? `${nombreDeReservations} réservation${nombreDeReservations > 1 ? 's' : ''}`
+          : 'Hôtels, visites, trajets',
+      accent: false,
+    },
+    {
+      to: `/voyages/${tripId}/coffre`,
+      pastille: 'coffre' as const,
+      titre: 'Coffre',
+      detail: coffre ?? 'Codes, wifi, adresses',
+      accent: false,
+    },
+    {
+      to: `/voyages/${tripId}/qui-fait-quoi`,
+      pastille: 'taches' as const,
+      titre: 'Qui fait quoi',
+      detail:
+        !taches || taches.total === 0 ? 'Qui réserve quoi'
+        : taches.enRetard > 0 ? `${taches.enRetard} en retard`
+        : taches.pourMoi > 0 ? `${taches.pourMoi} pour vous`
+        : taches.aFaire > 0 ? `${taches.aFaire} à faire`
+        : 'Tout est fait',
+      accent: Boolean(taches && (taches.enRetard > 0 || taches.pourMoi > 0)),
+    },
+    {
+      to: `/voyages/${tripId}/sondages`,
+      pastille: 'sondages' as const,
+      titre: 'Sondages',
+      detail:
+        sondagesAVoter > 0 ? `${sondagesAVoter} à voter`
+        : nombreDeSondages > 0 ? `${nombreDeSondages} sondage${nombreDeSondages > 1 ? 's' : ''}`
+        : 'Dates, logement, resto',
+      // Un vote attendu, c'est le groupe qui attend : ça se remarque.
+      accent: sondagesAVoter > 0,
+    },
+    {
+      to: `/voyages/${tripId}/journal`,
+      pastille: 'journal' as const,
+      titre: 'Journal photo',
+      detail:
+        nombreDePhotos > 0 ? `${nombreDePhotos} photo${nombreDePhotos > 1 ? 's' : ''}` : 'Les photos du groupe',
+      accent: false,
+    },
+    {
+      to: `/voyages/${tripId}/discussion`,
+      pastille: 'discussion' as const,
+      titre: 'Discussion',
+      detail: 'Liens et épingles',
+      accent: false,
+    },
+    {
+      to: `/voyages/${tripId}/carte`,
+      pastille: 'carte' as const,
+      titre: 'Carte',
+      detail: destinationVerrouillee ? 'Le trajet et les lieux' : 'Les villes en lice',
+      accent: false,
+    },
+    {
+      to: `/voyages/${tripId}/budget`,
+      pastille: 'depenses' as const,
+      titre: 'Dépenses',
+      detail: 'Qui doit quoi',
+      accent: false,
+    },
+    destinationVerrouillee && {
+      to: `/voyages/${tripId}/valise`,
+      pastille: 'valise' as const,
+      titre: 'Ma valise',
+      detail: 'Selon le climat',
+      accent: false,
+    },
+    {
+      to: `/voyages/${tripId}/recapitulatif`,
+      pastille: 'recapitulatif' as const,
+      titre: 'Récapitulatif',
+      detail: 'PDF et partage',
+      accent: false,
+    },
+    // Ouvrir son voyage à des inconnus n'a de sens qu'une fois la destination
+    // arrêtée : c'est elle, avec le point de départ, qui permet de se trouver.
+    destinationVerrouillee && {
+      to: estOrganisateur ? `/voyages/${tripId}/candidatures` : `/voyages/${tripId}/ouverts`,
+      pastille: 'ouvert' as const,
+      titre: estOrganisateur ? 'Trip ouvert' : 'Partir avec d’autres',
+      detail:
+        candidaturesEnAttente > 0 ?
+          `${candidaturesEnAttente} candidature${candidaturesEnAttente > 1 ? 's' : ''} à lire`
+        : estOrganisateur ? 'Ouvrir à des inconnus'
+        : 'Rejoindre un groupe',
+      // La seule case qui peut réclamer quelque chose : quelqu'un attend une
+      // réponse, et c'est plus pressant que le reste de la grille.
+      accent: candidaturesEnAttente > 0,
+    },
+    !destinationConnue && {
+      to: `/voyages/${tripId}/applications`,
+      pastille: 'applications' as const,
+      titre: 'Applications',
+      detail: 'À installer avant',
+      accent: false,
+    },
+  ].filter((entree): entree is Exclude<typeof entree, false> => entree !== false);
+
+  return (
+    <div className="animate-cascade grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+      {cases.map(({ to, pastille, titre, detail, accent }) => (
+        <Link
+          key={to}
+          to={to}
+          onClick={() => signaler('tape')}
+          className={cn(
+            'pressable surface-raised flex min-h-24 flex-col justify-between gap-2 rounded-2xl border p-3.5',
+            'shadow-[var(--shadow-card)]',
+            accent
+              ? 'border-lagoon-500 bg-lagoon-500/5'
+              : 'border-[color:var(--border-subtle)]',
+          )}
+        >
+          <Pastille nom={pastille} taille="sm" />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">{titre}</span>
+            <span className="text-muted block truncate text-xs">{detail}</span>
+          </span>
+        </Link>
+      ))}
+    </div>
+  );
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- `interactive-widget=resizes-content` : le clavier réduit la page au lieu
+         de passer par-dessus. Ce qui est fixé en bas — la saisie de la
+         discussion — se pose alors juste au-dessus de lui, comme dans
+         l'application Android, où c'est déjà le cas. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0a84ff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220" />
+    <meta name="description" content="Organisez un voyage entre amis sans quinze conversations : les envies et le budget de chacun, le vote du groupe, les vrais prix des vols, l’itinéraire jour par jour, la carte et les dépenses partagées. Gratuit." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Tripora" />
+    <!-- Search Console : une balise par compte Google propriétaire du site.
+         Les deux se cumulent ; en retirer une retire l'accès à ce compte. -->
+    <meta name="google-site-verification" content="4LRdROzn7XIywRFjmPG133wdWey0uBmCNTU3h5VBorc" />
+    <meta name="google-site-verification" content="uVf5EM8r2AFQjW9WrAXhM7xxoqmt6_VXe77L35Tbq4I" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+    <!-- Tripora se partage par lien : un voyage s'invite en collant une URL
+         dans la conversation du groupe. Sans ces balises, ce lien s'affiche
+         nu, et personne ne sait sur quoi il va cliquer. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tripora" />
+    <meta property="og:title" content="Tripora — organisez un voyage à plusieurs" />
+    <meta
+      property="og:description"
+      content="Les envies de chacun, le budget réel, le vote du groupe, l'itinéraire et la carte. Au même endroit."
+    />
+    <meta property="og:image" content="%ORIGINE_DU_SITE%/icons/og-image.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>Tripora — organisez un voyage entre amis</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

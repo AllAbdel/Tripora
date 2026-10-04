@@ -1,0 +1,618 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Les deux voix de Tripora, servies depuis nos propres fichiers.
+
+   Auto-hébergées, et non chargées chez Google : une application de voyage
+   s'ouvre dans un aéroport, dans un train, sur un forfait itinérance qui
+   compte chaque octet. Une police qui arrive d'un tiers arrive mal, ou pas du
+   tout — et le service worker ne sait pas la mettre en cache de façon fiable.
+   Ici elles vivent à côté du reste, et l'application a le même visage hors
+   ligne qu'en ligne.
+
+   « Fraunces » ne sert qu'aux grands titres. C'est une romane à caractère —
+   son axe WONK garde les dessins un peu de travers, ceux qu'une police neutre
+   aurait lissés. Les axes dont on ne se sert pas (taille optique, douceur)
+   sont figés à la fabrication : 118 Ko deviennent 33 Ko.
+
+   « Inter Tight » porte tout le reste. Plus resserrée que l'Inter ordinaire,
+   elle tient les libellés courts d'une interface de téléphone sans paraître
+   étirée.
+
+   Le latin étendu est déclaré à part : le navigateur ne le télécharge que le
+   jour où un « ń » de Gdańsk ou un « š » de Košice apparaît réellement.
+   --------------------------------------------------------------------------- */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/polices/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/polices/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/polices/inter-tight-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/polices/inter-tight-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Le thème sombre suit le système, mais reste forçable par une classe :
+   l'utilisateur doit pouvoir choisir, pas seulement subir son OS. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Papier et encre.
+
+   L'ancienne palette était celle de tout le monde : du blanc pur posé sur du
+   gris bleuté, un bleu vif, le même rayon et la même ombre partout. Propre, et
+   sans visage — le costume par défaut d'une application, celui qu'on oublie en
+   fermant l'onglet.
+
+   Celle-ci part d'ailleurs : d'un carnet. Le fond n'est pas gris mais **papier
+   crème**, les textes ne sont pas noir-bleu mais **encre chaude**, et les
+   séparations ne sont plus des ombres mais des **filets** — parce qu'un
+   imprimeur sépare deux blocs par un trait, pas par du flou. Trois notes
+   suffisent à faire une matière : un fond tiède, une encre brune, un filet.
+
+   L'accent, lui, reste celui que la personne a choisi dans son profil : le
+   thème le recalcule à l'exécution par-dessus ces valeurs, qui ne sont que la
+   teinte de départ.
+   --------------------------------------------------------------------------- */
+@theme {
+  --color-brand-50: #eef4fc;
+  --color-brand-100: #d9e6f8;
+  --color-brand-200: #b3cbef;
+  --color-brand-300: #7ba7e2;
+  --color-brand-400: #3b7fd0;
+  --color-brand-500: #1a5fb4;
+  --color-brand-600: #134a90;
+  --color-brand-700: #0e3a72;
+  --color-brand-800: #0a2c57;
+  --color-brand-900: #07203f;
+
+  /* Les nuances intermédiaires (50, 200, 600, 900…) sont interpolées en OKLab
+     entre les teintes de référence, vers le papier pour les claires et vers la
+     nuit pour les sombres. Elles manquaient alors que des écrans s'en
+     servaient : Tailwind 4 ne génère rien pour une nuance absente, sans erreur
+     ni avertissement. La barre « dépassé » du budget, les épingles du groupe
+     sur la carte, le libellé d'une note moyenne restaient sans couleur. */
+  --color-lagoon-50: #f0f6f1;
+  --color-lagoon-200: #b4dcd7;
+  --color-lagoon-300: #7ec6c2;
+  --color-lagoon-500: #2f8f88;
+  --color-lagoon-600: #257570;
+  --color-lagoon-700: #1b5c58;
+  --color-lagoon-900: #1c3532;
+
+  /* L'encre : des bruns profonds, jamais du noir pur. Le noir absolu sur un
+     fond crème fait un trou ; une encre brune s'y pose. */
+  --color-ink-100: #d0c6b4;
+  --color-ink-300: #a79c8a;
+  --color-ink-500: #6b6355;
+  --color-ink-600: #524b3f;
+  --color-ink-700: #3a342b;
+  --color-ink-800: #2a251f;
+  --color-ink-900: #1a1713;
+
+  /* Le papier, du plus clair au plus bruni. */
+  --color-paper-50: #fffdf8;
+  --color-paper-100: #faf6ed;
+  --color-paper-200: #f2ece0;
+  --color-paper-300: #e6ddcb;
+  --color-paper-400: #d4c7ae;
+
+  --color-gold-50: #fcf6e9;
+  --color-gold-200: #f1daae;
+  --color-gold-300: #e8c37a;
+  --color-gold-400: #d4a656;
+  --color-gold-500: #c08a2e;
+  /* Plus près du 700 que du 500 : c'est la nuance des libellés dorés, et elle
+     doit tenir 4,5:1 sur le papier des cartes (4,7:1 ici). */
+  --color-gold-600: #97691d;
+  --color-gold-700: #8a5f18;
+  --color-gold-800: #63461b;
+  --color-gold-900: #453219;
+
+  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-sans:
+    'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+
+  /* Des rayons plus serrés, et surtout plus *variés* : tout arrondi au même
+     rayon donne le sentiment du gabarit. Une carte n'est pas une feuille. */
+  --radius-card: 0.75rem;
+  --radius-sheet: 1.5rem;
+
+  /* Presque plus d'ombre. Ce qui sépare, ici, c'est le filet et la nuance de
+     papier — l'ombre ne sert qu'à décoller ce qui flotte vraiment. */
+  --shadow-card: 0 1px 2px rgb(58 52 43 / 0.05);
+  --shadow-lift: 0 1px 2px rgb(58 52 43 / 0.06), 0 12px 28px -18px rgb(58 52 43 / 0.5);
+  /* Assez pour décoller un bouton flottant, pas assez pour l'auréoler : sur
+     le fond sombre, un halo coloré transforme une touche en néon. */
+  --shadow-float: 0 8px 20px -12px rgb(26 95 180 / 0.35);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  /* La courbe d'une feuille qui se pose : vive au départ, arrêt net à
+     l'arrivée. Elle n'a pas de rebond, parce que le papier n'en a pas. */
+  --ease-pose: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Jetons sémantiques : les composants ne citent jamais une couleur brute. */
+:root {
+  --surface: #fffdf8;
+  --surface-muted: #f4efe4;
+  --surface-raised: #fffdf8;
+  --border-subtle: #e6ddcb;
+  --border-fort: #d4c7ae;
+  --text-strong: #1a1713;
+  --text-muted: #6b6355;
+  --accent: var(--color-brand-500);
+  --accent-contrast: #fffdf8;
+  /* La force du grain : perceptible sur le papier, presque nulle sur l'encre. */
+  --grain: 0.045;
+}
+
+/* La nuit n'est pas le jour inversé : c'est une autre encre sur un autre
+   papier. Un gris bleuté ferait écran d'ordinateur ; ce brun très sombre
+   garde la chaleur du carnet. */
+.dark {
+  --surface: #1c1915;
+  --surface-muted: #131110;
+  --surface-raised: #242019;
+  --border-subtle: #352f26;
+  --border-fort: #4a4234;
+  --text-strong: #f4efe4;
+  --text-muted: #a79c8a;
+  --accent: var(--color-brand-300);
+  --accent-contrast: #131110;
+  --grain: 0.03;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--surface-muted);
+    color: var(--text-strong);
+    font-family: var(--font-sans);
+    /* Un papier n'est jamais parfaitement lisse. Ce grain est à peine
+       perceptible — on ne le voit pas, on le sent : il enlève à l'écran son
+       aspect de surface parfaite, qui est exactement ce qui fait « gabarit ».
+       Il est peint par-dessus tout, sans jamais intercepter un clic. */
+    position: relative;
+    /* Encoches et barres système : l'app est plein écran une fois installée. */
+    padding-top: env(safe-area-inset-top);
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: var(--grain);
+    /* Bruit fractal généré par le navigateur : aucun fichier à télécharger. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+  }
+
+  /* Les titres parlent avec l'autre voix. Le crénage se resserre à mesure que
+     le corps grandit : une romane composée large à 32 px paraît molle. */
+  h1 {
+    font-family: var(--font-display);
+    letter-spacing: -0.022em;
+    font-weight: 600;
+  }
+
+  /* Les chiffres d'une interface se lisent en colonne — un prix, une durée, un
+     décompte. En chasse fixe, ils cessent de danser d'une ligne à l'autre. */
+  .chiffres,
+  time,
+  [class*='tabular'] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+
+  /* Un focus visible et net : la navigation au clavier n'est pas une option. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Le français au milieu d'une page arabe.
+  
+     La traduction est partielle et le restera un moment : sur une page en
+     arabe, des paragraphes français cohabitent avec des paragraphes arabes.
+     Sans rien faire, l'algorithme bidirectionnel applique le sens du conteneur
+     à la ponctuation de fin, et « risqué pour un vrai voyage. » s'affiche
+     « .risqué pour un vrai voyage » — le point passe devant. C'est visible sur
+     chaque phrase non traduite, et ça donne l'impression d'un texte cassé.
+  
+     `plaintext` fait adopter à chaque bloc le sens de son premier caractère
+     fort : la phrase française redevient française, la phrase arabe reste
+     arabe, et personne n'a rien à étiqueter à la main. La règle ne s'applique
+     qu'en lecture de droite à gauche — en français elle ne changerait rien,
+     et une règle qui ne sert à rien finit par gêner. */
+  [dir='rtl'] :where(p, h1, h2, h3, h4, h5, h6, li, dd, dt, figcaption, blockquote, div, label) {
+    /* `plaintext` ne touche qu'à la résolution bidirectionnelle du contenu
+       en ligne, jamais à la boîte : on peut l'appliquer largement, y compris
+       aux `div`, sans déranger une seule mise en page. Il fallait bien, parce
+       qu'un texte n'est pas toujours dans un `p` — celui d'un bandeau, par
+       exemple, est dans un `div`, et il gardait son point à l'envers. */
+    unicode-bidi: plaintext;
+  }
+  [dir='rtl'] :where(p, h1, h2, h3, h4, h5, h6, li, dd, dt, figcaption, blockquote) {
+    /* L'alignement, lui, change la boîte : on le garde aux seuls blocs de
+       texte, là où « start » veut dire quelque chose. */
+    text-align: start;
+  }
+
+  /* Respect strict de la préférence système : pas d'animation imposée. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* La voix des titres, posable à la main là où ce n'est pas un `h1`. */
+  .titre {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.022em;
+  }
+
+  /* Le nom d'une ville, d'un pays : plus grand, plus serré, et une nuance de
+     WONK assumée — c'est là que la police a le droit d'être remarquée. */
+  .titre-lieu {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+  }
+
+  /* L'étiquette d'une rubrique : petites capitales espacées, comme la
+     mention imprimée en tête d'une page de carnet. Elle ne crie pas, elle
+     range. */
+  .etiquette {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Un filet, pas une ombre. C'est ce que fait un imprimeur pour séparer deux
+     blocs, et ça tient sur un écran de téléphone là où une ombre s'empâte. */
+  .filet {
+    border-color: var(--border-subtle);
+  }
+
+  /* L'étiquette suivie de son trait, qui court jusqu'au bord. */
+  .etiquette-filet {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .etiquette-filet::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
+  }
+
+  .surface {
+    background-color: var(--surface);
+  }
+  .surface-raised {
+    background-color: var(--surface-raised);
+  }
+  .text-muted {
+    color: var(--text-muted);
+  }
+  .border-subtle {
+    border-color: var(--border-subtle);
+  }
+  /* Zone atteignable au pouce : les actions principales vivent en bas. */
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  }
+  .animate-rise {
+    animation: rise 0.32s var(--ease-pose) both;
+  }
+
+  /* Une liste qui apparaît d'un bloc se lit comme un mur. Décalées de quelques
+     centièmes, les cartes se lisent dans l'ordre où elles comptent. Au-delà de
+     la huitième le retard cesse de croître : personne n'attend une seconde
+     pour voir le bas d'un écran. */
+  .animate-cascade > * {
+    animation: rise 0.36s var(--ease-pose) both;
+  }
+  .animate-cascade > *:nth-child(1) { animation-delay: 0ms; }
+  .animate-cascade > *:nth-child(2) { animation-delay: 45ms; }
+  .animate-cascade > *:nth-child(3) { animation-delay: 90ms; }
+  .animate-cascade > *:nth-child(4) { animation-delay: 130ms; }
+  .animate-cascade > *:nth-child(5) { animation-delay: 165ms; }
+  .animate-cascade > *:nth-child(6) { animation-delay: 195ms; }
+  .animate-cascade > *:nth-child(7) { animation-delay: 220ms; }
+  .animate-cascade > *:nth-child(n + 8) { animation-delay: 240ms; }
+
+  /* L'écran d'arrivée d'une navigation.
+  
+     C'était un fondu court, et un fondu ne pèse rien : l'écran ne venait de
+     nulle part, il apparaissait. Ce qu'on veut, c'est **une feuille qu'on pose
+     sur la pile** — et une feuille qui se pose fait trois choses.
+  
+     Elle descend et s'arrête net : d'où `--ease-pose`, vive au départ, sans
+     rebond à l'arrivée. Une courbe qui rebondit dit « ressort », pas « papier ».
+  
+     Elle ne tombe jamais parfaitement droite : un quart de degré de travers
+     au départ, redressé à l'arrivée. C'est sous le seuil de ce qu'on remarque,
+     et c'est exactement pour ça que ça marche — on ne voit pas la rotation, on
+     sent que ce n'est pas une image qui s'allume.
+  
+     Elle porte une ombre au moment du contact, qui disparaît quand la feuille
+     touche. C'est la seule ombre de toute l'interface, et elle ne dure que le
+     temps du geste. */
+  .animate-page {
+    animation: pose 0.34s var(--ease-pose) both;
+    transform-origin: 50% 0;
+  }
+
+  /* Un indicateur qui n'apparaît qu'au-delà d'un quart de seconde. En
+     dessous, l'œil ne perçoit pas l'attente — mais il perçoit très bien un
+     indicateur qui s'allume et s'éteint aussitôt. */
+  .apparition-tardive {
+    animation: apparaitre 0.2s ease-out 0.25s both;
+  }
+
+  /* Le squelette d'un contenu qui arrive : une onde lente, pas un clignotement.
+     Un clignotement attire l'œil sur ce qui n'est pas encore là. */
+  .squelette {
+    background: linear-gradient(
+      100deg,
+      var(--surface-muted) 30%,
+      color-mix(in oklab, var(--surface-muted) 55%, var(--color-paper-50)) 50%,
+      var(--surface-muted) 70%
+    );
+    background-size: 220% 100%;
+    animation: onde 1.6s ease-in-out infinite;
+  }
+
+  /* Un appui qui s'enfonce : le retour le moins coûteux et le plus universel.
+     Appliqué au conteneur, il évite d'ajouter `active:scale` partout.
+  
+     Le retour à la taille normale est plus lent que l'enfoncement — 0,16 s
+     contre 0,08 s. C'est ce que fait la matière : elle cède vite sous le
+     doigt et se relâche doucement. À durée égale dans les deux sens, l'appui
+     a le comportement d'un bouton de logiciel ; asymétrique, il a celui d'une
+     chose qu'on touche. */
+  .pressable {
+    transition: transform 0.16s var(--ease-pose);
+  }
+  .pressable:active {
+    transform: scale(0.975);
+    transition-duration: 0.08s;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    /* Vers le bas, pas vers le haut. Une carte qui monte flotte ; une carte
+       qui descend se pose sur la page. Le mouvement est court — huit pixels —
+       parce qu'une feuille qu'on lâche ne tombe pas de haut. */
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pose {
+  from {
+    opacity: 0;
+    transform: translateY(14px) rotate(-0.25deg);
+    box-shadow: 0 14px 28px -18px rgb(26 23 19 / 0.5);
+  }
+  /* Le contact : la feuille est arrivée, l'ombre est à son maximum juste
+     avant de s'écraser. C'est ce palier qui donne la sensation du poids —
+     sans lui, l'ombre se dissout pendant la chute et on ne la voit pas. */
+  70% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+    box-shadow: 0 6px 14px -10px rgb(26 23 19 / 0.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 0 rgb(26 23 19 / 0);
+  }
+}
+
+@keyframes apparaitre {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes onde {
+  from {
+    background-position: 180% 0;
+  }
+  to {
+    background-position: -80% 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   L'impression, et donc le PDF.
+   
+   Le PDF de Tripora est fabriqué par le navigateur : « Enregistrer au format
+   PDF » depuis la boîte d'impression donne du vrai texte, sélectionnable et
+   recherchable, sans qu'on télécharge une bibliothèque de plusieurs centaines
+   de kilo-octets pour un résultat moins bon.
+   
+   Reste à ce que la page ressemble à un document. Trois choses suffisent :
+   du noir sur du blanc quel que soit le thème choisi, rien de fixe qui vienne
+   se répéter sur chaque feuille, et des blocs qui ne se coupent pas au milieu
+   d'une journée d'itinéraire.
+   --------------------------------------------------------------------------- */
+@media print {
+  :root,
+  .dark {
+    --surface: #ffffff;
+    --surface-muted: #ffffff;
+    --surface-raised: #ffffff;
+    --border-subtle: #cbd3e0;
+    --text-strong: #000000;
+    --text-muted: #444c5c;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    /* L'encre d'une marge de téléphone n'a aucun sens sur une feuille A4. */
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* La barre de navigation, les bandeaux hors ligne, les boutons : tout ce qui
+     s'appuie sur un clic disparaît. Sans ça, la nav se réimprime en travers
+     de chaque page. */
+  nav,
+  [data-impression='masquer'] {
+    display: none !important;
+  }
+
+  /* Le grain du papier n'a rien à faire sur du vrai papier : c'est un calque
+     fixe, que plusieurs navigateurs réimpriment sur chaque feuille — un voile
+     moucheté par-dessus l'itinéraire, et de l'encre dépensée pour du bruit.
+     L'écran imite une matière que la feuille possède déjà. */
+  body::after {
+    display: none !important;
+  }
+
+  main {
+    padding-bottom: 0 !important;
+  }
+
+  /* Aucune animation à l'impression : elles se figent au hasard de leur
+     progression et laissent des blocs à moitié transparents. */
+  .animate-rise,
+  .animate-cascade > *,
+  .animate-page {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Les liens gardent leur sens : on imprime l'adresse à côté du texte, sauf
+     pour les ancres internes qui ne mènent nulle part sur papier.
+     
+     Et sauf les liens commerciaux : leur adresse contient un identifiant de
+     parrainage, souvent construit sur un nom propre. L'imprimer reviendrait à
+     étaler ce nom sur chaque copie papier du voyage — exactement ce que le
+     passage par /go/… sert à éviter. */
+  a[href^='http']:not([rel~='sponsored'])::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.75em;
+    word-break: break-all;
+    color: #444c5c;
+  }
+
+  /* Une journée d'itinéraire, une rubrique de valise : ça se lit d'un bloc. */
+  section,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 14mm;
+  }
+}
+
+/* Découvrir : la photo bouge lentement, comme une vidéo courte qui ne coûte
+   rien. Un zoom et un glissement de quelques pour cent, aller et retour ; le
+   sens change d'une carte à l'autre (variables posées par la carte). La
+   préférence « moins de mouvement » l'arrête, comme toute animation. */
+@keyframes plan-de-camera {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.18) translate3d(var(--camera-x, -3%), var(--camera-y, -2%), 0);
+  }
+}
+
+@layer utilities {
+  .plan-de-camera {
+    animation: plan-de-camera 14s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+}
+
+@keyframes coeur-qui-jaillit {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  100% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@layer utilities {
+  .coeur-qui-jaillit {
+    animation: coeur-qui-jaillit 380ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+}

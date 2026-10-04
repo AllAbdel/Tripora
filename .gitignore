@@ -1,0 +1,59 @@
+# Memory bank locale (non versionnée, sur demande explicite)
+memory-bank/
+
+# Dépendances
+node_modules/
+.pnpm-store/
+
+# Builds. Le motif attrape aussi les sorties jetables — `dist-verif`,
+# `dist-essai` — qu'on fabrique pour vérifier une refonte et qu'on oublie
+# d'effacer ensuite : une seule d'entre elles ajoute deux cents fichiers à
+# l'index au premier `git add -A`.
+dist/
+dist-*/
+# Build « mode local » : la même application construite sans serveur, pour
+# exercer au navigateur le chemin hors ligne (voyages, dépenses et votes gardés
+# sur l'appareil) sans toucher à la vraie base.
+#   VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= vite build --outDir dist-local
+dist-local/
+# Build avec cartes de source, pour savoir ce qui pèse dans quel morceau.
+dist-map/
+# Build servi aux tests de bout en bout, reconstruit à chaque lancement.
+dist-e2e/
+# Traces et captures des tests de bout en bout qui ont échoué.
+test-results/
+playwright-report/
+build/
+.output/
+*.tsbuildinfo
+
+# Environnement / secrets — ne JAMAIS committer
+# Exception assumée : apps/web/.env ne contient que l'URL et la clé « anon »
+# du projet, publiques par conception puisqu'elles partent dans le bundle du
+# navigateur. Les versionner évite toute configuration sur l'hébergeur.
+# Tout ce qui est réellement secret reste dans les secrets Supabase.
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Outils
+.vite/
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*

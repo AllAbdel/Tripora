@@ -1,0 +1,5 @@
+sortie/
+node_modules/
+# Les enregistrements de voix restent sur votre machine.
+voix/*/
+__pycache__/
