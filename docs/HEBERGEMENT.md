@@ -46,10 +46,14 @@ La liste exacte des adresses d'un déploiement se lit dans son champ `alias` —
 la deviner mène à tester une adresse qui appartient à quelqu'un d'autre et à
 conclure n'importe quoi.
 
-**La branche de production doit être `claude/tripora-travel-planning-app-r3pv5t`**
-(Settings → Git). Vercel propose `main` par défaut, et `main` ne contient qu'un
-README : laissé tel quel, `tripora-allabdels-projects.vercel.app` sert une page vide pendant que
-la branche réelle n'est qu'une préversion à l'adresse longue.
+**La branche de production est `claude/tripora-travel-planning-app-r3pv5t`**
+(Settings → Git). C'est là que le travail arrive en premier, vérifié par
+l'intégration continue à chaque envoi ; `main`, la branche par défaut, le
+reçoit ensuite par pull request. Mettre la production sur `main` reste
+possible : le site ne changerait plus à chaque envoi, seulement à chaque
+fusion. Vercel propose `main` d'office — c'est sans risque depuis que `main`
+contient l'application, mais avant la première fusion il n'y avait qu'un
+README, et `tripora-allabdels-projects.vercel.app` servait une page vide.
 
 La version de Node vient de `engines.node` dans le `package.json` de la racine,
 épinglée sur `22.x` — la même que l'intégration continue et que le poste de

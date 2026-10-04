@@ -4,9 +4,12 @@ name: Réveil Supabase
 # requête en base. Une vraie lecture tous les 3 jours suffit à l'en empêcher,
 # et coûte quelques secondes de temps d'exécution GitHub par mois.
 #
-# Secrets à définir dans le dépôt (Settings → Secrets → Actions) :
-#   SUPABASE_URL       — https://xxxx.supabase.co
-#   SUPABASE_ANON_KEY  — clé publique « anon » du projet
+# Une tâche planifiée ne tourne que depuis la branche par défaut (`main`).
+#
+# L'adresse et la clé « anon » sont publiques : elles viennent de
+# `apps/web/.env`, comme pour l'application. Les secrets SUPABASE_URL et
+# SUPABASE_ANON_KEY (Settings → Secrets → Actions), s'ils existent, prennent
+# le dessus — pour réveiller un autre projet que celui de l'application.
 
 on:
   schedule:
@@ -18,13 +21,21 @@ jobs:
     name: Lecture d'entretien
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: apps/web/.env
+          sparse-checkout-cone-mode: false
+
       - name: Interroger la base
         env:
           URL: ${{ secrets.SUPABASE_URL }}
           KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          lire() { sed -n "s/^$1=//p" apps/web/.env | tr -d '\r'; }
+          URL=${URL:-$(lire VITE_SUPABASE_URL)}
+          KEY=${KEY:-$(lire VITE_SUPABASE_ANON_KEY)}
           if [ -z "$URL" ] || [ -z "$KEY" ]; then
-            echo "Secrets absents : rien à réveiller pour l'instant."
+            echo "Ni secrets ni apps/web/.env : rien à réveiller pour l'instant."
             exit 0
           fi
           # Une requête qui touche réellement Postgres, pas seulement l'API.

@@ -156,8 +156,8 @@ Ces clés ne doivent **jamais** aller dans `apps/web` : tout ce qui commence par
 
 ### 4. Cloudflare Pages
 
-Le code vit sur la branche `claude/tripora-travel-planning-app-r3pv5t`.
-Dans **Workers & Pages → votre projet → Settings → Build** :
+Le travail arrive sur la branche `claude/tripora-travel-planning-app-r3pv5t`,
+puis rejoint `main` par pull request. Dans **Workers & Pages → votre projet → Settings → Build** :
 
 - *Production branch* : `claude/tripora-travel-planning-app-r3pv5t`
 - *Build command* : `pnpm install && pnpm --filter @tripora/web build`
