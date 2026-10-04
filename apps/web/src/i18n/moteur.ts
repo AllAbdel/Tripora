@@ -18,6 +18,12 @@ export interface Dictionnaire {
 export interface ModuleDeDictionnaire {
   PHRASES: Readonly<Record<string, string>>;
   MOTIFS: readonly Motif[];
+  /**
+   * Le carnet d'activités dans la langue, s'il est traduit : chargé à part,
+   * après l'interface, parce qu'il pèse plus lourd qu'elle et ne sert qu'une
+   * fois un voyage ouvert. Ses phrases complètent `PHRASES` sans la remplacer.
+   */
+  CARNET?: () => Promise<Readonly<Record<string, string>>>;
 }
 
 /** La clé d'une phrase : ses espaces (insécables compris) resserrés. */

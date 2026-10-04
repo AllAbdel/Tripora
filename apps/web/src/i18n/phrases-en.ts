@@ -2379,6 +2379,9 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
 
 export const PHRASES: Readonly<Record<string, string>> = { ...PAYS_EN, ...DESTINATIONS_EN, ...PHRASES_FIXES };
 
+/** Le carnet d'activités, chargé à part, après l'interface (voir `carnet-en.ts`). */
+export const CARNET = () => import('./carnet-en').then((module) => module.phrasesDuCarnet());
+
 const MOIS: Readonly<Record<string, string>> = {
   janvier: 'January', février: 'February', mars: 'March', avril: 'April', mai: 'May', juin: 'June',
   juillet: 'July', août: 'August', septembre: 'September', octobre: 'October', novembre: 'November', décembre: 'December',

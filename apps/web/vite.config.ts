@@ -192,6 +192,9 @@ export default defineConfig(({ mode }) => {
             '**/sw-alertes.js',
             // La lecture des tickets : plusieurs mégaoctets, pour qui scanne.
             '**/ocr/**',
+            // Le carnet d'activités en anglais : plus lourd que toute
+            // l'interface traduite, pour qui lit Tripora en anglais seulement.
+            '**/assets/carnet-en-*',
           ],
           // La page de retour de connexion de l'application mobile ne doit
           // jamais être remplacée par Tripora : le site, voyant un code sans
