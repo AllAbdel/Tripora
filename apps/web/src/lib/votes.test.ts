@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupChoice, preferenceScore, type VoteTally } from './votes';
+import { groupChoice, preferenceScore, resultatsDepuisLaBase, type VoteTally } from './votes';
 
 /**
  * Les dépouillements sont des objets simples et non des `Map` : le cache de
@@ -73,5 +73,26 @@ describe('choix du groupe', () => {
       ['rome', tally({ destinationId: 'rome', likes: 2, favorites: 1, dislikes: 1 })],
     ]);
     expect(groupChoice(votes, classement)?.supporters).toBe(3);
+  });
+});
+
+describe('les totaux lus en base', () => {
+  it('rend les comptes, mon vote et le nombre de votants, sans savoir qui', () => {
+    const resultats = resultatsDepuisLaBase([
+      { subject_id: 'lisbonne', aime: 2, prefere: 1, contre: 0, moi: 'favorite', votants: 4 },
+      { subject_id: 'rome', aime: 0, prefere: 0, contre: 2, moi: null, votants: 4 },
+    ]);
+    expect(resultats.voters).toBe(4);
+    expect(resultats.tallies['lisbonne']).toEqual({ destinationId: 'lisbonne', likes: 2, favorites: 1, dislikes: 0, mine: 'favorite' });
+    expect(resultats.tallies['rome']?.mine).toBeNull();
+  });
+
+  it('ignore une valeur inconnue et les comptes absents', () => {
+    const resultats = resultatsDepuisLaBase([
+      { subject_id: 'oslo', aime: null, prefere: null, contre: 1, moi: 'peut-être', votants: null },
+    ]);
+    expect(resultats.tallies['oslo']).toEqual({ destinationId: 'oslo', likes: 0, favorites: 0, dislikes: 1, mine: null });
+    expect(resultats.voters).toBe(0);
+    expect(resultatsDepuisLaBase([])).toEqual({ tallies: {}, voters: 0 });
   });
 });

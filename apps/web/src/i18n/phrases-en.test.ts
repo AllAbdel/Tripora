@@ -24,6 +24,11 @@ describe('l’anglais composé par les motifs', () => {
     ['Léa doit €45.20 à Tom', 'Léa owes €45.20 to Tom'],
     ['Léa · Oct 3 · partagé à 3', 'Léa · Oct 3 · split 3 ways'],
     ['Lancé par Léa · un seul choix · 3 votants', 'Started by Léa · single choice · 3 voters'],
+    ['Lancé par vous · un seul choix · vote secret · aucun vote', 'Started by you · single choice · secret vote · no votes'],
+    [
+      'Les résultats s’affichent pour tout le groupe, sans les noms. 4 personnes ont voté. Un vote secret clos ne peut plus être rouvert.',
+      'The results will show for the whole group, without names. 4 people have voted. A closed secret vote can’t be reopened.',
+    ],
     ['Femme · 28 ans', 'Woman · 28 years old'],
     ['Bali, Indonésie · 5 jours · octobre · départ de Paris', 'Bali, Indonesia · 5 days · October · leaving from Paris'],
     ['Booking.com · arrivée 2:00 PM → départ Fri, Oct 16 11:00 AM · 3 nuits', 'Booking.com · check-in 2:00 PM → check-out Fri, Oct 16 11:00 AM · 3 nights'],

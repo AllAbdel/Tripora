@@ -511,10 +511,11 @@ begin
   from public.trips where id = 'aaaaaaaa-0000-0000-0000-000000000002';
   assert d = 'barcelone', format('Destination attendue barcelone, obtenue %s', d);
 
-  select count(*) into pour
-  from public.votes
-  where trip_id = 'aaaaaaaa-0000-0000-0000-000000000002'
-    and subject_id = 'barcelone' and value in ('like', 'favorite');
+  -- Les votes sont anonymes : l'organisateur ne lit que le sien, les totaux
+  -- viennent de la fonction (voir votes_secrets_test.sql).
+  select aime + prefere into pour
+  from public.votes_du_voyage('aaaaaaaa-0000-0000-0000-000000000002')
+  where subject_id = 'barcelone';
   assert pour = 2, format('2 voix pour attendues, %s', pour);
 end $$;
 

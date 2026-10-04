@@ -49,8 +49,8 @@ end $$;
 reset role;
 reset request.jwt.claims;
 
--- Thomas ne voit pas les avis d'Abdel, mais les comptes, oui ; et les votes
--- sur la destination restent lisibles par tout le groupe.
+-- Thomas ne voit pas les avis d'Abdel, mais les comptes, oui ; et pas
+-- davantage ses votes sur la destination (votes_secrets_test.sql).
 set role authenticated;
 set request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
 do $$
@@ -65,7 +65,7 @@ begin
   select count(*) into n from public.votes
    where trip_id = 'aaaaaaaa-0000-0000-0000-000000000002' and subject_type = 'proposal'
      and user_id <> '22222222-2222-2222-2222-222222222222';
-  assert n > 0, 'Les votes sur la destination doivent rester lisibles par le groupe';
+  assert n = 0, 'FUITE : Thomas lit les votes des autres sur la destination';
 end $$;
 reset role;
 reset request.jwt.claims;

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import type { TripSummary } from '@/lib/trips';
@@ -42,12 +42,16 @@ export function ConfirmerSuppression({
   );
 }
 
-/** La même boîte, pour tout ce qui s'efface : un voyage, une réservation. */
+/**
+ * La même boîte, pour tout ce qui s'efface ou ne se défait pas : un voyage,
+ * une réservation, la clôture d'un vote secret.
+ */
 export function BoiteDeConfirmation({
   ouverte,
   titre,
   message,
   action = 'Supprimer',
+  actionEnCours = 'Suppression…',
   enCours,
   surAnnuler,
   surConfirmer,
@@ -56,11 +60,15 @@ export function BoiteDeConfirmation({
   titre: string;
   message: string;
   action?: string;
+  /** Le libellé du bouton pendant l'envoi. */
+  actionEnCours?: string;
   enCours: boolean;
   surAnnuler: () => void;
   surConfirmer: () => void;
 }) {
   const boite = useRef<HTMLDialogElement | null>(null);
+  const idTitre = useId();
+  const idMessage = useId();
 
   useEffect(() => {
     const element = boite.current;
@@ -72,6 +80,8 @@ export function BoiteDeConfirmation({
   return (
     <dialog
       ref={boite}
+      aria-labelledby={idTitre}
+      aria-describedby={idMessage}
       onCancel={(evenement) => {
         evenement.preventDefault();
         surAnnuler();
@@ -86,8 +96,12 @@ export function BoiteDeConfirmation({
               <AlertTriangle className="size-5" aria-hidden />
             </span>
             <div className="min-w-0">
-              <h2 className="text-lg font-bold">{titre}</h2>
-              <p className="text-muted mt-1 text-sm">{message}</p>
+              <h2 id={idTitre} className="text-lg font-bold">
+                {titre}
+              </h2>
+              <p id={idMessage} className="text-muted mt-1 text-sm">
+                {message}
+              </p>
             </div>
           </div>
 
@@ -96,7 +110,7 @@ export function BoiteDeConfirmation({
               Annuler
             </Button>
             <Button variant="danger" className="flex-1" onClick={surConfirmer} disabled={enCours}>
-              {enCours ? 'Suppression…' : action}
+              {enCours ? actionEnCours : action}
             </Button>
           </div>
         </div>

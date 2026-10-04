@@ -958,7 +958,7 @@ export function pourLesAssistants(publiees: readonly Destination[], { origine }:
 ## Ce que fait Tripora
 
 - Propositions de destinations chiffrées pour tout le groupe : vol relevé depuis la ville de départ (avec sa date de relevé), budget sur place, climat du mois, et correspondance avec les envies de chacun.
-- Chacun donne ses envies et son budget ; le groupe vote et tranche. Personne ne subit une destination qu'il déteste.
+- Chacun donne ses envies et son budget ; le groupe vote, anonymement, et tranche. Personne ne subit une destination qu'il déteste.
 - Les ponts et les vacances scolaires (zones A, B, C) proposés au moment de choisir les dates.
 - L'empreinte carbone de chaque trajet (avion, train, car, voiture partagée), par personne et aller-retour, d'après les facteurs de l'ADEME.
 - « Découvrir » : les activités défilent comme des cartes ; le groupe voit ce qui plaît, sans savoir qui a dit non.
@@ -967,7 +967,7 @@ export function pourLesAssistants(publiees: readonly Destination[], { origine }:
 - Alertes de prix : suivre le vol d'une proposition ; Tripora relève le prix chaque matin et prévient (notification du navigateur) quand il baisse d'au moins 10 %.
 - Réservations : l'e-mail de confirmation (collé, importé, ou partagé depuis la messagerie) remplit la fiche — hôtel, visite ou trajet rangé à la bonne date pour tout le groupe, lu sur l'appareil.
 - « Partager vers Tripora » : une vidéo TikTok, un Reel, une fiche Google Maps ou un article partagé à l'application devient des épingles sur la carte du groupe (les lieux cités y sont trouvés et situés).
-- Sondages, tâches partagées (« qui fait quoi »), valise à cocher, coffre (codes, wifi, billets, lisibles hors ligne).
+- Sondages (à bulletin secret si besoin : personne ne voit qui a voté quoi), tâches partagées (« qui fait quoi »), valise à cocher, coffre (codes, wifi, billets, lisibles hors ligne).
 - Journal photo partagé : les photos de chacun, rangées par jour du voyage, position GPS effacée avant l'envoi.
 - « Qui doit quoi » : dépenses en toutes devises, remboursements calculés au plus simple, liens de paiement ; un ticket de caisse photographié remplit la dépense (lu sur l'appareil).
 - Trips ouverts : rejoindre un groupe qui part au même endroit, aux conditions de son organisateur (réservé aux majeurs).

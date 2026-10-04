@@ -73,6 +73,11 @@ export function EnTeteDesPropositions({
               par une intelligence artificielle.
             </p>
 
+            <p>
+              Les votes sont anonymes : chacun voit les totaux, personne ne voit qui a voté quoi,
+              pas même l’organisateur.
+            </p>
+
             {incomplet && (
               <p>
                 Seules les envies de {membresPresents} personne{membresPresents > 1 ? 's' : ''}{' '}

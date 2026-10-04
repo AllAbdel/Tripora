@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import {
   libelleDeLOption,
+  type DecompteSecret,
   type GenreDeSondage,
   type NouvelleOption,
   type OptionDeSondage,
@@ -16,12 +17,17 @@ import { supabase } from './supabase';
  * sondage clos, rien au nom d'un autre) sont en base et testées dans
  * `supabase/tests/sondages_test.sql`. Sans serveur, ils vivent dans ce
  * navigateur, avec « moi » pour seul votant.
+ *
+ * Un sondage secret ne laisse lire que ses propres bulletins : le reste vient
+ * de `decompte_des_sondages_secrets`, qui ne rend que des nombres, et les
+ * voix seulement une fois le sondage clos (`votes_secrets_test.sql`).
  */
 
 export interface NouveauSondage {
   question: string;
   genre: GenreDeSondage;
   choixMultiple: boolean;
+  secret: boolean;
   options: NouvelleOption[];
 }
 
@@ -56,6 +62,7 @@ interface LigneSondage {
   genre: string;
   choix_multiple: boolean;
   clos: boolean;
+  secret?: boolean | null;
   cree_par: string | null;
   cree_le: string;
   sondage_options: LigneOption[] | null;
@@ -70,6 +77,7 @@ export function depuisLaBase(ligne: LigneSondage): Sondage {
     genre: (GENRES as readonly string[]).includes(ligne.genre) ? (ligne.genre as GenreDeSondage) : 'texte',
     choixMultiple: ligne.choix_multiple,
     clos: ligne.clos,
+    secret: ligne.secret === true,
     creePar: ligne.cree_par,
     creeLe: ligne.cree_le,
     options: (ligne.sondage_options ?? []).map(
@@ -85,6 +93,25 @@ export function depuisLaBase(ligne: LigneSondage): Sondage {
     ),
     votes: (ligne.sondage_votes ?? []).map((vote) => ({ optionId: vote.option_id, userId: vote.user_id })),
   };
+}
+
+/** Une ligne de `decompte_des_sondages_secrets`. */
+interface LigneDeDecompte {
+  sondage_id: string;
+  option_id: string;
+  voix: number | null;
+  votants: number;
+}
+
+/** Les décomptes des sondages secrets, par sondage. */
+export function decomptesDepuisLaBase(lignes: readonly LigneDeDecompte[]): Map<string, DecompteSecret> {
+  const decomptes = new Map<string, DecompteSecret>();
+  for (const ligne of lignes) {
+    const decompte = decomptes.get(ligne.sondage_id) ?? { votants: ligne.votants, voix: null };
+    if (typeof ligne.voix === 'number') decompte.voix = { ...decompte.voix, [ligne.option_id]: ligne.voix };
+    decomptes.set(ligne.sondage_id, decompte);
+  }
+  return decomptes;
 }
 
 /** Ce qu'on envoie d'une option : le libellé déduit s'il manque, rien de vide. */
@@ -120,7 +147,17 @@ export function getSondages(): SondagesApi {
         .eq('trip_id', tripId)
         .order('cree_le', { ascending: false });
       if (error) throw error;
-      return (data as LigneSondage[]).map(depuisLaBase);
+      const sondages = (data as LigneSondage[]).map(depuisLaBase);
+      if (!sondages.some((sondage) => sondage.secret)) return sondages;
+
+      const { data: lignes, error: erreurDecompte } = await client.rpc('decompte_des_sondages_secrets', {
+        p_trip_id: tripId,
+      });
+      if (erreurDecompte) throw erreurDecompte;
+      const decomptes = decomptesDepuisLaBase((lignes ?? []) as LigneDeDecompte[]);
+      return sondages.map((sondage) =>
+        sondage.secret ? { ...sondage, decompte: decomptes.get(sondage.id) ?? { votants: 0, voix: null } } : sondage,
+      );
     },
 
     async creer(tripId, sondage) {
@@ -131,6 +168,7 @@ export function getSondages(): SondagesApi {
           question: sondage.question.trim(),
           genre: sondage.genre,
           choix_multiple: sondage.choixMultiple,
+          secret: sondage.secret,
         })
         .select('id')
         .single();
@@ -188,12 +226,13 @@ export function getSondages(): SondagesApi {
     },
 
     ecouter(tripId, surChangement) {
+      // Les votes ne sont pas diffusés eux-mêmes : chacun touche la ligne de
+      // son sondage (`derniere_voix`), et c'est elle qu'on écoute.
       const filtre = `trip_id=eq.${tripId}`;
       const canal = client
         .channel(`sondages:${tripId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'sondages', filter: filtre }, surChangement)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'sondage_options', filter: filtre }, surChangement)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'sondage_votes', filter: filtre }, surChangement)
         .subscribe();
       return () => {
         void client.removeChannel(canal);
@@ -258,6 +297,7 @@ const sondagesLocaux: SondagesApi = {
       question: nouveau.question.trim(),
       genre: nouveau.genre,
       choixMultiple: nouveau.choixMultiple,
+      secret: nouveau.secret,
       clos: false,
       creePar: MOI,
       creeLe: new Date().toISOString(),
@@ -309,7 +349,8 @@ const sondagesLocaux: SondagesApi = {
     }));
   },
   async clore(sondageId, clos) {
-    modifier(sondageId, (sondage) => ({ ...sondage, clos }));
+    // Comme en base : un vote secret clos ne se rouvre pas.
+    modifier(sondageId, (sondage) => (sondage.secret && sondage.clos && !clos ? sondage : { ...sondage, clos }));
   },
   async supprimer(sondageId) {
     ecrireLocal(lireLocal().filter((sondage) => sondage.id !== sondageId));
