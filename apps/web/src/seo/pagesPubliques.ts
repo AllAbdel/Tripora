@@ -629,9 +629,17 @@ export function planDuSite(publiees: readonly Destination[], { origine, aujourdh
     ...MOIS.map((_, index) => cheminDuMois(index + 1)),
     ...publiees.map((destination) => cheminDeLaDestination(destination.id)),
   ];
+  // L'accueil existe aussi en anglais, à sa propre adresse : chaque version
+  // nomme toutes les autres, elle comprise, comme Google le demande.
+  const versions = `
+    <xhtml:link rel="alternate" hreflang="fr" href="${esc(origine)}/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="${esc(origine)}/?langue=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="${esc(origine)}/"/>
+  `;
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>${esc(origine)}/</loc><lastmod>${aujourdhui}</lastmod></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url><loc>${esc(origine)}/</loc><lastmod>${aujourdhui}</lastmod>${versions}</url>
+  <url><loc>${esc(origine)}/?langue=en</loc><lastmod>${aujourdhui}</lastmod>${versions}</url>
 ${adresses.map((chemin) => `  <url><loc>${esc(origine + chemin)}</loc><lastmod>${aujourdhui}</lastmod></url>`).join('\n')}
 </urlset>
 `;
@@ -645,6 +653,7 @@ ${adresses.map((chemin) => `  <url><loc>${esc(origine + chemin)}</loc><lastmod>$
 export function robots({ origine }: Contexte): string {
   return `User-agent: *
 Allow: /$
+Allow: /?langue=
 Allow: /destinations
 Allow: /ou-partir-en/
 Allow: /confidentialite

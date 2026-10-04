@@ -1,7 +1,7 @@
 import { Check, Languages } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
-import { LANGUES, langueDuSysteme } from '@/i18n/langues';
-import { useLangue, type PreferenceDeLangue } from '@/stores/langue';
+import { LANGUES } from '@/i18n/langues';
+import { resoudre, useLangue, type PreferenceDeLangue } from '@/stores/langue';
 import { useT } from '@/i18n/useT';
 import { cn } from '@/lib/cn';
 
@@ -21,9 +21,7 @@ export function ChoixDeLangue() {
   const setPreference = useLangue((etat) => etat.setPreference);
   const t = useT();
 
-  const auto = langueDuSysteme(
-    typeof navigator === 'undefined' ? [] : [...(navigator.languages ?? [])],
-  );
+  const auto = resoudre('systeme');
   const nomAuto = LANGUES.find((fiche) => fiche.code === auto)?.nom ?? auto;
 
   const choisir = (valeur: PreferenceDeLangue) => setPreference(valeur);

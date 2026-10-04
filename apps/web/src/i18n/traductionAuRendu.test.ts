@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { useLangue } from '@/stores/langue';
 import {
@@ -87,8 +89,15 @@ describe('traduireTexte', () => {
 describe('la traduction au rendu', () => {
   it('traduit le texte rendu, suit les réécritures, respecte translate="no", et revient au français', async () => {
     useLangue.setState({ preference: 'en' });
+    // La description de index.html, telle quelle : les moteurs l'affichent sous le titre.
+    const description = /<meta name="description" content="([^"]+)"/u.exec(
+      readFileSync(join(process.cwd(), 'index.html'), 'utf8'),
+    )![1]!;
+    document.head.innerHTML = `<meta name="description" content="${description}">`;
     document.body.innerHTML = '<main><h1>Où on en est</h1><button aria-label="Retour au voyage">←</button><p translate="no">Continuer</p></main>';
     demarrerLaTraductionAuRendu();
+    const meta = document.querySelector('meta[name="description"]')!;
+    expect(meta.getAttribute('content')).toMatch(/^Plan a trip with friends without fifteen group chats/u);
     const titre = document.querySelector('h1')!;
     expect(titre.textContent).toBe('Where we’re at');
     expect(document.querySelector('button')!.getAttribute('aria-label')).toBe('Back to the trip');
@@ -124,5 +133,6 @@ describe('la traduction au rendu', () => {
     expect(morceaux.textContent).toBe('1 idée à Bali, classées selon les envies du groupe');
     expect(ajout.textContent).toBe('Voter');
     expect(document.querySelector('button')!.getAttribute('aria-label')).toBe('Retour au voyage');
+    expect(meta.getAttribute('content')).toBe(description);
   });
 });

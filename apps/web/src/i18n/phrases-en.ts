@@ -365,6 +365,8 @@ const DESTINATIONS_EN: Readonly<Record<string, string>> = Object.fromEntries(
 const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "Brouillon": "Draft",
   "Tripora — organisez un voyage entre amis": "Tripora — plan a trip with friends",
+  "Organisez un voyage entre amis sans quinze conversations : les envies et le budget de chacun, le vote du groupe, les vrais prix des vols, l’itinéraire jour par jour, la carte et les dépenses partagées. Gratuit.":
+    "Plan a trip with friends without fifteen group chats: everyone’s wishes and budget, the group vote, real flight prices, a day-by-day itinerary, the map and shared expenses. Free.",
   "Navigation principale": "Main navigation",
   "Bonjour Inès": "Hi Inès",
   "Ces voyages ne vivent que sur cet appareil": "These trips live only on this device",
