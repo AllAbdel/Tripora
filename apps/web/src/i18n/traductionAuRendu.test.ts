@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { useLangue } from '@/stores/langue';
 import {
+  chargerLeCarnet,
   chargerLeDictionnaire,
   demarrerLaTraductionAuRendu,
   traduireDansLaLangueActive,
@@ -63,6 +64,15 @@ describe('traduireTexte', () => {
     expect(traduireTexte('en', '10 Paires de chaussettes')).toBe('10 Pairs of socks');
     expect(traduireTexte('en', 'Danemark · AAR')).toBe('Denmark · AAR');
     expect(traduireTexte('en', 'Drapeau : Indonésie')).toBe('Flag: Indonesia');
+  });
+
+  it('ajoute le carnet d’activités après l’interface, sans en changer les traductions', async () => {
+    expect(traduireTexte('en', 'Borobudur au lever du jour')).toBeNull();
+    expect(await chargerLeCarnet('en')).toBe(true);
+    expect(traduireTexte('en', 'Borobudur au lever du jour')).toBe('Borobudur at daybreak');
+    // Bali était traduit avec l'interface : sa traduction d'origine reste.
+    expect(traduireTexte('en', 'Lever de soleil au sommet du mont Batur')).toBe('Sunrise on the summit of Mount Batur');
+    expect(await chargerLeCarnet('es')).toBe(false);
   });
 
   it('traduit à la demande ce qui n’est pas du texte de la page, dans la langue active', () => {

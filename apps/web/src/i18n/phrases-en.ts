@@ -590,6 +590,10 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "À la journée": "Full day",
   "L’après-midi": "Afternoon",
   "Monument": "Monument",
+  "Musée": "Museum",
+  "Œuvre": "Artwork",
+  "Marché": "Market",
+  "Boutique": "Shop",
   "Découvrir en glissant": "Discover by swiping",
   "Parc": "Park",
   "La forêt des singes d’Ubud": "The Ubud Monkey Forest",
@@ -2378,6 +2382,9 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
 };
 
 export const PHRASES: Readonly<Record<string, string>> = { ...PAYS_EN, ...DESTINATIONS_EN, ...PHRASES_FIXES };
+
+/** Le carnet d'activités, chargé à part, après l'interface (voir `carnet-en.ts`). */
+export const CARNET = () => import('./carnet-en').then((module) => module.phrasesDuCarnet());
 
 const MOIS: Readonly<Record<string, string>> = {
   janvier: 'January', février: 'February', mars: 'March', avril: 'April', mai: 'May', juin: 'June',

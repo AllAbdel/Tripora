@@ -45,13 +45,12 @@ export type { ModuleDeDictionnaire, Motif } from './moteur';
 
 /** Chaque `phrases-<code>.ts` du dossier, chargé à la demande quand sa langue devient active. */
 const MODULES = import.meta.glob<ModuleDeDictionnaire>(['./phrases-*.ts', '!./phrases-*.test.ts']);
-const CHARGEURS: Partial<Record<string, () => Promise<Dictionnaire>>> = Object.fromEntries(
-  Object.entries(MODULES).map(([chemin, charger]) => [
-    /phrases-([a-z]{2,3})\.ts$/u.exec(chemin)?.[1] ?? chemin,
-    () => charger().then((module) => ({ phrases: module.PHRASES, motifs: module.MOTIFS })),
-  ]),
+const CHARGEURS: Partial<Record<string, () => Promise<ModuleDeDictionnaire>>> = Object.fromEntries(
+  Object.entries(MODULES).map(([chemin, charger]) => [/phrases-([a-z]{2,3})\.ts$/u.exec(chemin)?.[1] ?? chemin, charger]),
 );
 const DICTIONNAIRES: Partial<Record<Langue, Dictionnaire>> = {};
+const CHARGEURS_DE_CARNET: Partial<Record<Langue, NonNullable<ModuleDeDictionnaire['CARNET']>>> = {};
+const CARNETS: Partial<Record<Langue, Promise<boolean>>> = {};
 
 /** Les langues qui ont un dictionnaire de traduction au rendu (le français n'en a pas besoin). */
 export const LANGUES_TRADUITES = Object.keys(CHARGEURS).sort();
@@ -61,8 +60,33 @@ export async function chargerLeDictionnaire(langue: Langue): Promise<boolean> {
   if (DICTIONNAIRES[langue]) return true;
   const chargeur = CHARGEURS[langue];
   if (!chargeur) return false;
-  DICTIONNAIRES[langue] = await chargeur();
+  const module = await chargeur();
+  DICTIONNAIRES[langue] = { phrases: module.PHRASES, motifs: module.MOTIFS };
+  if (module.CARNET) CHARGEURS_DE_CARNET[langue] = module.CARNET;
   return true;
+}
+
+/**
+ * Le carnet d'activités d'une langue, ajouté au dictionnaire après
+ * l'interface ; vrai s'il vient d'être (ou était déjà) ajouté. Hors ligne et
+ * sans le fichier en cache, faux : on réessaiera au prochain changement.
+ */
+export function chargerLeCarnet(langue: Langue): Promise<boolean> {
+  CARNETS[langue] ??= chargerLeDictionnaire(langue)
+    .then(async (charge) => {
+      const charger = CHARGEURS_DE_CARNET[langue];
+      if (!charge || !charger) return false;
+      const carnet = await charger();
+      const dictionnaire = DICTIONNAIRES[langue]!;
+      // Ce que l'interface traduit déjà garde sa traduction.
+      DICTIONNAIRES[langue] = { ...dictionnaire, phrases: { ...carnet, ...dictionnaire.phrases } };
+      return true;
+    })
+    .catch(() => {
+      delete CARNETS[langue];
+      return false;
+    });
+  return CARNETS[langue];
 }
 
 const ATTRIBUTS = ['placeholder', 'aria-label', 'title', 'alt'] as const;
@@ -235,14 +259,20 @@ function appliquer(nouvelle: Langue) {
   if (nouvelle === langue) return;
   restaurer();
   langue = nouvelle;
+  // La langue a pu changer pendant un chargement : on ne parcourt que pour elle.
+  const reparcourir = (ajoute: boolean) => {
+    if (ajoute && langue === nouvelle) parcourir(document.documentElement);
+  };
+  const carnet = () => void chargerLeCarnet(nouvelle).then(reparcourir);
   if (DICTIONNAIRES[langue]) {
     parcourir(document.documentElement);
+    carnet();
     return;
   }
   chargerLeDictionnaire(nouvelle)
     .then((charge) => {
-      // La langue a pu changer pendant le chargement.
-      if (charge && langue === nouvelle) parcourir(document.documentElement);
+      reparcourir(charge);
+      if (charge) carnet();
     })
     // Hors ligne sans le fichier en cache : l'écran reste en français.
     .catch(() => {});

@@ -64,7 +64,9 @@ async function chargerLeDictionnaire(): Promise<Dictionnaire | null> {
   const chemin = resolve(ICI, `../src/i18n/phrases-${LANGUE}.ts`);
   if (!existsSync(chemin)) return null;
   const module = (await import(chemin)) as ModuleDeDictionnaire;
-  return { phrases: module.PHRASES, motifs: module.MOTIFS };
+  // Le carnet compte comme traduit : l'application le charge juste après l'interface.
+  const carnet = module.CARNET ? await module.CARNET() : {};
+  return { phrases: { ...carnet, ...module.PHRASES }, motifs: module.MOTIFS };
 }
 
 function fichiers(dossier: string): string[] {

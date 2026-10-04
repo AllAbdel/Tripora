@@ -43,6 +43,16 @@ Rien n'est touché sous `translate="no"` (noms, messages, ce que les gens
 écrivent), ni dans les champs de saisie. Le dictionnaire d'une langue n'est
 téléchargé que quand elle devient active.
 
+**Le carnet d'activités** (2 166 activités, leur nom et leur résumé) a son
+propre fichier, `carnet-<code>.ts`, rangé **par identifiant d'activité**
+(`"bali/batur": ["nom", "résumé"]`) : le français est déjà dans le
+catalogue, inutile de le recopier. Le dictionnaire de la langue l'annonce
+par `export const CARNET = () => import('./carnet-xx').then((m) =>
+m.phrasesDuCarnet())` ; il est chargé juste après l'interface, ajouté sans
+écraser `PHRASES`, et jamais préchargé par le service worker (il est plus
+lourd que toute l'interface traduite). `carnet-en.test.ts` vérifie que
+chaque activité du catalogue a sa ligne.
+
 ## Ajouter une langue, pas à pas
 
 Les codes possibles sont ceux de `apps/web/src/i18n/langues.ts` : `es`, `it`,
@@ -159,12 +169,11 @@ en anglais, octobre 2026) :
 
 ## Où en est chaque langue
 
-- **Anglais** : le modèle, complet hors carnet. Toute l'interface
-  (routes, composants, messages d'erreur, pages légales) et le cœur
-  (valise, classement, coffre, bilan…) : environ 1 900 textes et les
-  phrases composées qu'ils affichent ; la récolte ne trouve plus de
-  français sur les 31 écrans de démonstration. Le carnet : les noms des
-  destinations, et les activités de Bali seulement. Un test de bout en bout
+- **Anglais** : le modèle, complet. Toute l'interface (routes,
+  composants, messages d'erreur, pages légales), le cœur (valise,
+  classement, coffre, bilan…) et tout le carnet : les noms des
+  destinations et les 2 166 activités (`carnet-en.ts`). La récolte ne
+  trouve plus de français sur les 31 écrans de démonstration. Un test de bout en bout
   (`e2e/anglais.spec.ts`) parcourt les écrans principaux en `en-US`.
 - **Les douze autres** : quelques dizaines de clés de `textes.ts` ; rien
   encore en traduction au rendu.
