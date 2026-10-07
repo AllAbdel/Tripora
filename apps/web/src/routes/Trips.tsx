@@ -95,7 +95,7 @@ export default function Trips() {
         pastille="voyages"
         subtitle={identity ? `Bonjour ${identity.displayName}` : undefined}
         action={
-          <Link to="/voyages/nouveau" aria-label={t('action.creer')}>
+          <Link to="/voyages/nouveau" aria-label={t('action.creer')} data-guide="nouveau-voyage">
             <Button size="sm" icon={<Plus className="size-4" aria-hidden />}>
               {t('action.nouveau')}
             </Button>

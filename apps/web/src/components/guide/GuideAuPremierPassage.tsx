@@ -3,46 +3,76 @@ import { useLocation } from 'react-router';
 import { PlayCircle, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { estNatif } from '@/lib/natif';
-import { guideDejaVu, useGuide } from '@/stores/guide';
+import { guideDejaVu, lireLaReprise, useGuide } from '@/stores/guide';
 
-// Montré une fois par appareil : il n'a rien à faire dans le paquet principal.
+// Montrés une fois par appareil : ils n'ont rien à faire dans le paquet principal.
 const GuideDeDemarrage = lazy(() => import('./GuideDeDemarrage'));
+const VisiteGuidee = lazy(() => import('./VisiteGuidee'));
+
+/** Les écrans où la visite peut commencer d'elle-même : la liste des voyages, l'accueil d'un voyage. */
+const ECRAN_D_ARRIVEE = /^\/voyages(?:\/([^/]+))?$/u;
 
 /**
  * Quand montrer le guide, et comment.
  *
- * - **Dans l'application mobile**, au premier lancement, en plein écran :
- *   c'est l'usage, et rien d'autre ne l'explique.
- * - **Sur le site, une fois connecté**, à la première arrivée dans ses
- *   voyages : on vient de créer son compte, c'est le moment.
+ * - **Une fois connecté**, sur le site comme dans l'application, à la
+ *   première arrivée dans ses voyages : la visite guidée, sur les vraies
+ *   pages. Arrivé dans un voyage, elle s'y joue.
  * - **Sur le site, sans compte**, pas de fenêtre par-dessus l'accueil : une
- *   carte discrète propose le guide. Une fenêtre qui recouvre la page dès
- *   l'arrivée est ce que Google pénalise sur mobile (« interstitiel
- *   intrusif »), et l'accueil explique déjà l'essentiel.
+ *   carte discrète propose le guide, en diaporama (les pages de la visite
+ *   demandent un compte). Une fenêtre qui recouvre la page dès l'arrivée est
+ *   ce que Google pénalise sur mobile (« interstitiel intrusif »), et
+ *   l'accueil explique déjà l'essentiel.
+ * - **Dans l'application, sans compte**, rien d'imposé : la visite attendra
+ *   la connexion. Le diaporama reste à portée depuis l'accueil.
  *
- * Jamais pendant qu'on rejoint un voyage par un lien : on y vient pour une
- * chose précise, le guide attendra l'écran suivant.
+ * Jamais pendant qu'on rejoint un voyage par un lien, qu'on crée un voyage ou
+ * qu'on remplit ses envies : on y vient pour une chose précise, et la visite,
+ * qui change de page, ferait perdre le fil. Elle attendra l'écran suivant.
+ *
+ * Une visite mise en attente le temps de créer un premier voyage reprend à
+ * l'arrivée dans ce voyage.
  */
 export function GuideAuPremierPassage() {
   const { identity, loading } = useAuth();
   const { pathname } = useLocation();
   const ouvert = useGuide((etat) => etat.ouvert);
   const decide = useGuide((etat) => etat.decide);
+  const depart = useGuide((etat) => etat.depart);
   const ouvrir = useGuide((etat) => etat.ouvrir);
+  const reprendre = useGuide((etat) => etat.reprendre);
   const fermer = useGuide((etat) => etat.fermer);
+  const attendreUnVoyage = useGuide((etat) => etat.attendreUnVoyage);
   const marquerDecide = useGuide((etat) => etat.marquerDecide);
   const [dejaVu] = useState(guideDejaVu);
 
-  const enChemin = /^\/(rejoindre|retour-app)(\/|$)/u.test(pathname);
+  const arrivee = ECRAN_D_ARRIVEE.exec(pathname);
+  const surUnEcranDArrivee = arrivee !== null && arrivee[1] !== 'nouveau';
+  const voyageOuvert = surUnEcranDArrivee ? arrivee[1] : undefined;
+
+  // Revenu de créer son premier voyage : la visite reprend dedans.
+  useEffect(() => {
+    if (!identity || ouvert || !voyageOuvert) return;
+    if (lireLaReprise()?.etat === 'attend-un-voyage') reprendre({ voyageId: voyageOuvert, dansLeVoyage: true });
+  }, [identity, ouvert, voyageOuvert, reprendre]);
 
   useEffect(() => {
-    if (loading || decide || ouvert || enChemin) return;
+    if (loading || decide || ouvert) return;
     if (dejaVu) {
       marquerDecide();
       return;
     }
-    if (estNatif || identity) ouvrir();
-  }, [loading, decide, ouvert, enChemin, dejaVu, identity, ouvrir, marquerDecide]);
+    if (!identity || !surUnEcranDArrivee) return;
+    const reprise = lireLaReprise();
+    if (reprise?.etat === 'en-cours') {
+      reprendre({ arret: reprise.arret, ...(reprise.voyageId ? { voyageId: reprise.voyageId } : {}) });
+    } else if (voyageOuvert) {
+      // Arrivé dans un voyage (rejoint par un lien, par exemple) : la visite s'y joue.
+      reprendre({ voyageId: voyageOuvert, dansLeVoyage: true });
+    } else {
+      ouvrir();
+    }
+  }, [loading, decide, ouvert, dejaVu, identity, surUnEcranDArrivee, voyageOuvert, ouvrir, reprendre, marquerDecide]);
 
   const invitation = !estNatif && !identity && !loading && !decide && !dejaVu && pathname === '/';
 
@@ -51,7 +81,11 @@ export function GuideAuPremierPassage() {
       {invitation && <InvitationAuGuide surOuvrir={ouvrir} surRefuser={fermer} />}
       {ouvert && (
         <Suspense fallback={null}>
-          <GuideDeDemarrage surFermer={fermer} />
+          {identity ? (
+            <VisiteGuidee depart={depart} surFermer={fermer} surAttendreUnVoyage={attendreUnVoyage} />
+          ) : (
+            <GuideDeDemarrage surFermer={fermer} />
+          )}
         </Suspense>
       )}
     </>

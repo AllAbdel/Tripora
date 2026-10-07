@@ -66,7 +66,7 @@ export default function GuideDeDemarrage({ surFermer }: { surFermer: () => void 
         if (evenement.key === 'ArrowLeft') precedent();
       }}
       className={cn(
-        'bg-surface text-ink m-0 h-dvh max-h-none w-screen max-w-none p-0',
+        'surface m-0 h-dvh max-h-none w-screen max-w-none p-0 text-[color:var(--text-strong)]',
         'sm:m-auto sm:h-auto sm:max-h-[min(44rem,calc(100dvh-3rem))] sm:w-[min(30rem,calc(100vw-3rem))] sm:rounded-[var(--radius-card)]',
         'backdrop:bg-black/55 backdrop:backdrop-blur-sm',
       )}

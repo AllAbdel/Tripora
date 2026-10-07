@@ -83,6 +83,7 @@ export function ProchainGeste({
 
   return (
     <Card
+      data-guide="prochain-geste"
       className={cn(
         'animate-rise',
         // Un liseré, pas un aplat : le bloc doit se remarquer sans écraser les
