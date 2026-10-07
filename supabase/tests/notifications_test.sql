@@ -246,4 +246,20 @@ begin
   assert n = 0, 'La file d''un voyage supprimé doit partir avec lui';
 end $$;
 
+-- Les fonctions de déclenchement ne s'appellent pas depuis l'API.
+do $$
+declare fonction text;
+begin
+  foreach fonction in array array[
+    'notifier_un_message()', 'notifier_une_depense()', 'notifier_une_arrivee()', 'notifier_un_sondage()',
+    'notifier_la_destination()', 'notifier_une_tache()', 'notifier_les_votes_complets()',
+    'signaler_les_votes()', 'signaler_une_voix()', 'sondage_votes_secret()'
+  ] loop
+    assert not has_function_privilege('anon', 'public.' || fonction, 'execute'),
+      format('FAILLE : anon peut exécuter %s', fonction);
+    assert not has_function_privilege('authenticated', 'public.' || fonction, 'execute'),
+      format('FAILLE : un membre peut exécuter %s', fonction);
+  end loop;
+end $$;
+
 select '✅ Tests des notifications du groupe passés' as resultat;
