@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { ArrowLeft, LogIn, Ticket } from 'lucide-react';
+import { ArrowLeft, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { LogoGoogle } from '@/components/ui/LogoGoogle';
 import { Banner } from '@/components/ui/Banner';
 import { CadrePublic } from '@/components/CadrePublic';
 import { useAuth } from '@/lib/auth-context';
@@ -165,7 +166,8 @@ export default function Connexion() {
               <Button
                 block
                 size="lg"
-                icon={<LogIn className="size-5" aria-hidden />}
+                variant="google"
+                icon={<LogoGoogle />}
                 loading={occupe === 'google'}
                 onClick={() => void google()}
               >

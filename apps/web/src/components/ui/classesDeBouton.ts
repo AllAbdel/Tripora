@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
  * habit sans être un `<button>`.
  */
 
-export type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'google';
 export type Size = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<Variant, string> = {
@@ -16,6 +16,12 @@ const VARIANTS: Record<Variant, string> = {
     'surface-raised text-[color:var(--text-strong)] border border-[color:var(--border-subtle)] hover:bg-brand-50 dark:hover:bg-ink-700/40',
   ghost: 'text-[color:var(--text-muted)] hover:bg-brand-50 dark:hover:bg-ink-700/40',
   danger: 'bg-red-600 text-white hover:bg-red-700',
+  // L'habit que Google impose à ses boutons de connexion (thèmes clair et
+  // sombre de ses règles de marque) : c'est lui qu'on cherche des yeux, pas
+  // l'accent de Tripora. Seule la police reste la nôtre, Google Sans n'étant
+  // pas libre.
+  google:
+    'bg-white text-[#1f1f1f] border border-[#747775] hover:bg-[#f3f3f3] dark:bg-[#131314] dark:text-[#e3e3e3] dark:border-[#8e918f] dark:hover:bg-[#232324]',
 };
 
 const SIZES: Record<Size, string> = {
