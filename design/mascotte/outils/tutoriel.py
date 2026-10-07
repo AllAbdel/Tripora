@@ -117,9 +117,9 @@ def carte_activite():
 
 def boutons_gestes():
     return (f'<div class="gestes-boutons">'
-            f'<span class="rond" aria-label="Pas pour moi">{ico("x", 24)}</span>'
-            f'<span class="rond petit-rond" aria-label="Revenir">{ico("retour", 20)}</span>'
-            f'<span class="rond oui" aria-label="J’y vais">{ico("ok", 26)}</span></div>'
+            f'<span class="rond" aria-hidden="true">{ico("x", 24)}</span>'
+            f'<span class="rond petit-rond" aria-hidden="true">{ico("retour", 20)}</span>'
+            f'<span class="rond oui" aria-hidden="true">{ico("ok", 26)}</span></div>'
             f'<div class="gestes-legende"><span>{t("Pas pour moi", "ليس لي")}</span><span>{t("Revenir", "رجوع")}</span><span>{t("J’y vais", "سأذهب")}</span></div>')
 
 
@@ -238,7 +238,7 @@ b5 = ('Codes, wifi, billets : tout est rangé dans le coffre, et reste lisible s
       'الرموز والواي فاي والتذاكر: كل شيء محفوظ في الخزنة، ويبقى مقروءًا دون اتصال.')
 segments = (f'<div class="segments"><span class="seg actif">{t("Coffre", "الخزنة")}</span><span class="seg">{t("Valise", "الحقيبة")}</span>'
             f'<span class="seg">{t("Qui fait quoi", "من يفعل ماذا")}</span></div>')
-p_tel, a_tel = coffre_liste(True, bulle(5, *b5, 'pointer-haut', 64, 'dessous-fin', 48, 76))
+p_tel, a_tel = coffre_liste(True, bulle(5, *b5, 'pointer-haut', 64, 'dessous-fin', 48, 54))
 p_pc, a_pc = coffre_liste(True, bulle(5, *b5, 'pointer-gauche', 80, 'cote', 28, 12))
 ETAPES.append(dict(
     titre='Tout sous la main, même sans réseau', page='/voyages/<id>/coffre', element='Le coffre, puis la valise et « Qui fait quoi »',
@@ -259,7 +259,7 @@ ETAPES.append(dict(
          + f'<div class="contenu">{soldes()}<div class="ancre bas-de-page">{nouvelle}'
          f'{bulle(6, *b6, "pointer-bas", 64, "dessus-fin", 40, -18, derniere=True)}</div></div>' + onglets('budget')),
     pc=(laterale('budget', 'budget') + '<main class="principal">' +
-        tete_page('Budget', 'الميزانية', f'<div class="ancre">{nouvelle.replace("grand ", "")}{bulle(6, *b6, "pointer-haut", 80, "dessous-fin", 34, 72, derniere=True)}</div>',
+        tete_page('Budget', 'الميزانية', f'<div class="ancre">{nouvelle.replace("grand ", "")}{bulle(6, *b6, "pointer-haut", 80, "dessous-fin", 34, 40, derniere=True)}</div>',
                   sous=t('Week-end de mai', 'عطلة مايو'))
         + f'<div class="contenu deux">{soldes()}</div></main>'),
 ))
