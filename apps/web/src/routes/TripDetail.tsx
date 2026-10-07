@@ -490,17 +490,20 @@ export default function TripDetail() {
                         }
                         vote={
                           !data.lockedDestinationId ? (
-                            <VoteBar
-                              tally={votes.data?.tallies[score.destinationId]}
-                              participants={Math.max(
-                                data.members.length,
-                                data.constraints.participants,
-                              )}
-                              disabled={voter.isPending}
-                              onVote={(value) =>
-                                voter.mutate({ destinationId: score.destinationId, value })
-                              }
-                            />
+                            // La première porte le repère de la visite guidée.
+                            <div data-guide={index === 0 ? 'vote' : undefined}>
+                              <VoteBar
+                                tally={votes.data?.tallies[score.destinationId]}
+                                participants={Math.max(
+                                  data.members.length,
+                                  data.constraints.participants,
+                                )}
+                                disabled={voter.isPending}
+                                onVote={(value) =>
+                                  voter.mutate({ destinationId: score.destinationId, value })
+                                }
+                              />
+                            </div>
                           ) : undefined
                         }
                       />

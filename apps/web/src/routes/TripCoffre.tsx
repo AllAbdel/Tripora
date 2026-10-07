@@ -147,7 +147,11 @@ export default function TripCoffre() {
               Le code de la boîte à clés, le wifi de l’appartement, le numéro de l’hôte : rangez-les ici avant de
               partir, pour ne pas fouiller la discussion devant la porte.
             </p>
-            <Button icon={<Plus className="size-4" aria-hidden />} onClick={() => setFormulaireOuvert(true)}>
+            <Button
+              data-guide="ajouter-info"
+              icon={<Plus className="size-4" aria-hidden />}
+              onClick={() => setFormulaireOuvert(true)}
+            >
               Ajouter une info
             </Button>
           </CardBody>
@@ -187,6 +191,7 @@ export default function TripCoffre() {
       ) : (
         liste.length > 0 && (
           <Button
+            data-guide="ajouter-info"
             variant="secondary"
             block
             icon={<Plus className="size-4" aria-hidden />}

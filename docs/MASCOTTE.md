@@ -182,13 +182,30 @@ Les textes des bulles reprennent ceux de l'application. On peut les raccourcir, 
 
 Ensuite, ouvrir une pull request vers `main`, en brouillon si besoin.
 
-## 9. Ce que fera Claude Code
+## 9. Ce que fait déjà l'application, et ce que fera Claude Code
 
-- **Le moteur du tutoriel :**
-  - les redirections de page en page ;
-  - la mise en avant des vrais éléments de l'interface ;
-  - le clavier et les lecteurs d'écran ;
-  - « Passer », la reprise, le rappel depuis le profil.
+**Le moteur du tutoriel est en place**, sans personnage. Pour le voir :
+- se connecter (ou « Découvrir en mode local » sur l'écran de connexion) ;
+- puis Profil › À propos › « Revoir le guide de démarrage ».
+
+Ce qu'il fait déjà :
+- les redirections de page en page ;
+- un voile sombre, percé autour du vrai élément, avec un liseré de la couleur d'accent ;
+- une bulle de 352 px au plus, sous l'élément (ou au-dessus s'il n'y a pas la place), avec une pointe vers lui ;
+- le clavier, les lecteurs d'écran, « Passer », la reprise après la création du premier voyage, le rappel depuis le profil.
+
+Le code :
+- les étapes, leurs textes et la pose prévue pour chacune : `apps/web/src/components/guide/arretsDeLaVisite.ts` ;
+- la bulle : `VisiteGuidee.tsx`, dans le même dossier.
+
+**La place du personnage est réservée.** Elle est au début de la bulle, à gauche (à droite en arabe), à la taille d'une pastille de 44 px.
+- C'est `apps/web/src/components/mascotte/Mascotte.tsx`, qui reçoit la pose et la direction du geste :
+  - `haut` : la bulle est sous l'élément ;
+  - `bas` : elle est au-dessus.
+- En attendant, il affiche la pastille de l'écran.
+- Les maquettes peuvent proposer une autre place : à côté de la bulle, qui déborde du cadre, ou plus grand. L'intégration suivra.
+
+Ce que fera Claude Code :
 - **L'intégration :**
   - les SVG en composants React ;
   - les bulles traduites ;

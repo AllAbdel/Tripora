@@ -87,7 +87,7 @@ export function BoiteDeConfirmation({
         surAnnuler();
       }}
       onClose={surAnnuler}
-      className="bg-surface text-ink w-[min(26rem,calc(100vw-2.5rem))] rounded-[var(--radius-card)] p-0 backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+      className="surface w-[min(26rem,calc(100vw-2.5rem))] text-[color:var(--text-strong)] rounded-[var(--radius-card)] p-0 backdrop:bg-black/50 backdrop:backdrop-blur-sm"
     >
       {ouverte && (
         <div className="space-y-4 p-5">

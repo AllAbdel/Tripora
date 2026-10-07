@@ -46,6 +46,7 @@ Toujours partir de ces briques avant d'écrire des classes à la main :
 - `EmptyState` — un écran vide explique quoi faire ; `niveauDuTitre={1}` quand il occupe la page.
 - `Chip` (`aria-pressed`), `OptionCard`, `Field` + `TextInput` (16 px : pas de zoom iOS), `MoneyInput`, `NumberStepper`, `Progress`, `Squelette`.
 - Pictogrammes : `lucide-react` avec `aria-hidden` quand ils accompagnent un texte ; pastilles dessinées de `components/Pastille.tsx` pour les outils du voyage.
+- Visite guidée : un élément qu'elle montre porte `data-guide="…"` (liste dans `components/guide/arretsDeLaVisite.ts`). Le garder en retouchant l'écran ; un test vérifie que chaque repère existe encore.
 - Cadres : `AppShell` (onglets en bas sur téléphone, barre latérale à partir de `lg`), `CadrePublic` (pages sans compte), `PageLegale`, `TitreDePage`.
 
 ## 4. Écrire en français

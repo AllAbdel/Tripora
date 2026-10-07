@@ -86,19 +86,5 @@ test.describe('le guide de démarrage', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
-  test('s’ouvre de lui-même à la première connexion', async ({ page }) => {
-    await page.goto('/connexion', { waitUntil: 'networkidle' });
-    await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
-    const guide = page.getByRole('dialog');
-    await expect(guide).toBeVisible();
-    for (let ecran = 1; ecran < 6; ecran += 1) {
-      await guide.getByRole('button', { name: 'Suivant' }).click();
-    }
-    await guide.getByRole('button', { name: 'C’est parti' }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-
-    await page.reload({ waitUntil: 'networkidle' });
-    await expect(page.getByRole('heading', { name: 'Mes trips' })).toBeVisible();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-  });
+  // Une fois connecté, c'est la visite guidée des vraies pages : `visite.spec.ts`.
 });

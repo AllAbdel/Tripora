@@ -72,7 +72,7 @@ export default defineConfig({
       origins: [
         {
           origin: `http://localhost:${PORT}`,
-          localStorage: [{ name: 'tripora.guide-vu', value: '1' }],
+          localStorage: [{ name: 'tripora.guide-vu', value: '2' }],
         },
       ],
     },

@@ -335,7 +335,10 @@ export default function Decouvrir() {
             )}
           </div>
 
-          <footer className="pb-safe mx-auto flex w-full max-w-md items-center justify-center gap-5 px-3 pt-3">
+          <footer
+            data-guide="gestes-decouvrir"
+            className="pb-safe mx-auto flex w-full max-w-md items-center justify-center gap-5 px-3 pt-3"
+          >
             <BoutonRond
               libelle="Revenir à la précédente"
               onClick={revenir}

@@ -63,6 +63,15 @@ for (const theme of ['clair', 'sombre'] as const) {
         expect(await manquements(page)).toEqual([]);
       });
     }
+
+    test('la visite guidée', async ({ page }) => {
+      await poser(page, [BALI], '/voyages');
+      // Jamais vue : elle s'ouvre d'elle-même, sur la liste des voyages.
+      await page.evaluate(() => localStorage.removeItem('tripora.guide-vu'));
+      await page.reload({ waitUntil: 'networkidle' });
+      await expect(page.getByRole('group', { name: 'Créez un voyage' })).toBeVisible();
+      expect(await manquements(page)).toEqual([]);
+    });
   });
 }
 
