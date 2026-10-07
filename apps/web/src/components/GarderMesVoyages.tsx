@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
-import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { LogoGoogle } from '@/components/ui/LogoGoogle';
 import { Card, CardBody } from '@/components/ui/Card';
 import { FormulaireCodeEmail } from '@/components/FormulaireCodeEmail';
 import { useAuth } from '@/lib/auth-context';
@@ -73,7 +73,8 @@ export function GarderMesVoyages() {
         {rattachementGooglePossible && (
           <Button
             block
-            icon={<LogIn className="size-5" aria-hidden />}
+            variant="google"
+            icon={<LogoGoogle />}
             loading={occupe}
             onClick={() => void google()}
           >

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { LogIn, Smartphone } from 'lucide-react';
+import { Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { LogoGoogle } from '@/components/ui/LogoGoogle';
 import { Card, CardBody } from '@/components/ui/Card';
 import { FormulaireCodeEmail } from '@/components/FormulaireCodeEmail';
 import { useAuth } from '@/lib/auth-context';
@@ -91,7 +92,8 @@ export function EnregistrerLeTrip({ resume }: { resume: LigneDuResume[] }) {
           <Button
             block
             size="lg"
-            icon={<LogIn className="size-5" aria-hidden />}
+            variant="google"
+            icon={<LogoGoogle />}
             loading={occupe === 'google'}
             disabled={occupe === 'invite'}
             onClick={() => void google()}
