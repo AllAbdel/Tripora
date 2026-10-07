@@ -6,9 +6,13 @@ import {
   decaler,
   feriesConnus,
   localeActive,
+  nomDeRegion,
   paysDeDepart,
   pontsEntre,
-  vacancesAVenir,
+  regionProbable,
+  regionsScolaires,
+  vacancesAVenirDu,
+  vacancesConnues,
   zoneProbable,
   type OccasionDePartir,
   type Place,
@@ -19,6 +23,8 @@ import { cn } from '@/lib/cn';
 import { useLangueActive } from '@/stores/langue';
 
 const ZONES: readonly (ZoneScolaire | null)[] = ['A', 'B', 'C', null];
+/** Jusqu'à ce nombre de régions, des puces ; au-delà, une liste déroulante. */
+const PUCES_MAX = 4;
 
 /** « jeu. 14 mai », « sam. 4 juil. 2027 » quand l'année change. */
 function jour(iso: string, avecAnnee: boolean): string {
@@ -48,8 +54,9 @@ function paysDuCalendrier(origin: Place | null): string | null {
  *
  * Le calendrier est celui du pays de départ : de Londres, le lundi de Pâques
  * et le dernier lundi d'août ; de Riyad, un week-end le vendredi et le
- * samedi. Les vacances scolaires, connues pour la France seulement,
- * n'apparaissent qu'au départ de la France.
+ * samedi. Les vacances scolaires : celles de la France (par zone) et d'une
+ * quinzaine de pays européens (par Land, canton, communauté…), d'après
+ * OpenHolidays. Ailleurs, seulement les jours fériés.
  */
 export function OccasionsDePartir({
   origin,
@@ -63,18 +70,29 @@ export function OccasionsDePartir({
 }) {
   const langue = useLangueActive();
   const pays = useMemo(() => paysDuCalendrier(origin), [origin]);
-  const scolaire = pays === 'FR';
-  const devinee = useMemo(() => (origin ? zoneProbable(origin) : null), [origin]);
-  const [choisie, setChoisie] = useState<ZoneScolaire | null | undefined>(undefined);
-  const zone = choisie === undefined ? devinee : choisie;
+  const enFrance = pays === 'FR';
+  const scolaire = vacancesConnues(pays);
+  const regions = useMemo(() => (pays && !enFrance ? regionsScolaires(pays) : []), [pays, enFrance]);
+  // La zone en France, la région ailleurs : devinée d'après la ville, modifiable.
+  const devinee = useMemo(
+    () => (!origin || !pays ? null : enFrance ? zoneProbable(origin) : regionProbable(pays, origin)),
+    [origin, pays, enFrance],
+  );
+  // Un choix vaut pour son pays : changer de départ le fait oublier.
+  const [choisie, setChoisie] = useState<{ pays: string | null; valeur: string | null } | null>(null);
+  const zone = choisie && choisie.pays === pays ? choisie.valeur : devinee;
+  const choisir = (valeur: string | null) => setChoisie({ pays, valeur });
+  // Les noms des régions viennent des données, dans la langue de l'interface :
+  // la mention qui les suit aussi.
+  const deduite = langue === 'en' ? ' (inferred)' : ' (déduite)';
   const aujourdHui = dateDuJour();
 
   const occasions = useMemo(() => {
-    if (!pays || !feriesConnus(pays)) return [];
+    if (!pays || (!feriesConnus(pays) && !scolaire)) return [];
     const horizon = decaler(aujourdHui, 300);
-    const ponts = pontsEntre(decaler(aujourdHui, 7), horizon, pays);
+    const ponts = feriesConnus(pays) ? pontsEntre(decaler(aujourdHui, 7), horizon, pays) : [];
     if (!scolaire) return ponts.slice(0, 6);
-    const vacances = vacancesAVenir(aujourdHui, zone, 5).filter((periode) => periode.debut <= horizon);
+    const vacances = vacancesAVenirDu(pays, aujourdHui, zone, 5).filter((periode) => periode.debut <= horizon);
     // Quatre ponts et deux périodes de vacances — l'inverse pour une famille,
     // qui ne part guère hors des vacances scolaires. Sans ce partage, les
     // ponts, plus nombreux, recouvraient tout. Puis l'ordre du calendrier.
@@ -111,33 +129,75 @@ export function OccasionsDePartir({
         )}
       </div>
 
-      {scolaire && (
+      {enFrance && (
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Zone de vacances scolaires">
           <span className="text-muted text-xs">Vacances de la zone</span>
           {ZONES.map((valeur) => (
             <Chip
               key={valeur ?? 'aucune'}
               selected={zone === valeur}
-              onClick={() => setChoisie(valeur)}
+              onClick={() => choisir(valeur)}
               className="min-h-9 px-3 text-xs"
             >
-              {valeur ? `${valeur}${devinee === valeur && choisie === undefined ? ' (déduite)' : ''}` : 'Toutes'}
+              {valeur ? `${valeur}${devinee === valeur && zone === devinee ? ' (déduite)' : ''}` : 'Toutes'}
             </Chip>
           ))}
         </div>
       )}
 
-      {pays && !feriesConnus(pays) ? (
+      {pays && regions.length > 0 && regions.length <= PUCES_MAX && (
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Région des vacances scolaires">
+          <span className="text-muted text-xs">Vacances de la région</span>
+          {[...regions.map((region) => region.code), null].map((valeur) => (
+            <Chip
+              key={valeur ?? 'aucune'}
+              selected={zone === valeur}
+              onClick={() => choisir(valeur)}
+              className="min-h-9 px-3 text-xs"
+            >
+              {valeur
+                ? `${nomDeRegion(pays, valeur, langue === 'en')}${devinee === valeur && zone === devinee ? deduite : ''}`
+                : 'Toutes'}
+            </Chip>
+          ))}
+        </div>
+      )}
+
+      {pays && regions.length > PUCES_MAX && (
+        <div className="space-y-1">
+          <label htmlFor="region-scolaire" className="text-muted block text-xs">
+            Vacances de la région
+          </label>
+          <select
+            id="region-scolaire"
+            value={zone ?? ''}
+            onChange={(evenement) => choisir(evenement.target.value || null)}
+            className="surface-raised focus:border-brand-500 h-11 w-full rounded-[var(--radius-card)] border border-[color:var(--border-subtle)] px-3 text-[16px] outline-none sm:max-w-sm"
+          >
+            <option value="">Toutes les régions</option>
+            {regions.map((region) => (
+              <option key={region.code} value={region.code} translate="no">
+                {`${langue === 'en' ? region.en : region.nom}${devinee === region.code ? deduite : ''}`}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {pays && !feriesConnus(pays) && !scolaire ? (
         <p className="text-muted text-xs">Tripora ne connaît pas encore les jours fériés de ce pays.</p>
       ) : !pays ? (
         <p className="text-muted text-xs">
           Ce départ est loin des villes que Tripora connaît : ses jours fériés ne peuvent pas être proposés.
         </p>
+      ) : !scolaire ? (
+        <p className="text-muted text-xs">
+          Tripora ne connaît pas encore les vacances scolaires de ce pays : ici, seulement les jours fériés.
+        </p>
       ) : (
-        !scolaire && (
-          <p className="text-muted text-xs">
-            Les vacances scolaires ne sont connues que pour la France : ici, seulement les jours fériés.
-          </p>
+        !enFrance && (
+          // OpenHolidays est sous licence ODbL : la source se cite là où ses données se lisent.
+          <p className="text-muted text-xs">Vacances scolaires : OpenHolidays.</p>
         )
       )}
 
@@ -176,6 +236,25 @@ export function OccasionsDePartir({
   );
 }
 
+/**
+ * « les vacances de la Toussaint », « le pont de l’Ascension », « la semaine
+ * de février » : l'article suit le nom, et la majuscule du nom propre reste.
+ */
+function avecArticle(nom: string): string {
+  const minuscule = (texte: string) => `${texte.charAt(0).toLowerCase()}${texte.slice(1)}`;
+  if (/^Vacances/u.test(nom)) return `les ${minuscule(nom)}`;
+  if (/^(Pont|Congé)/u.test(nom)) return `le ${minuscule(nom)}`;
+  if (/^Semaine/u.test(nom)) return `la ${minuscule(nom)}`;
+  return `« ${nom} »`;
+}
+
+/** « the autumn holidays », mais « the Christmas holidays » : seuls les noms communs perdent leur majuscule. */
+function enAnglaisAvecArticle(nom: string): string {
+  if (nom.startsWith('the ')) return nom;
+  const commun = /^(Autumn|Winter|Spring|Summer|Semester|Mid-year|Half-term|Sports|Carnival)\b/u.test(nom);
+  return `the ${commun ? `${nom.charAt(0).toLowerCase()}${nom.slice(1)}` : nom}`;
+}
+
 /** Les vacances françaises, nommées en anglais. */
 const VACANCES_EN: Readonly<Record<string, string>> = {
   'Vacances de la Toussaint': 'the All Saints’ holidays',
@@ -200,22 +279,14 @@ export function CePendant({ debut, fin, origin }: { debut: string; fin: string; 
   const langue = useLangueActive();
   const pays = paysDuCalendrier(origin);
   if (!pays || !feriesConnus(pays)) return null;
-  const zone = origin && pays === 'FR' ? zoneProbable(origin) : null;
+  const zone = !origin ? null : pays === 'FR' ? zoneProbable(origin) : regionProbable(pays, origin);
   const { vacances, feries } = cePendant(debut, fin, zone, pays);
   if (vacances.length === 0 && feries.length === 0) return null;
   const enAnglais = langue === 'en';
-  const precision = zone ? ` (zone ${zone})` : '';
-  // « les vacances de la Toussaint », « le pont de l’Ascension » : l'article
-  // suit le nom, et la majuscule du nom propre reste.
+  const precision = !zone ? '' : pays === 'FR' ? ` (zone ${zone})` : ` (${nomDeRegion(pays, zone, enAnglais)})`;
   const noms = [
     ...new Set(
-      vacances.map((periode) =>
-        enAnglais
-          ? (VACANCES_EN[periode.nom] ?? periode.nom)
-          : periode.nom.startsWith('Pont')
-            ? `le ${periode.nom.replace(/^Pont/u, 'pont')}`
-            : `les ${periode.nom.replace(/^Vacances/u, 'vacances')}`,
-      ),
+      vacances.map((periode) => (enAnglais ? enAnglaisAvecArticle(periode.en ?? VACANCES_EN[periode.nom] ?? periode.nom) : avecArticle(periode.nom))),
     ),
   ];
   const phraseDesVacances =

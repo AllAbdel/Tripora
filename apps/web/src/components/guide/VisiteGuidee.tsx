@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
-import { Pastille } from '@/components/Pastille';
 import { Mascotte } from '@/components/mascotte/Mascotte';
 import { classesDeBouton } from '@/components/ui/classesDeBouton';
 import { getCollaboration } from '@/lib/collaboration';
@@ -18,13 +17,13 @@ import {
   type ArretDeLaVisite,
   type ContexteDeLaVisite,
 } from './arretsDeLaVisite';
-import { estEnVue, placerLaBulle, type Ecran, type Placement, type Rectangle } from './placementDeLaBulle';
+import { estEnVue, MARGE, placerLaBulle, type Ecran, type Placement, type Rectangle } from './placementDeLaBulle';
 
 /** Le temps laissé à un écran pour afficher l'élément attendu (chargement, réseau lent). */
 const ATTENTE_MAXIMALE = 6000;
 const INTERVALLE_DE_RECHERCHE = 100;
-/** L'air laissé autour de l'élément mis en lumière. */
-const AIR = 6;
+/** Le temps que Plumio met à saluer et s'envoler, après « Terminer ». */
+const DUREE_DE_L_ENVOL = 600;
 
 interface Visite {
   contexte: ContexteDeLaVisite;
@@ -95,7 +94,9 @@ export default function VisiteGuidee({
   /** L'arrêt dont l'écran a été atteint : le quitter ensuite ferme la visite. */
   const arriveSur = useRef<string | null>(null);
   /** L'arrêt dont la recherche est finie, et ce qu'elle a trouvé. */
-  const [cible, setCible] = useState<{ arret: string; element: HTMLElement | null } | null>(null);
+  const [cible, setCible] = useState<{ arret: string; element: HTMLElement | null; rayon?: string } | null>(null);
+  /** « Terminer » : Plumio salue et s'en va. */
+  const [fin, setFin] = useState(false);
   /** Où est l'élément de cet arrêt, à l'écran. */
   const [mesure, setMesure] = useState<{ arret: string; rectangle: Rectangle } | null>(null);
   const [ecran, setEcran] = useState<Ecran>(ecranActuel);
@@ -187,7 +188,8 @@ export default function VisiteGuidee({
             behavior: mouvementReduit() ? 'auto' : 'smooth',
           });
         }
-        setCible({ arret: arret.id, element });
+        // Le cerne suit l'arrondi de l'élément.
+        setCible({ arret: arret.id, element, rayon: getComputedStyle(element).borderRadius });
         return;
       }
       if (performance.now() - debut < ATTENTE_MAXIMALE) {
@@ -245,7 +247,13 @@ export default function VisiteGuidee({
       return;
     }
     if (derniere) {
-      surFermer();
+      // Plumio salue et s'envole, puis la visite se ferme.
+      if (mouvementReduit()) {
+        surFermer();
+        return;
+      }
+      setFin(true);
+      window.setTimeout(surFermer, DUREE_DE_L_ENVOL);
       return;
     }
     sens.current = 1;
@@ -260,7 +268,9 @@ export default function VisiteGuidee({
 
   const pret = arret !== undefined && cible?.arret === arret.id;
   const rectangle = mesure && arret && mesure.arret === arret.id ? mesure.rectangle : null;
-  const placement = pret ? placerLaBulle(element ? rectangle : null, ecran) : null;
+  const rtl = document.documentElement.dir === 'rtl';
+  const placement = pret ? placerLaBulle(element ? rectangle : null, ecran, { rtl }) : null;
+  const voile = arret?.voile !== false;
 
   return (
     <dialog
@@ -271,28 +281,29 @@ export default function VisiteGuidee({
         surFermer();
       }}
       onKeyDown={(evenement) => {
-        if (!pret) return;
+        if (!pret || fin) return;
         // En arabe, l'interface est en miroir : la flèche de gauche avance.
-        const miroir = document.documentElement.dir === 'rtl';
-        const avant = miroir ? 'ArrowLeft' : 'ArrowRight';
-        const arriere = miroir ? 'ArrowRight' : 'ArrowLeft';
+        const avant = rtl ? 'ArrowLeft' : 'ArrowRight';
+        const arriere = rtl ? 'ArrowRight' : 'ArrowLeft';
         if (evenement.key === avant && !derniere && arret?.action !== 'creer') avancer();
         if (evenement.key === arriere) reculer();
       }}
       className="m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-transparent p-0 text-[color:var(--text-strong)] backdrop:bg-transparent print:hidden"
     >
-      {pret && element && rectangle ? (
+      {pret && !voile ? null : pret && element && rectangle ? (
+        // Le projecteur : l'élément tel quel, cerné de papier puis d'accent, et la page assombrie autour.
         <div
           aria-hidden
-          className="pointer-events-none fixed top-0 left-0 rounded-[calc(var(--radius-card)+4px)] shadow-[0_0_0_200vmax_rgb(26_23_19/0.58)] outline-2 outline-offset-2 outline-[color:var(--accent)] dark:shadow-[0_0_0_200vmax_rgb(0_0_0/0.7)]"
+          className="pointer-events-none fixed top-0 left-0 shadow-[0_0_0_3px_var(--surface-raised),0_0_0_5px_var(--accent),0_0_0_200vmax_rgb(26_23_19/0.52)] dark:shadow-[0_0_0_3px_var(--surface-raised),0_0_0_5px_var(--accent),0_0_0_200vmax_rgb(0_0_0/0.5)]"
           style={{
-            width: rectangle.width + 2 * AIR,
-            height: rectangle.height + 2 * AIR,
-            transform: `translate(${rectangle.left - AIR}px, ${rectangle.top - AIR}px)`,
+            width: rectangle.width,
+            height: rectangle.height,
+            borderRadius: cible?.rayon,
+            transform: `translate(${rectangle.left}px, ${rectangle.top}px)`,
           }}
         />
       ) : (
-        <div aria-hidden className="fixed inset-0 bg-[rgb(26_23_19/0.58)] dark:bg-black/70" />
+        <div aria-hidden className="fixed inset-0 bg-[rgb(26_23_19/0.52)] dark:bg-black/50" />
       )}
 
       {pret && arret && placement ? (
@@ -303,6 +314,7 @@ export default function VisiteGuidee({
           rang={rang}
           total={total}
           derniere={derniere}
+          fin={fin}
           surSuivant={avancer}
           surPrecedent={reculer}
           surPasser={surFermer}
@@ -324,13 +336,36 @@ export default function VisiteGuidee({
   );
 }
 
-/** La bulle : ce que dit l'arrêt, d'où l'on en est, et de quoi avancer. */
+/** La pointe de la bulle, tournée vers l'élément : un carré pivoté qui reprend son fond et son filet. */
+function Pointe({ placement }: { placement: Placement }) {
+  const commun = 'surface-raised absolute size-3.5 rotate-45 border-[color:var(--border-fort)]';
+  if (placement.mode === 'dessous') {
+    return <span aria-hidden className={cn(commun, '-top-[7.5px] border-t border-l')} style={{ left: placement.pointe - 7 }} />;
+  }
+  if (placement.mode === 'dessus') {
+    return <span aria-hidden className={cn(commun, '-bottom-[7.5px] border-r border-b')} style={{ left: placement.pointe - 7 }} />;
+  }
+  if (placement.mode === 'cote') {
+    return placement.cote === 'gauche' ? (
+      <span aria-hidden className={cn(commun, '-left-[7.5px] border-b border-l')} style={{ top: placement.pointe - 7 }} />
+    ) : (
+      <span aria-hidden className={cn(commun, '-right-[7.5px] border-t border-r')} style={{ top: placement.pointe - 7 }} />
+    );
+  }
+  return null;
+}
+
+/**
+ * La bulle, et Plumio debout dessus : ce que dit l'arrêt, d'où l'on en est,
+ * et de quoi avancer.
+ */
 function Bulle({
   arret,
   placement,
   rang,
   total,
   derniere,
+  fin,
   surSuivant,
   surPrecedent,
   surPasser,
@@ -340,6 +375,7 @@ function Bulle({
   rang: number;
   total: number;
   derniere: boolean;
+  fin: boolean;
   surSuivant: () => void;
   surPrecedent: () => void;
   surPasser: () => void;
@@ -355,85 +391,110 @@ function Bulle({
   }, []);
 
   const style: CSSProperties = { width: placement.largeur };
-  if (placement.mode === 'dessous' || placement.mode === 'dessus') {
+  if (placement.mode === 'dessous' || placement.mode === 'dessus' || placement.mode === 'cote') {
     style.left = placement.left;
-    style.maxHeight = placement.maxHauteur;
-    if (placement.mode === 'dessous') style.top = placement.top;
-    else style.bottom = placement.bottom;
+    if (placement.mode === 'dessus') style.bottom = placement.bottom;
+    else style.top = placement.top;
   } else if (placement.mode === 'ancree') {
     style.left = placement.left;
-    style.maxHeight = placement.maxHauteur;
-    style.bottom = `calc(${16}px + env(safe-area-inset-bottom))`;
+    style.bottom = `calc(${MARGE}px + env(safe-area-inset-bottom))`;
   }
-  const geste = placement.mode === 'dessous' || placement.mode === 'dessus' ? placement.geste : undefined;
+  const maxHauteur = placement.mode === 'centre' ? undefined : placement.maxHauteur;
   const libelle = arret.action === 'creer' ? 'Créer mon voyage' : derniere ? 'Terminer' : 'Suivant';
 
   return (
-    <section
-      role="group"
-      aria-labelledby={idTitre}
+    <div
       style={style}
       className={cn(
-        'surface-raised animate-rise fixed flex flex-col rounded-[var(--radius-card)] border border-[color:var(--border-subtle)] shadow-[var(--shadow-float)]',
+        'fixed',
         // Rien à désigner : au milieu de l'écran.
-        placement.mode === 'centre' && 'inset-0 m-auto h-fit max-h-[80dvh]',
+        placement.mode === 'centre' && 'inset-0 m-auto h-fit',
       )}
     >
-      {geste && (
-        // La pointe, tournée vers l'élément : un carré pivoté qui reprend le fond et le filet de la bulle.
-        <span
-          aria-hidden
-          className={cn(
-            'surface-raised absolute size-3 rotate-45 border-[color:var(--border-subtle)]',
-            geste === 'haut' ? '-top-1.5 border-t border-l' : '-bottom-1.5 border-r border-b',
-          )}
-          style={{ left: (placement.mode === 'dessous' || placement.mode === 'dessus' ? placement.pointe : 0) - 6 }}
+      <div
+        className="absolute bottom-[calc(100%-4px)] leading-none"
+        style={{ left: placement.plumio.left, width: placement.plumio.taille, height: placement.plumio.taille }}
+      >
+        <Mascotte
+          pose={fin ? 'au-revoir' : placement.plumio.pose}
+          taille={placement.plumio.taille}
+          vie={fin ? 'immobile' : 'calme'}
+          joue
+          arrivee={!fin}
+          sortie={fin}
+          regard
         />
-      )}
+      </div>
 
-      <div className="flex min-h-0 gap-3 overflow-y-auto p-4">
-        <Mascotte pose={arret.pose} direction={geste} repli={<Pastille nom={arret.pastille} />} />
-        <div className="min-w-0 space-y-1.5">
+      <section
+        role="group"
+        aria-labelledby={idTitre}
+        style={{ maxHeight: maxHauteur }}
+        className={cn(
+          'surface-raised relative flex max-h-[80dvh] flex-col rounded-[var(--radius-card)] border border-[color:var(--border-fort)] shadow-[var(--shadow-lift)]',
+          // La bulle arrive juste après Plumio : un fondu et une courte montée.
+          'animate-[rise_220ms_var(--ease-pose)_120ms_both] transition-opacity duration-300',
+          fin && 'opacity-0',
+        )}
+      >
+        <Pointe placement={placement} />
+
+        <div className="flex min-h-0 flex-col gap-2.5 overflow-y-auto p-4">
+          {/* Une seule étape (pas encore de voyage) : un compteur « 1 sur 1 » n'apprendrait rien. */}
+          {total > 1 && (
+            <div className="flex items-center justify-between gap-3">
+              <p className="etiquette chiffres">{`Étape ${rang + 1} sur ${total}`}</p>
+              <span className="flex gap-1" aria-hidden>
+                {Array.from({ length: total }, (_, index) => (
+                  <i
+                    key={index}
+                    className={cn(
+                      'h-1 w-3.5 rounded-full',
+                      index <= rang ? 'bg-brand-500' : 'bg-[color:var(--border-subtle)]',
+                    )}
+                  />
+                ))}
+              </span>
+            </div>
+          )}
           <h2 id={idTitre} className="leading-snug font-semibold">
             {insecables(arret.titre)}
           </h2>
-          <p id={idTexte} className="text-muted text-sm leading-relaxed">
+          <p id={idTexte} className="text-muted text-[0.95rem] leading-relaxed">
             {insecables(arret.texte)}
           </p>
         </div>
-      </div>
 
-      <div className="flex shrink-0 items-center gap-2 border-t border-[color:var(--border-subtle)] px-4 py-3">
-        {/* Une seule étape (pas encore de voyage) : un compteur « 1 sur 1 » n'apprendrait rien. */}
-        <p className="etiquette chiffres me-auto">{total > 1 ? `Étape ${rang + 1} sur ${total}` : ''}</p>
-        <button
-          type="button"
-          onClick={surPasser}
-          className="text-muted hover:text-brand-600 dark:hover:text-brand-300 min-h-10 px-2 text-sm font-semibold"
-        >
-          Passer
-        </button>
-        {rang > 0 && (
+        <div className="flex shrink-0 items-center gap-2 px-4 pb-4">
           <button
             type="button"
-            onClick={surPrecedent}
-            aria-label="Étape précédente"
-            className={classesDeBouton({ variant: 'ghost', size: 'sm' })}
+            onClick={surPasser}
+            className="text-muted hover:text-brand-600 dark:hover:text-brand-300 -ms-2 me-auto min-h-11 px-2 text-sm font-semibold"
           >
-            <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden />
+            Passer
           </button>
-        )}
-        <button
-          ref={suivant}
-          type="button"
-          onClick={surSuivant}
-          aria-describedby={idTexte}
-          className={classesDeBouton({ variant: 'primary', size: 'sm' })}
-        >
-          {libelle}
-          {!derniere && <ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden />}
-        </button>
-      </div>
-    </section>
+          {rang > 0 && (
+            <button
+              type="button"
+              onClick={surPrecedent}
+              aria-label="Étape précédente"
+              className={classesDeBouton({ variant: 'ghost', size: 'sm' })}
+            >
+              <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden />
+            </button>
+          )}
+          <button
+            ref={suivant}
+            type="button"
+            onClick={surSuivant}
+            aria-describedby={idTexte}
+            className={classesDeBouton({ variant: 'primary', size: 'sm' })}
+          >
+            {libelle}
+            {!derniere && <ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden />}
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }

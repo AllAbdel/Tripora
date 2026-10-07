@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Mascotte } from '@/components/mascotte/Mascotte';
 import { Card, CardBody } from '@/components/ui/Card';
 import { NotificationsDeCetAppareil } from '@/components/NotificationsDeCetAppareil';
 import {
@@ -98,6 +99,7 @@ export function PropositionDeNotifications() {
   if (!reglages.data?.discussion || etat.data !== 'a-demander' || activer.data === 'refusees') return null;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+      <Mascotte pose="notification" taille={48} joue />
       <span className="text-muted">Être prévenu des nouveaux messages, application fermée ?</span>
       <Button
         size="sm"

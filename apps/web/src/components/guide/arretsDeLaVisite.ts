@@ -1,6 +1,3 @@
-import type { NomDePastille } from '@/components/Pastille';
-import type { PoseDeLaMascotte } from '@/components/mascotte/Mascotte';
-
 /**
  * Les arrêts de la visite guidée : le guide de démarrage, joué sur les vraies
  * pages plutôt qu'en diaporama.
@@ -36,10 +33,11 @@ export interface ArretDeLaVisite {
   cibles: readonly string[];
   titre: string;
   texte: string;
-  /** Ce que fait le personnage (voir `docs/MASCOTTE.md`). */
-  pose: PoseDeLaMascotte;
-  /** Ce qu'il montre en attendant d'être dessiné. */
-  pastille: NomDePastille;
+  /**
+   * Faux pour un écran qui est tout entier le sujet (« Découvrir ») : rien
+   * n'y est assombri.
+   */
+  voile?: false;
   /** Quand l'arrêt s'applique. Absent : toujours. */
   quand?: (contexte: ContexteDeLaVisite) => boolean;
   /**
@@ -63,8 +61,6 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     titre: 'Créez votre premier voyage',
     texte:
       'Avec qui, d’où, quand, pour combien : quelques écrans, et le voyage existe. Pas encore de destination ? Tripora la trouve avec le groupe. La visite reprendra dans votre voyage.',
-    pose: 'accueil',
-    pastille: 'creer',
     quand: (contexte) => contexte.voyageId === null,
     action: 'creer',
   },
@@ -75,8 +71,6 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     titre: 'Créez un voyage',
     texte:
       'Appuyez sur « Nouveau » : avec qui, d’où, quand, pour combien. Pas encore de destination ? Tripora la trouve avec le groupe.',
-    pose: 'accueil',
-    pastille: 'creer',
     quand: (contexte) => contexte.voyageId !== null,
   },
   {
@@ -85,8 +79,6 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     cibles: ['inviter'],
     titre: 'Invitez le groupe',
     texte: 'Envoyez le lien ou le code dans la conversation du groupe : on rejoint sans créer de compte.',
-    pose: 'pointer',
-    pastille: 'participants',
     quand: (contexte) => contexte.voyageId !== null && contexte.collaboration,
   },
   {
@@ -96,8 +88,6 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     titre: 'Chacun dit ses envies',
     texte:
       'Culture, nature, fête, détente, et le budget de chacun : Tripora propose les destinations qui conviennent au groupe entier. Cette carte dit toujours quoi faire ensuite.',
-    pose: 'pointer',
-    pastille: 'votes',
     quand: (contexte) => contexte.voyageId !== null && !contexte.destinationArretee,
   },
   {
@@ -107,8 +97,6 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     titre: 'Toujours le prochain geste',
     texte:
       'Cette carte dit quoi faire ensuite, selon où en est le groupe : remplir ses envies, composer le séjour, réserver. Tous les outils du voyage sont juste en dessous.',
-    pose: 'pointer',
-    pastille: 'accueil',
     quand: (contexte) => contexte.voyageId !== null && contexte.destinationArretee,
   },
   {
@@ -118,8 +106,6 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     titre: 'Le groupe vote',
     texte:
       'Chaque proposition affiche le vol depuis votre ville, le budget sur place et le climat du mois. Votez ; l’organisateur arrête la destination quand le groupe a tranché.',
-    pose: 'pointer',
-    pastille: 'votes',
     quand: (contexte) => contexte.voyageId !== null && !contexte.destinationArretee,
     facultatif: true,
   },
@@ -130,19 +116,16 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     titre: 'Tous les outils du voyage',
     texte:
       'Sondages, réservations, discussion, carte… Une fois la destination arrêtée, Découvrir, l’itinéraire et la valise apparaissent ici aussi.',
-    pose: 'explique',
-    pastille: 'accueil',
     quand: (contexte) => contexte.voyageId !== null && !contexte.destinationArretee,
   },
   {
     id: 'decouvrir',
     chemin: (voyageId) => `/voyages/${voyageId}/decouvrir`,
     cibles: ['gestes-decouvrir'],
+    voile: false,
     titre: 'Les activités, d’un glissement',
     texte:
       'À droite : j’y vais. À gauche : pas pour moi. Ces boutons font la même chose. Le classement dit combien ont gardé chaque idée, jamais qui.',
-    pose: 'pointer',
-    pastille: 'decouvrir',
     quand: (contexte) => contexte.voyageId !== null && contexte.destinationArretee,
   },
   {
@@ -152,8 +135,6 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     titre: 'Le programme se compose tout seul',
     texte:
       'Tripora range les activités qui ont plu jour par jour, au bon moment de la journée. Déplacez, remplacez ou ajoutez une étape : le groupe voit la même version.',
-    pose: 'pointer',
-    pastille: 'itineraire',
     quand: (contexte) => contexte.voyageId !== null && contexte.destinationArretee,
   },
   {
@@ -162,8 +143,6 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     cibles: ['ajouter-info'],
     titre: 'Tout sous la main, même sans réseau',
     texte: 'Codes, wifi, adresses, billets : rangez-les dans le coffre. Ils restent lisibles hors connexion.',
-    pose: 'explique',
-    pastille: 'coffre',
     quand: (contexte) => contexte.voyageId !== null,
   },
   {
@@ -173,8 +152,6 @@ export const ARRETS_DE_LA_VISITE: readonly ArretDeLaVisite[] = [
     titre: 'Qui doit quoi, sans calculatrice',
     texte:
       'Chacun note ce qu’il paie, en toutes devises. À la fin, Tripora calcule les remboursements au plus simple.',
-    pose: 'pointer',
-    pastille: 'depenses',
     quand: (contexte) => contexte.voyageId !== null,
   },
 ];

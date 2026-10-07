@@ -1,49 +1,75 @@
 import { describe, expect, it } from 'vitest';
-import { estEnVue, LARGEUR_MAX, MARGE, placerLaBulle } from './placementDeLaBulle';
+import { estEnVue, LARGEUR_DE_BULLE, MARGE, placerLaBulle, TAILLE_DE_PLUMIO } from './placementDeLaBulle';
 
 const TELEPHONE = { largeur: 390, hauteur: 844 };
 const ORDINATEUR = { largeur: 1280, hauteur: 800 };
 
-describe('où poser la bulle de la visite', () => {
-  it('au milieu quand il n’y a rien à désigner', () => {
-    expect(placerLaBulle(null, TELEPHONE)).toEqual({ mode: 'centre', largeur: LARGEUR_MAX });
+describe('où poser la bulle de la visite, et Plumio dessus', () => {
+  it('au milieu quand il n’y a rien à désigner, Plumio qui explique', () => {
+    const placement = placerLaBulle(null, TELEPHONE);
+    expect(placement).toMatchObject({ mode: 'centre', largeur: LARGEUR_DE_BULLE.telephone });
+    expect(placement.plumio.pose).toBe('explique');
     // Sur un petit téléphone, la marge l'emporte.
-    expect(placerLaBulle(null, { largeur: 320, hauteur: 640 })).toEqual({ mode: 'centre', largeur: 320 - 2 * MARGE });
+    expect(placerLaBulle(null, { largeur: 300, hauteur: 640 }).largeur).toBe(300 - 2 * MARGE);
   });
 
-  it('sous l’élément quand la place le permet, la pointe en face de lui', () => {
+  it('sous l’élément, à la hauteur de Plumio, qui lève l’aile vers lui', () => {
     // Le bouton « Nouveau », en haut à droite de la liste des voyages.
     const placement = placerLaBulle({ top: 24, left: 264, width: 106, height: 40 }, TELEPHONE);
-    expect(placement.mode).toBe('dessous');
-    if (placement.mode !== 'dessous') return;
-    expect(placement.top).toBe(24 + 40 + 14);
-    // Collée au bord droit sans déborder…
+    if (placement.mode !== 'dessous') throw new Error(placement.mode);
+    // Plumio se tient entre les deux : il ne cache jamais l'élément.
+    expect(placement.top).toBe(24 + 40 + 58);
+    expect(placement.top! - (24 + 40)).toBeGreaterThanOrEqual(TAILLE_DE_PLUMIO.telephone - 6);
+    // Collée au bord droit sans déborder, la pointe sous le centre du bouton.
     expect(placement.left + placement.largeur).toBe(TELEPHONE.largeur - MARGE);
-    // … et la pointe sous le centre du bouton.
     expect(placement.left + placement.pointe).toBe(264 + 53);
-    expect(placement.geste).toBe('haut');
+    // Plumio juste avant la pointe, sur la bulle.
+    expect(placement.plumio).toMatchObject({ pose: 'pointer-haut', taille: 64 });
+    expect(placement.plumio.left + placement.plumio.taille).toBe(placement.pointe - 6);
   });
 
-  it('au-dessus quand l’élément est en bas de l’écran', () => {
+  it('au-dessus quand l’élément est en bas de l’écran, Plumio au coin', () => {
     // « Ajouter une dépense », sous le budget prévu.
     const placement = placerLaBulle({ top: 600, left: 20, width: 350, height: 56 }, TELEPHONE);
-    expect(placement.mode).toBe('dessus');
-    if (placement.mode !== 'dessus') return;
-    expect(placement.bottom).toBe(TELEPHONE.hauteur - 600 + 14);
-    expect(placement.geste).toBe('bas');
-    expect(placement.maxHauteur).toBe(600 - 14 - MARGE);
+    if (placement.mode !== 'dessus') throw new Error(placement.mode);
+    expect(placement.bottom).toBe(TELEPHONE.hauteur - 600 + 22);
+    expect(placement.plumio.pose).toBe('pointer-bas');
+    // Il déborde un peu de la bulle, l'aile vers l'élément.
+    expect(placement.plumio.left + placement.plumio.taille).toBe(placement.largeur + 18);
+    // Sa place est comptée : la bulle et lui tiennent au-dessus de l'élément.
+    expect(placement.maxHauteur).toBe(600 - 22 - MARGE - (64 - 4));
   });
 
   it('ancrée en bas quand l’élément occupe presque tout l’écran', () => {
-    const placement = placerLaBulle({ top: 60, left: 0, width: 390, height: 720 }, TELEPHONE);
-    expect(placement.mode).toBe('ancree');
+    expect(placerLaBulle({ top: 60, left: 0, width: 390, height: 720 }, TELEPHONE).mode).toBe('ancree');
   });
 
-  it('ne dépasse pas sa largeur sur un grand écran, et reste centrée sur l’élément', () => {
-    const placement = placerLaBulle({ top: 370, left: 376, width: 784, height: 52 }, ORDINATEUR);
-    expect(placement.largeur).toBe(LARGEUR_MAX);
-    if (placement.mode !== 'dessous' && placement.mode !== 'dessus') throw new Error(placement.mode);
-    expect(placement.left + placement.largeur / 2).toBe(376 + 784 / 2);
+  it('sur un ordinateur, à côté de l’élément, Plumio tourné vers lui', () => {
+    const carte = { top: 300, left: 380, width: 400, height: 120 };
+    const placement = placerLaBulle(carte, ORDINATEUR);
+    if (placement.mode !== 'cote') throw new Error(placement.mode);
+    expect(placement.largeur).toBe(LARGEUR_DE_BULLE.ordinateur);
+    expect(placement.left).toBe(380 + 400 + 26);
+    expect(placement.cote).toBe('gauche');
+    expect(placement.plumio).toMatchObject({ pose: 'pointer-gauche', taille: 80, left: 12 });
+  });
+
+  it('en arabe, à côté du début de la ligne : la gauche de l’écran', () => {
+    const carte = { top: 300, left: 500, width: 400, height: 120 };
+    const placement = placerLaBulle(carte, ORDINATEUR, { rtl: true });
+    if (placement.mode !== 'cote') throw new Error(placement.mode);
+    expect(placement.left + placement.largeur).toBe(500 - 26);
+    expect(placement.cote).toBe('droite');
+    // Retourné en arabe, il prend la pose « à gauche » pour montrer la droite de l'écran.
+    expect(placement.plumio.pose).toBe('pointer-gauche');
+    expect(placement.plumio.left).toBe(placement.largeur - 12 - 80);
+  });
+
+  it('sur un ordinateur, dessous quand rien ne tient à côté', () => {
+    // Le bouton « Nouveau », collé au bord droit.
+    const placement = placerLaBulle({ top: 40, left: 1150, width: 110, height: 40 }, ORDINATEUR);
+    expect(placement.mode).toBe('dessous');
+    if (placement.mode === 'dessous') expect(placement.top).toBe(40 + 40 + 86);
   });
 
   it('garde la pointe loin des coins arrondis, même pour un élément collé au bord', () => {
@@ -51,6 +77,8 @@ describe('où poser la bulle de la visite', () => {
     if (placement.mode !== 'dessous') throw new Error(placement.mode);
     expect(placement.left).toBe(MARGE);
     expect(placement.pointe).toBeGreaterThanOrEqual(22);
+    // Et Plumio reste sur la bulle.
+    expect(placement.plumio.left).toBeGreaterThanOrEqual(0);
   });
 
   it('sait si un élément est entièrement à l’écran', () => {

@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Mascotte } from '@/components/mascotte/Mascotte';
 import { remonterUneErreur } from '@/lib/remonterLesErreurs';
 
 /**
@@ -29,6 +30,7 @@ export class FiletDeSecurite extends Component<{ children: ReactNode }, { erreur
     if (!this.state.erreur) return this.props.children;
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-4 px-6 py-10">
+        <Mascotte pose="oups" taille={120} joue />
         <h1 className="titre text-2xl">Cet écran a rencontré un problème</h1>
         <p className="text-muted text-sm leading-relaxed">
           Vos voyages ne sont pas touchés. Le problème nous a été signalé, sans rien qui vous désigne ; recharger

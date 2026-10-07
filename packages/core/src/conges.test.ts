@@ -13,6 +13,12 @@ import {
   vacancesAVenir,
   weekendDu,
   zoneProbable,
+  nomDeRegion,
+  regionProbable,
+  regionsScolaires,
+  vacancesAVenirDu,
+  vacancesConnues,
+  vacancesDuMondeReleveesLe,
 } from './conges.js';
 
 describe('les jours fériés', () => {
@@ -159,5 +165,75 @@ describe('le calendrier du pays de départ', () => {
     // Quand ce test échoue : avancer les années dans packages/core/scripts/feries.py et le relancer.
     const dansUnAn = new Date(Date.now() + 365 * 86_400_000).toISOString().slice(0, 10);
     expect(feriesConnusJusquau() >= dansUnAn).toBe(true);
+  });
+});
+
+describe('les vacances scolaires hors de France', () => {
+  it('sont connues pour une quinzaine de pays, pas pour le Royaume-Uni', () => {
+    expect(vacancesConnues('FR')).toBe(true);
+    expect(vacancesConnues('DE')).toBe(true);
+    expect(vacancesConnues('PT')).toBe(true);
+    expect(vacancesConnues('GB')).toBe(false);
+    expect(vacancesConnues(null)).toBe(false);
+  });
+
+  it('se rangent par région là où elles en dépendent, avec leur nom en français', () => {
+    const lander = regionsScolaires('DE');
+    expect(lander).toHaveLength(16);
+    expect(lander.find((region) => region.code === 'DE-BY')).toMatchObject({ nom: 'Bavière', en: 'Bavaria' });
+    // Le Portugal part en vacances d'un même pas : pas de région à choisir.
+    expect(regionsScolaires('PT')).toEqual([]);
+    expect(nomDeRegion('BE', 'BE-FR')).toBe('Communauté française');
+  });
+
+  it('devinent la région d’après la ville de départ', () => {
+    expect(regionProbable('DE', { lat: 48.137, lng: 11.575 })).toBe('DE-BY'); // Munich
+    expect(regionProbable('DE', { lat: 52.52, lng: 13.405 })).toBe('DE-BE'); // Berlin
+    expect(regionProbable('DE', { lat: 50.938, lng: 6.96 })).toBe('DE-NW'); // Cologne
+    expect(regionProbable('AT', { lat: 48.208, lng: 16.373 })).toBe('AT-WI'); // Vienne
+    expect(regionProbable('CH', { lat: 46.204, lng: 6.143 })).toBe('CH-GE'); // Genève
+    expect(regionProbable('CH', { lat: 47.377, lng: 8.541 })).toBe('CH-ZH'); // Zurich
+    // Les trois régions scolaires des Pays-Bas, d'après la commune la plus proche.
+    expect(regionProbable('NL', { lat: 52.373, lng: 4.893 })).toBe('NL-NO'); // Amsterdam
+    expect(regionProbable('NL', { lat: 51.924, lng: 4.478 })).toBe('NL-MI'); // Rotterdam
+    expect(regionProbable('NL', { lat: 50.851, lng: 5.691 })).toBe('NL-ZU'); // Maastricht
+    // Belgique : la communauté d'après la ville ; Bruxelles, où les deux ont leurs écoles, n'en désigne aucune.
+    expect(regionProbable('BE', { lat: 50.633, lng: 5.567 })).toBe('BE-FR'); // Liège
+    expect(regionProbable('BE', { lat: 51.054, lng: 3.717 })).toBe('BE-NL'); // Gand
+    expect(regionProbable('BE', { lat: 50.847, lng: 4.357 })).toBeNull(); // Bruxelles
+    expect(regionProbable('PT', { lat: 38.722, lng: -9.139 })).toBeNull();
+  });
+
+  it('proposent les vacances à venir de la région, nommées avec elle', () => {
+    const releve = vacancesDuMondeReleveesLe();
+    const bavaroises = vacancesAVenirDu('DE', releve, 'DE-BY', 4);
+    expect(bavaroises.length).toBeGreaterThan(0);
+    for (const periode of bavaroises) {
+      expect(periode.nature).toBe('vacances');
+      expect(periode.nom).toMatch(/\(Bavière\)$/u);
+      expect(periode.nomEn).toMatch(/\(Bavaria\)$/u);
+      expect(periode.fin >= releve).toBe(true);
+      expect(periode.jours).toBeGreaterThanOrEqual(3);
+    }
+    // Sans région choisie, une période propre à quelques régions le dit.
+    const toutes = vacancesAVenirDu('DE', releve, null, 6);
+    expect(toutes.every((periode) => /\((\d+ régions|[^)]+)\)$/u.test(periode.nom))).toBe(true);
+    // La France garde sa propre source.
+    expect(vacancesAVenirDu('FR', '2026-10-01', 'C', 1)[0]?.nom).toBe('Vacances de la Toussaint');
+  });
+
+  it('disent ce que des dates recoupent au départ d’un autre pays', () => {
+    const [premiere] = vacancesAVenirDu('DE', vacancesDuMondeReleveesLe(), 'DE-BY', 1);
+    const { vacances } = cePendant(premiere!.debut, premiere!.fin, 'DE-BY', 'DE');
+    expect(vacances.length).toBeGreaterThan(0);
+    expect(vacances[0]!.en).toBeTruthy();
+    // Au Royaume-Uni, toujours rien.
+    expect(cePendant(premiere!.debut, premiere!.fin, null, 'GB').vacances).toEqual([]);
+  });
+
+  it('rappelle de relever à nouveau les vacances du monde chaque année', () => {
+    // Quand ce test échoue : relancer packages/core/scripts/vacances.py, à la rentrée.
+    const ilYaTreizeMois = new Date(Date.now() - 395 * 86_400_000).toISOString().slice(0, 10);
+    expect(vacancesDuMondeReleveesLe() >= ilYaTreizeMois).toBe(true);
   });
 });

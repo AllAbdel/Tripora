@@ -182,35 +182,42 @@ Les textes des bulles reprennent ceux de l'application. On peut les raccourcir, 
 
 Ensuite, ouvrir une pull request vers `main`, en brouillon si besoin.
 
-## 9. Ce que fait déjà l'application, et ce que fera Claude Code
+## 9. Dans l'application
 
-**Le moteur du tutoriel est en place**, sans personnage. Pour le voir :
-- se connecter (ou « Découvrir en mode local » sur l'écran de connexion) ;
-- puis Profil › À propos › « Revoir le guide de démarrage ».
+Claude Design a livré **Plumio** (`design/mascotte/`, voir `NOTES.md`). Il est
+intégré.
 
-Ce qu'il fait déjà :
-- les redirections de page en page ;
-- un voile sombre, percé autour du vrai élément, avec un liseré de la couleur d'accent ;
-- une bulle de 352 px au plus, sous l'élément (ou au-dessus s'il n'y a pas la place), avec une pointe vers lui ;
-- le clavier, les lecteurs d'écran, « Passer », la reprise après la création du premier voyage, le rappel depuis le profil.
+- **Le composant** : `apps/web/src/components/mascotte/Mascotte.tsx`.
+  - Il lit les poses et la feuille d'animations directement dans
+    `design/mascotte/` : une retouche du dessin régénérée avec
+    `outils/plumio.py` arrive telle quelle dans l'application.
+  - Il se retourne en arabe.
+  - Il suit parfois le pointeur des yeux, à la souris seulement, et jamais
+    quand on a demandé moins de mouvement.
+- **Le tutoriel** (`apps/web/src/components/guide/`) suit les règles des maquettes :
+  - Plumio debout sur la bulle, du côté de l'élément ;
+  - bulle de 288 px sur téléphone, 320 px sur ordinateur, à côté de l'élément
+    sur ordinateur ;
+  - projecteur cerné de papier puis d'accent, pas de voile à « Découvrir » ;
+  - Plumio arrive en volant et joue son geste à chaque étape, puis salue et
+    s'envole sur « Terminer ».
+- **Ailleurs, une fois par écran au plus** :
+  - `attend` sur les écrans vides (voyages, sondages, réservations) ;
+  - `oups` sur la page introuvable et l'écran d'erreur ;
+  - `notification` dans la proposition d'activer les notifications ;
+  - `celebre` sur le bilan d'un voyage terminé.
 
-Le code :
-- les étapes, leurs textes et la pose prévue pour chacune : `apps/web/src/components/guide/arretsDeLaVisite.ts` ;
-- la bulle : `VisiteGuidee.tsx`, dans le même dossier.
+**Deux écarts avec les maquettes, voulus :**
+- **L'élément mis en lumière n'est pas cliquable pendant le tutoriel.** On
+  avance avec « Suivant ». Cliquer le vrai bouton déclencherait sa vraie
+  action en cours de visite : voter, ouvrir un formulaire, créer un voyage.
+  La page reste inerte : une modale, plus simple au clavier et au lecteur
+  d'écran.
+- **Le bouton du budget s'appelle bien « Ajouter une dépense ».**
+  « Nouvelle dépense » est le titre du formulaire qu'il ouvre.
 
-**La place du personnage est réservée.** Elle est au début de la bulle, à gauche (à droite en arabe), à la taille d'une pastille de 44 px.
-- C'est `apps/web/src/components/mascotte/Mascotte.tsx`, qui reçoit la pose et la direction du geste :
-  - `haut` : la bulle est sous l'élément ;
-  - `bas` : elle est au-dessus.
-- En attendant, il affiche la pastille de l'écran.
-- Les maquettes peuvent proposer une autre place : à côté de la bulle, qui déborde du cadre, ou plus grand. L'intégration suivra.
-
-Ce que fera Claude Code :
-- **L'intégration :**
-  - les SVG en composants React ;
-  - les bulles traduites ;
-  - le personnage dans les écrans vides, les erreurs et le mode hors ligne.
-- **Les tests :** unitaires et parcours dans un navigateur.
-
-Côté design, donc, **pas de logique à écrire** : l'apparence, le mouvement et
-les règles d'usage.
+Les textes arabes des maquettes ne sont pas repris : les bulles passent par
+la traduction de l'application, comme le reste (voir `docs/TRADUCTIONS.md`).
+À « Découvrir », les gestes ne s'inversent pas en arabe (la carte part à
+droite pour « j'y vais » dans toutes les langues) : la consigne française
+peut garder « à droite, à gauche ».
