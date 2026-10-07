@@ -3,6 +3,7 @@ import { codeDuPays } from './catalog/pays.js';
 import { FERIES_CONNUS, FERIES_DU_MONDE } from './feries-du-monde.js';
 import { haversineKm } from './geo.js';
 import type { GeoPoint } from './types.js';
+import { VACANCES_DU_MONDE, VACANCES_RELEVEES_LE } from './vacances-du-monde.js';
 
 /**
  * Les jours où l'on peut partir : vacances scolaires, jours fériés, ponts.
@@ -16,15 +17,20 @@ import type { GeoPoint } from './types.js';
  * c'est le lundi de Pâques et le dernier lundi d'août ; à Riyad, le week-end
  * tombe le vendredi et le samedi. Les fériés de la France sont écrits ici, à
  * la main ; ceux des autres pays viennent de `feries-du-monde.ts` (généré).
- * Les vacances scolaires ne sont connues que pour la France : ailleurs, on
- * n'en parle pas plutôt que de plaquer le calendrier français.
+ * Les vacances scolaires de la France aussi ; celles d'une quinzaine d'autres
+ * pays viennent de `vacances-du-monde.ts` (généré depuis OpenHolidays).
+ * Ailleurs, on n'en parle pas plutôt que de plaquer le calendrier français.
  */
 
 export type ZoneScolaire = 'A' | 'B' | 'C';
 
 export interface PeriodeDeVacances {
   nom: string;
+  /** Hors de France : le nom en anglais (en France, la traduction de l'interface s'en charge). */
+  en?: string;
   zones: readonly ZoneScolaire[];
+  /** Hors de France : les régions concernées, par leur code ; absent pour tout le pays. */
+  regions?: readonly string[];
   /** Premier jour sans classe (AAAA-MM-JJ). */
   debut: string;
   /** Dernier jour sans classe, inclus. */
@@ -414,17 +420,21 @@ export function vacancesAVenir(depuis: string, zone: ZoneScolaire | null, limite
 export function cePendant(
   debut: string,
   fin: string,
-  zone: ZoneScolaire | null,
+  zone: ZoneScolaire | string | null,
   pays = 'FR',
 ): { vacances: PeriodeDeVacances[]; feries: JourFerie[] } {
-  // Les vacances scolaires connues sont celles de la France : ailleurs, rien.
+  // En France, la zone ; ailleurs, la région. Un pays sans calendrier connu : rien.
   const vacances =
     pays === 'FR'
       ? VACANCES_SCOLAIRES.filter(
           (periode) =>
-            periode.debut <= fin && periode.fin >= debut && (zone === null || periode.zones.includes(zone)),
+            periode.debut <= fin &&
+            periode.fin >= debut &&
+            (zone === null || periode.zones.includes(zone as ZoneScolaire)),
         )
-      : [];
+      : periodesDu(pays).filter(
+          (periode) => periode.debut <= fin && periode.fin >= debut && concerne(periode, zone),
+        );
   const feries: JourFerie[] = [];
   for (let annee = Number(debut.slice(0, 4)); annee <= Number(fin.slice(0, 4)); annee += 1) {
     feries.push(...joursFeriesDu(pays, annee).filter((jour) => jour.date >= debut && jour.date <= fin));
@@ -435,6 +445,153 @@ export function cePendant(
 /** Jusqu'à quelle date le calendrier scolaire est connu. */
 export function calendrierConnuJusquau(): string {
   return VACANCES_SCOLAIRES.reduce((max, periode) => (periode.fin > max ? periode.fin : max), '');
+}
+
+// ---------------------------------------------------------------------------
+// Les vacances scolaires hors de France
+// ---------------------------------------------------------------------------
+
+/** Une région scolaire d'un pays hors de France : Land, canton, communauté… */
+export interface RegionScolaire {
+  code: string;
+  nom: string;
+  en: string;
+  /** Le dernier jour connu de son calendrier. */
+  jusquau: string;
+}
+
+interface PaysLu {
+  regions: RegionScolaire[];
+  reperes: { region: number; lat: number; lng: number }[];
+  periodes: PeriodeDeVacances[];
+}
+
+const PAYS_LUS = new Map<string, PaysLu>();
+
+function lirePays(pays: string): PaysLu | null {
+  const donnees = VACANCES_DU_MONDE[pays];
+  if (!donnees) return null;
+  let lu = PAYS_LUS.get(pays);
+  if (!lu) {
+    const regions = donnees.regions.map(([code, nom, en, jusquau]) => ({
+      code,
+      nom,
+      en,
+      jusquau: jusquau || donnees.jusquau,
+    }));
+    const reperes = donnees.reperes
+      ? donnees.reperes.split(';').map((repere) => {
+          const [region, lat, lng] = repere.split(',').map(Number) as [number, number, number];
+          return { region, lat, lng };
+        })
+      : [];
+    const enDate = (jour: string) => `${jour.slice(0, 4)}-${jour.slice(4, 6)}-${jour.slice(6, 8)}`;
+    const periodes = donnees.periodes
+      ? donnees.periodes.split(';').map((ligne): PeriodeDeVacances => {
+          const [dates, nom, portee] = ligne.split(':') as [string, string, string];
+          const [debut, fin] = dates.split('-') as [string, string];
+          const [francais, anglais] = donnees.noms[Number(nom)] ?? ['', ''];
+          return {
+            nom: francais,
+            en: anglais,
+            zones: [],
+            debut: enDate(debut),
+            fin: enDate(fin),
+            ...(portee === '*' ? {} : { regions: portee.split('.').map((i) => regions[Number(i)]!.code) }),
+          };
+        })
+      : [];
+    lu = { regions, reperes, periodes };
+    PAYS_LUS.set(pays, lu);
+  }
+  return lu;
+}
+
+function periodesDu(pays: string): PeriodeDeVacances[] {
+  return lirePays(pays)?.periodes ?? [];
+}
+
+/** Une période vaut pour la région choisie — ou pour toutes, sans choix. */
+function concerne(periode: PeriodeDeVacances, region: string | null): boolean {
+  return region === null || !periode.regions || periode.regions.includes(region);
+}
+
+/** Vrai quand Tripora connaît les vacances scolaires de ce pays. */
+export function vacancesConnues(pays: string | null | undefined): boolean {
+  return pays === 'FR' || (pays != null && pays in VACANCES_DU_MONDE);
+}
+
+/** Les régions scolaires d'un pays hors de France, par ordre alphabétique ; vide quand le calendrier est national. */
+export function regionsScolaires(pays: string): readonly RegionScolaire[] {
+  return lirePays(pays)?.regions ?? [];
+}
+
+/**
+ * La région probable d'un point de départ hors de France : celle du repère le
+ * plus proche (le centre d'un Land, une commune néerlandaise, une ville belge).
+ *
+ * Une supposition, affichée comme telle et modifiable, comme la zone française.
+ * `null` quand le pays n'a pas de régions, que le point est loin de tout repère,
+ * ou qu'il tombe sur un lieu qui n'en désigne aucune (Bruxelles, où les deux
+ * grandes communautés ont leurs écoles).
+ */
+export function regionProbable(pays: string, point: GeoPoint): string | null {
+  const lu = lirePays(pays);
+  if (!lu || lu.regions.length === 0) return null;
+  let meilleur: { region: number; km: number } | null = null;
+  for (const repere of lu.reperes) {
+    const km = haversineKm(point, repere);
+    if (!meilleur || km < meilleur.km) meilleur = { region: repere.region, km };
+  }
+  if (!meilleur || meilleur.km > 300 || meilleur.region < 0) return null;
+  return lu.regions[meilleur.region]?.code ?? null;
+}
+
+/** Le nom d'une région, dans la langue de l'interface. */
+export function nomDeRegion(pays: string, code: string, anglais = false): string {
+  const region = regionsScolaires(pays).find((candidate) => candidate.code === code);
+  return region ? (anglais ? region.en : region.nom) : code;
+}
+
+/**
+ * Les vacances scolaires à venir d'un pays, pour une région ou pour toutes.
+ *
+ * Même forme que `vacancesAVenir` (la France) : le nom porte la région quand
+ * la période ne vaut pas pour tout le pays — « Vacances d’automne (Bavière) ».
+ */
+export function vacancesAVenirDu(
+  pays: string,
+  depuis: string,
+  region: string | null,
+  limite = 6,
+): OccasionDePartir[] {
+  if (pays === 'FR') return vacancesAVenir(depuis, region as ZoneScolaire | null, limite);
+  const precision = (periode: PeriodeDeVacances, anglais: boolean): string => {
+    if (!periode.regions) return '';
+    const codes = region ? [region] : periode.regions;
+    if (codes.length > 2) return anglais ? ` (${codes.length} regions)` : ` (${codes.length} régions)`;
+    return ` (${codes.map((code) => nomDeRegion(pays, code, anglais)).join(', ')})`;
+  };
+  return periodesDu(pays)
+    .filter((periode) => periode.fin >= depuis && concerne(periode, region))
+    .slice(0, limite)
+    .map((periode) => {
+      const debut = periode.debut < depuis ? depuis : periode.debut;
+      return {
+        nom: `${periode.nom}${precision(periode, false)}`,
+        nomEn: `${periode.en ?? periode.nom}${precision(periode, true)}`,
+        debut,
+        fin: periode.fin,
+        jours: ecartEnJours(debut, periode.fin) + 1,
+        aPoser: 0,
+        nature: 'vacances' as const,
+      };
+    });
+}
+
+/** Le jour où les vacances des autres pays ont été relevées. */
+export function vacancesDuMondeReleveesLe(): string {
+  return VACANCES_RELEVEES_LE;
 }
 
 // ---------------------------------------------------------------------------

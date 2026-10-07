@@ -7,6 +7,8 @@ import { CePendant, OccasionsDePartir } from './OccasionsDePartir';
 
 const LYON = { name: 'Lyon', lat: 45.764, lng: 4.8357, country: 'France' };
 const LONDRES = { name: 'Londres-Heathrow', lat: 51.47, lng: -0.4543, country: 'Royaume-Uni' };
+const MUNICH = { name: 'Munich', lat: 48.137, lng: 11.575, country: 'Allemagne' };
+const LIEGE = { name: 'Liège', lat: 50.633, lng: 5.567, country: 'Belgique' };
 
 describe('les bons moments pour partir', () => {
   beforeEach(() => {
@@ -47,7 +49,42 @@ describe('les bons moments pour partir', () => {
     expect(screen.queryByRole('group', { name: 'Zone de vacances scolaires' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Vacances de la Toussaint|Armistice/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Noël et Boxing Day/ })).toBeInTheDocument();
-    expect(screen.getByText(/ne sont connues que pour la France/)).toBeInTheDocument();
+    expect(screen.getByText(/ne connaît pas encore les vacances scolaires de ce pays/)).toBeInTheDocument();
+  });
+
+  it('au départ de Munich, devine la Bavière et propose ses vacances', async () => {
+    const choisir = vi.fn();
+    render(<OccasionsDePartir origin={MUNICH} onChoisir={choisir} />);
+    const liste = screen.getByRole('combobox', { name: 'Vacances de la région' });
+    expect(liste).toHaveValue('DE-BY');
+    expect(within(liste).getByRole('option', { name: 'Bavière (déduite)' })).toBeInTheDocument();
+    const automne = screen.getByRole('button', { name: /Vacances d’automne \(Bavière\)/ });
+    await userEvent.click(automne);
+    expect(choisir).toHaveBeenCalledWith(expect.objectContaining({ debut: '2026-11-02', fin: '2026-11-06' }));
+    // La source, sous licence ODbL, se cite là où ses données se lisent.
+    expect(screen.getByText('Vacances scolaires : OpenHolidays.')).toBeInTheDocument();
+
+    // Une autre région, choisie à la main.
+    await userEvent.selectOptions(liste, 'DE-HH');
+    expect(screen.queryByRole('button', { name: /\(Bavière\)/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /\(Hambourg\)/ }).length).toBeGreaterThan(0);
+  });
+
+  it('en Belgique, la communauté en puces, devinée d’après la ville', () => {
+    render(<OccasionsDePartir origin={LIEGE} onChoisir={vi.fn()} />);
+    const groupe = screen.getByRole('group', { name: 'Région des vacances scolaires' });
+    expect(within(groupe).getByRole('button', { name: 'Communauté française (déduite)' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(groupe).getByRole('button', { name: 'Communauté flamande' })).toBeInTheDocument();
+  });
+
+  it('dit les vacances étrangères que des dates recoupent, région comprise', () => {
+    render(<CePendant debut="2026-11-03" fin="2026-11-05" origin={MUNICH} />);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Pendant les vacances d’automne (Bavière) : plus de monde, et des prix souvent plus hauts.',
+    );
   });
 
   it('ne dit rien des vacances françaises pour des dates choisies au départ de Londres', () => {
@@ -65,6 +102,13 @@ describe('les bons moments pour partir', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'During the All Saints’ holidays (zone A): busier, and prices often higher. Public holiday: All Saints’ Day (Sun, Nov 1).',
     );
+  });
+
+  it('écrit en anglais les vacances étrangères et leur région', () => {
+    useLangue.setState({ preference: 'en' });
+    reglerLaRegion({ locale: 'en-US' });
+    render(<CePendant debut="2026-11-03" fin="2026-11-05" origin={MUNICH} />);
+    expect(screen.getByRole('status')).toHaveTextContent('During the autumn holidays (Bavaria): busier, and prices often higher.');
   });
 });
 

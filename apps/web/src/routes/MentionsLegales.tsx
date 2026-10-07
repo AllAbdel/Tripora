@@ -52,6 +52,10 @@ export default function MentionsLegales() {
           © les contributeurs d’OpenStreetMap, sous licence ODbL ; fonds de carte OpenFreeMap.
         </Definition>
         <Definition terme="Climat et météo">Open-Meteo, sous licence CC BY 4.0.</Definition>
+        <Definition terme="Vacances scolaires">
+          En France, le calendrier du ministère de l’Éducation nationale ; ailleurs, OpenHolidays,
+          sous licence ODbL. Les régions sont situées d’après OpenStreetMap.
+        </Definition>
         <Definition terme="Taux de change">
           Banque centrale européenne, par l’intermédiaire de Frankfurter.
         </Definition>
