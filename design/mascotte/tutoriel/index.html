@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plumio · tutoriel</title>
+<style>
+/*
+ * Plumio — couleurs, pivots et mouvements.
+ *
+ * Une seule feuille, à charger une fois. Les poses (poses/*.svg) portent leurs
+ * couleurs claires en attributs, pour s'afficher seules ; cette feuille les
+ * reprend par classe pour le mode sombre, l'accent, le regard et le mouvement.
+ *
+ * Déclencheurs, posés sur le <svg class="plumio …"> :
+ *   .plumio--joue          joue une fois le geste propre à la pose (≤ 1,2 s)
+ *   .plumio--calme         souffle, clignements, foulard qui bouge à peine
+ *   .plumio--vie           .plumio--calme + une chorégraphie de 26 s, sans JavaScript
+ *   .plumio--geste-<nom>   un geste au repos, une fois (lissage, ebroue, pas,
+ *                          regarde, penche, queue, pepie, cligne)
+ *   .plumio--suit          les yeux suivent --plumio-regard-x / -y (de -1 à 1)
+ *   .plumio--envol, .plumio--atterrit, .plumio--sort   passage d'une page à l'autre
+ *   .plumio--sombre, .plumio--mono, .plumio--petit, .plumio--immobile
+ *
+ * Seuls transform et opacity sont animés. Courbe : vive au départ, arrêt net,
+ * sans rebond (« le papier ne rebondit pas »).
+ */
+
+/* ── 1. Couleurs ─────────────────────────────────────────────────────────── */
+
+.plumio {
+  --plumio-trait: #2a251f;  /* ink-800 */
+  --plumio-dos: #3a342b;    /* ink-700 */
+  --plumio-ventre: #fffdf8; /* paper-50 */
+  --plumio-or: #c08a2e;     /* gold-500 */
+  --plumio-vis: #1a1713;    /* ink-900 : pupille */
+  --plumio-kraft: #e8c37a;  /* gold-300 : valise */
+  --plumio-lagon: #2f8f88;  /* lagoon-500 : épingle de la carte */
+  --plumio-ligne: #a79c8a;  /* ink-300 : lignes du carnet */
+  --plumio-courbe: cubic-bezier(0.16, 1, 0.3, 1);
+  --plumio-balancier: cubic-bezier(0.45, 0, 0.55, 1);
+  --plumio-depart: cubic-bezier(0.5, 0, 0.75, 0);
+  color: var(--accent, #1a5fb4);
+  stroke: var(--plumio-trait);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+
+.dark .plumio,
+.plumio.plumio--sombre {
+  --plumio-trait: #e6ddcb;  /* paper-300 : le trait s'éclaircit */
+  --plumio-dos: #524b3f;    /* ink-600 */
+  --plumio-ventre: #f2ece0; /* paper-200 */
+  --plumio-or: #d4a656;     /* gold-400 */
+  --plumio-kraft: #d4a656;
+  --plumio-lagon: #7ec6c2;  /* lagoon-300 */
+  --plumio-ligne: #6b6355;  /* ink-500 */
+}
+
+/* Une seule couleur (pastille, tampon) : tout prend currentColor, le ventre
+   et le blanc de l'œil prennent le fond. */
+.plumio.plumio--mono {
+  --plumio-trait: currentColor;
+  --plumio-dos: currentColor;
+  --plumio-or: currentColor;
+  --plumio-vis: currentColor;
+  --plumio-kraft: var(--plumio-fond, #fffdf8);
+  --plumio-lagon: currentColor;
+  --plumio-ligne: currentColor;
+  --plumio-ventre: var(--plumio-fond, #fffdf8);
+}
+
+.plumio .p-dos { fill: var(--plumio-dos); }
+.plumio .p-ventre { fill: var(--plumio-ventre); }
+.plumio .p-or { fill: var(--plumio-or); }
+.plumio .p-vis { fill: var(--plumio-vis); }
+.plumio .p-kraft { fill: var(--plumio-kraft); }
+.plumio .p-lagon { fill: var(--plumio-lagon); }
+.plumio .p-trait { fill: var(--plumio-trait); }
+.plumio .p-ventre-s { stroke: var(--plumio-ventre); }
+.plumio .p-or-s { stroke: var(--plumio-or); }
+.plumio .p-ligne { stroke: var(--plumio-ventre); stroke-opacity: 0.35; }
+.plumio .p-ligne-s { stroke: var(--plumio-ligne); }
+.plumio .p-plein { stroke: none; }
+.plumio .p-vide { fill: none; }
+.plumio .p-fin { stroke-width: 2; }
+.plumio .p-patte { stroke-width: 2.4; }
+.plumio .p-pointilles { stroke-dasharray: 2 2.6; }
+
+/* Sous 40 px : on retire les détails qui deviennent du bruit. */
+.plumio.plumio--petit .p-ligne,
+.plumio.plumio--petit .plumio-pensee { opacity: 0; }
+
+/* ── 2. Pivots (unités du viewBox 96 × 96) ───────────────────────────────── */
+
+.plumio g { transform-box: view-box; }
+.plumio-pas,
+.plumio-pose,
+.plumio-souffle { transform-origin: 53px 88px; }
+.plumio-tete,
+.plumio-tete-regard { transform-origin: 54px 42px; }
+.plumio-aile { transform-origin: 47px 49px; }
+.plumio-aile-arriere { transform-origin: 57px 47px; }
+.plumio-queue { transform-origin: 36px 74px; }
+.plumio-pan { transform-origin: 64px 46px; }
+.plumio-oeil { transform-origin: 61px 25px; }
+.plumio-paupiere { transform-origin: 61px 19.4px; }
+.plumio-bec-bas { transform-origin: 71px 26.6px; }
+.plumio-patte-avant { transform-origin: 58px 80px; }
+.plumio-patte-arriere { transform-origin: 49px 81px; }
+.plumio-plume { transform-origin: 84px 17px; }
+.plumio--en-vol .plumio-aile { transform-origin: 50px 48px; }
+.plumio--en-vol .plumio-aile-arriere { transform-origin: 56px 47px; }
+.plumio--en-vol .plumio-queue { transform-origin: 35px 57px; }
+.plumio--en-vol .plumio-pan { transform-origin: 44px 46px; }
+.plumio--en-vol .plumio-pas,
+.plumio--en-vol .plumio-souffle { transform-origin: 50px 52px; }
+.plumio--explique .plumio-objet { transform-origin: 62px 66px; }
+.plumio--hors-ligne .plumio-objet { transform-origin: 60px 72px; }
+.plumio--notification .plumio-objet { transform-origin: 74px 28px; }
+.plumio--depart .plumio-objet { transform-origin: 54px 63px; }
+.plumio-eclats > *,
+.plumio-pensee > * { transform-box: fill-box; transform-origin: center; }
+
+/* ── 3. Le regard ────────────────────────────────────────────────────────────
+   --plumio-regard-x : -1 (derrière lui) à 1 (devant son bec).
+   --plumio-regard-y : -1 (en haut) à 1 (en bas).
+   Posées par l'application avec .plumio--suit ; sans elles, il regarde devant. */
+
+.plumio-pupille {
+  transform: translate(calc(var(--plumio-regard-x, 0) * 1.4px), calc(var(--plumio-regard-y, 0) * 1.2px));
+  transition: transform 160ms var(--plumio-courbe);
+}
+.plumio-tete-regard {
+  transform: rotate(calc(var(--plumio-regard-y, 0) * 7deg));
+  transition: transform 320ms var(--plumio-courbe);
+}
+
+/* ── 4. Au repos : .plumio--calme et la pose « attend » ─────────────────── */
+
+.plumio--calme .plumio-souffle,
+.plumio--vie .plumio-souffle,
+.plumio--attend .plumio-souffle,
+.plumio--hors-ligne .plumio-souffle {
+  animation: mascotte-souffle 4200ms var(--plumio-balancier) infinite;
+}
+.plumio--calme .plumio-oeil,
+.plumio--vie .plumio-oeil,
+.plumio--attend .plumio-oeil,
+.plumio--hors-ligne .plumio-oeil {
+  animation: mascotte-cligne 5300ms linear infinite;
+}
+.plumio--calme .plumio-pan,
+.plumio--vie .plumio-pan,
+.plumio--attend .plumio-pan {
+  animation: mascotte-pan 6600ms var(--plumio-balancier) infinite;
+}
+
+@keyframes mascotte-souffle {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.012, 1.028); }
+}
+@keyframes mascotte-cligne {
+  0%, 94% { transform: scaleY(1); }
+  95.5% { transform: scaleY(0.08); }
+  97%, 100% { transform: scaleY(1); }
+}
+@keyframes mascotte-pan {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(5deg); }
+}
+
+/* ── 5. La vie au repos, sans JavaScript (.plumio--vie) ──────────────────────
+   Une chorégraphie de 26 s, surtout faite d'immobilité : un coup de queue,
+   la tête qui se penche, deux pas de côté, un coup de bec dans les plumes,
+   un ébrouement, un regard en l'air, deux pas pour revenir. Toutes les pistes
+   ont la même durée et restent synchrones. */
+
+.plumio--vie .plumio-tete { animation: mascotte-vie-tete 26s linear infinite; }
+.plumio--vie .plumio-aile { animation: mascotte-vie-aile 26s linear infinite; }
+.plumio--vie .plumio-queue { animation: mascotte-vie-queue 26s linear infinite; }
+.plumio--vie .plumio-pas { animation: mascotte-vie-pas 26s linear infinite; }
+.plumio--vie .plumio-pose { animation: mascotte-vie-ebroue 26s linear infinite; }
+.plumio--vie .plumio-patte-avant { animation: mascotte-vie-patte-avant 26s linear infinite; }
+.plumio--vie .plumio-patte-arriere { animation: mascotte-vie-patte-arriere 26s linear infinite; }
+.plumio--vie:not(.plumio--suit) .plumio-pupille { animation: mascotte-vie-regard 26s linear infinite; }
+
+@keyframes mascotte-vie-tete {
+  0%, 19% { transform: rotate(0deg); }
+  20.5%, 26% { transform: rotate(-14deg); animation-timing-function: var(--plumio-courbe); }
+  27.5%, 45.5% { transform: rotate(0deg); }
+  47% { transform: rotate(40deg); }
+  48% { transform: rotate(34deg); }
+  49% { transform: rotate(41deg); }
+  50% { transform: rotate(35deg); }
+  51% { transform: rotate(41deg); }
+  52% { transform: rotate(38deg); }
+  54%, 67.5% { transform: rotate(0deg); }
+  69%, 74% { transform: rotate(-12deg); }
+  75.5%, 79% { transform: rotate(7deg); }
+  80.5%, 100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-vie-aile {
+  0%, 45.5% { transform: rotate(0deg); }
+  47%, 52% { transform: rotate(-10deg); }
+  54%, 60% { transform: rotate(0deg); }
+  60.6% { transform: rotate(-14deg); }
+  61.2% { transform: rotate(5deg); }
+  61.8% { transform: rotate(-8deg); }
+  62.5%, 100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-vie-queue {
+  0%, 9.5% { transform: rotate(0deg); }
+  10.2% { transform: rotate(-10deg); }
+  11.4%, 39% { transform: rotate(0deg); }
+  39.7% { transform: rotate(-8deg); }
+  40.9%, 60.5% { transform: rotate(0deg); }
+  61.2% { transform: rotate(-9deg); }
+  62.5%, 90.5% { transform: rotate(0deg); }
+  91.2% { transform: rotate(-8deg); }
+  92.4%, 100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-vie-pas {
+  0%, 34% { transform: translate(0, 0); }
+  35% { transform: translate(1.5px, -2px); }
+  36% { transform: translate(3px, 0); }
+  37% { transform: translate(4.5px, -2px); }
+  38%, 86% { transform: translate(6px, 0); }
+  87% { transform: translate(4.5px, -2px); }
+  88% { transform: translate(3px, 0); }
+  89% { transform: translate(1.5px, -2px); }
+  90%, 100% { transform: translate(0, 0); }
+}
+@keyframes mascotte-vie-patte-avant {
+  0%, 34% { transform: translateY(0); }
+  35% { transform: translateY(-2.5px); }
+  36%, 86% { transform: translateY(0); }
+  87% { transform: translateY(-2.5px); }
+  88%, 100% { transform: translateY(0); }
+}
+@keyframes mascotte-vie-patte-arriere {
+  0%, 36% { transform: translateY(0); }
+  37% { transform: translateY(-2.5px); }
+  38%, 88% { transform: translateY(0); }
+  89% { transform: translateY(-2.5px); }
+  90%, 100% { transform: translateY(0); }
+}
+@keyframes mascotte-vie-ebroue {
+  0%, 60% { transform: rotate(0deg) scale(1); }
+  60.6% { transform: rotate(-2.5deg) scale(1.04); }
+  61.2% { transform: rotate(2.5deg) scale(1.04); }
+  61.8% { transform: rotate(-1.5deg) scale(1.02); }
+  62.5%, 100% { transform: rotate(0deg) scale(1); }
+}
+@keyframes mascotte-vie-regard {
+  0%, 6% { transform: translate(0, 0); }
+  6.3%, 13% { transform: translate(-1.3px, 0.2px); }
+  13.3%, 20% { transform: translate(0, 0); }
+  20.5%, 26% { transform: translate(0.6px, -1.2px); }
+  27%, 46% { transform: translate(0, 0); }
+  47%, 53% { transform: translate(0.6px, 1.3px); }
+  54%, 63% { transform: translate(0, 0); }
+  63.3%, 67% { transform: translate(-1.2px, 0.3px); }
+  69%, 74% { transform: translate(0.8px, -1.3px); }
+  75.5%, 79% { transform: translate(1px, 1.1px); }
+  80.5%, 100% { transform: translate(0, 0); }
+}
+
+/* ── 6. Gestes au repos, une fois (.plumio--geste-<nom>) ─────────────────────
+   L'application en choisit un de temps en temps (toutes les 8 à 20 s), retire
+   la classe à animationend, et n'en lance aucun pendant qu'une bulle s'écrit. */
+
+.plumio--geste-cligne .plumio-oeil { animation: mascotte-cligne-une 260ms linear both; }
+.plumio--geste-lissage .plumio-tete { animation: mascotte-lissage-tete 1200ms linear both; }
+.plumio--geste-lissage .plumio-aile { animation: mascotte-lissage-aile 1200ms var(--plumio-courbe) both; }
+.plumio--geste-lissage .plumio-pan { animation: mascotte-lissage-pan 1200ms linear both; }
+.plumio--geste-lissage .plumio-pupille { animation: mascotte-regard-bas 1200ms linear both; }
+.plumio--geste-ebroue .plumio-pose { animation: mascotte-ebroue 560ms linear both; }
+.plumio--geste-ebroue .plumio-aile { animation: mascotte-ebroue-aile 560ms linear both; }
+.plumio--geste-ebroue .plumio-queue { animation: mascotte-queue 560ms var(--plumio-courbe) both; }
+.plumio--geste-pas .plumio-pas { animation: mascotte-pas 1200ms linear both; }
+.plumio--geste-pas .plumio-patte-avant { animation: mascotte-pas-avant 1200ms linear both; }
+.plumio--geste-pas .plumio-patte-arriere { animation: mascotte-pas-arriere 1200ms linear both; }
+.plumio--geste-regarde .plumio-tete { animation: mascotte-regarde 1200ms var(--plumio-courbe) both; }
+.plumio--geste-regarde .plumio-pupille { animation: mascotte-regarde-yeux 1200ms linear both; }
+.plumio--geste-penche .plumio-tete { animation: mascotte-penche 1100ms var(--plumio-courbe) both; }
+.plumio--geste-queue .plumio-queue { animation: mascotte-queue 480ms var(--plumio-courbe) both; }
+.plumio--geste-pepie .plumio-bec-bas { animation: mascotte-pepie 520ms linear both; }
+.plumio--geste-pepie .plumio-tete { animation: mascotte-hoche 520ms var(--plumio-courbe) both; }
+
+@keyframes mascotte-cligne-une {
+  0%, 100% { transform: scaleY(1); }
+  45% { transform: scaleY(0.08); }
+}
+@keyframes mascotte-lissage-tete {
+  0% { transform: rotate(0deg); animation-timing-function: var(--plumio-courbe); }
+  22% { transform: rotate(40deg); }
+  30% { transform: rotate(33deg); }
+  38% { transform: rotate(41deg); }
+  46% { transform: rotate(34deg); }
+  54% { transform: rotate(41deg); }
+  62% { transform: rotate(37deg); animation-timing-function: var(--plumio-courbe); }
+  84%, 100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-lissage-aile {
+  0% { transform: rotate(0deg); }
+  20%, 66% { transform: rotate(-10deg); }
+  84%, 100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-lissage-pan {
+  0%, 26% { transform: rotate(0deg); }
+  34% { transform: rotate(-8deg); }
+  44% { transform: rotate(4deg); }
+  54% { transform: rotate(-6deg); }
+  66%, 100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-regard-bas {
+  0%, 100% { transform: translate(0, 0); }
+  18%, 70% { transform: translate(0.8px, 1.3px); }
+}
+@keyframes mascotte-ebroue {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  20% { transform: rotate(-2.5deg) scale(1.04); }
+  40% { transform: rotate(2.5deg) scale(1.04); }
+  60% { transform: rotate(-1.5deg) scale(1.02); }
+  80% { transform: rotate(0.8deg) scale(1.01); }
+}
+@keyframes mascotte-ebroue-aile {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(5deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(2deg); }
+}
+@keyframes mascotte-queue {
+  0% { transform: rotate(0deg); }
+  30% { transform: rotate(-10deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-pas {
+  0% { transform: translate(0, 0); }
+  8% { transform: translate(2px, -2px); }
+  16% { transform: translate(4px, 0); }
+  24% { transform: translate(6px, -2px); }
+  32%, 62% { transform: translate(8px, 0); }
+  70% { transform: translate(6px, -2px); }
+  78% { transform: translate(4px, 0); }
+  86% { transform: translate(2px, -2px); }
+  94%, 100% { transform: translate(0, 0); }
+}
+@keyframes mascotte-pas-avant {
+  0%, 16%, 32%, 62%, 78%, 94%, 100% { transform: translateY(0); }
+  8%, 70% { transform: translateY(-2.5px); }
+}
+@keyframes mascotte-pas-arriere {
+  0%, 16%, 32%, 62%, 78%, 94%, 100% { transform: translateY(0); }
+  24%, 86% { transform: translateY(-2.5px); }
+}
+@keyframes mascotte-regarde {
+  0% { transform: rotate(0deg); }
+  14%, 42% { transform: rotate(-12deg); }
+  56%, 80% { transform: rotate(8deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-regarde-yeux {
+  0%, 100% { transform: translate(0, 0); }
+  10%, 42% { transform: translate(0.6px, -1.3px); }
+  50%, 80% { transform: translate(1px, 1.1px); }
+  90% { transform: translate(-1.2px, 0.2px); }
+}
+@keyframes mascotte-penche {
+  0% { transform: rotate(0deg); }
+  25%, 70% { transform: rotate(-16deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-pepie {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(18deg); }
+  45% { transform: rotate(3deg); }
+  70% { transform: rotate(14deg); }
+}
+@keyframes mascotte-hoche {
+  0%, 100% { transform: rotate(0deg); }
+  40% { transform: rotate(-5deg); }
+}
+
+/* ── 7. Le geste de chaque pose, une fois (.plumio--joue) ─────────────────── */
+
+.plumio--joue.plumio--accueil .plumio-aile { animation: mascotte-salut 1100ms var(--plumio-balancier) both; }
+.plumio--joue.plumio--accueil .plumio-tete { animation: mascotte-hoche 700ms var(--plumio-courbe) both; }
+
+.plumio--joue:is(.plumio--pointer-droite, .plumio--pointer-gauche) .plumio-aile { animation: mascotte-pointe-avant 900ms linear both; }
+.plumio--joue.plumio--pointer-haut .plumio-aile { animation: mascotte-pointe-haut 900ms linear both; }
+.plumio--joue.plumio--pointer-bas .plumio-aile { animation: mascotte-pointe-bas 900ms linear both; }
+.plumio--joue:is(.plumio--pointer-droite, .plumio--pointer-gauche, .plumio--pointer-haut, .plumio--pointer-bas) .plumio-tete {
+  animation: mascotte-hoche 600ms var(--plumio-courbe) 120ms both;
+}
+
+.plumio--joue.plumio--explique .plumio-objet { animation: mascotte-deplie 640ms var(--plumio-courbe) both; }
+.plumio--joue.plumio--explique .plumio-tete { animation: mascotte-hoche 600ms var(--plumio-courbe) 380ms both; }
+
+.plumio--joue.plumio--reflechit .plumio-tete { animation: mascotte-songe 1100ms var(--plumio-courbe) both; }
+.plumio--joue.plumio--reflechit .plumio-pensee > * { animation: mascotte-bulle 420ms var(--plumio-courbe) both; }
+.plumio--joue.plumio--reflechit .plumio-pensee > :nth-child(1) { animation-delay: 300ms; }
+.plumio--joue.plumio--reflechit .plumio-pensee > :nth-child(2) { animation-delay: 480ms; }
+.plumio--joue.plumio--reflechit .plumio-pensee > :nth-child(3) { animation-delay: 660ms; }
+
+.plumio--joue.plumio--celebre .plumio-pas { animation: mascotte-saut 1100ms linear both; }
+.plumio--joue.plumio--celebre .plumio-aile { animation: mascotte-bat 1100ms var(--plumio-balancier) both; }
+.plumio--joue.plumio--celebre .plumio-aile-arriere { animation: mascotte-bat-arriere 1100ms var(--plumio-balancier) both; }
+.plumio--joue.plumio--celebre .plumio-eclats > * { animation: mascotte-eclat 520ms var(--plumio-courbe) both; }
+.plumio--joue.plumio--celebre .plumio-eclats > :nth-child(1) { animation-delay: 240ms; }
+.plumio--joue.plumio--celebre .plumio-eclats > :nth-child(2) { animation-delay: 420ms; }
+.plumio--joue.plumio--celebre .plumio-eclats > :nth-child(3) { animation-delay: 600ms; }
+
+.plumio--joue.plumio--hors-ligne .plumio-objet { animation: mascotte-lit 1200ms var(--plumio-balancier) both; }
+.plumio--joue.plumio--hors-ligne .plumio-tete { animation: mascotte-lit-tete 1200ms var(--plumio-balancier) both; }
+
+.plumio--joue.plumio--oups .plumio-aile { animation: mascotte-gratte 1000ms linear both; }
+.plumio--joue.plumio--oups .plumio-tete { animation: mascotte-gene 1000ms var(--plumio-courbe) both; }
+.plumio--joue.plumio--oups .plumio-plume { animation: mascotte-plume 1200ms var(--plumio-balancier) both; }
+
+.plumio--joue.plumio--chut .plumio-aile { animation: mascotte-chut 640ms var(--plumio-courbe) both; }
+.plumio--joue.plumio--chut .plumio-tete { animation: mascotte-hoche 640ms var(--plumio-courbe) 200ms both; }
+
+.plumio--joue.plumio--notification .plumio-pas { animation: mascotte-arrive 700ms var(--plumio-courbe) both; }
+.plumio--joue.plumio--notification .plumio-aile { animation: mascotte-arrive-aile 700ms var(--plumio-courbe) both; }
+.plumio--joue.plumio--notification .plumio-objet { animation: mascotte-agite 480ms var(--plumio-courbe) 620ms both; }
+
+.plumio--joue.plumio--depart .plumio-pas { animation: mascotte-decolle 1200ms var(--plumio-courbe) both; }
+.plumio--joue.plumio--depart .plumio-objet { animation: mascotte-balance 1200ms var(--plumio-balancier) both; }
+
+.plumio--joue.plumio--au-revoir .plumio-aile { animation: mascotte-salut-vol 1100ms var(--plumio-balancier) both; }
+
+/* En vol, les ailes battent tant que la pose est affichée (un passage de
+   page dure moins de 600 ms). */
+.plumio--en-vol:not(.plumio--au-revoir) .plumio-aile { animation: mascotte-battement 300ms var(--plumio-balancier) infinite; }
+.plumio--en-vol:not(.plumio--au-revoir) .plumio-aile-arriere { animation: mascotte-battement 300ms var(--plumio-balancier) 60ms infinite; }
+.plumio--en-vol .plumio-pan { animation: mascotte-pan-vent 300ms var(--plumio-balancier) infinite; }
+
+@keyframes mascotte-salut {
+  0% { transform: rotate(-40deg); }
+  25% { transform: rotate(6deg); }
+  45% { transform: rotate(-10deg); }
+  65% { transform: rotate(6deg); }
+  82% { transform: rotate(-4deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-pointe-avant {
+  0% { transform: translate(0, 0) rotate(38deg); animation-timing-function: var(--plumio-courbe); }
+  38% { transform: translate(0, 0) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  54% { transform: translate(3px, 0) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  70% { transform: translate(0, 0) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  84% { transform: translate(2px, 0) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes mascotte-pointe-haut {
+  0% { transform: translate(0, 0) rotate(-50deg); animation-timing-function: var(--plumio-courbe); }
+  38% { transform: translate(0, 0) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  54% { transform: translate(0, -3px) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  70% { transform: translate(0, 0) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  84% { transform: translate(0, -2px) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes mascotte-pointe-bas {
+  0% { transform: translate(0, 0) rotate(50deg); animation-timing-function: var(--plumio-courbe); }
+  38% { transform: translate(0, 0) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  54% { transform: translate(1.5px, 3px) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  70% { transform: translate(0, 0) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  84% { transform: translate(1px, 2px) rotate(0deg); animation-timing-function: var(--plumio-balancier); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes mascotte-deplie {
+  0% { transform: scale(0.2, 0.7); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: scale(1, 1); opacity: 1; }
+}
+@keyframes mascotte-songe {
+  0% { transform: rotate(10deg); }
+  60%, 100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-bulle {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes mascotte-saut {
+  0% { transform: translate(0, 5px); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  28% { transform: translate(0, -7px); animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4); }
+  52% { transform: translate(0, 2px); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  70% { transform: translate(0, -3px); animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4); }
+  86%, 100% { transform: translate(0, 0); }
+}
+@keyframes mascotte-bat {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(6deg); }
+  60% { transform: rotate(-10deg); }
+  80% { transform: rotate(3deg); }
+}
+@keyframes mascotte-bat-arriere {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-6deg); }
+  60% { transform: rotate(10deg); }
+  80% { transform: rotate(-3deg); }
+}
+@keyframes mascotte-eclat {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes mascotte-lit {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-5deg); }
+  62% { transform: rotate(2deg); }
+}
+@keyframes mascotte-lit-tete {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-4deg); }
+  62% { transform: rotate(3deg); }
+}
+@keyframes mascotte-gratte {
+  0% { transform: rotate(-24deg); animation-timing-function: var(--plumio-courbe); }
+  24% { transform: rotate(0deg); }
+  34% { transform: rotate(-7deg); }
+  44% { transform: rotate(0deg); }
+  54% { transform: rotate(-7deg); }
+  64% { transform: rotate(0deg); }
+  74% { transform: rotate(-5deg); }
+  84%, 100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-gene {
+  0% { transform: rotate(-4deg); }
+  40% { transform: rotate(3deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-plume {
+  0% { transform: translate(-8px, -14px) rotate(-40deg); opacity: 0; }
+  15% { opacity: 1; }
+  45% { transform: translate(3px, -7px) rotate(18deg); }
+  75% { transform: translate(-2px, -2px) rotate(-10deg); }
+  100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+}
+@keyframes mascotte-chut {
+  0% { transform: rotate(46deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-arrive {
+  0% { transform: translate(-18px, -16px); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes mascotte-arrive-aile {
+  0% { transform: rotate(-60deg); }
+  30% { transform: rotate(-20deg); }
+  60% { transform: rotate(-45deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-agite {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(7deg); }
+  55% { transform: rotate(-5deg); }
+  80% { transform: rotate(2deg); }
+}
+@keyframes mascotte-decolle {
+  0% { transform: translate(-4px, 12px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes mascotte-balance {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(10deg); }
+  45% { transform: rotate(-7deg); }
+  70% { transform: rotate(4deg); }
+  88% { transform: rotate(-2deg); }
+}
+@keyframes mascotte-salut-vol {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-22deg); }
+  40% { transform: rotate(8deg); }
+  60% { transform: rotate(-18deg); }
+  80% { transform: rotate(6deg); }
+}
+@keyframes mascotte-battement {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(-0.5); }
+}
+@keyframes mascotte-pan-vent {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-12deg); }
+}
+
+/* ── 8. D'une page à l'autre (tutoriel) ──────────────────────────────────────
+   L'application affiche la pose « vol », la déplace d'une ancre à l'autre
+   (transform sur le conteneur, 360 à 600 ms selon la distance), puis la
+   remplace par la pose d'arrivée avec .plumio--joue. Ces trois classes
+   servent quand il n'y a pas de trajet à dessiner : il part, il arrive. */
+
+.plumio--envol .plumio-pas { animation: mascotte-envol 320ms var(--plumio-depart) both; }
+.plumio--atterrit .plumio-pas { animation: mascotte-atterrit 360ms var(--plumio-courbe) both; }
+.plumio--sort .plumio-pas { animation: mascotte-sort 600ms var(--plumio-depart) both; }
+
+@keyframes mascotte-envol {
+  0% { transform: translate(0, 0); opacity: 1; }
+  100% { transform: translate(28px, -34px); opacity: 0; }
+}
+@keyframes mascotte-atterrit {
+  0% { transform: translate(-28px, -30px); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes mascotte-sort {
+  0% { transform: translate(0, 0); opacity: 1; }
+  100% { transform: translate(64px, -72px); opacity: 0; }
+}
+
+/* ── 9. Mouvement réduit : tout s'arrête, la pose reste ─────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .plumio,
+  .plumio * {
+    animation: none !important;
+    transition: none !important;
+  }
+  .plumio .plumio-pupille,
+  .plumio .plumio-tete-regard {
+    transform: none !important;
+  }
+}
+.plumio.plumio--immobile,
+.plumio.plumio--immobile * {
+  animation: none !important;
+  transition: none !important;
+}
+.plumio.plumio--immobile .plumio-pupille,
+.plumio.plumio--immobile .plumio-tete-regard {
+  transform: none !important;
+}
+
+</style>
+<style>
+
+@font-face { font-family: 'Fraunces'; src: url('../../../apps/web/public/polices/fraunces-latin.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Inter Tight'; src: url('../../../apps/web/public/polices/inter-tight-latin.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #ebe4d6; color: #1a1713; font: 400 16px/1.5 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.cache { position: absolute; opacity: 0; pointer-events: none; }
+h1, h2, h3, p { margin: 0; }
+.doc { max-width: 1320px; margin: 0 auto; padding: 48px 24px 96px; display: flex; flex-direction: column; gap: 56px; }
+.doc h1 { font: 600 48px/1.05 'Fraunces', Georgia, serif; letter-spacing: -0.01em; }
+.doc h2 { font: 600 28px/1.15 'Fraunces', Georgia, serif; }
+.doc .etiq { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #6b6355; }
+.doc .muet { color: #6b6355; }
+.choix { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; background: #fffdf8; border: 1px solid #e6ddcb; border-radius: 12px; align-self: flex-start; }
+.choix label { min-height: 40px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; color: #3a342b; }
+#v-clair:checked ~ .doc label[for=v-clair], #v-sombre:checked ~ .doc label[for=v-sombre],
+#v-ar:checked ~ .doc label[for=v-ar], #v-ar-sombre:checked ~ .doc label[for=v-ar-sombre] { background: #3a342b; color: #fffdf8; }
+#v-clair:focus-visible ~ .doc label[for=v-clair], #v-sombre:focus-visible ~ .doc label[for=v-sombre],
+#v-ar:focus-visible ~ .doc label[for=v-ar], #v-ar-sombre:focus-visible ~ .doc label[for=v-ar-sombre] { outline: 2px solid #1a5fb4; outline-offset: 2px; }
+.regles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.regle { background: #fffdf8; border: 1px solid #e6ddcb; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.regle h3 { font-size: 16px; font-weight: 600; }
+.regle ul { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 4px; }
+.etape { display: flex; flex-direction: column; gap: 20px; }
+.etape-tete { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 32px; align-items: end; }
+.fiche { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; font-size: 14px; }
+.fiche dt { color: #6b6355; } .fiche dd { margin: 0; }
+.cadres { display: flex; gap: 24px; align-items: flex-start; }
+.cadre-tel { width: 292.5px; height: 633px; flex-shrink: 0; }
+.cadre-pc { width: 960px; height: 600px; flex-shrink: 0; }
+.cadre-tel > .maq { transform: scale(0.75); transform-origin: 0 0; }
+.cadre-pc > .maq { transform: scale(0.75); transform-origin: 0 0; }
+.cadres { padding-bottom: 28px; }
+.cadres figure { margin: 0; position: relative; }
+.cadres figure > .maq { position: absolute; top: 0; left: 0; }
+.cadres figcaption { position: absolute; top: calc(100% + 8px); font-size: 12px; color: #6b6355; }
+@media (max-width: 1320px) { .cadres { flex-wrap: wrap; } }
+
+/* ── la maquette : jetons de l'application ── */
+.maq { --surface: #fffdf8; --surface-muted: #f4efe4; --surface-raised: #fffdf8; --border-subtle: #e6ddcb; --border-fort: #d4c7ae;
+  --text-strong: #1a1713; --text-muted: #6b6355; --accent: #1a5fb4; --accent-contrast: #fffdf8; --accent-doux: #d9e6f8;
+  --voile: rgb(26 23 19 / 0.52); --chip: #f2ece0; --gold: #97691d; --lagoon: #2f8f88; --neg: #8a5f18;
+  --ombre-bulle: 0 1px 2px rgb(58 52 43 / 0.06), 0 12px 28px -18px rgb(58 52 43 / 0.5);
+  position: relative; overflow: hidden; background: var(--surface-muted); color: var(--text-strong);
+  font: 400 15px/1.45 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; border: 1px solid #d4c7ae; }
+#v-sombre:checked ~ .doc .maq, #v-ar-sombre:checked ~ .doc .maq {
+  --surface: #1c1915; --surface-muted: #131110; --surface-raised: #242019; --border-subtle: #352f26; --border-fort: #4a4234;
+  --text-strong: #f4efe4; --text-muted: #a79c8a; --accent: #7ba7e2; --accent-contrast: #131110; --accent-doux: #0e3a72;
+  --voile: rgb(0 0 0 / 0.5); --chip: #2a251f; --gold: #d4a656; --lagoon: #7ec6c2; --neg: #d4a656;
+  --ombre-bulle: 0 12px 28px -14px rgb(0 0 0 / 0.8); border-color: #4a4234; }
+#v-sombre:checked ~ .doc .maq .plumio, #v-ar-sombre:checked ~ .doc .maq .plumio {
+  --plumio-trait: #e6ddcb; --plumio-dos: #524b3f; --plumio-ventre: #f2ece0; --plumio-or: #d4a656; }
+.maq [lang=ar] { display: none; }
+#v-ar:checked ~ .doc .maq [lang=ar], #v-ar-sombre:checked ~ .doc .maq [lang=ar] { display: inline; }
+#v-ar:checked ~ .doc .maq [lang=fr], #v-ar-sombre:checked ~ .doc .maq [lang=fr] { display: none; }
+#v-ar:checked ~ .doc .maq, #v-ar-sombre:checked ~ .doc .maq { direction: rtl; font-family: 'Inter Tight', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif; }
+#v-ar:checked ~ .doc .maq .oiseau, #v-ar-sombre:checked ~ .doc .maq .oiseau { transform: scaleX(-1); }
+.maq .plumio { color: var(--accent); }
+.tel { width: 390px; height: 844px; border-radius: 36px; display: flex; flex-direction: column; }
+.pc { width: 1280px; height: 800px; border-radius: 12px; display: flex; }
+.maq .titre { font: 600 28px/1.1 'Fraunces', 'Iowan Old Style', Georgia, serif; letter-spacing: -0.01em; }
+.maq .titre-lieu { font: 600 20px/1.2 'Fraunces', 'Iowan Old Style', Georgia, serif; }
+.maq .etiquette { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+.maq .muet { color: var(--text-muted); }
+.maq .petit { font-size: 13px; }
+.tete-page { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 28px 16px 12px; }
+.tete-page > div { display: flex; flex-direction: column; gap: 4px; }
+.contenu { flex: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.contenu.deux { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.colonne { display: flex; flex-direction: column; gap: 12px; }
+.carte { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 12px; }
+.bloc { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.vide { padding: 32px 20px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; margin-top: 24px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 12px; border: 0;
+  font: 600 15px/1 'Inter Tight', -apple-system, 'Segoe UI', sans-serif; white-space: nowrap; }
+.btn.petit { height: 40px; padding: 0 14px; font-size: 14px; }
+.btn.grand { height: 52px; padding: 0 20px; font-size: 16px; }
+.btn.primaire { background: var(--accent); color: var(--accent-contrast); }
+.btn.secondaire { background: transparent; color: var(--text-strong); border: 1px solid var(--border-fort); align-self: flex-start; }
+.btn.fantome { background: transparent; color: var(--text-muted); padding: 0 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; height: 30px; padding: 0 10px; border-radius: 8px; background: var(--chip); font-size: 13px; }
+.ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border-subtle); }
+.ligne .titre-lieu { font-size: 17px; }
+.votes { display: flex; gap: 4px; }
+.votes .chip { height: 28px; font-size: 12px; padding: 0 8px; }
+.onglets { display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 8px 24px; background: var(--surface); border-top: 1px solid var(--border-subtle); position: relative; z-index: 1; }
+.onglet { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--text-muted); padding: 6px 0; }
+.onglet.actif { color: var(--accent); font-weight: 600; }
+.laterale { width: 248px; flex-shrink: 0; padding: 24px 16px; display: flex; flex-direction: column; gap: 24px; background: var(--surface); border-inline-end: 1px solid var(--border-subtle); }
+.marque { font: 600 24px/1 'Fraunces', Georgia, serif; padding: 0 12px; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav .etiquette { padding: 0 12px 6px; }
+.lien { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 8px; font-size: 14px; color: var(--text-muted); }
+.lien.actif { background: var(--chip); color: var(--text-strong); font-weight: 600; }
+.puce { width: 8px; height: 8px; border-radius: 3px; background: var(--border-fort); }
+.lien.actif .puce { background: var(--accent); }
+.principal { flex: 1; min-width: 0; display: flex; flex-direction: column; max-width: 960px; margin: 0 auto; padding: 0 24px; }
+.principal .tete-page { padding: 40px 0 16px; }
+.principal .contenu { padding: 0; }
+.principal.centre { align-items: flex-start; justify-content: center; padding-inline-start: 96px; }
+.ancre { position: relative; z-index: 3; }
+.projecteur { position: relative; box-shadow: 0 0 0 3px var(--surface-muted), 0 0 0 5px var(--accent), 0 0 0 200vmax var(--voile); }
+.coach { position: absolute; z-index: 4; width: 288px; }
+.pc .coach { width: 320px; }
+.coach--dessous-fin { top: calc(100% + 58px); inset-inline-end: 0; }
+.pc .coach--dessous-fin { top: calc(100% + 86px); }
+.tel .coach--dessus-fin { inset-inline-end: 28px; }
+.coach--dedans { top: 84px; inset-inline-end: 16px; }
+.coach--dessus-fin { bottom: calc(100% + 22px); inset-inline-end: 0; }
+.coach--cote { inset-inline-start: calc(100% + 26px); top: 0; }
+.bulle { position: relative; background: var(--surface-raised); color: var(--text-strong); border: 1px solid var(--border-fort); border-radius: 12px;
+  box-shadow: var(--ombre-bulle); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.bulle::before { content: ''; position: absolute; width: 14px; height: 14px; background: var(--surface-raised); border: solid var(--border-fort); border-width: 1px 0 0 1px; }
+.coach--dessous-fin .bulle::before { top: -8px; inset-inline-end: var(--queue); transform: rotate(45deg); }
+.coach--dessus-fin .bulle::before, .coach--dedans .bulle::before { bottom: -8px; inset-inline-end: var(--queue); transform: rotate(225deg); }
+.coach--cote .bulle::before { inset-inline-start: -8px; top: var(--queue); transform: rotate(-45deg); }
+#v-ar:checked ~ .doc .coach--cote .bulle::before, #v-ar-sombre:checked ~ .doc .coach--cote .bulle::before { transform: rotate(135deg); }
+.bulle-haut { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.progression { display: flex; gap: 4px; }
+.progression i { width: 14px; height: 4px; border-radius: 2px; background: var(--border-subtle); }
+.progression i.fait { background: var(--accent); }
+.bulle-texte { font-size: 15px; line-height: 1.45; }
+.pc .bulle-texte { font-size: 16px; }
+.bulle-bas { display: flex; justify-content: space-between; align-items: center; }
+.oiseau { position: absolute; line-height: 0; }
+.oiseau svg { display: block; }
+.coach--dessous-fin .oiseau, .coach--dessus-fin .oiseau, .coach--dedans .oiseau { bottom: calc(100% - 4px); inset-inline-end: var(--oiseau); }
+.coach--cote .oiseau { bottom: calc(100% - 4px); inset-inline-start: var(--oiseau); }
+.decouvrir { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 16px; }
+.activite-ancre { flex: 1; display: flex; flex-direction: column; }
+.activite { flex: 1; display: flex; flex-direction: column; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 24px; overflow: hidden; }
+.illus { flex: 1; min-height: 200px; background: #b4dcd7; }
+.illus svg { width: 100%; height: 100%; display: block; }
+.illus .soleil { fill: #e8c37a; } .illus .colline { fill: #7ec6c2; } .illus .colline2 { fill: #2f8f88; }
+#v-sombre:checked ~ .doc .illus, #v-ar-sombre:checked ~ .doc .illus { background: #1c3532; }
+#v-sombre:checked ~ .doc .illus .colline, #v-ar-sombre:checked ~ .doc .illus .colline { fill: #1b5c58; }
+#v-sombre:checked ~ .doc .illus .colline2, #v-ar-sombre:checked ~ .doc .illus .colline2 { fill: #257570; }
+.activite-texte { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 4px; }
+.activite-texte .titre-lieu { font-size: 24px; }
+.gestes { display: flex; flex-direction: column; gap: 6px; padding-bottom: 20px; }
+.gestes-boutons { display: flex; justify-content: center; align-items: center; gap: 24px; }
+.gestes-legende { display: flex; justify-content: center; gap: 24px; font-size: 12px; color: var(--text-muted); }
+.gestes-legende span { width: 64px; text-align: center; }
+.rond { width: 64px; height: 64px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-raised); border: 1px solid var(--border-fort); color: var(--text-strong); }
+.rond.petit-rond { width: 48px; height: 48px; }
+.rond.oui { background: var(--lagoon); border-color: var(--lagoon); color: #fffdf8; }
+.decouvrir-pc { width: 420px; height: 640px; display: flex; flex-direction: column; gap: 16px; }
+.plan { height: 168px; border-radius: 12px; overflow: hidden; background: #e6ddcb; border: 1px solid var(--border-subtle); }
+.pc .plan { height: 520px; }
+.plan svg { width: 100%; height: 100%; display: block; }
+.plan .eau { fill: none; stroke: #b4dcd7; stroke-width: 26; }
+.plan .rue { fill: none; stroke: #fffdf8; stroke-width: 6; }
+.plan .trajet { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 6 6; }
+.plan .epingle { fill: var(--gold); stroke: #fffdf8; stroke-width: 3; }
+#v-sombre:checked ~ .doc .plan, #v-ar-sombre:checked ~ .doc .plan { background: #2a251f; }
+#v-sombre:checked ~ .doc .plan .rue, #v-ar-sombre:checked ~ .doc .plan .rue { stroke: #3a342b; }
+#v-sombre:checked ~ .doc .plan .eau, #v-ar-sombre:checked ~ .doc .plan .eau { stroke: #1c3532; }
+.jour .creneau { display: grid; grid-template-columns: 96px 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border-subtle); font-size: 14px; }
+.jour .moment { color: var(--text-muted); }
+.segments { display: flex; gap: 4px; padding: 4px; background: var(--chip); border-radius: 10px; align-self: flex-start; }
+.seg { height: 34px; display: inline-flex; align-items: center; padding: 0 12px; border-radius: 8px; font-size: 13px; color: var(--text-muted); }
+.seg.actif { background: var(--surface-raised); color: var(--text-strong); font-weight: 600; }
+.item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.ico-rond { width: 40px; height: 40px; border-radius: 10px; background: var(--chip); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.item-texte { display: flex; flex-direction: column; font-size: 14px; }
+.grille-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.solde { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border-subtle); font-size: 14px; }
+.montant { font-variant-numeric: tabular-nums; font-weight: 600; direction: ltr; }
+.montant.pos { color: var(--lagoon); }
+.montant.neg { color: var(--neg); }
+.bas-de-page { margin-top: auto; display: flex; flex-direction: column; }
+.bas-de-page > .btn { width: 100%; }
+
+</style>
+</head>
+<body>
+<input class="cache" type="radio" name="variante" id="v-clair" checked><input class="cache" type="radio" name="variante" id="v-sombre"><input class="cache" type="radio" name="variante" id="v-ar"><input class="cache" type="radio" name="variante" id="v-ar-sombre">
+<main class="doc">
+  <header style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+    <p class="etiq">Tripora · mascotte</p>
+    <h1>Le tutoriel, sur les vraies pages</h1>
+    <p class="muet">Six étapes. À chacune, Plumio se pose sur sa bulle, à côté de l’élément, et le montre de l’aile. Choisissez la variante : clair, sombre, ou arabe en miroir.</p>
+  </header>
+  <div class="choix" role="group" aria-label="Variante">
+<label for="v-clair">Clair</label><label for="v-sombre">Sombre</label><label for="v-ar" lang=ar>العربية · clair</label><label for="v-ar-sombre" lang=ar>العربية · sombre</label>
+  </div>
+  <section class="regles" aria-label="Règles">
+    <div class="regle"><h3>Placement</h3><ul>
+      <li>Plumio se pose sur le bord haut de sa bulle, du côté de l’élément, et le montre de l’aile.</li>
+      <li>Téléphone : la bulle sous l’élément, ou au-dessus s’il est dans le tiers bas de l’écran.</li>
+      <li>Ordinateur : la bulle à côté de l’élément (côté fin de ligne), sinon dessous.</li>
+      <li>Entre l’élément et la bulle : la hauteur de Plumio (58 px sur téléphone, 86 px sur ordinateur), pour qu’il ne cache jamais l’élément ; 16 px au moins avec le bord de l’écran.</li></ul></div>
+    <div class="regle"><h3>Bulle</h3><ul>
+      <li>Papier (<code>--surface-raised</code>), filet <code>--border-fort</code>, rayon 12 px, ombre <code>--shadow-lift</code>.</li>
+      <li>Largeur fixe : 288 px sur téléphone, 320 px sur ordinateur. Marge intérieure 16 px.</li>
+      <li>Une pointe de 14 px, tournée vers l’élément, à 34–48 px du coin.</li>
+      <li>En haut : « Étape n sur 6 » et six traits de progression. En bas : « Passer » (discret) et « Suivant » (accent).</li></ul></div>
+    <div class="regle"><h3>Projecteur</h3><ul>
+      <li>Voile encre à 52 % (noir à 50 % en sombre) sur toute la page, sauf l’élément.</li>
+      <li>Autour de l’élément : 3 px de papier puis 2 px d’accent, au rayon de l’élément.</li>
+      <li>Pas de voile à « Découvrir » : l’écran entier est le sujet.</li>
+      <li>L’élément reste cliquable : l’utiliser fait avancer le tutoriel.</li></ul></div>
+    <div class="regle"><h3>Mouvement</h3><ul>
+      <li>Changement de page : pose « vol » d’une ancre à l’autre (360–600 ms), puis la pose d’arrivée joue son geste.</li>
+      <li>La bulle apparaît 120 ms après : opacité et 8 px de montée, 220 ms, courbe <code>--ease-pose</code>. Plumio pépie une fois.</li>
+      <li>Pendant la lecture : <code>plumio--calme</code> seulement (souffle, clignements).</li>
+      <li>Mouvement réduit : tout est posé d’emblée, rien ne bouge.</li></ul></div>
+    <div class="regle"><h3>Arabe</h3><ul>
+      <li>Toute la mise en page passe en miroir (propriétés logiques).</li>
+      <li>Plumio est retourné (<code>scaleX(-1)</code>) : « pointer à droite » devient « à gauche ».</li>
+      <li>La consigne de « Découvrir » ne parle pas de droite ni de gauche : elle nomme les boutons.</li>
+      <li>Les montants restent de gauche à droite.</li></ul></div>
+    <div class="regle"><h3>Accessibilité</h3><ul>
+      <li>La bulle est un dialogue non modal, annoncé à chaque étape ; le focus va sur « Suivant ».</li>
+      <li>Échap = « Passer ». Flèches gauche et droite : étape précédente ou suivante.</li>
+      <li>Plumio est décoratif (<code>aria-hidden</code>) : tout ce qu’il « dit » est dans la bulle.</li>
+      <li>Cibles de 44 px au moins sur téléphone.</li></ul></div>
+  </section>
+
+  <section class="etape" aria-labelledby="e1">
+    <div class="etape-tete">
+      <div style="display:flex;flex-direction:column;gap:6px"><p class="etiq">Étape 1 sur 6</p><h2 id="e1">Créer le voyage, inviter le groupe</h2></div>
+      <dl class="fiche"><dt>Page</dt><dd><code>/voyages, puis /voyages/nouveau</code></dd><dt>Élément</dt><dd>Le bouton « Nouveau », puis l’invitation (lien, code)</dd>
+      <dt>Projecteur</dt><dd>Oui : le bouton seul.</dd><dt>Plumio</dt><dd>pointer-haut, sur la bulle, côté bouton</dd></dl>
+    </div>
+    <div class="cadres">
+      <figure class="cadre-tel"><div class="maq tel"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Trips</span><span lang="ar">الرحلات</span></h1></div><div class="ancre"><button type="button" class="btn primaire petit projecteur"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span lang="fr">Nouveau</span><span lang="ar">جديد</span></button><div class="coach coach--dessous-fin" style="--queue:34px;--oiseau:40px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 1 sur 6</span><span lang="ar">الخطوة 1 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Appuyez sur « Nouveau » pour créer votre voyage. Ensuite, envoyez le lien ou le code au groupe.</span><span lang="ar">اضغط على « جديد » لإنشاء رحلتك، ثم أرسل الرابط أو الرمز إلى المجموعة.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="64" height="64" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-haut" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(-14 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="62.8" cy="24.2" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="63.8" cy="23" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M47 52C40 40 34 24 31 3C42 13 50 30 54 47Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M35 15L41 25M33 9L38 17"/></g></g></g></g></svg></div></div></div></header><div class="contenu"><div class="carte vide"><h2 class="titre-lieu"><span lang="fr">Partir avec d’autres</span><span lang="ar">السفر مع الآخرين</span></h2><p class="muet"><span lang="fr">Créez un voyage, invitez le groupe : Tripora trouve la destination qui plaît à tous.</span><span lang="ar">أنشئ رحلة وادعُ المجموعة: يجد Tripora الوجهة التي ترضي الجميع.</span></p><button type="button" class="btn primaire grand"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span lang="fr">Créer un voyage</span><span lang="ar">إنشاء رحلة</span></button></div></div><nav class="onglets"><span class="onglet actif"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span><span lang="fr">Profil</span><span lang="ar">الملف</span></span></span></nav></div><figcaption>Téléphone · 390 × 844</figcaption></figure>
+      <figure class="cadre-pc"><div class="maq pc"><aside class="laterale"><span class="marque" translate="no">Tripora</span><div class="nav"><span class="lien actif"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span lang="fr">Profil</span><span lang="ar">الملف</span></span></div><div class="nav"></div></aside><main class="principal"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Trips</span><span lang="ar">الرحلات</span></h1></div><div class="ancre"><button type="button" class="btn primaire petit projecteur"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span lang="fr">Nouveau</span><span lang="ar">جديد</span></button><div class="coach coach--dessous-fin" style="--queue:34px;--oiseau:40px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 1 sur 6</span><span lang="ar">الخطوة 1 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Appuyez sur « Nouveau » pour créer votre voyage. Ensuite, envoyez le lien ou le code au groupe.</span><span lang="ar">اضغط على « جديد » لإنشاء رحلتك، ثم أرسل الرابط أو الرمز إلى المجموعة.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="80" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-haut" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(-14 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="62.8" cy="24.2" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="63.8" cy="23" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M47 52C40 40 34 24 31 3C42 13 50 30 54 47Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M35 15L41 25M33 9L38 17"/></g></g></g></g></svg></div></div></div></header><div class="contenu"><div class="carte vide"><h2 class="titre-lieu"><span lang="fr">Partir avec d’autres</span><span lang="ar">السفر مع الآخرين</span></h2><p class="muet"><span lang="fr">Créez un voyage, invitez le groupe : Tripora trouve la destination qui plaît à tous.</span><span lang="ar">أنشئ رحلة وادعُ المجموعة: يجد Tripora الوجهة التي ترضي الجميع.</span></p><button type="button" class="btn primaire grand"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span lang="fr">Créer un voyage</span><span lang="ar">إنشاء رحلة</span></button></div></div></main></div><figcaption>Ordinateur · 1280 × 800</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="etape" aria-labelledby="e2">
+    <div class="etape-tete">
+      <div style="display:flex;flex-direction:column;gap:6px"><p class="etiq">Étape 2 sur 6</p><h2 id="e2">Chacun dit ses envies, le groupe vote</h2></div>
+      <dl class="fiche"><dt>Page</dt><dd><code>/voyages/&lt;id&gt;</code></dd><dt>Élément</dt><dd>« Mes envies », puis les propositions et leurs boutons de vote</dd>
+      <dt>Projecteur</dt><dd>Oui : la carte « Mes envies ».</dd><dt>Plumio</dt><dd>pointer-haut (téléphone), pointer-gauche (ordinateur)</dd></dl>
+    </div>
+    <div class="cadres">
+      <figure class="cadre-tel"><div class="maq tel"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Week-end de mai</span><span lang="ar">عطلة مايو</span></h1><p class="muet petit"><span lang="fr">4 participants · destination à choisir</span><span lang="ar">4 مشاركين · الوجهة لم تُحدَّد</span></p></div></header><div class="contenu"><div class="ancre"><div class="carte bloc projecteur"><p class="etiquette"><span lang="fr">Mes envies</span><span lang="ar">رغباتي</span></p><p><span lang="fr">Culture, nature, fête, détente… et votre budget.</span><span lang="ar">ثقافة، طبيعة، سهر، راحة… وميزانيتك.</span></p><div class="chips"><span class="chip"><span lang="fr">Culture</span><span lang="ar">ثقافة</span></span><span class="chip"><span lang="fr">Nature</span><span lang="ar">طبيعة</span></span><span class="chip"><span lang="fr">Fête</span><span lang="ar">سهر</span></span><span class="chip"><span lang="fr">Détente</span><span lang="ar">راحة</span></span></div><button type="button" class="btn secondaire"><span lang="fr">Remplir mes envies</span><span lang="ar">املأ رغباتي</span></button></div><div class="coach coach--dessous-fin" style="--queue:48px;--oiseau:54px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 2 sur 6</span><span lang="ar">الخطوة 2 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Remplissez « Mes envies » : Tripora propose les destinations qui plaisent à tout le groupe. Ensuite, votez.</span><span lang="ar">املأ « رغباتي »: يقترح Tripora الوجهات التي تناسب المجموعة كلها. ثم صوّت.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="64" height="64" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-haut" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(-14 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="62.8" cy="24.2" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="63.8" cy="23" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M47 52C40 40 34 24 31 3C42 13 50 30 54 47Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M35 15L41 25M33 9L38 17"/></g></g></g></g></svg></div></div></div><div class="carte bloc"><p class="etiquette"><span lang="fr">Propositions</span><span lang="ar">المقترحات</span></p><div class="ligne"><span class="titre-lieu"><span lang="fr">Lisbonne</span><span lang="ar">لشبونة</span></span><span class="votes"><span class="chip"><span lang="fr">J’aime</span><span lang="ar">أعجبني</span></span><span class="chip"><span lang="fr">Bof</span><span lang="ar">لا</span></span><span class="chip"><span lang="fr">Coup de cœur</span><span lang="ar">المفضلة</span></span></span></div><div class="ligne"><span class="titre-lieu"><span lang="fr">Porto</span><span lang="ar">بورتو</span></span><span class="votes"><span class="chip"><span lang="fr">J’aime</span><span lang="ar">أعجبني</span></span><span class="chip"><span lang="fr">Bof</span><span lang="ar">لا</span></span><span class="chip"><span lang="fr">Coup de cœur</span><span lang="ar">المفضلة</span></span></span></div><div class="ligne"><span class="titre-lieu"><span lang="fr">Séville</span><span lang="ar">إشبيلية</span></span><span class="votes"><span class="chip"><span lang="fr">J’aime</span><span lang="ar">أعجبني</span></span><span class="chip"><span lang="fr">Bof</span><span lang="ar">لا</span></span><span class="chip"><span lang="fr">Coup de cœur</span><span lang="ar">المفضلة</span></span></span></div></div></div><nav class="onglets"><span class="onglet actif"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span><span lang="fr">Profil</span><span lang="ar">الملف</span></span></span></nav></div><figcaption>Téléphone · 390 × 844</figcaption></figure>
+      <figure class="cadre-pc"><div class="maq pc"><aside class="laterale"><span class="marque" translate="no">Tripora</span><div class="nav"><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span lang="fr">Profil</span><span lang="ar">الملف</span></span></div><div class="nav"><p class="etiquette"><span lang="fr">Écrans du voyage</span><span lang="ar">شاشات الرحلة</span></p><span class="lien actif"><i class="puce"></i><span lang="fr">Aperçu</span><span lang="ar">نظرة عامة</span></span><span class="lien"><i class="puce"></i><span lang="fr">Découvrir</span><span lang="ar">اكتشف</span></span><span class="lien"><i class="puce"></i><span lang="fr">Itinéraire</span><span lang="ar">البرنامج</span></span><span class="lien"><i class="puce"></i><span lang="fr">Coffre</span><span lang="ar">الخزنة</span></span><span class="lien"><i class="puce"></i><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></div></aside><main class="principal"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Week-end de mai</span><span lang="ar">عطلة مايو</span></h1><p class="muet petit"><span lang="fr">4 participants · destination à choisir</span><span lang="ar">4 مشاركين · الوجهة لم تُحدَّد</span></p></div></header><div class="contenu deux"><div class="ancre"><div class="carte bloc projecteur"><p class="etiquette"><span lang="fr">Mes envies</span><span lang="ar">رغباتي</span></p><p><span lang="fr">Culture, nature, fête, détente… et votre budget.</span><span lang="ar">ثقافة، طبيعة، سهر، راحة… وميزانيتك.</span></p><div class="chips"><span class="chip"><span lang="fr">Culture</span><span lang="ar">ثقافة</span></span><span class="chip"><span lang="fr">Nature</span><span lang="ar">طبيعة</span></span><span class="chip"><span lang="fr">Fête</span><span lang="ar">سهر</span></span><span class="chip"><span lang="fr">Détente</span><span lang="ar">راحة</span></span></div><button type="button" class="btn secondaire"><span lang="fr">Remplir mes envies</span><span lang="ar">املأ رغباتي</span></button></div><div class="coach coach--cote" style="--queue:28px;--oiseau:12px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 2 sur 6</span><span lang="ar">الخطوة 2 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Remplissez « Mes envies » : Tripora propose les destinations qui plaisent à tout le groupe. Ensuite, votez.</span><span lang="ar">املأ « رغباتي »: يقترح Tripora الوجهات التي تناسب المجموعة كلها. ثم صوّت.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="80" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-gauche" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g transform="matrix(-1 0 0 1 96 0)"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M46 56C60 61 78 63 94 59C80 53 62 50 48 50Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M66 57L78 58M60 55L70 55.5"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(4 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="63.6" cy="26" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="64.6" cy="24.8" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g></g></g></g></g></svg></div></div></div><div class="carte bloc"><p class="etiquette"><span lang="fr">Propositions</span><span lang="ar">المقترحات</span></p><div class="ligne"><span class="titre-lieu"><span lang="fr">Lisbonne</span><span lang="ar">لشبونة</span></span><span class="votes"><span class="chip"><span lang="fr">J’aime</span><span lang="ar">أعجبني</span></span><span class="chip"><span lang="fr">Bof</span><span lang="ar">لا</span></span><span class="chip"><span lang="fr">Coup de cœur</span><span lang="ar">المفضلة</span></span></span></div><div class="ligne"><span class="titre-lieu"><span lang="fr">Porto</span><span lang="ar">بورتو</span></span><span class="votes"><span class="chip"><span lang="fr">J’aime</span><span lang="ar">أعجبني</span></span><span class="chip"><span lang="fr">Bof</span><span lang="ar">لا</span></span><span class="chip"><span lang="fr">Coup de cœur</span><span lang="ar">المفضلة</span></span></span></div><div class="ligne"><span class="titre-lieu"><span lang="fr">Séville</span><span lang="ar">إشبيلية</span></span><span class="votes"><span class="chip"><span lang="fr">J’aime</span><span lang="ar">أعجبني</span></span><span class="chip"><span lang="fr">Bof</span><span lang="ar">لا</span></span><span class="chip"><span lang="fr">Coup de cœur</span><span lang="ar">المفضلة</span></span></span></div></div></div></main></div><figcaption>Ordinateur · 1280 × 800</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="etape" aria-labelledby="e3">
+    <div class="etape-tete">
+      <div style="display:flex;flex-direction:column;gap:6px"><p class="etiq">Étape 3 sur 6</p><h2 id="e3">Les activités, d’un glissement</h2></div>
+      <dl class="fiche"><dt>Page</dt><dd><code>/voyages/&lt;id&gt;/decouvrir</code></dd><dt>Élément</dt><dd>La carte d’activité et les trois boutons de geste</dd>
+      <dt>Projecteur</dt><dd>Non : l’écran entier est le sujet, rien n’est assombri.</dd><dt>Plumio</dt><dd>pointer-bas, au coin de la bulle, vers « J’y vais »</dd></dl>
+    </div>
+    <div class="cadres">
+      <figure class="cadre-tel"><div class="maq tel"><div class="decouvrir"><div class="ancre activite-ancre"><div class="activite"><div class="illus" aria-hidden="true"><svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice"><circle cx="248" cy="58" r="26" class="soleil"/><path d="M0 150 C60 110 110 120 160 140 S260 120 320 135 V200 H0Z" class="colline"/><path d="M0 172 C70 150 140 168 200 160 S290 150 320 158 V200 H0Z" class="colline2"/></svg></div><div class="activite-texte"><p class="etiquette"><span lang="fr">3 sur 24</span><span lang="ar">3 من 24</span></p><h2 class="titre-lieu"><span lang="fr">Balade dans l’Alfama</span><span lang="ar">نزهة في ألفاما</span></h2><p class="muet"><span lang="fr">Le matin · Gratuit · 2 h</span><span lang="ar">الصباح · مجاني · ساعتان</span></p></div></div><div class="coach coach--dedans" style="--queue:132px;--oiseau:-18px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 3 sur 6</span><span lang="ar">الخطوة 3 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class=""></i><i class=""></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Glissez à droite : j’y vais. À gauche : pas pour moi. Les boutons font pareil.</span><span lang="ar">اسحب البطاقة نحو « سأذهب » أو نحو « ليس لي »، أو استعمل الأزرار.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="64" height="64" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-bas" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M49 56C61 64 73 76 84 92C72 86 58 76 47 64Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M62 70L68 77M58 66L64 72"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(12 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="63.2" cy="27" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="64.2" cy="25.8" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g></g></g></g></svg></div></div></div><div class="gestes"><div class="gestes-boutons"><span class="rond" aria-label="Pas pour moi"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="rond petit-rond" aria-label="Revenir"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></span><span class="rond oui" aria-label="J’y vais"><svg class="ico" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div><div class="gestes-legende"><span><span lang="fr">Pas pour moi</span><span lang="ar">ليس لي</span></span><span><span lang="fr">Revenir</span><span lang="ar">رجوع</span></span><span><span lang="fr">J’y vais</span><span lang="ar">سأذهب</span></span></div></div></div></div><figcaption>Téléphone · 390 × 844</figcaption></figure>
+      <figure class="cadre-pc"><div class="maq pc"><aside class="laterale"><span class="marque" translate="no">Tripora</span><div class="nav"><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span lang="fr">Profil</span><span lang="ar">الملف</span></span></div><div class="nav"><p class="etiquette"><span lang="fr">Écrans du voyage</span><span lang="ar">شاشات الرحلة</span></p><span class="lien"><i class="puce"></i><span lang="fr">Aperçu</span><span lang="ar">نظرة عامة</span></span><span class="lien actif"><i class="puce"></i><span lang="fr">Découvrir</span><span lang="ar">اكتشف</span></span><span class="lien"><i class="puce"></i><span lang="fr">Itinéraire</span><span lang="ar">البرنامج</span></span><span class="lien"><i class="puce"></i><span lang="fr">Coffre</span><span lang="ar">الخزنة</span></span><span class="lien"><i class="puce"></i><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></div></aside><main class="principal centre"><div class="ancre decouvrir-pc"><div class="activite"><div class="illus" aria-hidden="true"><svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice"><circle cx="248" cy="58" r="26" class="soleil"/><path d="M0 150 C60 110 110 120 160 140 S260 120 320 135 V200 H0Z" class="colline"/><path d="M0 172 C70 150 140 168 200 160 S290 150 320 158 V200 H0Z" class="colline2"/></svg></div><div class="activite-texte"><p class="etiquette"><span lang="fr">3 sur 24</span><span lang="ar">3 من 24</span></p><h2 class="titre-lieu"><span lang="fr">Balade dans l’Alfama</span><span lang="ar">نزهة في ألفاما</span></h2><p class="muet"><span lang="fr">Le matin · Gratuit · 2 h</span><span lang="ar">الصباح · مجاني · ساعتان</span></p></div></div><div class="gestes-boutons"><span class="rond" aria-label="Pas pour moi"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span><span class="rond petit-rond" aria-label="Revenir"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></span><span class="rond oui" aria-label="J’y vais"><svg class="ico" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div><div class="gestes-legende"><span><span lang="fr">Pas pour moi</span><span lang="ar">ليس لي</span></span><span><span lang="fr">Revenir</span><span lang="ar">رجوع</span></span><span><span lang="fr">J’y vais</span><span lang="ar">سأذهب</span></span></div><div class="coach coach--cote" style="--queue:28px;--oiseau:12px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 3 sur 6</span><span lang="ar">الخطوة 3 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class=""></i><i class=""></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Glissez à droite : j’y vais. À gauche : pas pour moi. Les boutons font pareil.</span><span lang="ar">اسحب البطاقة نحو « سأذهب » أو نحو « ليس لي »، أو استعمل الأزرار.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="80" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-gauche" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g transform="matrix(-1 0 0 1 96 0)"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M46 56C60 61 78 63 94 59C80 53 62 50 48 50Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M66 57L78 58M60 55L70 55.5"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(4 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="63.6" cy="26" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="64.6" cy="24.8" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g></g></g></g></g></svg></div></div></div></main></div><figcaption>Ordinateur · 1280 × 800</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="etape" aria-labelledby="e4">
+    <div class="etape-tete">
+      <div style="display:flex;flex-direction:column;gap:6px"><p class="etiq">Étape 4 sur 6</p><h2 id="e4">Le programme se compose tout seul</h2></div>
+      <dl class="fiche"><dt>Page</dt><dd><code>/voyages/&lt;id&gt;/itineraire</code></dd><dt>Élément</dt><dd>Une journée, puis la carte</dd>
+      <dt>Projecteur</dt><dd>Oui : la première journée.</dd><dt>Plumio</dt><dd>pointer-haut (téléphone), pointer-gauche (ordinateur)</dd></dl>
+    </div>
+    <div class="cadres">
+      <figure class="cadre-tel"><div class="maq tel"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Itinéraire</span><span lang="ar">البرنامج</span></h1><p class="muet petit"><span lang="fr">Lisbonne · 16 au 18 mai</span><span lang="ar">لشبونة · 16 إلى 18 مايو</span></p></div></header><div class="contenu"><div class="plan" aria-hidden="true"><svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice"><path d="M-10 160 C80 140 120 180 220 150 S330 120 410 140" class="eau"/><path d="M40 40 L120 70 L180 50 L260 90 L340 60" class="rue"/><path d="M90 0 L110 220 M250 0 L230 220" class="rue"/><path d="M70 120 C120 90 170 110 210 80 S290 70 320 100" class="trajet"/><circle cx="70" cy="120" r="7" class="epingle"/><circle cx="210" cy="80" r="7" class="epingle"/><circle cx="320" cy="100" r="7" class="epingle"/></svg></div><div class="ancre"><div class="carte bloc jour projecteur"><p class="etiquette"><span lang="fr">Jour 1</span><span lang="ar">اليوم 1</span> · <span lang="fr">samedi</span><span lang="ar">السبت</span></p><div class="creneau"><span class="moment"><span lang="fr">Le matin</span><span lang="ar">الصباح</span></span><span><span lang="fr">Balade dans l’Alfama</span><span lang="ar">نزهة في ألفاما</span></span></div><div class="creneau"><span class="moment"><span lang="fr">L’après-midi</span><span lang="ar">بعد الظهر</span></span><span><span lang="fr">Musée des azulejos</span><span lang="ar">متحف الأزوليجو</span></span></div><div class="creneau"><span class="moment"><span lang="fr">Le soir</span><span lang="ar">المساء</span></span><span><span lang="fr">Dîner au Bairro Alto</span><span lang="ar">عشاء في بايرو ألتو</span></span></div></div><div class="coach coach--dessous-fin" style="--queue:48px;--oiseau:54px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 4 sur 6</span><span lang="ar">الخطوة 4 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class=""></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Les activités qui ont plu sont rangées jour par jour. Touchez une journée pour la voir sur la carte.</span><span lang="ar">رُتِّبت الأنشطة التي أعجبتكم يومًا بيوم. المس يومًا لتراه على الخريطة.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="64" height="64" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-haut" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(-14 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="62.8" cy="24.2" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="63.8" cy="23" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M47 52C40 40 34 24 31 3C42 13 50 30 54 47Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M35 15L41 25M33 9L38 17"/></g></g></g></g></svg></div></div></div><div class="carte bloc jour"><p class="etiquette"><span lang="fr">Jour 2</span><span lang="ar">اليوم 2</span> · <span lang="fr">dimanche</span><span lang="ar">الأحد</span></p><div class="creneau"><span class="moment"><span lang="fr">Le matin</span><span lang="ar">الصباح</span></span><span><span lang="fr">Tour de Belém</span><span lang="ar">برج بيليم</span></span></div><div class="creneau"><span class="moment"><span lang="fr">L’après-midi</span><span lang="ar">بعد الظهر</span></span><span><span lang="fr">Plage de Carcavelos</span><span lang="ar">شاطئ كاركافيلوس</span></span></div></div></div><nav class="onglets"><span class="onglet actif"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span><span lang="fr">Profil</span><span lang="ar">الملف</span></span></span></nav></div><figcaption>Téléphone · 390 × 844</figcaption></figure>
+      <figure class="cadre-pc"><div class="maq pc"><aside class="laterale"><span class="marque" translate="no">Tripora</span><div class="nav"><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span lang="fr">Profil</span><span lang="ar">الملف</span></span></div><div class="nav"><p class="etiquette"><span lang="fr">Écrans du voyage</span><span lang="ar">شاشات الرحلة</span></p><span class="lien"><i class="puce"></i><span lang="fr">Aperçu</span><span lang="ar">نظرة عامة</span></span><span class="lien"><i class="puce"></i><span lang="fr">Découvrir</span><span lang="ar">اكتشف</span></span><span class="lien actif"><i class="puce"></i><span lang="fr">Itinéraire</span><span lang="ar">البرنامج</span></span><span class="lien"><i class="puce"></i><span lang="fr">Coffre</span><span lang="ar">الخزنة</span></span><span class="lien"><i class="puce"></i><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></div></aside><main class="principal"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Itinéraire</span><span lang="ar">البرنامج</span></h1><p class="muet petit"><span lang="fr">Lisbonne · 16 au 18 mai</span><span lang="ar">لشبونة · 16 إلى 18 مايو</span></p></div></header><div class="contenu deux"><div class="colonne"><div class="ancre"><div class="carte bloc jour projecteur"><p class="etiquette"><span lang="fr">Jour 1</span><span lang="ar">اليوم 1</span> · <span lang="fr">samedi</span><span lang="ar">السبت</span></p><div class="creneau"><span class="moment"><span lang="fr">Le matin</span><span lang="ar">الصباح</span></span><span><span lang="fr">Balade dans l’Alfama</span><span lang="ar">نزهة في ألفاما</span></span></div><div class="creneau"><span class="moment"><span lang="fr">L’après-midi</span><span lang="ar">بعد الظهر</span></span><span><span lang="fr">Musée des azulejos</span><span lang="ar">متحف الأزوليجو</span></span></div><div class="creneau"><span class="moment"><span lang="fr">Le soir</span><span lang="ar">المساء</span></span><span><span lang="fr">Dîner au Bairro Alto</span><span lang="ar">عشاء في بايرو ألتو</span></span></div></div><div class="coach coach--cote" style="--queue:28px;--oiseau:12px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 4 sur 6</span><span lang="ar">الخطوة 4 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class=""></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Les activités qui ont plu sont rangées jour par jour. Touchez une journée pour la voir sur la carte.</span><span lang="ar">رُتِّبت الأنشطة التي أعجبتكم يومًا بيوم. المس يومًا لتراه على الخريطة.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="80" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-gauche" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g transform="matrix(-1 0 0 1 96 0)"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M46 56C60 61 78 63 94 59C80 53 62 50 48 50Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M66 57L78 58M60 55L70 55.5"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(4 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="63.6" cy="26" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="64.6" cy="24.8" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g></g></g></g></g></svg></div></div></div><div class="carte bloc jour"><p class="etiquette"><span lang="fr">Jour 2</span><span lang="ar">اليوم 2</span> · <span lang="fr">dimanche</span><span lang="ar">الأحد</span></p><div class="creneau"><span class="moment"><span lang="fr">Le matin</span><span lang="ar">الصباح</span></span><span><span lang="fr">Tour de Belém</span><span lang="ar">برج بيليم</span></span></div><div class="creneau"><span class="moment"><span lang="fr">L’après-midi</span><span lang="ar">بعد الظهر</span></span><span><span lang="fr">Plage de Carcavelos</span><span lang="ar">شاطئ كاركافيلوس</span></span></div></div></div><div class="plan" aria-hidden="true"><svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice"><path d="M-10 160 C80 140 120 180 220 150 S330 120 410 140" class="eau"/><path d="M40 40 L120 70 L180 50 L260 90 L340 60" class="rue"/><path d="M90 0 L110 220 M250 0 L230 220" class="rue"/><path d="M70 120 C120 90 170 110 210 80 S290 70 320 100" class="trajet"/><circle cx="70" cy="120" r="7" class="epingle"/><circle cx="210" cy="80" r="7" class="epingle"/><circle cx="320" cy="100" r="7" class="epingle"/></svg></div></div></main></div><figcaption>Ordinateur · 1280 × 800</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="etape" aria-labelledby="e5">
+    <div class="etape-tete">
+      <div style="display:flex;flex-direction:column;gap:6px"><p class="etiq">Étape 5 sur 6</p><h2 id="e5">Tout sous la main, même sans réseau</h2></div>
+      <dl class="fiche"><dt>Page</dt><dd><code>/voyages/&lt;id&gt;/coffre</code></dd><dt>Élément</dt><dd>Le coffre, puis la valise et « Qui fait quoi »</dd>
+      <dt>Projecteur</dt><dd>Oui : la première fiche du coffre.</dd><dt>Plumio</dt><dd>pointer-haut (téléphone), pointer-gauche (ordinateur)</dd></dl>
+    </div>
+    <div class="cadres">
+      <figure class="cadre-tel"><div class="maq tel"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Coffre</span><span lang="ar">الخزنة</span></h1></div></header><div class="contenu"><div class="segments"><span class="seg actif"><span lang="fr">Coffre</span><span lang="ar">الخزنة</span></span><span class="seg"><span lang="fr">Valise</span><span lang="ar">الحقيبة</span></span><span class="seg"><span lang="fr">Qui fait quoi</span><span lang="ar">من يفعل ماذا</span></span></div><div class="ancre"><div class="carte item projecteur"><span class="ico-rond"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r=".8"/></svg></span><span class="item-texte"><strong><span lang="fr">Wifi de l’appartement</span><span lang="ar">واي فاي الشقة</span></strong><span class="muet"><span lang="fr">Casa-Alfama · mot de passe masqué</span><span lang="ar">Casa-Alfama · كلمة المرور مخفية</span></span></span></div><div class="coach coach--dessous-fin" style="--queue:48px;--oiseau:76px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 5 sur 6</span><span lang="ar">الخطوة 5 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Codes, wifi, billets : tout est rangé dans le coffre, et reste lisible sans réseau.</span><span lang="ar">الرموز والواي فاي والتذاكر: كل شيء محفوظ في الخزنة، ويبقى مقروءًا دون اتصال.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="64" height="64" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-haut" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(-14 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="62.8" cy="24.2" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="63.8" cy="23" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M47 52C40 40 34 24 31 3C42 13 50 30 54 47Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M35 15L41 25M33 9L38 17"/></g></g></g></g></svg></div></div></div><div class="carte item"><span class="ico-rond"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/></svg></span><span class="item-texte"><strong><span lang="fr">Code de la porte</span><span lang="ar">رمز الباب</span></strong><span class="muet"><span lang="fr">Bâtiment B, 2e étage</span><span lang="ar">المبنى B، الطابق 2</span></span></span></div><div class="carte item"><span class="ico-rond"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v8a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2Z"/><path d="M14 6v12" stroke-dasharray="2 2"/></svg></span><span class="item-texte"><strong><span lang="fr">Billets d’avion</span><span lang="ar">تذاكر الطيران</span></strong><span class="muet"><span lang="fr">4 billets · aller et retour</span><span lang="ar">4 تذاكر · ذهاب وعودة</span></span></span></div><div class="carte item"><span class="ico-rond"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4Z"/><path d="M10 20v-6h4v6"/></svg></span><span class="item-texte"><strong><span lang="fr">Adresse du logement</span><span lang="ar">عنوان السكن</span></strong><span class="muet"><span lang="fr">Rua dos Remédios</span><span lang="ar">Rua dos Remédios</span></span></span></div></div><nav class="onglets"><span class="onglet actif"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span><span lang="fr">Profil</span><span lang="ar">الملف</span></span></span></nav></div><figcaption>Téléphone · 390 × 844</figcaption></figure>
+      <figure class="cadre-pc"><div class="maq pc"><aside class="laterale"><span class="marque" translate="no">Tripora</span><div class="nav"><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span lang="fr">Profil</span><span lang="ar">الملف</span></span></div><div class="nav"><p class="etiquette"><span lang="fr">Écrans du voyage</span><span lang="ar">شاشات الرحلة</span></p><span class="lien"><i class="puce"></i><span lang="fr">Aperçu</span><span lang="ar">نظرة عامة</span></span><span class="lien"><i class="puce"></i><span lang="fr">Découvrir</span><span lang="ar">اكتشف</span></span><span class="lien"><i class="puce"></i><span lang="fr">Itinéraire</span><span lang="ar">البرنامج</span></span><span class="lien actif"><i class="puce"></i><span lang="fr">Coffre</span><span lang="ar">الخزنة</span></span><span class="lien"><i class="puce"></i><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></div></aside><main class="principal"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Coffre</span><span lang="ar">الخزنة</span></h1></div></header><div class="contenu"><div class="segments"><span class="seg actif"><span lang="fr">Coffre</span><span lang="ar">الخزنة</span></span><span class="seg"><span lang="fr">Valise</span><span lang="ar">الحقيبة</span></span><span class="seg"><span lang="fr">Qui fait quoi</span><span lang="ar">من يفعل ماذا</span></span></div><div class="grille-items"><div class="ancre"><div class="carte item projecteur"><span class="ico-rond"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r=".8"/></svg></span><span class="item-texte"><strong><span lang="fr">Wifi de l’appartement</span><span lang="ar">واي فاي الشقة</span></strong><span class="muet"><span lang="fr">Casa-Alfama · mot de passe masqué</span><span lang="ar">Casa-Alfama · كلمة المرور مخفية</span></span></span></div><div class="coach coach--cote" style="--queue:28px;--oiseau:12px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 5 sur 6</span><span lang="ar">الخطوة 5 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class=""></i></span></div><p class="bulle-texte"><span lang="fr">Codes, wifi, billets : tout est rangé dans le coffre, et reste lisible sans réseau.</span><span lang="ar">الرموز والواي فاي والتذاكر: كل شيء محفوظ في الخزنة، ويبقى مقروءًا دون اتصال.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Suivant</span><span lang="ar">التالي</span></button></div></div><div class="oiseau"><svg width="80" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-gauche" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g transform="matrix(-1 0 0 1 96 0)"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M46 56C60 61 78 63 94 59C80 53 62 50 48 50Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M66 57L78 58M60 55L70 55.5"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(4 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="63.6" cy="26" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="64.6" cy="24.8" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g></g></g></g></g></svg></div></div></div><div class="carte item"><span class="ico-rond"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/></svg></span><span class="item-texte"><strong><span lang="fr">Code de la porte</span><span lang="ar">رمز الباب</span></strong><span class="muet"><span lang="fr">Bâtiment B, 2e étage</span><span lang="ar">المبنى B، الطابق 2</span></span></span></div><div class="carte item"><span class="ico-rond"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v8a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2Z"/><path d="M14 6v12" stroke-dasharray="2 2"/></svg></span><span class="item-texte"><strong><span lang="fr">Billets d’avion</span><span lang="ar">تذاكر الطيران</span></strong><span class="muet"><span lang="fr">4 billets · aller et retour</span><span lang="ar">4 تذاكر · ذهاب وعودة</span></span></span></div><div class="carte item"><span class="ico-rond"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4Z"/><path d="M10 20v-6h4v6"/></svg></span><span class="item-texte"><strong><span lang="fr">Adresse du logement</span><span lang="ar">عنوان السكن</span></strong><span class="muet"><span lang="fr">Rua dos Remédios</span><span lang="ar">Rua dos Remédios</span></span></span></div></div></div></main></div><figcaption>Ordinateur · 1280 × 800</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="etape" aria-labelledby="e6">
+    <div class="etape-tete">
+      <div style="display:flex;flex-direction:column;gap:6px"><p class="etiq">Étape 6 sur 6</p><h2 id="e6">Qui doit quoi, sans calculatrice</h2></div>
+      <dl class="fiche"><dt>Page</dt><dd><code>/voyages/&lt;id&gt;/budget</code></dd><dt>Élément</dt><dd>« Nouvelle dépense », puis les remboursements</dd>
+      <dt>Projecteur</dt><dd>Oui : le bouton « Nouvelle dépense ».</dd><dt>Plumio</dt><dd>pointer-bas (téléphone), pointer-haut (ordinateur) ; « Terminer » lance « au revoir »</dd></dl>
+    </div>
+    <div class="cadres">
+      <figure class="cadre-tel"><div class="maq tel"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Budget</span><span lang="ar">الميزانية</span></h1><p class="muet petit"><span lang="fr">Week-end de mai</span><span lang="ar">عطلة مايو</span></p></div></header><div class="contenu"><div class="carte bloc"><p class="etiquette"><span lang="fr">Où en est chacun</span><span lang="ar">أين وصل كل واحد</span></p><div class="solde"><span translate="no">Inès</span><span class="muet"><span lang="fr">reçoit</span><span lang="ar">تستحق</span></span><span class="montant pos">+ 42,00 €</span></div><div class="solde"><span translate="no">Malik</span><span class="muet"><span lang="fr">doit</span><span lang="ar">عليه</span></span><span class="montant neg">− 18,00 €</span></div><div class="solde"><span translate="no">Jade</span><span class="muet"><span lang="fr">doit</span><span lang="ar">عليها</span></span><span class="montant neg">− 6,00 €</span></div><div class="solde"><span translate="no"><span lang="fr">Vous</span><span lang="ar">أنت</span></span><span class="muet"><span lang="fr">devez</span><span lang="ar">عليك</span></span><span class="montant neg">− 18,00 €</span></div></div><div class="carte bloc"><p class="etiquette"><span lang="fr">Remboursements</span><span lang="ar">التسويات</span></p><div class="solde"><span>Malik → Inès</span><span></span><span class="montant">18,00 €</span></div><div class="solde"><span><span lang="fr">Vous</span><span lang="ar">أنت</span> → Inès</span><span></span><span class="montant">18,00 €</span></div></div><div class="ancre bas-de-page"><button type="button" class="btn primaire grand projecteur"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span lang="fr">Nouvelle dépense</span><span lang="ar">مصروف جديد</span></button><div class="coach coach--dessus-fin" style="--queue:40px;--oiseau:-18px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 6 sur 6</span><span lang="ar">الخطوة 6 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i></span></div><p class="bulle-texte"><span lang="fr">Ajoutez une dépense : qui a payé, combien, pour qui. Tripora calcule qui doit quoi.</span><span lang="ar">أضف مصروفًا: من دفع، وكم، ولمن. يحسب Tripora من يدين لمن.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Terminer</span><span lang="ar">إنهاء</span></button></div></div><div class="oiseau"><svg width="64" height="64" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-bas" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M49 56C61 64 73 76 84 92C72 86 58 76 47 64Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M62 70L68 77M58 66L64 72"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(12 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="63.2" cy="27" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="64.2" cy="25.8" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g></g></g></g></svg></div></div></div></div><nav class="onglets"><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span></span><span class="onglet actif"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></span><span class="onglet"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span><span lang="fr">Profil</span><span lang="ar">الملف</span></span></span></nav></div><figcaption>Téléphone · 390 × 844</figcaption></figure>
+      <figure class="cadre-pc"><div class="maq pc"><aside class="laterale"><span class="marque" translate="no">Tripora</span><div class="nav"><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18"/></svg><span lang="fr">Trips</span><span lang="ar">الرحلات</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg><span lang="fr">Carte</span><span lang="ar">الخريطة</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/></svg><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span><span class="lien"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span lang="fr">Profil</span><span lang="ar">الملف</span></span></div><div class="nav"><p class="etiquette"><span lang="fr">Écrans du voyage</span><span lang="ar">شاشات الرحلة</span></p><span class="lien"><i class="puce"></i><span lang="fr">Aperçu</span><span lang="ar">نظرة عامة</span></span><span class="lien"><i class="puce"></i><span lang="fr">Découvrir</span><span lang="ar">اكتشف</span></span><span class="lien"><i class="puce"></i><span lang="fr">Itinéraire</span><span lang="ar">البرنامج</span></span><span class="lien"><i class="puce"></i><span lang="fr">Coffre</span><span lang="ar">الخزنة</span></span><span class="lien actif"><i class="puce"></i><span lang="fr">Budget</span><span lang="ar">الميزانية</span></span></div></aside><main class="principal"><header class="tete-page"><div><h1 class="titre"><span lang="fr">Budget</span><span lang="ar">الميزانية</span></h1><p class="muet petit"><span lang="fr">Week-end de mai</span><span lang="ar">عطلة مايو</span></p></div><div class="ancre"><button type="button" class="btn primaire projecteur"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span lang="fr">Nouvelle dépense</span><span lang="ar">مصروف جديد</span></button><div class="coach coach--dessous-fin" style="--queue:34px;--oiseau:72px"><div class="bulle" role="dialog" aria-label="Tutoriel"><div class="bulle-haut"><span class="etiquette"><span lang="fr">Étape 6 sur 6</span><span lang="ar">الخطوة 6 من 6</span></span><span class="progression" aria-hidden="true"><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i><i class="fait"></i></span></div><p class="bulle-texte"><span lang="fr">Ajoutez une dépense : qui a payé, combien, pour qui. Tripora calcule qui doit quoi.</span><span lang="ar">أضف مصروفًا: من دفع، وكم، ولمن. يحسب Tripora من يدين لمن.</span></p><div class="bulle-bas"><button type="button" class="btn fantome"><span lang="fr">Passer</span><span lang="ar">تخطَّ</span></button><button type="button" class="btn primaire"><span lang="fr">Terminer</span><span lang="ar">إنهاء</span></button></div></div><div class="oiseau"><svg width="80" height="80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="plumio plumio--calme plumio--pointer-haut" fill="none" stroke="#2a251f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><g class="plumio-pas"><g class="plumio-pose"><g class="p-patte plumio-pattes" stroke-width="2.4"><g class="plumio-patte-arriere"><path d="M49 80V87M45 89.5L49 87L53 89.5M49 87V90"/></g><g class="plumio-patte-avant"><path d="M58 79V87M54 89.5L58 87L62 89.5M58 87V90"/></g></g><g class="plumio-souffle"><g class="plumio-queue"><path class="p-dos" fill="#3a342b" d="M35 71L5 84L23 80L11 94L38 77Z"/></g><g class="plumio-corps"><path class="p-plein p-dos" fill="#3a342b" stroke="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/><path class="p-plein p-ventre" fill="#fffdf8" stroke="none" d="M34 76C41 82 52 85 60 80C68 74 72 62 69 50C68 47 67 45 66 44C60 52 54 66 34 76Z"/><path class="p-vide" fill="none" d="M47 32C39 41 33 58 32 71L34 76C41 82 52 85 60 80C68 74 72 62 69 50C67 43 64 37 60 33Z"/></g><g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose" transform="rotate(-14 54 42)"><ellipse class="p-dos" fill="#3a342b" cx="57" cy="27" rx="16" ry="15"/><g class="plumio-oeil"><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="61" cy="25" r="5.2"/><g class="plumio-pupille"><circle class="p-plein p-vis" fill="#1a1713" stroke="none" cx="62.8" cy="24.2" r="2.9"/><circle class="p-plein p-ventre" fill="#fffdf8" stroke="none" cx="63.8" cy="23" r=".9"/></g><g class="plumio-paupiere"><circle class="p-plein p-dos" fill="#3a342b" stroke="none" transform="translate(0 19.4) scale(1 0) translate(0 -19.4)" cx="61" cy="25" r="5.7"/></g></g><g class="plumio-bec"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 22L80.5 25.8L71 26.6Z"/><g class="plumio-bec-bas"><path class="p-fin p-or" fill="#c08a2e" stroke-width="2" d="M71 26.6L78.5 26.4L71 30Z"/></g></g></g></g></g><g class="plumio-foulard"><path fill="currentColor" d="M41 40C50 46 62 46 70 38L71 45C62 53 50 53 40 47Z"/><g class="plumio-pan"><path fill="currentColor" d="M57 48L71 43.5L62 60Z"/></g></g><g class="plumio-aile"><path class="p-dos" fill="#3a342b" d="M47 52C40 40 34 24 31 3C42 13 50 30 54 47Z"/><path class="p-vide p-ligne" stroke="#fffdf8" stroke-width="1.6" stroke-opacity=".35" fill="none" d="M35 15L41 25M33 9L38 17"/></g></g></g></g></svg></div></div></div></header><div class="contenu deux"><div class="carte bloc"><p class="etiquette"><span lang="fr">Où en est chacun</span><span lang="ar">أين وصل كل واحد</span></p><div class="solde"><span translate="no">Inès</span><span class="muet"><span lang="fr">reçoit</span><span lang="ar">تستحق</span></span><span class="montant pos">+ 42,00 €</span></div><div class="solde"><span translate="no">Malik</span><span class="muet"><span lang="fr">doit</span><span lang="ar">عليه</span></span><span class="montant neg">− 18,00 €</span></div><div class="solde"><span translate="no">Jade</span><span class="muet"><span lang="fr">doit</span><span lang="ar">عليها</span></span><span class="montant neg">− 6,00 €</span></div><div class="solde"><span translate="no"><span lang="fr">Vous</span><span lang="ar">أنت</span></span><span class="muet"><span lang="fr">devez</span><span lang="ar">عليك</span></span><span class="montant neg">− 18,00 €</span></div></div><div class="carte bloc"><p class="etiquette"><span lang="fr">Remboursements</span><span lang="ar">التسويات</span></p><div class="solde"><span>Malik → Inès</span><span></span><span class="montant">18,00 €</span></div><div class="solde"><span><span lang="fr">Vous</span><span lang="ar">أنت</span> → Inès</span><span></span><span class="montant">18,00 €</span></div></div></div></main></div><figcaption>Ordinateur · 1280 × 800</figcaption></figure>
+    </div>
+  </section>
+</main>
+</body>
+</html>
