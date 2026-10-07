@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { ListeFantome } from '@/components/ui/Squelette';
 import { TitreDePage } from '@/components/TitreDePage';
+import { Mascotte } from '@/components/mascotte/Mascotte';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
@@ -219,12 +220,16 @@ export default function TripBilan() {
 
       {bilan && (
         <>
-          <div className="space-y-1">
-            <p className="titre-lieu text-3xl">{titre}</p>
-            {sousTitre && <p className="text-muted text-sm">{sousTitre}</p>}
-            {enCours && (
-              <p className="text-muted text-sm">Le voyage n’est pas fini : le bilan s’écrit au fil des jours.</p>
-            )}
+          <div className="flex items-end justify-between gap-4">
+            <div className="min-w-0 space-y-1">
+              <p className="titre-lieu text-3xl">{titre}</p>
+              {sousTitre && <p className="text-muted text-sm">{sousTitre}</p>}
+              {enCours && (
+                <p className="text-muted text-sm">Le voyage n’est pas fini : le bilan s’écrit au fil des jours.</p>
+              )}
+            </div>
+            {/* Le voyage est fini : Plumio fête ça, une fois. */}
+            {!enCours && <Mascotte pose="celebre" taille={96} joue />}
           </div>
 
           {chiffres.length > 0 && (

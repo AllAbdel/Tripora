@@ -1,13 +1,22 @@
-import type { ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { cn } from '@/lib/cn';
+// La feuille et les poses vivent avec leurs sources de dessin (design/mascotte,
+// régénérées par outils/plumio.py) : l'application les lit telles quelles.
+import '../../../../../design/mascotte/animations.css';
 
-/**
- * Les poses du personnage de Tripora, telles que les liste le brief
- * (`docs/MASCOTTE.md`, « La planche de poses »).
- */
+const DESSINS = import.meta.glob<string>('../../../../../design/mascotte/poses/*.svg', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+/** Les seize poses de Plumio (voir `design/mascotte/NOTES.md`). */
 export type PoseDeLaMascotte =
   | 'accueil'
-  | 'pointer'
+  | 'pointer-haut'
+  | 'pointer-bas'
+  | 'pointer-gauche'
+  | 'pointer-droite'
   | 'explique'
   | 'reflechit'
   | 'celebre'
@@ -17,41 +26,179 @@ export type PoseDeLaMascotte =
   | 'chut'
   | 'notification'
   | 'depart'
-  | 'au-revoir';
+  | 'au-revoir'
+  | 'vol';
 
-/** Vers où il montre, quand il montre quelque chose : l'élément mis en lumière. */
+/** Vers où il montre : l'élément mis en lumière, par rapport à lui. */
 export type DirectionDuGeste = 'haut' | 'bas' | 'gauche' | 'droite';
 
+/** Ce qui le fait bouger, posé en classes sur le dessin (voir `animations.css`). */
+export type ViePlumio = 'immobile' | 'calme' | 'vie';
+
+function dessin(pose: PoseDeLaMascotte): string {
+  const brut = DESSINS[`../../../../../design/mascotte/poses/${pose}.svg`] ?? '';
+  // La taille vient du conteneur ; le `xmlns` ne sert à rien dans du HTML.
+  return brut.replace(' xmlns="http://www.w3.org/2000/svg"', '').replace('<svg ', '<svg width="100%" height="100%" ');
+}
+
+function mouvementReduit(): boolean {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
 /**
- * L'emplacement du personnage.
+ * Plumio, l'hirondelle de Tripora.
  *
- * Ses dessins sont en cours (le brief : `docs/MASCOTTE.md`). En attendant, il
- * montre ce qu'on lui passe en `repli` — dans la visite guidée, la pastille
- * de l'écran — et chaque endroit qui l'accueillera est déjà en place, avec sa
- * pose et sa direction. Quand les poses arriveront, seul ce composant
- * changera : les SVG y deviendront des composants, animés en CSS.
+ * Dessiné par Claude Design (`design/mascotte/`) : seize poses en SVG, et une
+ * feuille qui le colore (le foulard prend la couleur d'accent, le trait
+ * s'éclaircit en mode sombre) et l'anime — en `transform` et `opacity`
+ * seulement, sans rebond, et plus du tout quand on a demandé moins de
+ * mouvement.
  *
- * Décoratif : ce qu'il « dit » est toujours écrit à côté, dans une bulle.
+ * Une fois par écran au plus, jamais à côté d'une décision (un vote, un
+ * montant), jamais dans un formulaire. Décoratif : ce qu'il « dit » est
+ * toujours écrit à côté.
+ *
+ * En arabe, il se retourne avec la page : il regarde dans le sens de la
+ * lecture.
  */
 export function Mascotte({
   pose,
-  direction,
-  repli,
+  taille,
+  vie = 'immobile',
+  joue = false,
+  arrivee = false,
+  sortie = false,
+  petit,
+  regard = false,
   className,
 }: {
   pose: PoseDeLaMascotte;
-  direction?: DirectionDuGeste;
-  repli: ReactNode;
+  /** En pixels : 24 à côté d'un texte, 64 à 80 dans le tutoriel, 120 à 160 sur un écran vide. */
+  taille: number;
+  /** `calme` : il respire et cligne ; `vie` : en plus, de petits gestes de temps en temps, sans JavaScript. */
+  vie?: ViePlumio;
+  /** Joue une fois le geste de la pose, à son apparition. */
+  joue?: boolean;
+  /** Arrive en volant, d'en haut. */
+  arrivee?: boolean;
+  /** S'envole et disparaît (600 ms) : la fin de la visite guidée. */
+  sortie?: boolean;
+  /** Sans les détails qui deviennent du bruit sous 40 px. Par défaut, selon la taille. */
+  petit?: boolean;
+  /** Suit parfois le pointeur des yeux (souris seulement). */
+  regard?: boolean;
   className?: string;
 }) {
+  const conteneur = useRef<HTMLSpanElement | null>(null);
+
+  // Les classes d'animation se posent sur le dessin lui-même, après coup : les
+  // mettre dans le HTML rejouerait tout à chaque rendu.
+  useLayoutEffect(() => {
+    const svg = conteneur.current?.firstElementChild;
+    if (!svg) return;
+    svg.classList.toggle('plumio--petit', petit ?? taille < 40);
+    svg.classList.toggle('plumio--calme', vie === 'calme');
+    svg.classList.toggle('plumio--vie', vie === 'vie');
+  }, [pose, taille, petit, vie]);
+
+  // Le geste de la pose, une fois, à l'arrivée : après l'atterrissage s'il y en a un.
+  useLayoutEffect(() => {
+    const svg = conteneur.current?.firstElementChild;
+    if (!svg) return;
+    if (sortie) {
+      svg.classList.add('plumio--sort');
+      return;
+    }
+    if (arrivee) svg.classList.add('plumio--atterrit');
+    if (!joue) return;
+    if (!arrivee) {
+      svg.classList.add('plumio--joue');
+      return;
+    }
+    const minuteur = window.setTimeout(() => svg.classList.add('plumio--joue'), 360);
+    return () => window.clearTimeout(minuteur);
+  }, [pose, joue, arrivee, sortie]);
+
+  useRegardQuiSuit(conteneur, regard, pose === 'pointer-gauche');
+
   return (
     <span
+      ref={conteneur}
       aria-hidden
-      data-pose={pose}
-      data-direction={direction}
-      className={cn('inline-grid shrink-0 place-items-center', className)}
-    >
-      {repli}
-    </span>
+      className={cn('inline-block shrink-0 leading-none rtl:-scale-x-100', className)}
+      style={{ width: taille, height: taille }}
+      // Un dessin du dépôt, sans script ni lien : le SVG doit être dans la page
+      // pour que la feuille l'anime et lui donne la couleur d'accent.
+      dangerouslySetInnerHTML={{ __html: dessin(pose) }}
+    />
   );
+}
+
+/**
+ * Le regard, parfois : quand le pointeur passe à moins de 320 px, Plumio le
+ * suit des yeux deux à quatre secondes, puis retourne à ses affaires. Jamais
+ * au toucher, jamais quand on a demandé moins de mouvement.
+ */
+function useRegardQuiSuit(conteneur: React.RefObject<HTMLSpanElement | null>, actif: boolean, retourne: boolean) {
+  useEffect(() => {
+    const element = conteneur.current;
+    if (!actif || !element || mouvementReduit() || !window.matchMedia?.('(pointer: fine)').matches) return;
+    let suitJusqua = 0;
+    let reposJusqua = 0;
+    let image = 0;
+    let minuteur = 0;
+    let pointeur = { x: 0, y: 0 };
+
+    const arreter = (svg: Element) => {
+      svg.classList.remove('plumio--suit');
+      (svg as SVGElement).style.removeProperty('--plumio-regard-x');
+      (svg as SVGElement).style.removeProperty('--plumio-regard-y');
+      // Puis un moment sans le suivre : « parfois », pas tout le temps.
+      reposJusqua = performance.now() + 4000 + Math.random() * 4000;
+    };
+
+    const viser = () => {
+      image = 0;
+      const svg = element.firstElementChild as SVGElement | null;
+      if (!svg) return;
+      if (performance.now() > suitJusqua) {
+        arreter(svg);
+        return;
+      }
+      const boite = element.getBoundingClientRect();
+      const miroir = (document.documentElement.dir === 'rtl') !== retourne ? -1 : 1;
+      const x = Math.max(-1, Math.min(1, ((pointeur.x - (boite.left + boite.width / 2)) / 160) * miroir));
+      const y = Math.max(-1, Math.min(1, (pointeur.y - (boite.top + boite.height / 2)) / 160));
+      svg.style.setProperty('--plumio-regard-x', x.toFixed(2));
+      svg.style.setProperty('--plumio-regard-y', y.toFixed(2));
+    };
+
+    const surMouvement = (evenement: PointerEvent) => {
+      pointeur = { x: evenement.clientX, y: evenement.clientY };
+      const maintenant = performance.now();
+      const svg = element.firstElementChild;
+      if (!svg) return;
+      if (maintenant < suitJusqua) {
+        if (!image) image = window.requestAnimationFrame(viser);
+        return;
+      }
+      if (maintenant < reposJusqua) return;
+      const boite = element.getBoundingClientRect();
+      const distance = Math.hypot(pointeur.x - (boite.left + boite.width / 2), pointeur.y - (boite.top + boite.height / 2));
+      if (distance > 320) return;
+      const duree = 2000 + Math.random() * 2000;
+      suitJusqua = maintenant + duree;
+      svg.classList.add('plumio--suit');
+      image = window.requestAnimationFrame(viser);
+      window.clearTimeout(minuteur);
+      minuteur = window.setTimeout(() => arreter(svg), duree);
+    };
+
+    window.addEventListener('pointermove', surMouvement, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', surMouvement);
+      window.cancelAnimationFrame(image);
+      window.clearTimeout(minuteur);
+    };
+  }, [conteneur, actif, retourne]);
 }

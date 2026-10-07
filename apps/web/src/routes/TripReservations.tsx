@@ -30,6 +30,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
+import { Mascotte } from '@/components/mascotte/Mascotte';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ListeFantome } from '@/components/ui/Squelette';
 import { TitreDePage } from '@/components/TitreDePage';
@@ -168,6 +169,7 @@ export default function TripReservations() {
 
       {reservations.data && reservations.data.length === 0 && edition === null && (
         <EmptyState
+          illustration={<Mascotte pose="attend" taille={120} vie="vie" regard />}
           title="Rien de réservé pour l’instant"
           description="Collez l’e-mail de confirmation de Booking, Airbnb, GetYourGuide ou d’ailleurs : l’hôtel, la visite ou le train se range tout seul, à la bonne date, pour tout le groupe."
           action={

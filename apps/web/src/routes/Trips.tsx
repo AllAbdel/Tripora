@@ -9,6 +9,7 @@ import { Pastille } from '@/components/Pastille';
 import { Banner } from '@/components/ui/Banner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Logo } from '@/components/Logo';
+import { Mascotte } from '@/components/mascotte/Mascotte';
 import { useAuth } from '@/lib/auth-context';
 import { getTripRepository, type TripSummary } from '@/lib/trips';
 import { toFailure } from '@/lib/errors';
@@ -21,6 +22,7 @@ import { signaler } from '@/lib/feedback';
 import { useRappelsDesVoyages } from '@/lib/rappels';
 import { prendreLaSuite } from '@/lib/suiteApresConnexion';
 import { PiedDePage } from '@/components/PiedDePage';
+import { useGuide } from '@/stores/guide';
 
 export default function Trips() {
   const { identity, backendReady } = useAuth();
@@ -29,6 +31,8 @@ export default function Trips() {
   const queryClient = useQueryClient();
   const [aSupprimer, setASupprimer] = useState<TripSummary | null>(null);
   const navigate = useNavigate();
+  // La visite guidée a son Plumio : jamais deux sur le même écran.
+  const visiteOuverte = useGuide((etat) => etat.ouvert);
 
   // Arrivé ici au retour de Google — qui ramène toujours sur /voyages — alors
   // qu'on voulait autre chose : créer un trip, ouvrir un voyage. On y va.
@@ -95,8 +99,9 @@ export default function Trips() {
         pastille="voyages"
         subtitle={identity ? `Bonjour ${identity.displayName}` : undefined}
         action={
-          <Link to="/voyages/nouveau" aria-label={t('action.creer')} data-guide="nouveau-voyage">
-            <Button size="sm" icon={<Plus className="size-4" aria-hidden />}>
+          <Link to="/voyages/nouveau" aria-label={t('action.creer')}>
+            {/* Le repère sur le bouton : le projecteur de la visite en suit l'arrondi. */}
+            <Button data-guide="nouveau-voyage" size="sm" icon={<Plus className="size-4" aria-hidden />}>
               {t('action.nouveau')}
             </Button>
           </Link>
@@ -135,7 +140,13 @@ export default function Trips() {
 
         {data && data.length === 0 && (
           <EmptyState
-            illustration={<Logo className="size-16 opacity-90" />}
+            illustration={
+              visiteOuverte ? (
+                <Logo className="size-16 opacity-90" />
+              ) : (
+                <Mascotte pose="attend" taille={128} vie="vie" regard />
+              )
+            }
             title={t('trips.vide.titre')}
             description={t('trips.vide.texte')}
             action={

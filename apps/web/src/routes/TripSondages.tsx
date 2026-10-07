@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
+import { Mascotte } from '@/components/mascotte/Mascotte';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ListeFantome } from '@/components/ui/Squelette';
 import { TextInput } from '@/components/ui/Field';
@@ -136,6 +137,7 @@ export default function TripSondages() {
 
       {sondages.data && liste.length === 0 && nouveau === null && (
         <EmptyState
+          illustration={<Mascotte pose="attend" taille={120} vie="vie" regard />}
           title="Aucun sondage pour l’instant"
           description="Les dates qui arrangent tout le monde, le logement parmi ceux repérés sur Airbnb, le restaurant de ce soir : posez la question au groupe, chacun vote d’un geste."
           action={
