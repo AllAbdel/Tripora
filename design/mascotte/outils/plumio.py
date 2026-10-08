@@ -1,4 +1,4 @@
-"""Plumio : le squelette et les seize poses.
+"""Plumio : le squelette et les vingt-trois poses.
 
 Usage : python3 plumio.py design/mascotte   (écrit design/mascotte/poses/*.svg)
 """
@@ -192,8 +192,111 @@ P['au-revoir'] = vol(aile_svg=aile('M47 50C49 36 52 22 58 6C62 20 60 34 56 48Z',
 
 P['pointer-gauche'] = f'<g transform="matrix(-1 0 0 1 96 0)">{P["pointer-droite"]}</g>'
 
+
+def miroir(nom):
+    return f'<g transform="matrix(-1 0 0 1 96 0)">{P[nom]}</g>'
+
+
+# --- le tutoriel, version 2 ----------------------------------------------------
+
+# De face : la tête au-dessus du corps, deux yeux, le nœud du foulard au milieu.
+# La vue de profil (celle d'« attend ») est cachée dessous : `plumio--se-tourne`
+# écrase l'une et déplie l'autre, pour enchaîner l'accueil et la visite.
+def oeil_face(cx, px=0.0, py=0.0, ferme=None):
+    if ferme:
+        return (f'<g class="plumio-oeil"><path class="p-ventre-s" stroke="#fffdf8" stroke-width="2.2" fill="none" '
+                f'd="M{cx - 3.4} 25.5Q{cx} 28.6 {cx + 3.4} 25.5"/></g>')
+    x, y = cx + px, 25.4 + py
+    return (f'<g class="plumio-oeil"><circle {VEN} {NS} cx="{cx}" cy="25" r="4.5"/>'
+            f'<g class="plumio-pupille"><circle {VIS} {NS} cx="{x:.1f}" cy="{y:.1f}" r="2.6"/>'
+            f'<circle {VEN} {NS} cx="{x + 0.9:.1f}" cy="{y - 1.1:.1f}" r=".85"/></g></g>')
+
+
+FACE_QUEUE = (f'<g class="plumio-queue"><path {DOS} d="M43 74L27 95L41 86Z"/>'
+              f'<path {DOS} d="M53 74L69 95L55 86Z"/></g>')
+FACE_PATTES = (f'<g class="plumio-pattes" stroke-width="2.4">'
+               f'<g class="plumio-patte-arriere"><path d="M44.5 78V87M40.5 89.5L44.5 87L48.5 89.5M44.5 87V90"/></g>'
+               f'<g class="plumio-patte-avant"><path d="M51.5 78V87M47.5 89.5L51.5 87L55.5 89.5M51.5 87V90"/></g></g>')
+FACE_CORPS_D = 'M48 37C59 37 65 47 65 58C65 70 58 78 48 79C38 78 31 70 31 58C31 47 37 37 48 37Z'
+FACE_CORPS = (f'<g class="plumio-corps"><path {DOS} {NS} d="{FACE_CORPS_D}"/>'
+              f'<ellipse {VEN} {NS} cx="48" cy="61" rx="12" ry="14"/><path fill="none" d="{FACE_CORPS_D}"/></g>')
+FACE_AILE_G = (f'<g class="plumio-aile-gauche"><path {DOS} d="M37.5 45C31 51 29 61 32 70C36 77 43 81 53 84C47 79 43.5 73 41 64C39.5 57 39.5 51 41.5 47Z"/>'
+               f'<path {LIGNE} fill="none" d="M33 57L34 66"/></g>')
+FACE_AILE_D = (f'<g class="plumio-aile-droite"><path {DOS} d="M58.5 45C65 51 67 61 64 70C60 77 53 81 43 84C49 79 52.5 73 55 64C56.5 57 56.5 51 54.5 47Z"/>'
+               f'<path {LIGNE} fill="none" d="M63 57L62 66"/></g>')
+FACE_FOULARD = (f'<g class="plumio-foulard"><path {ACC} d="M34 39C41 46 55 46 62 39L62 45C55 52 41 52 34 45Z"/>'
+                f'<g class="plumio-pan"><path {ACC} d="M46.8 48L39.5 60.5L48 57Z"/><path {ACC} d="M49.2 48L56.5 60.5L48 57Z"/>'
+                f'<circle {ACC} cx="48" cy="47.6" r="3.1"/></g></g>')
+
+
+def tete_face(px=0.0, py=0.0, ferme=None, rot=0):
+    tr = f' transform="rotate({rot} 48 44)"' if rot else ''
+    return (f'<g class="plumio-tete"><g class="plumio-tete-regard"><g class="plumio-tete-pose"{tr}>'
+            f'<ellipse {DOS} cx="48" cy="26" rx="17" ry="15"/>'
+            f'{oeil_face(40.6, px, py, ferme)}{oeil_face(55.4, px, py, ferme)}'
+            f'<g class="plumio-bec"><ellipse class="plumio-bouche p-vis" fill="{C["vis"]}" {NS} cx="48" cy="33.4" rx="2.8" ry="1.9"/>'
+            f'<g class="plumio-bec-bas"><path class="p-or" fill="{C["ors"]}" {FIN} d="M45.2 32.6H50.8L48 36.4Z"/></g>'
+            f'<path {OR} {FIN} d="M42.8 29.8H53.2L48 34.2Z"/></g></g></g></g>')
+
+
+def face(tete_svg=None):
+    tete_svg = tete_svg or tete_face(rot=-4)
+    vue = (f'<g class="plumio-vue-face"><g class="plumio-souffle">{FACE_QUEUE}{FACE_AILE_G}{FACE_AILE_D}</g>'
+           f'{FACE_PATTES}<g class="plumio-souffle">{FACE_CORPS}{tete_svg}{FACE_FOULARD}</g></g>')
+    return f'<g class="plumio-pas"><g class="plumio-pose">{vue}</g></g>'
+
+
+P['face'] = face() + f'<g class="plumio-vue-profil" opacity="0">{P["attend"]}</g>'
+
+# Picore : penché en avant, la tête au ras du champ, la queue relevée en
+# contrepoids. Le bec touche le bord du champ, sous ses pattes (y = 90).
+PICORE_QUEUE = f'<g class="plumio-queue"><path {DOS} d="M25 56L2 36L15 44L5 25L30 50Z"/></g>'
+PICORE_CORPS_D = 'M22 52C30 41 48 42 58 51C65 57 67 67 62 75C56 83 41 84 31 79C23 74 19 62 22 52Z'
+PICORE_VENTRE_D = 'M31 79C41 84 56 83 62 75C65 70 66 64 64 59C56 68 44 75 31 79Z'
+PICORE_CORPS = (f'<g class="plumio-corps"><path {DOS} {NS} d="{PICORE_CORPS_D}"/>'
+                f'<path {VEN} {NS} d="{PICORE_VENTRE_D}"/><path fill="none" d="{PICORE_CORPS_D}"/></g>')
+PICORE_PATTES = (f'<g class="plumio-pattes" stroke-width="2.4">'
+                 f'<g class="plumio-patte-arriere"><path d="M36 80V87M32 89.5L36 87L40 89.5M36 87V90"/></g>'
+                 f'<g class="plumio-patte-avant"><path d="M45 81V87M41 89.5L45 87L49 89.5M45 87V90"/></g></g>')
+PICORE_AILE = aile('M52 51C44 45 31 40 15 37C25 47 38 55 50 59Z', 'M28 43L38 47M22 41L31 44')
+ENCRE = (f'<g class="plumio-encre" opacity="0"><path class="p-trait" fill="{C["trait"]}" {NS} '
+         f'd="M75.5 91.2C77.5 89.6 81 89.8 82.5 91.3C80.6 92.9 77.3 92.9 75.5 91.2Z"/>'
+         f'<circle class="p-trait" fill="{C["trait"]}" {NS} cx="73.6" cy="88.6" r=".9"/>'
+         f'<circle class="p-trait" fill="{C["trait"]}" {NS} cx="85" cy="88.9" r=".8"/></g>')
+
+
+def picore():
+    t = tete(rot=72, px=1.6, py=1.2)
+    tete_bas = f'<g transform="translate(5 23)">{t}</g>'
+    foulard = f'<g transform="translate(5 23) rotate(48 54 42)">{FOULARD}</g>'
+    corps = f'<g class="plumio-souffle">{PICORE_QUEUE}{PICORE_CORPS}{PICORE_AILE}{tete_bas}{foulard}{ENCRE}</g>'
+    return f'<g class="plumio-pas"><g class="plumio-pose">{PICORE_PATTES}{corps}</g></g>'
+
+
+P['picore-droite'] = picore()
+P['picore-gauche'] = miroir('picore-droite')
+
+# Regarde : sur le bord du champ, la tête baissée vers ce qu'on écrit.
+P['regarde-droite'] = debout(f'<g class="plumio-aile">{AILE_REPOS}</g>', tete(rot=24, px=1.0, py=1.8))
+P['regarde-gauche'] = miroir('regarde-droite')
+
+# Sautille : prêt à sauter, les pattes repliées, les ailes entrouvertes. Le saut lui-même
+# est `plumio--sautille` ; le trajet d'un point à l'autre, c'est l'application.
+SAUT_PATTES = (f'<g class="plumio-pattes" stroke-width="2.4">'
+               f'<g class="plumio-patte-arriere"><path d="M49 80L47 84M44 85.5L47 84L50 86.5"/></g>'
+               f'<g class="plumio-patte-avant"><path d="M58 79L56 83M53 84.5L56 83L59 85.5"/></g></g>')
+P['sautille'] = debout(aile('M47 48C54 48 58 56 54 62C47 68 34 70 18 70C28 62 37 54 47 48Z', 'M32 64L42 61M25 67L36 65'),
+                       tete(rot=-6, px=0.6, py=-0.4), pattes=SAUT_PATTES,
+                       queue=f'<g class="plumio-queue"><path {DOS} d="M35 71L6 78L24 78L12 90L38 77Z"/></g>')
+
+# Content : les yeux plissés de plaisir, le bec entrouvert, les plumes gonflées.
+P['content'] = debout(aile('M47 46C56 50 57 62 49 70C41 77 28 80 14 84C23 74 31 62 37 53C40 48 43 46 47 46Z',
+                           'M31 69L42 64M24 76L37 70'),
+                      tete(rot=-10, ferme='heureux', bec_ouvert=14))
+
 ORDRE = ['accueil', 'pointer-droite', 'pointer-gauche', 'pointer-haut', 'pointer-bas', 'explique', 'reflechit',
-         'celebre', 'attend', 'hors-ligne', 'oups', 'chut', 'notification', 'depart', 'au-revoir', 'vol']
+         'celebre', 'attend', 'hors-ligne', 'oups', 'chut', 'notification', 'depart', 'au-revoir', 'vol',
+         'face', 'picore-droite', 'picore-gauche', 'regarde-droite', 'regarde-gauche', 'sautille', 'content']
 
 TITRES = {
     'accueil': 'Accueil', 'pointer-droite': 'Pointer à droite', 'pointer-gauche': 'Pointer à gauche',
@@ -201,6 +304,9 @@ TITRES = {
     'reflechit': 'Réfléchit', 'celebre': 'Célèbre', 'attend': 'Attend', 'hors-ligne': 'Hors ligne',
     'oups': 'Oups', 'chut': 'Chut', 'notification': 'Notification', 'depart': 'Départ',
     'au-revoir': 'Au revoir', 'vol': 'Vol',
+    'face': 'De face', 'picore-droite': 'Picore à droite', 'picore-gauche': 'Picore à gauche',
+    'regarde-droite': 'Regarde à droite', 'regarde-gauche': 'Regarde à gauche', 'sautille': 'Sautille',
+    'content': 'Content',
 }
 
 

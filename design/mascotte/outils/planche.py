@@ -32,7 +32,21 @@ def survol(css):
         if not m or '@' in sel:
             continue
         out.append(f'.geste-{m.group(1)}:is(:hover, :focus-within) .plumio {m.group(2)} {{{corps}')
+    sec9 = css.split('/* ── 9.')[1].split('/* ── 10.')[0]
+    for regle in re.findall(r'[^{}]+\{[^{}]*\}', sec9):
+        sel, corps = regle.split('{', 1)
+        sel = sel.strip()
+        if sel.startswith('@') or 'animation' not in corps:
+            continue
+        for trig in TUTO_V2:
+            if f'.plumio--{trig}' in sel:
+                sel = sel.replace(f'.plumio--{trig}', '.plumio')
+                out.append(f'.t2-{trig}:is(:hover, :focus-within) {sel} {{{corps}')
+                break
     return '\n'.join(out)
+
+
+TUTO_V2 = ['arrive', 'salue', 'parle', 'se-tourne', 'tapote', 'picore', 'sautille', 'content']
 
 
 ACCENTS = [('bleu', 'Bleu', '#1a5fb4', '#7ba7e2'), ('lagon', 'Lagon', '#2f8f88', '#7ec6c2'),
@@ -55,6 +69,24 @@ POSES = [
     ('depart', 'Départ', 'En vol, la valise aux pattes.', 'Jour du départ, voyage qui commence.'),
     ('au-revoir', 'Au revoir', 'Il s’envole en saluant.', 'Fin du tutoriel (« Terminer »).'),
     ('vol', 'Vol', 'Les ailes battent.', 'Entre deux étapes du tutoriel, pendant le trajet.'),
+    ('face', 'De face', 'Il nous regarde ; la vue de profil attend dessous.', 'Accueil du tutoriel : il arrive, fait coucou, parle, puis se tourne.'),
+    ('picore-droite', 'Picore à droite', 'Penché en avant, la queue en contrepoids.', 'Tutoriel : un champ à remplir, il en picore le bord.'),
+    ('picore-gauche', 'Picore à gauche', 'La même pose, retournée.', 'Tutoriel : le champ est à sa gauche. En arabe, remplace « à droite ».'),
+    ('regarde-droite', 'Regarde à droite', 'La tête baissée vers le champ.', 'Tutoriel : la personne tape, il lit ce qu’elle écrit.'),
+    ('regarde-gauche', 'Regarde à gauche', 'La même pose, retournée.', 'Tutoriel : le champ est à sa gauche.'),
+    ('sautille', 'Sautille', 'Prêt à sauter, les pattes repliées.', 'Tutoriel : il passe d’une cible à l’autre sur la même page.'),
+    ('content', 'Content', 'Les yeux plissés, le bec entrouvert.', 'Tutoriel : l’action est faite.'),
+]
+
+GESTES_V2 = [
+    ('arrive', 'face', '', 'Arrive', 'De face, il descend en battant des ailes et se pose.', '1 100 ms'),
+    ('salue', 'face', '', 'Coucou', 'De face, il fait coucou de l’aile.', '1 200 ms'),
+    ('parle', 'face', '', 'Parle', 'Son bec bouge au rythme d’une phrase.', '1 100 ms'),
+    ('se-tourne', 'face', '', 'Se tourne', 'De face, il se tourne de profil.', '520 ms'),
+    ('tapote', 'pointer-droite', '', 'Tapote', 'L’aile tendue tapote l’air deux fois : un bouton.', '700 ms'),
+    ('picore', 'picore-droite', '', 'Picore', 'Trois coups de bec, une marque d’encre : un champ.', '900 ms'),
+    ('sautille', 'attend', '', 'Sautille', 'Un saut sur place ; le trajet, c’est l’application.', '420 ms'),
+    ('content', 'regarde-droite', '', 'Content', 'Hochement, pépie, plumes gonflées : c’est fait.', '640 ms'),
 ]
 
 GESTES = [
@@ -126,6 +158,12 @@ p {{ margin: 0; }}
 .scene .legende {{ position: absolute; inset-inline-start: 16px; bottom: 12px; font-size: 12px; }}
 {chr(10).join(grille)}
 .gestes {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }}
+.geste .nom {{ font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12px; }}
+.enchaine:is(:hover, :focus-within) .plumio .plumio-pas {{ animation: mascotte-arrive-face 1100ms var(--plumio-courbe) both; }}
+.enchaine:is(:hover, :focus-within) .plumio .plumio-aile-gauche {{ animation: mascotte-vole-gauche 1100ms linear forwards; }}
+.enchaine:is(:hover, :focus-within) .plumio .plumio-aile-droite {{ animation: mascotte-vole-droite 1100ms linear forwards, mascotte-coucou 1200ms var(--plumio-balancier) 1150ms forwards; }}
+.enchaine:is(:hover, :focus-within) .plumio .plumio-tete {{ animation: mascotte-coucou-tete 1200ms var(--plumio-balancier) 1150ms forwards, mascotte-parle-tete 1100ms var(--plumio-balancier) 2450ms 2 forwards; }}
+.enchaine:is(:hover, :focus-within) .plumio .plumio-bec-bas {{ animation: mascotte-parle-face 1100ms linear 2450ms 2 forwards; }}
 .geste {{ padding: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; cursor: default; }}
 .geste .boite {{ align-self: stretch; height: 136px; display: flex; align-items: center; justify-content: center; background: #faf6ed; border-radius: 8px; }}
 .poses {{ display: flex; flex-direction: column; gap: 16px; }}
@@ -227,10 +265,27 @@ for k, nom, desc in GESTES:
 parts.append("""    </div>
   </section>
 
+  <section class="section" aria-labelledby="t-tuto2">
+    <header>
+      <p class="etiquette">Tutoriel, version 2</p>
+      <h2 id="t-tuto2">L’accueil, l’aile et le bec</h2>
+      <p class="muet">L’aile pour un bouton, le bec pour un champ. Chaque geste se joue une fois, 1,2 s au plus. Survolez une carte, ou donnez-lui le focus, pour le jouer ; la première enchaîne tout l’accueil.</p>
+    </header>
+    <div class="gestes">
+""")
+parts.append(f'      <div class="carte geste enchaine" tabindex="0" style="grid-column: span 2"><div class="boite" style="height: 220px">{svg("face", 180)}</div>'
+             f'<h3>L’accueil, enchaîné</h3><p class="petit muet">Il arrive en volant, se pose, fait coucou, puis parle pendant qu’on lit.</p>'
+             f'<p class="nom petit muet">arrive → salue → parle</p></div>\n')
+for k, pose, extra, nom, desc, duree in GESTES_V2:
+    parts.append(f'      <div class="carte geste t2-{k}" tabindex="0"><div class="boite">{svg(pose, 112, extra)}</div>'
+                 f'<h3>{nom}</h3><p class="petit muet">{desc}</p><p class="nom petit muet">.plumio--{k} · {duree}</p></div>\n')
+parts.append("""    </div>
+  </section>
+
   <section class="section" aria-labelledby="t-poses">
     <header>
       <p class="etiquette">Poses</p>
-      <h2 id="t-poses">Seize poses, de 24 à 160 px</h2>
+      <h2 id="t-poses">Vingt-trois poses, de 24 à 160 px</h2>
       <p class="muet">Survolez une pose, ou donnez-lui le focus, pour jouer son geste. En dessous de 40 px, la classe <code>plumio--petit</code> retire les détails.</p>
     </header>
     <div class="poses">
