@@ -148,7 +148,6 @@ export default function TripCoffre() {
               partir, pour ne pas fouiller la discussion devant la porte.
             </p>
             <Button
-              data-guide="ajouter-info"
               icon={<Plus className="size-4" aria-hidden />}
               onClick={() => setFormulaireOuvert(true)}
             >
@@ -191,7 +190,6 @@ export default function TripCoffre() {
       ) : (
         liste.length > 0 && (
           <Button
-            data-guide="ajouter-info"
             variant="secondary"
             block
             icon={<Plus className="size-4" aria-hidden />}

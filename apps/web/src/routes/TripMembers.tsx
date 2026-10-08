@@ -152,7 +152,7 @@ export default function TripMembers() {
         </>
       )}
 
-      <Card data-guide="inviter">
+      <Card>
         <CardBody className="space-y-3">
           <p className="flex items-center gap-2 font-semibold">
             <UserPlus className="size-4" aria-hidden />

@@ -24,7 +24,7 @@ test.use({
       {
         origin: 'http://localhost:4173',
         localStorage: [
-          { name: 'tripora.guide-vu', value: '2' },
+          { name: 'tripora.guide-vu', value: '3' },
           { name: 'tripora.recolte-traductions', value: '1' },
         ],
       },

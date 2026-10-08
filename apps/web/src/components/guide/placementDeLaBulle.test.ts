@@ -81,6 +81,22 @@ describe('où poser la bulle de la visite, et Plumio dessus', () => {
     expect(placement.plumio.left).toBeGreaterThanOrEqual(0);
   });
 
+  it('sous un champ que Plumio picore, la bulle se colle ; au-dessus quand la liste s’ouvre', () => {
+    // La ville de départ, sur un téléphone ; et même sur un ordinateur, jamais à côté.
+    const champ = { top: 200, left: 20, width: 350, height: 48 };
+    const dessous = placerLaBulle(champ, TELEPHONE, { surLeChamp: true });
+    if (dessous.mode !== 'dessous') throw new Error(dessous.mode);
+    expect(dessous.top).toBe(200 + 48 + 14);
+    expect(placerLaBulle({ ...champ, left: 400 }, ORDINATEUR, { surLeChamp: true }).mode).toBe('dessous');
+    const plusBas = { ...champ, top: 400 };
+    const dessus = placerLaBulle(plusBas, TELEPHONE, { surLeChamp: true, dessusImpose: true });
+    if (dessus.mode !== 'dessus') throw new Error(dessus.mode);
+    // Plumio se tient sur le champ, entre lui et la bulle.
+    expect(dessus.bottom).toBe(TELEPHONE.hauteur - 400 + 56 + 8);
+    // Trop près du haut pour une bulle lisible : elle reste dessous, et l'écran la réduit à une ligne.
+    expect(placerLaBulle(champ, TELEPHONE, { surLeChamp: true, dessusImpose: true }).mode).toBe('dessous');
+  });
+
   it('sait si un élément est entièrement à l’écran', () => {
     expect(estEnVue({ top: 10, left: 0, width: 10, height: 10 }, TELEPHONE)).toBe(true);
     expect(estEnVue({ top: -5, left: 0, width: 10, height: 10 }, TELEPHONE)).toBe(false);

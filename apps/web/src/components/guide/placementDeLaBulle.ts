@@ -76,6 +76,10 @@ export const MARGE = 16;
 export const LARGEUR_ORDINATEUR = 1024;
 export const LARGEUR_DE_BULLE = { telephone: 288, ordinateur: 320 } as const;
 export const TAILLE_DE_PLUMIO = { telephone: 64, ordinateur: 80 } as const;
+/** Debout sur un champ, à le picorer : un peu plus petit, il ne doit pas cacher la saisie. */
+export const TAILLE_DE_PLUMIO_SUR_UN_CHAMP = { telephone: 56, ordinateur: 64 } as const;
+/** Sous un champ que Plumio picore : la bulle se colle presque, il n'est pas entre les deux. */
+const ECART_SOUS_UN_CHAMP = 14;
 /** Sous l'élément : la place de Plumio, debout entre les deux. */
 const ECART_DESSOUS = { telephone: 58, ordinateur: 86 } as const;
 const ECART_DESSUS = 22;
@@ -94,7 +98,21 @@ function borner(valeur: number, min: number, max: number): number {
 export function placerLaBulle(
   cible: Rectangle | null,
   ecran: Ecran,
-  { rtl = false }: { rtl?: boolean } = {},
+  {
+    rtl = false,
+    surLeChamp = false,
+    dessusImpose = false,
+  }: {
+    rtl?: boolean;
+    /**
+     * Plumio picore l'élément au lieu de se tenir sur la bulle : la bulle se
+     * colle dessous, ou laisse au-dessus la place de Plumio, debout sur le
+     * champ. Jamais à côté.
+     */
+    surLeChamp?: boolean;
+    /** Une liste s'ouvre sous le champ : la bulle passe au-dessus. */
+    dessusImpose?: boolean;
+  } = {},
 ): Placement {
   const appareil = ecran.largeur >= LARGEUR_ORDINATEUR ? 'ordinateur' : 'telephone';
   const largeur = Math.min(LARGEUR_DE_BULLE[appareil], ecran.largeur - 2 * MARGE);
@@ -113,7 +131,7 @@ export function placerLaBulle(
   // À côté, sur un ordinateur : du côté de la fin de ligne, sinon dessous.
   const cote = rtl ? 'gauche' : 'droite';
   const placeACote = cote === 'droite' ? ecran.largeur - droiteDeLaCible - ECART_COTE - MARGE : cible.left - ECART_COTE - MARGE;
-  if (appareil === 'ordinateur' && placeACote >= largeur) {
+  if (appareil === 'ordinateur' && !surLeChamp && placeACote >= largeur) {
     // Assez haut pour que Plumio tienne au-dessus, assez bas pour qu'on lise.
     const plusHaut = MARGE + taille - 4;
     const top = borner(cible.top, plusHaut, Math.max(plusHaut, ecran.hauteur - MARGE - HAUTEUR_CONFORTABLE));
@@ -139,15 +157,17 @@ export function placerLaBulle(
   const left = borner(centre - largeur / 2, MARGE, ecran.largeur - MARGE - largeur);
   const pointe = borner(centre - left, RETRAIT_DE_LA_POINTE, largeur - RETRAIT_DE_LA_POINTE);
 
-  const placeDessous = ecran.hauteur - basDeLaCible - ECART_DESSOUS[appareil] - MARGE;
-  // Dessus, Plumio se tient sur la bulle : il lui faut sa place aussi.
-  const placeDessus = cible.top - ECART_DESSUS - MARGE - (taille - 4);
+  const ecartDessous = surLeChamp ? ECART_SOUS_UN_CHAMP : ECART_DESSOUS[appareil];
+  // Dessus, Plumio se tient sur la bulle, ou sur le champ, entre les deux : il lui faut sa place aussi.
+  const ecartDessus = surLeChamp ? TAILLE_DE_PLUMIO_SUR_UN_CHAMP[appareil] + 8 : ECART_DESSUS;
+  const placeDessous = ecran.hauteur - basDeLaCible - ecartDessous - MARGE;
+  const placeDessus = cible.top - ecartDessus - MARGE - (surLeChamp ? 0 : taille - 4);
 
   const dessous = {
     mode: 'dessous' as const,
     largeur,
     left,
-    top: basDeLaCible + ECART_DESSOUS[appareil],
+    top: basDeLaCible + ecartDessous,
     maxHauteur: placeDessous,
     pointe,
     // Juste à côté de la pointe, l'aile levée vers l'élément.
@@ -161,13 +181,15 @@ export function placerLaBulle(
     mode: 'dessus' as const,
     largeur,
     left,
-    bottom: ecran.hauteur - cible.top + ECART_DESSUS,
+    bottom: ecran.hauteur - cible.top + ecartDessus,
     maxHauteur: placeDessus,
     pointe,
     // Au coin, un peu au-delà : son aile descend le long de la bulle vers l'élément.
     plumio: { taille, left: rtl ? -18 : largeur + 18 - taille, pose: 'pointer-bas' as const },
   };
 
+  // Au-dessus seulement si la bulle y tient lisible ; sinon, à l'appelant de la réduire.
+  if (dessusImpose && placeDessus >= HAUTEUR_MINIMALE * 0.8) return dessus;
   if (placeDessous >= HAUTEUR_CONFORTABLE) return dessous;
   if (placeDessus >= HAUTEUR_CONFORTABLE) return dessus;
   if (Math.max(placeDessous, placeDessus) >= HAUTEUR_MINIMALE) {

@@ -194,27 +194,40 @@ intégré.
   - Il se retourne en arabe.
   - Il suit parfois le pointeur des yeux, à la souris seulement, et jamais
     quand on a demandé moins de mouvement.
-- **Le tutoriel** (`apps/web/src/components/guide/`) suit les règles des maquettes :
-  - Plumio debout sur la bulle, du côté de l'élément ;
-  - bulle de 288 px sur téléphone, 320 px sur ordinateur, à côté de l'élément
-    sur ordinateur ;
-  - projecteur cerné de papier puis d'accent, pas de voile à « Découvrir » ;
-  - Plumio arrive en volant et joue son geste à chaque étape, puis salue et
-    s'envole sur « Terminer ».
+- **Le guide de démarrage** (`apps/web/src/components/guide/`) suit la
+  version 2 des maquettes (`NOTES.md`, section 7) :
+  - **l'accueil**, en grand : Plumio de face arrive, fait coucou et « parle »,
+    « C'est parti » ou « Passer ». Il s'ouvre seul dans l'application et après
+    une connexion ; sur le site public sans compte, une carte discrète le
+    propose (pas d'interstitiel) ;
+  - **la visite** montre seulement comment créer un voyage, sans bouton
+    « Suivant » : Plumio montre le vrai bouton de l'aile, ou picore le vrai
+    champ, et c'est la personne qui appuie ou remplit. L'étape suivante se
+    déduit de l'écran et du brouillon (`etapesDeLaVisite.ts`, testé) ;
+  - elle s'arrête sur « Créer le voyage » sans rien créer ; ce qui est saisi
+    reste en brouillon ;
+  - hors du chemin, elle se replie en « Reprendre la visite » ; clavier du
+    téléphone ouvert, ou liste de suggestions sous le champ : la consigne
+    tient en une ligne.
 - **Ailleurs, une fois par écran au plus** :
   - `attend` sur les écrans vides (voyages, sondages, réservations) ;
   - `oups` sur la page introuvable et l'écran d'erreur ;
   - `notification` dans la proposition d'activer les notifications ;
   - `celebre` sur le bilan d'un voyage terminé.
 
-**Deux écarts avec les maquettes, voulus :**
-- **L'élément mis en lumière n'est pas cliquable pendant le tutoriel.** On
-  avance avec « Suivant ». Cliquer le vrai bouton déclencherait sa vraie
-  action en cours de visite : voter, ouvrir un formulaire, créer un voyage.
-  La page reste inerte : une modale, plus simple au clavier et au lecteur
-  d'écran.
-- **Le bouton du budget s'appelle bien « Ajouter une dépense ».**
-  « Nouvelle dépense » est le titre du formulaire qu'il ouvre.
+**Ce qui a été tranché à l'intégration :**
+- Aux questions « Avec qui ? », « Où ? » et « Quand ? », la réponse par défaut
+  est déjà valide : la visite attend un vrai appui sur une carte.
+- La version complète (huit étapes) est gardée ; « Parfait » n'est dit qu'au
+  premier « Continuer ».
+- Sur le site sans compte, la visite part du bouton « Créer un voyage » de
+  l'accueil ; à la fin, la bulle dit que le bouton enregistre le voyage avec
+  un compte gratuit.
+- Les champs de date sont ceux du système : la bulle reste sous le champ.
+- Le trajet d'une cible à l'autre n'est pas animé : Plumio atterrit à sa
+  nouvelle place. Le geste (tapotement, picorement, contentement) se joue sur
+  place, relancé toutes les 6 s, trois fois au plus.
+- Le guide se relance depuis le profil, le pied de page et l'accueil public.
 
 Les textes arabes des maquettes ne sont pas repris : les bulles passent par
 la traduction de l'application, comme le reste (voir `docs/TRADUCTIONS.md`).

@@ -19,7 +19,7 @@ export function StepGroup() {
     <div className="space-y-5">
       <PhraseLibre />
 
-      <div className="space-y-2.5" role="radiogroup" aria-label="Avec qui partez-vous ?">
+      <div data-guide="avec-qui" className="space-y-2.5" role="radiogroup" aria-label="Avec qui partez-vous ?">
         {GROUPS.map(({ value, label, description, icon: Icon, participants: suggested }) => (
           <OptionCard
             key={value}

@@ -68,15 +68,13 @@ test.describe('le guide de démarrage', () => {
     const invitation = page.getByRole('complementary', { name: 'Guide de démarrage' });
     await expect(invitation).toBeVisible();
 
-    await invitation.getByRole('button', { name: /Première visite/ }).click();
-    const guide = page.getByRole('dialog');
-    await expect(guide).toBeVisible();
-    await expect(guide.getByText('1 sur 6')).toBeVisible();
-    await guide.getByRole('button', { name: 'Suivant' }).click();
-    await expect(guide.getByText('2 sur 6')).toBeVisible();
-    await page.keyboard.press('ArrowRight');
-    await expect(guide.getByText('3 sur 6')).toBeVisible();
-    await guide.getByRole('button', { name: 'Passer' }).click();
+    await invitation.getByRole('button', { name: /Découvrir Tripora avec Plumio/ }).click();
+    // L'accueil de Plumio, en grand : il se présente.
+    const accueil = page.getByRole('dialog', { name: 'Bonjour, moi c’est Plumio !' });
+    await expect(accueil).toBeVisible();
+    await expect(accueil.getByRole('button', { name: 'C’est parti' })).toBeFocused();
+    // Échap vaut « Passer ».
+    await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     // Passé une fois, il ne se représente plus — même après la connexion.
@@ -86,5 +84,5 @@ test.describe('le guide de démarrage', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
-  // Une fois connecté, c'est la visite guidée des vraies pages : `visite.spec.ts`.
+  // La visite elle-même, de l'accueil à « Créer le voyage » : `visite.spec.ts`.
 });

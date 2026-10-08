@@ -2,111 +2,127 @@ import { expect, test, type Page } from '@playwright/test';
 import { BALI, poser } from './tripora';
 
 /**
- * La visite guidée : le guide de démarrage joué sur les vraies pages.
+ * Le guide de démarrage : l'accueil de Plumio, puis la visite qui montre
+ * comment créer un voyage.
  *
- * Elle mène d'écran en écran, met chaque fois un élément en lumière et
- * l'explique dans une bulle. Ces tests partent d'un navigateur qui ne l'a
- * jamais vue (la configuration commune la dit vue, pour ne gêner personne).
+ * Il n'y a pas de bouton « Suivant » : on avance en appuyant sur les vrais
+ * boutons et en remplissant les vrais champs, et la visite s'arrête sur
+ * « Créer le voyage » sans rien créer. Ces tests partent d'un navigateur qui
+ * ne l'a jamais vue (la configuration commune la dit vue, pour ne gêner
+ * personne).
  */
 test.use({ storageState: { cookies: [], origins: [] } });
 
-/** La bulle de l'arrêt en cours, nommée par son titre. */
-function bulle(page: Page, titre: string) {
-  return page.getByRole('dialog', { name: 'Visite guidée' }).getByRole('group', { name: titre });
+const bulle = (page: Page) => page.getByRole('group', { name: 'Visite guidée' });
+
+/** La consigne de la bulle : elle seule dit où l'on en est. */
+async function consigne(page: Page, texte: string) {
+  await expect(bulle(page).getByText(texte, { exact: true })).toBeVisible();
 }
 
-test('fait le tour d’un voyage, écran par écran, puis ne revient plus', async ({ page }) => {
+test('Plumio accueille, puis montre comment créer un voyage, pas à pas, sans le créer', async ({ page }) => {
+  const plantages: string[] = [];
+  page.on('pageerror', (erreur) => plantages.push(erreur.message));
   await poser(page, [BALI], '/voyages');
 
-  // Elle s'ouvre d'elle-même, sur le bouton « Nouveau » de la liste.
-  const nouveau = bulle(page, 'Créez un voyage');
-  await expect(nouveau).toBeVisible();
-  await expect(nouveau.getByText('Étape 1 sur 6')).toBeVisible();
-  // Le clavier est déjà sur « Suivant » : Entrée avance.
-  await expect(nouveau.getByRole('button', { name: 'Suivant' })).toBeFocused();
+  // L'accueil, en grand, s'ouvre de lui-même.
+  const accueil = page.getByRole('dialog', { name: 'Bonjour, moi c’est Plumio !' });
+  await expect(accueil).toBeVisible();
+  await expect(accueil.getByRole('button', { name: 'C’est parti' })).toBeFocused();
   await page.keyboard.press('Enter');
+  await expect(accueil).toHaveCount(0);
 
-  // Bali a sa destination : la visite s'y joue, Découvrir et l'itinéraire compris.
-  await expect(page).toHaveURL(/\/voyages\/v1$/u);
-  const geste = bulle(page, 'Toujours le prochain geste');
-  await expect(geste.getByText('Étape 2 sur 6')).toBeVisible();
+  // 1 — Le vrai bouton « Nouveau » ; pas de « Suivant » dans la bulle.
+  await consigne(page, 'Tout commence ici : appuyez sur « Nouveau ».');
+  await expect(bulle(page).getByRole('button', { name: /Suivant/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Nouveau' }).click();
+  await expect(page).toHaveURL(/\/voyages\/nouveau$/u);
 
-  // On peut revenir en arrière…
-  await geste.getByRole('button', { name: 'Étape précédente' }).click();
-  await expect(page).toHaveURL(/\/voyages$/u);
-  await expect(bulle(page, 'Créez un voyage')).toBeVisible();
-  // … et avancer aux flèches.
-  await page.keyboard.press('ArrowRight');
-  await expect(bulle(page, 'Toujours le prochain geste')).toBeVisible();
+  // 2 — « Avec qui ? » attend un vrai choix, même si la réponse par défaut vaut déjà.
+  await consigne(page, 'Avec qui partez-vous ? Choisissez une réponse.');
+  await page.getByRole('radio').filter({ hasText: 'Entre amis' }).click();
+  await consigne(page, 'Parfait. Appuyez sur « Continuer ».');
+  await page.getByRole('button', { name: /^Continuer/ }).click();
 
-  const suite: readonly [RegExp, string][] = [
-    [/\/voyages\/v1\/decouvrir$/u, 'Les activités, d’un glissement'],
-    [/\/voyages\/v1\/itineraire$/u, 'Le programme se compose tout seul'],
-    [/\/voyages\/v1\/coffre$/u, 'Tout sous la main, même sans réseau'],
-    [/\/voyages\/v1\/budget$/u, 'Qui doit quoi, sans calculatrice'],
-  ];
-  let precedente = bulle(page, 'Toujours le prochain geste');
-  for (const [adresse, titre] of suite) {
-    await precedente.getByRole('button', { name: 'Suivant' }).click();
-    await expect(page).toHaveURL(adresse);
-    precedente = bulle(page, titre);
-    await expect(precedente).toBeVisible();
-  }
+  // 3 — La ville de départ, au bec : la consigne suit la saisie.
+  await consigne(page, 'Tapez votre ville, puis choisissez-la dans la liste.');
+  await page.getByRole('textbox', { name: 'Chercher une ville de départ' }).fill('Paris');
+  await consigne(page, 'Choisissez votre ville dans la liste.');
+  await page.getByRole('radio').filter({ hasText: 'Paris' }).first().click();
+  await consigne(page, 'Appuyez sur « Continuer ».');
+  await page.getByRole('button', { name: /^Continuer/ }).click();
 
-  // Le dernier arrêt montre le vrai bouton, encore là sous le voile.
-  await expect(page.locator('[data-guide="ajouter-depense"]')).toBeVisible();
-  await precedente.getByRole('button', { name: 'Terminer' }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  // On reste où la visite a fini, et la page répond de nouveau.
-  await expect(page).toHaveURL(/\/voyages\/v1\/budget$/u);
-  await page.getByRole('button', { name: 'Ajouter une dépense' }).click();
+  // 4 — Où : « Surprends-nous » suffit.
+  await consigne(page, 'Vous avez une idée ? Sinon, « Surprends-nous » : Tripora proposera des destinations au groupe.');
+  await page.getByRole('radio').filter({ hasText: 'Surprends-nous' }).click();
+  await page.getByRole('button', { name: /^Continuer/ }).click();
 
+  // 5 — Quand : la façon, puis le mois.
+  await consigne(page, 'Choisissez une façon de dire quand. Plus c’est souple, moins ça coûte.');
+  await page.getByRole('radio').filter({ hasText: 'Un mois' }).click();
+  await consigne(page, 'Choisissez le mois du départ.');
+  await page.getByRole('button', { name: 'juillet', exact: true }).click();
+  await page.getByRole('button', { name: /^Continuer/ }).click();
+
+  // 6 — Le budget, au bec.
+  await consigne(page, 'Combien par personne, tout compris ?');
+  await page.getByRole('textbox', { name: 'Budget par personne' }).fill('400');
+  await page.getByRole('button', { name: /^Continuer/ }).click();
+
+  // 7 — Une envie.
+  await consigne(page, 'Choisissez au moins une envie.');
+  await page.getByRole('radio', { name: 'Essentiel' }).first().click();
+
+  // 8 — La fin : le bouton est montré, pas pressé.
+  await consigne(
+    page,
+    'C’est tout ! Ce bouton crée le voyage ; ensuite, vous inviterez le groupe. Rien n’est créé tant que vous n’appuyez pas dessus.',
+  );
+  await expect(bulle(page).getByRole('button', { name: 'Terminer la visite' })).toBeFocused();
+  await bulle(page).getByRole('button', { name: 'Terminer la visite' }).click();
+  await expect(bulle(page)).toHaveCount(0);
+
+  // Rien n'a été créé ; ce qui est saisi reste là.
+  await expect(page).toHaveURL(/\/voyages\/nouveau$/u);
+  await expect(page.getByRole('button', { name: /Créer le voyage/ })).toBeEnabled();
+  const voyages = await page.evaluate(() => JSON.parse(localStorage.getItem('tripora.local-trips') ?? '[]') as unknown[]);
+  expect(voyages).toHaveLength(1);
+
+  // Vue une fois, elle ne revient plus.
   await page.goto('/voyages', { waitUntil: 'networkidle' });
   await expect(page.getByRole('heading', { name: 'Mes trips' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(bulle(page)).toHaveCount(0);
+  expect(plantages).toEqual([]);
 });
 
-test('sans voyage, elle attend le premier, puis reprend dedans', async ({ page }) => {
-  await page.goto('/connexion', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /Découvrir en mode local/ }).click();
+test('hors du chemin, la visite se replie, et reprend où elle en était', async ({ page }) => {
+  await poser(page, [BALI], '/voyages');
+  await page.getByRole('dialog').getByRole('button', { name: 'C’est parti' }).click();
+  await consigne(page, 'Tout commence ici : appuyez sur « Nouveau ».');
 
-  const premier = bulle(page, 'Créez votre premier voyage');
-  await expect(premier).toBeVisible();
-  // Une seule étape : pas de compteur « 1 sur 1 ».
-  await expect(premier.getByText(/sur 1$/u)).toHaveCount(0);
-  await premier.getByRole('button', { name: 'Créer mon voyage' }).click();
-  await expect(page).toHaveURL(/\/voyages\/nouveau$/u);
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // La personne ouvre son voyage plutôt : Plumio attend dans un coin.
+  await page.getByRole('link', { name: /Bali/ }).first().click();
+  await expect(page).toHaveURL(/\/voyages\/v1$/u);
+  const reprendre = page.getByRole('button', { name: 'Reprendre la visite' });
+  await expect(reprendre).toBeVisible();
+  await expect(bulle(page)).toHaveCount(0);
 
-  // Le voyage créé (l'assistant a son propre test), on y arrive : la visite
-  // reprend dedans, sans repasser par « Nouveau », qu'on vient justement de faire.
-  await poser(page, [BALI], '/voyages/v1');
-  const geste = bulle(page, 'Toujours le prochain geste');
-  await expect(geste).toBeVisible();
-  await expect(geste.getByText('Étape 1 sur 5')).toBeVisible();
+  await reprendre.click();
+  await expect(page).toHaveURL(/\/voyages$/u);
+  await consigne(page, 'Tout commence ici : appuyez sur « Nouveau ».');
 
-  // Échap la ferme, pour de bon.
+  // Échap la termine, à toute étape.
   await page.keyboard.press('Escape');
+  await expect(bulle(page)).toHaveCount(0);
+  await expect(reprendre).toHaveCount(0);
+});
+
+test('« Passer » sur l’accueil : Plumio s’en va, et le guide ne revient plus', async ({ page }) => {
+  await poser(page, [BALI], '/voyages');
+  await page.getByRole('dialog').getByRole('button', { name: 'Passer' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.reload({ waitUntil: 'networkidle' });
-  await expect(page.getByRole('heading', { name: 'Bali entre potes' })).toBeVisible();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-});
-
-test('se rejoue depuis le profil, et s’arrête si l’on part ailleurs', async ({ page }) => {
-  await poser(page, [BALI], '/voyages');
-  await bulle(page, 'Créez un voyage').getByRole('button', { name: 'Passer' }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-
-  await page.goto('/profil', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /Revoir le guide/u }).click();
-  await expect(bulle(page, 'Créez un voyage')).toBeVisible();
-  await bulle(page, 'Créez un voyage').getByRole('button', { name: 'Suivant' }).click();
-  await expect(page).toHaveURL(/\/voyages\/v1$/u);
-  await expect(bulle(page, 'Toujours le prochain geste')).toBeVisible();
-
-  // Le bouton retour du téléphone : la personne a choisi d'aller ailleurs.
-  await page.goBack();
-  await expect(page).toHaveURL(/\/voyages$/u);
+  await expect(page.getByRole('heading', { name: 'Mes trips' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });

@@ -336,7 +336,6 @@ export default function Decouvrir() {
           </div>
 
           <footer
-            data-guide="gestes-decouvrir"
             className="pb-safe mx-auto flex w-full max-w-md items-center justify-center gap-5 px-3 pt-3"
           >
             <BoutonRond

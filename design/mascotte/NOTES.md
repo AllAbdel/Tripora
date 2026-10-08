@@ -6,13 +6,14 @@ encore branché dans `apps/`.
 
 | Fichier | Contenu |
 |---|---|
-| `poses/<nom>.svg` | Seize poses, `viewBox` 96 × 96, de 2 à 2,8 Ko chacune |
+| `poses/<nom>.svg` | Vingt-trois poses, `viewBox` 96 × 96, de 2 à 5,5 Ko chacune (`face` contient aussi sa vue de profil) |
 | `animations.css` | Couleurs (clair, sombre, une couleur), pivots, regard, gestes, vie au repos, passages de page, mouvement réduit |
 | `planche.html` | Toutes les poses, en clair et en sombre, à 24, 48, 96 et 160 px. Gestes jouables au survol, case « Mouvement réduit », choix d’accent |
-| `tutoriel/index.html` | Les six étapes, téléphone et ordinateur, en clair, en sombre et en arabe |
-| `outils/` | Les scripts qui produisent les trois éléments ci-dessus |
+| `tutoriel/index.html` | Version 1 : les six étapes, téléphone et ordinateur, en clair, en sombre et en arabe |
+| `tutoriel-v2/index.html` | Version 2 : l’accueil en grand, puis la création d’un voyage, faite par la personne (section 7) |
+| `outils/` | Les scripts qui produisent les éléments ci-dessus |
 
-Les deux pages s’ouvrent directement dans un navigateur, sans serveur ni
+Les pages s’ouvrent directement dans un navigateur, sans serveur ni
 JavaScript. Elles chargent Fraunces et Inter Tight depuis
 `apps/web/public/polices/` (même dépôt). Ouvertes ailleurs, elles prennent les
 polices du système.
@@ -27,6 +28,13 @@ polices du système.
 - Elle montre les choses du bout de l’aile. Il n’y a pas de main, donc aucun
   geste culturellement marqué.
 - Elle vole d’une page à l’autre pendant le tutoriel.
+
+**De face** (pose `face`, pour l’accueil seulement) : deux yeux avec leur
+reflet, le nœud du foulard au milieu, le ventre rond, les deux pointes de la
+queue de part et d’autre des pattes. Même encre, même papier, même bec doré
+que de profil ; on le reconnaît encore à 48 px. Toutes les autres poses sont de
+profil, tournées vers la droite ; les variantes `-gauche` sont les mêmes,
+retournées.
 
 Prononciation : *plu-mi-o*. En arabe : بلوميو.
 
@@ -69,8 +77,9 @@ pose `color: var(--accent)` sur `.plumio`.
 |---|---|---|
 | À côté d’une ligne de texte, dans un bandeau | 24 à 32 px | `plumio--petit` |
 | Pastille | 40 à 56 px | `plumio--mono` si la pastille est colorée |
-| Tutoriel, téléphone | 64 px | |
-| Tutoriel, ordinateur | 80 px | |
+| Tutoriel, téléphone | 64 px (56 px perché sur un champ) | |
+| Tutoriel, ordinateur | 80 px (64 px perché sur un champ) | |
+| Accueil du tutoriel, de face | 168 px (téléphone) à 200 px (ordinateur) | |
 | Écran vide, erreur, succès | 120 à 160 px | |
 
 - Minimum : 24 px. En dessous de 40 px, `plumio--petit` retire les lignes des
@@ -84,7 +93,7 @@ pose `color: var(--accent)` sur `.plumio`.
 
 | Situation | Pose | Taille |
 |---|---|---|
-| Tutoriel du premier lancement | `pointer-*`, puis `au-revoir` sur « Terminer » | 64 / 80 px |
+| Tutoriel du premier lancement | Voir la section 7 | 56 à 200 px |
 | Écran vide (aucun voyage, aucun sondage…) | `attend` + `plumio--vie` | 120–160 px, au-dessus du titre de `EmptyState` |
 | Hors ligne, écran entier | `hors-ligne` | 120 px |
 | Bandeau hors ligne (`Banner tone="offline"`) | `hors-ligne` | 24 px, `plumio--petit`, au début du bandeau |
@@ -101,6 +110,9 @@ pose `color: var(--accent)` sur `.plumio`.
 - Pas à côté d’une décision : boutons de vote, montant, bouton « Arrêter la
   destination », remboursement. Plumio ne doit pas influencer un choix.
 - Pas dans les formulaires, les erreurs de champ ni les messages de validation.
+  **Exception :** la visite guidée du premier lancement (section 7). Plumio y
+  montre les champs de « Nouveau trip » ; il s’en va quand la visite se termine.
+  Il ne commente jamais une valeur saisie et ne valide rien.
 - Pas sur les pages légales ni dans le pied de page.
 - Pas dans les notifications du système ni dans les e-mails. Si on veut
   l’image, utiliser le SVG fixe, sans animation.
@@ -122,6 +134,7 @@ Les classes se posent sur le `<svg class="plumio …">`. Seuls `transform` et
 | `plumio--envol` / `plumio--atterrit` | Il part en haut à droite, ou arrive d’en haut à gauche (320 / 360 ms) | Changement de page sans trajet dessiné |
 | `plumio--sort` | Il s’envole et disparaît (600 ms) | Après « Terminer », sur la pose `au-revoir` |
 | `plumio--immobile` | Tout s’arrête | Si l’application a son propre réglage « réduire les animations » |
+| `plumio--arrive`, `--salue`, `--parle`, `--se-tourne`, `--tapote`, `--picore`, `--sautille`, `--content` | Les gestes de la visite guidée, version 2 | Voir la section 7 |
 
 Les poses `attend` et `hors-ligne` respirent et clignent sans classe. Les poses
 en vol (`vol`, `depart`) battent des ailes tant qu’elles sont affichées.
@@ -156,9 +169,10 @@ variables du regard.
   (`requestAnimationFrame`). La CSP le permet : elle bloque l’attribut `style`
   écrit dans le HTML, pas le CSSOM.
 
-## 6. Le tutoriel
+## 6. Le tutoriel, version 1
 
-Les maquettes sont dans `tutoriel/index.html`. Les règles :
+Remplacée par la version 2 (section 7). Les maquettes sont dans
+`tutoriel/index.html`. Les règles :
 
 - **Placement.** Plumio se pose sur le bord haut de sa bulle, du côté de
   l’élément, et le montre de l’aile.
@@ -217,7 +231,197 @@ Les maquettes sont dans `tutoriel/index.html`. Les règles :
 - Le bouton s’appelle « Nouvelle dépense » dans l’application (le brief disait
   « Ajouter une dépense ») : les maquettes reprennent le libellé réel.
 
-## 7. Intégration
+## 7. Le tutoriel, version 2
+
+Les maquettes sont dans `tutoriel-v2/index.html` : chaque étape, accueil
+compris, en téléphone (390 × 844) et en ordinateur (1280 × 800), en clair, en
+sombre et en arabe (miroir), plus le clavier ouvert, la liste de suggestions
+ouverte, la bulle repliée et la carte du site public.
+
+**Le principe.** Plumio n’a pas de bouton « Suivant ». Il montre le vrai bouton
+ou le vrai champ ; c’est la personne qui appuie, choisit ou tape, et l’étape
+suivante vient d’elle-même. Il ne change jamais de page sans que la personne ait
+appuyé. La visite montre seulement comment créer un voyage (ni Découvrir, ni
+l’itinéraire, ni le coffre, ni le budget partagé) et ne valide rien à la place
+de la personne : elle se termine sur « Créer le voyage », sans appuyer dessus.
+
+### L’accueil
+
+- **Dans l’application**, et sur le site **après une connexion** : il s’ouvre
+  seul, une fois. Plein écran, centré sur le papier (`--surface-muted`).
+- **Sur le site public, sans compte** : jamais à l’arrivée (Google pénalise les
+  interstitiels). Une carte discrète sous les deux boutons de la page d’accueil :
+  Plumio `attend` 44 px, « Découvrir Tripora avec Plumio », « Une minute, sans
+  compte ». Un appui ouvre l’accueil en grand.
+- Plumio `face`, 168 px sur téléphone, 200 px sur ordinateur. Titre en Fraunces
+  (28 / 40 px) : « Bonjour, moi c’est Plumio ! ». Texte : « Bienvenue sur
+  Tripora. Je vais vous montrer comment préparer un voyage entre amis. Une
+  minute, promis. » Boutons « C’est parti » (accent) et « Passer » (discret).
+- Fenêtre modale (`role="dialog"`, `aria-modal`), focus sur « C’est parti ».
+  Échap = « Passer ».
+
+| Temps | Classe sur la pose `face` | Durée |
+|---|---|---|
+| 0 | `plumio--arrive` : il descend en battant des ailes et se pose | 1 100 ms |
+| 1 150 ms | `plumio--salue` : coucou de l’aile, tête penchée | 1 200 ms |
+| 2 450 ms | `plumio--parle`, avec `--plumio-parle-fois: 2` : le bec bouge pendant la lecture | 2 × 1 100 ms |
+| ensuite | `plumio--calme` | en continu |
+| « C’est parti » | `plumio--se-tourne` (la vue de profil est déjà dans `face.svg`), puis pose `vol` vers la première cible | 520 ms, puis 360 à 600 ms |
+| « Passer » | pose `au-revoir` + `plumio--joue`, puis `plumio--sort` ; la fenêtre se ferme à la fin | 1 100 + 600 ms |
+
+Le titre et le texte apparaissent pendant l’arrivée (opacité, 8 px de montée,
+220 ms, 200 ms de décalage) : on ne fait pas attendre la lecture.
+
+### Les règles de placement
+
+**Bouton ou option : l’aile.**
+- Plumio (`pointer-haut`, `-bas`, `-gauche`, `-droite`, selon où est la cible)
+  se pose sur le bord haut de sa bulle, côté cible. 64 px sur téléphone, 72 à
+  80 px sur ordinateur.
+- Entre la cible et la bulle : la hauteur de Plumio (50 à 64 px sur téléphone,
+  86 px sur ordinateur). Il ne cache jamais la cible.
+- Téléphone : la bulle sous la cible, ou au-dessus si la cible est dans le tiers
+  bas de l’écran (« Continuer »). Ordinateur : à côté de la colonne de
+  l’assistant, côté fin de ligne, à hauteur de la cible.
+- Quand la bulle apparaît : `plumio--tapote` (l’aile tendue tapote l’air deux
+  fois, 700 ms). Sans action, il recommence toutes les 6 s, trois fois au plus,
+  puis reste `plumio--calme`.
+
+**Champ : le bec.**
+- Plumio (`picore-gauche`, ou `picore-droite` en arabe) se tient debout sur le
+  bord haut du champ, côté fin de ligne, tourné vers le début : 56 px sur
+  téléphone, 64 px sur ordinateur, à 10 à 20 px du bout du champ (52 px quand
+  le champ affiche une unité, comme « € »).
+- `plumio--picore` : trois coups de bec en 900 ms, une petite marque d’encre à
+  chaque impact. Sans saisie, il recommence au bout de 6 s, trois fois au plus.
+- Dès la première frappe (`input`), il s’arrête, se redresse et regarde ce qui
+  est écrit : pose `regarde-gauche` (`regarde-droite` en arabe). Il ne picore
+  plus tant que le champ n’est pas vidé.
+- La bulle est sous le champ. **Dès que la liste de suggestions s’ouvre**
+  (`aria-expanded="true"`), elle passe au-dessus du champ. Plumio ne cache jamais
+  le texte saisi ni la liste.
+- Champ de date : il ouvre le calendrier du système, pas le clavier ; la bulle
+  reste sous le champ. Le bec passe au second champ quand le premier est rempli.
+
+**Clavier ouvert (téléphone).**
+- Détection : `visualViewport.height` < 75 % de `window.innerHeight`.
+- La bulle devient une ligne collée au-dessus du clavier : Plumio
+  `regarde-droite` en 30 px (`plumio--petit`), la consigne en une ligne,
+  « Passer » au bout. Hauteur 48 px, marges 8 px.
+- Position : `position: fixed`, `bottom` = `innerHeight − visualViewport.height
+  − visualViewport.offsetTop`, mis à jour sur `visualViewport` `resize` et
+  `scroll`.
+- Elle ne se pose jamais sur la liste : l’application fait défiler le champ en
+  haut de l’écran (`scrollIntoView({ block: 'start' })`) pour que la liste
+  tienne dans la moitié qui reste.
+- Elle reprend sa forme quand le clavier se ferme.
+
+**Projecteur.** Comme la version 1 : voile (encre 52 % en clair, noir 50 % en
+sombre), 3 px de papier puis 2 px d’accent autour de la cible. La cible reste
+utilisable, et c’est en l’utilisant qu’on avance. À la dernière étape, ni voile
+ni tapotement.
+
+**La bulle.** 288 px sur téléphone, 300 px sur ordinateur (264 px à côté d’une
+colonne). En haut : « Visite guidée », huit traits de progression, « Passer la
+visite » (toujours là). Puis la consigne, 15 / 16 px. Pas de bouton, sauf
+« Terminer la visite » à la fin. Apparition : opacité et 8 px de montée en
+220 ms, 120 ms après l’arrivée de Plumio.
+
+**Hors du chemin.** Un appui ailleurs que sur la cible ou la bulle, ou une
+autre page : le voile s’en va et la bulle se replie en un rond de 56 px
+(Plumio `attend` 34 px, `plumio--calme`), en bas côté fin de ligne, au-dessus
+de la barre d’onglets, avec « Reprendre la visite ». Un appui reprend la visite
+là où elle en était (et revient à sa page : c’est la personne qui a appuyé).
+
+**Déplacements.** Le trajet est à l’application (`transform: translate()`,
+`cubic-bezier(0.16, 1, 0.3, 1)`) ; les classes ne jouent que le geste sur place.
+- Même page, moins de 160 px : pose `sautille` (un saut de 420 ms ; deux pour
+  un trajet plus long) pendant la translation.
+- Même page, plus loin : pose `vol`, 360 à 600 ms selon la distance.
+- Autre page : seulement après l’appui de la personne. Pose `vol` depuis la
+  dernière position connue jusqu’à la nouvelle cible, une fois la page
+  affichée ; puis `plumio--atterrit`.
+- Action réussie (une carte choisie, une ville prise dans la liste) :
+  `plumio--content` (hochement, pépie, plumes gonflées, 640 ms), plus discret
+  que `celebre`.
+
+**Accessibilité.**
+- La bulle n’est pas modale (`role="group"`, `aria-label="Visite guidée"`) ;
+  sa consigne est annoncée par une région `aria-live="polite"` à chaque étape.
+- Tab mène au vrai bouton, au vrai champ ; la bulle suit dans l’ordre du
+  document, juste après la cible.
+- Échap termine la visite, à toute étape.
+- Plumio est `aria-hidden` : tout ce qu’il « dit » est écrit dans la bulle.
+- Mouvement réduit : aucune classe de geste, aucun trajet animé (Plumio apparaît
+  directement à sa place), poses fixes.
+
+**Arabe.** Toute la page passe en miroir (propriétés logiques). Plumio est
+retourné ; il picore et regarde de l’autre côté (`picore-droite`,
+`regarde-droite`). Le clavier, lui, ne se retourne pas.
+
+**Exception.** La règle « pas de Plumio dans les formulaires » (section 4) ne
+vaut pas pour cette visite. Partout ailleurs, elle tient.
+
+### Les étapes
+
+| # | Page | Cible (`data-guide`) | Geste | Bulle | Ce qui fait avancer |
+|---|---|---|---|---|---|
+| 0 | Au premier lancement | — | `face` : arrive, salue, parle | « Bonjour, moi c’est Plumio ! » (voir plus haut) | « C’est parti » ou « Passer » |
+| 1 | `/voyages` | `nouveau-voyage` (« Nouveau » ; « Créer un trip » si la liste est vide) | Aile, `pointer-haut` | Tout commence ici : appuyez sur « Nouveau ». (ou « Créer un trip ») | L’appui sur le bouton |
+| 2 | `/voyages/nouveau`, question 1 | `avec-qui` (les quatre cartes) | Aile | Avec qui partez-vous ? Choisissez une réponse. | Un appui sur une carte, même « Entre amis », déjà cochée |
+| — | Chaque question, réponse valide | `continuer` | `content`, puis `sautille` jusqu’au bouton, aile | Parfait. Appuyez sur « Continuer ». (la première fois ; ensuite, geste seul) | L’appui sur « Continuer » |
+| 3 | Question 2 | `ville-depart` (« Chercher une ville de départ ») | Bec | Tapez votre ville, puis choisissez-la dans la liste. Liste ouverte : Choisissez votre ville dans la liste. | Une ville choisie dans la liste |
+| 4 | Question 3 | `destination` (« Surprends-nous », « On sait déjà où aller ») ; puis `ville-destination` | Aile ; puis bec sur « Chercher n’importe quelle ville » | Vous avez une idée ? Sinon, « Surprends-nous » : Tripora proposera des destinations au groupe. | Un appui sur « Surprends-nous », ou une ville ajoutée |
+| 5 | Question 4 | `quand` (les quatre façons) ; puis `dates` | Aile ; puis bec sur les champs de date | Choisissez une façon de dire quand. Plus c’est souple, moins ça coûte. Puis : Indiquez le départ et le retour. | Une façon choisie, puis des dates valides (ou un mois) |
+| 6 | Question 5 | `budget-montant` | Bec | Combien par personne, tout compris ? | Un montant, ou « Le moins cher possible » |
+| 7 | Question 6 | `envies` (le premier axe) | Aile | Choisissez au moins une envie. | Une envie autre que « Non merci » |
+| 8 | Question 6 | `creer-le-voyage` | Aile, une fois, sans voile ni tapotement ; puis `au-revoir` | C’est tout ! Ce bouton crée le voyage ; ensuite, vous inviterez le groupe. Rien n’est créé tant que vous n’appuyez pas dessus. | « Terminer la visite » : `plumio--sort`. Ce qui est saisi reste |
+
+Compte : huit traits de progression (étapes 1 à 8). À la bonne vitesse, une
+minute environ.
+
+**Version courte, si la visite paraît longue.** Garder les étapes 0, 1, 3, 6
+et 8 (Nouveau, la ville de départ, le budget, la fin) : ce sont les seules où
+l’on peut se tromper. Aux étapes 2, 4, 5 et 7, Plumio se tait : il attend près
+de « Continuer » et sautille vers lui quand la réponse est valide. Regrouper le
+budget et les envies demanderait de changer l’assistant, ce qui sort du
+tutoriel.
+
+### Notes d’intégration
+
+- **Poses.** Ajouter à `PoseDeLaMascotte` : `face`, `picore-droite`,
+  `picore-gauche`, `regarde-droite`, `regarde-gauche`, `sautille`, `content`.
+  Les fichiers sont déjà dans `poses/` : `import.meta.glob` les trouve.
+- **Gestes.** Poser la classe, puis la retirer à `animationend` (sur le `<svg>`,
+  quand `event.animationName` est le dernier du geste) pour pouvoir la rejouer.
+  Pour rejouer tout de suite : retirer, lire `getBoundingClientRect()`, remettre.
+- **`sautille` et `content`** sont à la fois des poses et des classes : la pose
+  joue son geste une fois, dès qu’elle s’affiche. La classe, elle, peut se
+  poser sur n’importe quelle pose debout (`attend`, `pointer-*`).
+- **`face`** contient sa vue de profil (pose `attend`, cachée). Après
+  `plumio--se-tourne`, passer à la pose `vol` pour le trajet.
+- **Le regard pendant la saisie.** Avec `regarde-*`, on peut ajouter
+  `plumio--suit` et pousser `--plumio-regard-x` vers le curseur du champ ; pas
+  au toucher, pas en mouvement réduit (même règle que le regard au pointeur).
+- **Ancres.** Les étapes ciblent des attributs `data-guide`, comme la version
+  1. `nouveau-voyage` existe déjà sur « Nouveau » dans `Trips.tsx` ; il faut le
+  poser aussi sur « Créer un trip » de l’écran vide, puis `avec-qui`,
+  `continuer`, `ville-depart`, `destination`, `ville-destination`, `quand`,
+  `dates`, `budget-montant`, `envies` et `creer-le-voyage` dans
+  `routes/create/`.
+- **Avancer.** Lire l’état du brouillon (`stores/tripDraft.ts`) plutôt que les
+  clics : `origin` rempli, `destinationIds` non vide, etc. Exception : aux
+  étapes 2 et 4, la réponse est déjà valide par défaut (`groupType: 'friends'`,
+  `destinationMode: 'suggest'`) ; il faut un appui réel sur une carte.
+- **Mémoire.** La visite se joue une fois par compte (ou par appareil sans
+  compte). « Passer », Échap et « Terminer la visite » la marquent comme vue.
+  Elle se relance depuis le profil.
+- **Tests utiles.** Au clavier de bout en bout sans « Suivant » ; Échap à
+  chaque étape ; la bulle passe au-dessus du champ quand la liste s’ouvre ;
+  rien n’est créé à la fin ; en mouvement réduit, `document.getAnimations()`
+  est vide.
+
+## 8. Intégration
 
 - **Composants.**
   - Un composant par pose, à partir de `poses/<nom>.svg`. Garder toutes les
@@ -246,4 +450,5 @@ Les maquettes sont dans `tutoriel/index.html`. Les règles :
   python3 design/mascotte/outils/plumio.py design/mascotte
   python3 design/mascotte/outils/planche.py design/mascotte
   python3 design/mascotte/outils/tutoriel.py design/mascotte
+  python3 design/mascotte/outils/tutoriel_v2.py design/mascotte
   ```

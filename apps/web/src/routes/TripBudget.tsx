@@ -304,7 +304,6 @@ export default function TripBudget() {
         />
       ) : (
         <Button
-          data-guide="ajouter-depense"
           block
           size="lg"
           icon={<Plus className="size-5" aria-hidden />}

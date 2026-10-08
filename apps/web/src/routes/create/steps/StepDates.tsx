@@ -42,7 +42,7 @@ export function StepDates() {
 
   return (
     <div className="space-y-5">
-      <div className="space-y-2.5" role="radiogroup" aria-label="Quand partez-vous ?">
+      <div data-guide="quand" className="space-y-2.5" role="radiogroup" aria-label="Quand partez-vous ?">
         {MODES.map(({ value, label, description, icon: Icon }) => (
           <OptionCard
             key={value}
@@ -58,7 +58,7 @@ export function StepDates() {
       </div>
 
       {dateMode === 'month' && (
-        <div className="animate-rise space-y-2">
+        <div data-guide="dates" className="animate-rise space-y-2">
           <p className="text-sm font-semibold">Quel mois ?</p>
           <div className="flex flex-wrap gap-2">
             {MONTHS.map((name, index) => (
@@ -75,7 +75,7 @@ export function StepDates() {
       )}
 
       {dateMode === 'window' && (
-        <div className="animate-rise grid grid-cols-2 gap-3">
+        <div data-guide="dates" className="animate-rise grid grid-cols-2 gap-3">
           <Field label="À partir du">
             <TextInput
               type="date"
@@ -96,7 +96,7 @@ export function StepDates() {
       )}
 
       {dateMode === 'exact' && (
-        <div className="animate-rise grid grid-cols-2 gap-3">
+        <div data-guide="dates" className="animate-rise grid grid-cols-2 gap-3">
           <Field label="Départ">
             <TextInput
               type="date"

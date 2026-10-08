@@ -32,7 +32,7 @@ export default function Trips() {
   const [aSupprimer, setASupprimer] = useState<TripSummary | null>(null);
   const navigate = useNavigate();
   // La visite guidée a son Plumio : jamais deux sur le même écran.
-  const visiteOuverte = useGuide((etat) => etat.ouvert);
+  const visiteOuverte = useGuide((etat) => etat.phase !== null);
 
   // Arrivé ici au retour de Google — qui ramène toujours sur /voyages — alors
   // qu'on voulait autre chose : créer un trip, ouvrir un voyage. On y va.
@@ -151,7 +151,7 @@ export default function Trips() {
             description={t('trips.vide.texte')}
             action={
               <Link to="/voyages/nouveau">
-                <Button size="lg" icon={<Plus className="size-5" aria-hidden />}>
+                <Button data-guide="creer-premier-voyage" size="lg" icon={<Plus className="size-5" aria-hidden />}>
                   {t('action.creer')}
                 </Button>
               </Link>
