@@ -13,6 +13,15 @@
  *                          regarde, penche, queue, pepie, cligne)
  *   .plumio--suit          les yeux suivent --plumio-regard-x / -y (de -1 à 1)
  *   .plumio--envol, .plumio--atterrit, .plumio--sort   passage d'une page à l'autre
+ *   Tutoriel, version 2 (section 9) :
+ *   .plumio--arrive        de face : il descend en volant et se pose
+ *   .plumio--salue         il fait coucou de l'aile (de face ou de profil)
+ *   .plumio--parle         son bec bouge pendant qu'on lit sa bulle
+ *   .plumio--se-tourne     de face, il se tourne de profil (pose « face »)
+ *   .plumio--tapote        l'aile tendue tapote l'air deux fois (poses « pointer-* »)
+ *   .plumio--picore        trois coups de bec sur le champ (poses « picore-* »)
+ *   .plumio--sautille      un petit saut sur place ; le trajet, c'est l'application
+ *   .plumio--content       hochement, pépie, plumes gonflées : l'action est faite
  *   .plumio--sombre, .plumio--mono, .plumio--petit, .plumio--immobile
  *
  * Seuls transform et opacity sont animés. Courbe : vive au départ, arrêt net,
@@ -607,7 +616,215 @@
   100% { transform: translate(64px, -72px); opacity: 0; }
 }
 
-/* ── 9. Mouvement réduit : tout s'arrête, la pose reste ─────────────────── */
+/* ── 9. Le tutoriel, version 2 ───────────────────────────────────────────────
+   L'accueil de face, puis une visite où Plumio montre le vrai bouton de l'aile
+   et le vrai champ du bec. Chaque geste dure 1,2 s au plus et se joue une fois :
+   l'application pose la classe, et la retire à `animationend` pour pouvoir le
+   rejouer. Le déplacement d'une cible à l'autre reste à l'application. */
+
+/* Pivots de la vue de face (unités du viewBox). */
+.plumio--face .plumio-tete,
+.plumio--face .plumio-tete-regard { transform-origin: 48px 44px; }
+.plumio--face .plumio-oeil { transform-box: fill-box; transform-origin: center; }
+.plumio--face .plumio-souffle { transform-origin: 48px 86px; }
+.plumio--face .plumio-bec-bas { transform-origin: 48px 32.6px; }
+.plumio--face .plumio-pan { transform-origin: 48px 47.6px; }
+.plumio-aile-gauche { transform-origin: 39px 46px; }
+.plumio-aile-droite { transform-origin: 57px 46px; }
+.plumio-vue-face,
+.plumio-vue-profil { transform-origin: 48px 88px; }
+.plumio-encre { transform-box: fill-box; transform-origin: center; }
+.plumio--sautille .plumio-pattes { transform-origin: 53px 79px; }
+:is(.plumio--picore-droite, .plumio--picore-gauche) .plumio-pose { transform-origin: 41px 90px; }
+:is(.plumio--picore-droite, .plumio--picore-gauche) .plumio-queue { transform-origin: 27px 53px; }
+
+/* Arrive : de face, il descend en battant des ailes et se pose (1 100 ms). */
+.plumio--face.plumio--arrive .plumio-pas { animation: mascotte-arrive-face 1100ms var(--plumio-courbe) both; }
+.plumio--face.plumio--arrive .plumio-aile-gauche { animation: mascotte-vole-gauche 1100ms linear both; }
+.plumio--face.plumio--arrive .plumio-aile-droite { animation: mascotte-vole-droite 1100ms linear both; }
+
+/* Salue : coucou de l'aile. De face, l'aile droite de l'écran ; de profil, l'aile. */
+.plumio--face.plumio--salue .plumio-aile-droite { animation: mascotte-coucou 1200ms var(--plumio-balancier) both; }
+.plumio--face.plumio--salue .plumio-tete { animation: mascotte-coucou-tete 1200ms var(--plumio-balancier) both; }
+.plumio--salue:not(.plumio--face) .plumio-aile { animation: mascotte-salut 1100ms var(--plumio-balancier) both; }
+
+/* Parle : le bec s'ouvre au rythme d'une phrase (1 100 ms). Pour une bulle plus
+   longue, l'application la rejoue, ou pose --plumio-parle-fois (2 ou 3). */
+.plumio--parle .plumio-bec-bas {
+  animation: mascotte-parle 1100ms linear both;
+  animation-iteration-count: var(--plumio-parle-fois, 1);
+}
+.plumio--face.plumio--parle .plumio-bec-bas { animation-name: mascotte-parle-face; }
+.plumio--parle .plumio-tete {
+  animation: mascotte-parle-tete 1100ms var(--plumio-balancier) both;
+  animation-iteration-count: var(--plumio-parle-fois, 1);
+}
+
+/* Se tourne : la vue de face s'écrase, la vue de profil se déplie (520 ms). */
+.plumio--se-tourne .plumio-vue-face { animation: mascotte-quitte-face 520ms var(--plumio-depart) both; }
+.plumio--se-tourne .plumio-vue-profil { animation: mascotte-prend-profil 520ms var(--plumio-courbe) both; }
+
+/* Tapote : l'aile tendue vers la cible tapote l'air deux fois (700 ms). */
+.plumio--tapote:is(.plumio--pointer-droite, .plumio--pointer-gauche) .plumio-aile { animation: mascotte-tapote-avant 700ms linear both; }
+.plumio--tapote.plumio--pointer-haut .plumio-aile { animation: mascotte-tapote-haut 700ms linear both; }
+.plumio--tapote.plumio--pointer-bas .plumio-aile { animation: mascotte-tapote-bas 700ms linear both; }
+
+/* Picore : trois coups de bec (900 ms), une marque d'encre à chaque impact. */
+.plumio--picore .plumio-tete { animation: mascotte-picore 900ms linear both; }
+.plumio--picore .plumio-pose { animation: mascotte-picore-corps 900ms linear both; }
+.plumio--picore .plumio-queue { animation: mascotte-picore-queue 900ms linear both; }
+.plumio--picore .plumio-encre { animation: mascotte-encre 900ms linear both; }
+
+/* Sautille : un saut sur place (420 ms), à jouer pendant que l'application le
+   déplace ; enchaîner deux sauts pour un trajet plus long. */
+.plumio--sautille .plumio-pas { animation: mascotte-sautille 420ms linear both; }
+.plumio--sautille .plumio-pattes { animation: mascotte-sautille-pattes 420ms linear both; }
+.plumio--sautille .plumio-aile { animation: mascotte-sautille-aile 420ms var(--plumio-balancier) both; }
+
+/* Content : l'action est faite. Plus discret que « célèbre » (640 ms). */
+.plumio--content .plumio-tete { animation: mascotte-content-tete 640ms var(--plumio-courbe) both; }
+.plumio--content .plumio-bec-bas { animation: mascotte-pepie 520ms linear 80ms both; }
+.plumio--content .plumio-souffle { animation: mascotte-content-plumes 640ms var(--plumio-courbe) both; }
+
+@keyframes mascotte-arrive-face {
+  0% { transform: translate(0, -64px); opacity: 0; }
+  20% { opacity: 1; }
+  70% { transform: translate(0, -4px); }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes mascotte-vole-gauche {
+  0%, 30%, 60% { transform: rotate(118deg); }
+  15%, 45% { transform: rotate(70deg); }
+  75% { transform: rotate(96deg); }
+  100% { transform: rotate(0deg); animation-timing-function: var(--plumio-courbe); }
+}
+@keyframes mascotte-vole-droite {
+  0%, 30%, 60% { transform: rotate(-118deg); }
+  15%, 45% { transform: rotate(-70deg); }
+  75% { transform: rotate(-96deg); }
+  100% { transform: rotate(0deg); animation-timing-function: var(--plumio-courbe); }
+}
+@keyframes mascotte-coucou {
+  0% { transform: rotate(0deg); animation-timing-function: var(--plumio-courbe); }
+  22% { transform: rotate(-142deg); }
+  36% { transform: rotate(-118deg); }
+  50% { transform: rotate(-146deg); }
+  64% { transform: rotate(-120deg); }
+  78% { transform: rotate(-140deg); animation-timing-function: var(--plumio-courbe); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-coucou-tete {
+  0%, 100% { transform: rotate(0deg); }
+  25%, 75% { transform: rotate(5deg); }
+}
+@keyframes mascotte-parle {
+  0%, 100% { transform: rotate(0deg); }
+  12% { transform: rotate(16deg); }
+  24% { transform: rotate(2deg); }
+  38% { transform: rotate(12deg); }
+  50% { transform: rotate(1deg); }
+  66% { transform: rotate(17deg); }
+  80% { transform: rotate(3deg); }
+  90% { transform: rotate(9deg); }
+}
+@keyframes mascotte-parle-face {
+  0%, 100% { transform: translateY(0); }
+  12% { transform: translateY(3.4px); }
+  24% { transform: translateY(0.3px); }
+  38% { transform: translateY(2.6px); }
+  50% { transform: translateY(0.2px); }
+  66% { transform: translateY(3.6px); }
+  80% { transform: translateY(0.4px); }
+  90% { transform: translateY(1.8px); }
+}
+@keyframes mascotte-parle-tete {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-2.5deg); }
+  70% { transform: rotate(2deg); }
+}
+@keyframes mascotte-quitte-face {
+  0% { transform: scale(1, 1); opacity: 1; }
+  50% { transform: scale(0.08, 1); opacity: 1; }
+  51%, 100% { transform: scale(0.08, 1); opacity: 0; }
+}
+@keyframes mascotte-prend-profil {
+  0%, 49% { transform: scale(0.08, 1); opacity: 0; }
+  50% { transform: scale(0.08, 1); opacity: 1; }
+  100% { transform: scale(1, 1); opacity: 1; }
+}
+@keyframes mascotte-tapote-avant {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(3.5px, 0); }
+  40% { transform: translate(0, 0); }
+  60% { transform: translate(3.5px, 0); }
+  80% { transform: translate(0, 0); }
+}
+@keyframes mascotte-tapote-haut {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(0, -3.5px); }
+  40% { transform: translate(0, 0); }
+  60% { transform: translate(0, -3.5px); }
+  80% { transform: translate(0, 0); }
+}
+@keyframes mascotte-tapote-bas {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(1.5px, 3.5px); }
+  40% { transform: translate(0, 0); }
+  60% { transform: translate(1.5px, 3.5px); }
+  80% { transform: translate(0, 0); }
+}
+@keyframes mascotte-picore {
+  0% { transform: rotate(0deg); animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.5); }
+  14% { transform: rotate(13deg); animation-timing-function: var(--plumio-courbe); }
+  30% { transform: rotate(-5deg); animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.5); }
+  44% { transform: rotate(13deg); animation-timing-function: var(--plumio-courbe); }
+  60% { transform: rotate(-5deg); animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.5); }
+  74% { transform: rotate(13deg); animation-timing-function: var(--plumio-courbe); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes mascotte-picore-corps {
+  0%, 100% { transform: rotate(0deg); }
+  14%, 44%, 74% { transform: rotate(3deg); }
+  30%, 60% { transform: rotate(0deg); }
+}
+@keyframes mascotte-picore-queue {
+  0%, 100% { transform: rotate(0deg); }
+  14%, 44%, 74% { transform: rotate(-7deg); }
+  30%, 60% { transform: rotate(0deg); }
+}
+@keyframes mascotte-encre {
+  0%, 13% { transform: scale(0.3); opacity: 0; }
+  16% { transform: scale(1); opacity: 1; }
+  44% { transform: scale(1); }
+  47% { transform: scale(1.25); }
+  74% { transform: scale(1.25); }
+  77%, 88% { transform: scale(1.45); opacity: 1; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+@keyframes mascotte-sautille {
+  0% { transform: translate(0, 0); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  45% { transform: translate(0, -9px); animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes mascotte-sautille-pattes {
+  0%, 100% { transform: scaleY(1); }
+  30%, 70% { transform: scaleY(0.6); }
+}
+@keyframes mascotte-sautille-aile {
+  0%, 100% { transform: rotate(0deg); }
+  45% { transform: rotate(-16deg); }
+}
+@keyframes mascotte-content-tete {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-8deg); }
+  60% { transform: rotate(3deg); }
+}
+@keyframes mascotte-content-plumes {
+  0%, 100% { transform: scale(1, 1); }
+  35% { transform: scale(1.05, 1.04); }
+}
+
+/* ── 10. Mouvement réduit : tout s'arrête, la pose reste ────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .plumio,
