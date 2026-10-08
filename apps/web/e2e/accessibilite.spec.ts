@@ -69,7 +69,12 @@ for (const theme of ['clair', 'sombre'] as const) {
       // Jamais vue : elle s'ouvre d'elle-même, sur la liste des voyages.
       await page.evaluate(() => localStorage.removeItem('tripora.guide-vu'));
       await page.reload({ waitUntil: 'networkidle' });
-      await expect(page.getByRole('group', { name: 'Créez un voyage' })).toBeVisible();
+      // D'abord l'accueil de Plumio, puis la première bulle de la visite.
+      const accueil = page.getByRole('dialog', { name: 'Bonjour, moi c’est Plumio !' });
+      await expect(accueil).toBeVisible();
+      expect(await manquements(page)).toEqual([]);
+      await accueil.getByRole('button', { name: 'C’est parti' }).click();
+      await expect(page.getByRole('group', { name: 'Visite guidée' })).toBeVisible();
       expect(await manquements(page)).toEqual([]);
     });
   });

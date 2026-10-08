@@ -10,7 +10,7 @@ const DESSINS = import.meta.glob<string>('../../../../../design/mascotte/poses/*
   eager: true,
 });
 
-/** Les seize poses de Plumio (voir `design/mascotte/NOTES.md`). */
+/** Les vingt-trois poses de Plumio (voir `design/mascotte/NOTES.md`). */
 export type PoseDeLaMascotte =
   | 'accueil'
   | 'pointer-haut'
@@ -27,13 +27,39 @@ export type PoseDeLaMascotte =
   | 'notification'
   | 'depart'
   | 'au-revoir'
-  | 'vol';
+  | 'vol'
+  // La visite guidée, version 2 : de face pour l'accueil, de profil pour les champs.
+  | 'face'
+  | 'picore-gauche'
+  | 'picore-droite'
+  | 'regarde-gauche'
+  | 'regarde-droite'
+  | 'sautille'
+  | 'content';
 
 /** Vers où il montre : l'élément mis en lumière, par rapport à lui. */
 export type DirectionDuGeste = 'haut' | 'bas' | 'gauche' | 'droite';
 
 /** Ce qui le fait bouger, posé en classes sur le dessin (voir `animations.css`). */
 export type ViePlumio = 'immobile' | 'calme' | 'vie';
+
+/**
+ * Un geste joué une fois, sur place (section 9 de `animations.css`) : le
+ * trajet d'un point à l'autre, lui, est à l'appelant.
+ */
+export type GesteDePlumio = 'arrive' | 'salue' | 'parle' | 'se-tourne' | 'tapote' | 'picore' | 'sautille' | 'content';
+
+/** Combien dure chaque geste : la classe est retirée ensuite, pour pouvoir le rejouer. */
+const DUREE_DU_GESTE: Record<GesteDePlumio, number> = {
+  arrive: 1100,
+  salue: 1200,
+  parle: 1100,
+  'se-tourne': 520,
+  tapote: 700,
+  picore: 900,
+  sautille: 420,
+  content: 640,
+};
 
 function dessin(pose: PoseDeLaMascotte): string {
   const brut = DESSINS[`../../../../../design/mascotte/poses/${pose}.svg`] ?? '';
@@ -55,7 +81,8 @@ function mouvementReduit(): boolean {
  * mouvement.
  *
  * Une fois par écran au plus, jamais à côté d'une décision (un vote, un
- * montant), jamais dans un formulaire. Décoratif : ce qu'il « dit » est
+ * montant), jamais dans un formulaire (sauf pendant la visite guidée, qui
+ * montre justement comment le remplir). Décoratif : ce qu'il « dit » est
  * toujours écrit à côté.
  *
  * En arabe, il se retourne avec la page : il regarde dans le sens de la
@@ -70,6 +97,8 @@ export function Mascotte({
   sortie = false,
   petit,
   regard = false,
+  geste,
+  fois = 0,
   className,
 }: {
   pose: PoseDeLaMascotte;
@@ -87,6 +116,9 @@ export function Mascotte({
   petit?: boolean;
   /** Suit parfois le pointeur des yeux (souris seulement). */
   regard?: boolean;
+  /** Un geste à jouer une fois ; changer `fois` le rejoue. Rien en mouvement réduit. */
+  geste?: GesteDePlumio;
+  fois?: number;
   className?: string;
 }) {
   const conteneur = useRef<HTMLSpanElement | null>(null);
@@ -119,7 +151,20 @@ export function Mascotte({
     return () => window.clearTimeout(minuteur);
   }, [pose, joue, arrivee, sortie]);
 
-  useRegardQuiSuit(conteneur, regard, pose === 'pointer-gauche');
+  // Un geste piloté : la classe le temps de le jouer, puis retirée.
+  useLayoutEffect(() => {
+    const svg = conteneur.current?.firstElementChild;
+    if (!svg || !geste || mouvementReduit()) return;
+    const classe = `plumio--${geste}`;
+    svg.classList.add(classe);
+    const minuteur = window.setTimeout(() => svg.classList.remove(classe), DUREE_DU_GESTE[geste]);
+    return () => {
+      window.clearTimeout(minuteur);
+      svg.classList.remove(classe);
+    };
+  }, [pose, geste, fois]);
+
+  useRegardQuiSuit(conteneur, regard, pose.endsWith('-gauche'));
 
   return (
     <span

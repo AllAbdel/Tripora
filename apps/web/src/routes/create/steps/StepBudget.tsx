@@ -66,6 +66,7 @@ export function StepBudget() {
 
       {budgetMode !== 'cheapest' && (
         <div className="animate-rise space-y-3">
+          <div data-guide="budget-montant">
           <Field
             label="Budget par personne, tout compris"
             hint={
@@ -82,6 +83,7 @@ export function StepBudget() {
               onChange={(cents) => patch({ budgetPerPersonCents: cents })}
             />
           </Field>
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {RACCOURCIS.map(raccourciDeBudget).map(({ cents, libelle }) => (

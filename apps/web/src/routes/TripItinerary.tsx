@@ -351,7 +351,7 @@ export default function TripItinerary() {
 
       {!enregistre && (
         <>
-          <Card data-guide="construire-itineraire">
+          <Card>
             <CardBody className="space-y-3">
               <p className="font-semibold">Construire l’itinéraire</p>
               <p className="text-muted text-sm leading-relaxed">
@@ -454,7 +454,6 @@ export default function TripItinerary() {
         <>
           <nav
             aria-label="Journées"
-            data-guide="journees"
             className="-mx-1 flex gap-1 overflow-x-auto border-b px-1 filet"
           >
             {enregistre.map((jour) => (

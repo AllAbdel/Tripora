@@ -84,7 +84,7 @@ export default function Accueil() {
             className="text-brand-700 dark:text-brand-200 mt-8 inline-flex min-h-11 items-center gap-2 text-sm font-semibold underline-offset-4 hover:underline"
           >
             <PlayCircle className="size-5" aria-hidden />
-            Voir le guide en trente secondes
+            Découvrir Tripora avec Plumio
           </button>
         </Section>
 
@@ -202,7 +202,7 @@ export default function Accueil() {
 function ActionsPrincipales({ centre = false }: { centre?: boolean }) {
   return (
     <div className={cn('flex flex-col gap-3 sm:flex-row', centre && 'sm:justify-center')}>
-      <Link to="/voyages/nouveau" className={classesDeBouton({ size: 'lg' })}>
+      <Link to="/voyages/nouveau" data-guide="creer-un-voyage" className={classesDeBouton({ size: 'lg' })}>
         Créer un voyage
         <ArrowRight className="size-5" aria-hidden />
       </Link>

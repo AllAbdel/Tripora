@@ -71,7 +71,7 @@ export function StepDestination() {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2.5" role="radiogroup" aria-label="Destination">
+      <div data-guide="destination" className="space-y-2.5" role="radiogroup" aria-label="Destination">
         <OptionCard
           selected={destinationMode === 'suggest'}
           onSelect={() => patch({ destinationMode: 'suggest' })}
@@ -90,7 +90,7 @@ export function StepDestination() {
 
       {destinationMode === 'fixed' && (
         <div className="animate-rise space-y-3">
-          <div className="relative">
+          <div data-guide="ville-destination" className="relative">
             <Search
               className="text-muted pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2"
               aria-hidden

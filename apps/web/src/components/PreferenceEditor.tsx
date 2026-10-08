@@ -23,14 +23,23 @@ import { Icone } from '@/components/Icone';
 export function PreferenceEditor({
   weights,
   onChange,
+  ancreDuPremierAxe,
 }: {
   weights: Partial<PreferenceWeights>;
   onChange: (axis: PreferenceAxis, value: number) => void;
+  /** Le repère de la visite guidée, posé sur le premier axe. */
+  ancreDuPremierAxe?: string;
 }) {
   return (
     <div className="space-y-3">
-      {PREFERENCE_AXES.map((axis) => (
-        <AxisRow key={axis} axis={axis} value={weights[axis]} onChange={onChange} />
+      {PREFERENCE_AXES.map((axis, rang) => (
+        <AxisRow
+          key={axis}
+          axis={axis}
+          value={weights[axis]}
+          onChange={onChange}
+          ancre={rang === 0 ? ancreDuPremierAxe : undefined}
+        />
       ))}
     </div>
   );
@@ -40,13 +49,15 @@ function AxisRow({
   axis,
   value,
   onChange,
+  ancre,
 }: {
   axis: PreferenceAxis;
   value: number | undefined;
   onChange: (axis: PreferenceAxis, value: number) => void;
+  ancre?: string | undefined;
 }) {
   return (
-    <div className="rounded-2xl border border-[color:var(--border-subtle)] surface-raised p-3">
+    <div data-guide={ancre} className="rounded-2xl border border-[color:var(--border-subtle)] surface-raised p-3">
       <p className="mb-2 flex items-center gap-2 pl-1 font-semibold">
         <Icone nom={AXIS_ICON[axis]} className="text-brand-500 size-4" />
         {AXIS_LABELS_FR[axis]}

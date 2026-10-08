@@ -231,7 +231,8 @@ export default function CreateTrip() {
         </div>
       </header>
 
-      <main key={step} className="animate-rise flex-1 px-5 pt-5 pb-40">
+      {/* La question affichée : la visite guidée la lit pour savoir où l'on en est. */}
+      <main key={step} data-question={step} className="animate-rise flex-1 px-5 pt-5 pb-40">
         <Content />
       </main>
 
@@ -245,6 +246,7 @@ export default function CreateTrip() {
           <p className="text-muted mb-2 text-center text-xs">{hintFor(step)}</p>
         )}
         <Button
+          data-guide="continuer"
           block
           size="lg"
           disabled={!complete}

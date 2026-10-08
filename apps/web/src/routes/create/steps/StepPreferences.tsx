@@ -10,7 +10,7 @@ export function StepPreferences() {
         Répondez pour vous, pas pour le groupe. Chaque participant remplira les siennes,
         et Tripora cherchera le meilleur compromis.
       </p>
-      <PreferenceEditor weights={weights} onChange={setWeight} />
+      <PreferenceEditor weights={weights} onChange={setWeight} ancreDuPremierAxe="envies" />
     </div>
   );
 }
