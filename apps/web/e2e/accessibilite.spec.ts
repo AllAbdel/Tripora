@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { BALI, poser } from './tripora';
 
 /**
@@ -72,12 +72,32 @@ for (const theme of ['clair', 'sombre'] as const) {
       // D'abord l'accueil de Plumio, puis la première bulle de la visite.
       const accueil = page.getByRole('dialog', { name: 'Bonjour, moi c’est Plumio !' });
       await expect(accueil).toBeVisible();
+      await finDesApparitions(accueil);
       expect(await manquements(page)).toEqual([]);
       await accueil.getByRole('button', { name: 'C’est parti' }).click();
-      await expect(page.getByRole('group', { name: 'Visite guidée' })).toBeVisible();
+      const bulle = page.getByRole('group', { name: 'Visite guidée' });
+      await expect(bulle).toBeVisible();
+      // La bulle apparaît en fondu : mesuré à mi-chemin, son texte paraîtrait pâle.
+      await finDesApparitions(bulle);
       expect(await manquements(page)).toEqual([]);
     });
   });
+}
+
+/**
+ * Attend la fin des fondus d'apparition : mesuré à mi-chemin, un texte paraît
+ * pâle. Les animations sans fin (Plumio qui respire) ne comptent pas.
+ */
+async function finDesApparitions(zone: Locator): Promise<void> {
+  // Un geste de Plumio interrompu rejette sa promesse : qu'il finisse ou non, il est passé.
+  await zone.evaluate((element) =>
+    Promise.allSettled(
+      element
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map((animation) => animation.finished),
+    ),
+  );
 }
 
 test('« Aller au contenu » est le premier arrêt du clavier, et y mène', async ({ page }) => {
