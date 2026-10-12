@@ -257,6 +257,13 @@ export function getCollaboration(): CollaborationApi | null {
           },
           onChange,
         )
+        // L'organisateur change où chercher, ou demande d'autres idées : tout
+        // le groupe doit voter sur la nouvelle liste, pas sur l'ancienne.
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` },
+          onChange,
+        )
         .subscribe();
 
       return () => {

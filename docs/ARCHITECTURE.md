@@ -202,6 +202,29 @@ nourriture, activités, transport sur place, divers — et non celui du billet.
 Un vol plus cher vers une ville bon marché sort souvent gagnant : c'est
 également testé.
 
+### Quelles destinations sont étudiées
+
+Avant de noter, une présélection gratuite, en mémoire, sur le catalogue
+(`selectCandidates`) : vingt candidates étudiées, dont les prix sont relevés,
+et dix présentées au groupe. Trois garde-fous contre la monotonie, ajoutés
+quand un départ « France » ramenait toujours Bruxelles, Prague, Budapest et
+Berlin :
+
+- **le groupe dit où chercher** : un ou plusieurs continents
+  (`trips.destination_regions`). « Partout » garde une distance raisonnable
+  pour la durée du séjour ; un continent choisi est exploré en entier, même
+  loin ;
+- **deux villes d'un même pays au plus**, tant qu'il en reste d'ailleurs ;
+- **partir de tout un pays, c'est partir à l'étranger** : ses propres villes
+  ne sont pas proposées.
+
+« D'autres idées » met de côté les destinations que personne n'a aimées
+(`trips.destination_ecartees`) : le moteur ne les étudie plus, et en propose
+d'autres à leur place. Celles qui ont reçu un « J'aime » restent. Les
+continents comme cette liste sont la décision de l'organisateur : un
+déclencheur les lui réserve, et les autres membres reçoivent le changement en
+temps réel, pour que tout le groupe vote sur la même liste.
+
 ## Le rôle de l'IA
 
 | Elle fait | Elle ne fait jamais |

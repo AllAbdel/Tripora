@@ -1386,7 +1386,7 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "Les autres le scannent avec l’appareil photo et rejoignent le réseau, sans rien taper.": "Others scan it with their camera and join the network, without typing anything.",
   "Voyage introuvable": "Trip not found",
   "le moins cher possible": "as cheap as possible",
-  "Essayez d’élargir le budget, la période ou la durée. Avec très peu de temps et très peu de budget, il ne reste parfois rien d’honnête à proposer.": "Try widening the budget, the period or the length. With very little time and very little budget, sometimes there’s nothing honest left to suggest.",
+  "Essayez d’élargir le budget, la période ou la durée, ou choisissez d’autres continents. Avec très peu de temps et très peu de budget, il ne reste parfois rien d’honnête à proposer.": "Try widening the budget, the period or the length, or choose other continents. With very little time and very little budget, sometimes there’s nothing honest left to suggest.",
   "Aucune destination ne colle": "No destination fits",
   "Le voyage passe par": "The trip goes through",
   ". L’itinéraire et la carte se construiront autour de ces étapes.": ". The itinerary and the map will be built around these stops.",
@@ -2471,7 +2471,27 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "Recharger": "Reload",
   "Les erreurs de l’application": "App errors",
   "Les erreurs de l’application.": "App errors.",
-  "Quand un écran plante, Tripora garde le message d’erreur technique, la page concernée (sans ses identifiants), la version de l’application, la langue et le nom du navigateur. Ni nom, ni adresse e-mail, ni contenu de voyage, ni compte, ni adresse IP : ces traces servent à corriger le problème, puis s’effacent au bout de trente jours.": "When a screen crashes, Tripora keeps the technical error message, the page concerned (without its IDs), the app version, the language and the browser name. No name, email address, trip content, account or IP address: these traces are used to fix the problem, then deleted after thirty days."
+  "Quand un écran plante, Tripora garde le message d’erreur technique, la page concernée (sans ses identifiants), la version de l’application, la langue et le nom du navigateur. Ni nom, ni adresse e-mail, ni contenu de voyage, ni compte, ni adresse IP : ces traces servent à corriger le problème, puis s’effacent au bout de trente jours.": "When a screen crashes, Tripora keeps the technical error message, the page concerned (without its IDs), the app version, the language and the browser name. No name, email address, trip content, account or IP address: these traces are used to fix the problem, then deleted after thirty days.",
+  // « Surprends-nous » : où chercher, d'autres idées.
+  "Où chercher": "Where to look",
+  "Partout, Tripora reste à une distance raisonnable pour la durée du séjour. Choisissez un ou plusieurs continents pour aller plus loin.": "Everywhere, Tripora stays within a reasonable distance for the length of the stay. Choose one or more continents to go further.",
+  "Tripora ne cherche que là, même loin : c’est vous qui l’avez choisi. L’Amérique du Nord comprend l’Amérique centrale et les Caraïbes.": "Tripora only searches there, even far away: you chose it. North America includes Central America and the Caribbean.",
+  "Partout, Tripora reste à une distance raisonnable pour la durée du séjour.": "Everywhere, Tripora stays within a reasonable distance for the length of the stay.",
+  "Tripora ne cherche que là, même loin. L’Amérique du Nord comprend l’Amérique centrale et les Caraïbes.": "Tripora only searches there, even far away. North America includes Central America and the Caribbean.",
+  "Aucune ne vous tente ?": "None of them appeal to you?",
+  "Aucune ne vous tente ? Dites-le avec « Pas pour moi » : l’organisateur peut demander d’autres idées.": "None of them appeal to you? Say so with “Not for me”: the organizer can ask for other ideas.",
+  "Tripora a fait le tour de ce qui colle à vos critères. Élargissez les continents, le budget ou la période pour en voir d’autres.": "Tripora has gone through everything that fits your criteria. Widen the continents, the budget or the period to see others.",
+  "Chaque destination a reçu au moins un « J’aime » : il n’y a rien à remplacer.": "Every destination has received at least one “Like”: there is nothing to replace.",
+  "Tripora met ces destinations de côté et en propose d’autres à leur place.": "Tripora sets these destinations aside and suggests others in their place.",
+  "Tripora met de côté celles que personne n’a aimées et en propose d’autres à leur place. Celles qui ont reçu un « J’aime » restent.": "Tripora sets aside the ones nobody liked and suggests others in their place. Those that received a “Like” stay.",
+  "D’autres idées": "Other ideas",
+  "De nouvelles idées sont affichées en haut de la liste.": "New ideas are shown at the top of the list.",
+  "Les destinations mises de côté sont revenues dans la liste.": "The destinations set aside are back in the list.",
+  "Revoir la destination mise de côté": "Bring back the destination set aside",
+  "Revoir les destinations mises de côté": "Bring back the destinations set aside",
+  "Celles qui collaient ont toutes été mises de côté.": "All the ones that fit have been set aside.",
+  "Changement non enregistré": "Change not saved",
+  "La liste précédente est revenue. Vérifiez votre connexion, puis réessayez.": "The previous list is back. Check your connection, then try again."
 };
 
 export const PHRASES: Readonly<Record<string, string>> = { ...PAYS_EN, ...DESTINATIONS_EN, ...PHRASES_FIXES };
@@ -2733,7 +2753,9 @@ function ligneDeReservation(texte: string): string | null {
 }
 
 export const MOTIFS: readonly Motif[] = [
-  // Le départ par pays, et l'aéroport du vol le moins cher.
+  // Le départ par pays, et l'aéroport du vol le moins cher. « Départ de » d'abord :
+  // le motif suivant l'avalerait, et l'en-tête du voyage restait à moitié en français.
+  [/^Départ de (.+) \(tous les aéroports\)$/u, (t, pays) => `Leaving from ${t(pays!) ?? pays} (all airports)`],
   [/^(.+) \(tous les aéroports\)$/u, (t, pays) => `${t(pays!) ?? pays} (all airports)`],
   [/^Vol au départ de (.+), le moins cher des aéroports comparés\.$/u, (t, lieu) =>
     `Flight from ${t(lieu!) ?? lieu}, the cheapest of the airports compared.`],
@@ -2742,6 +2764,12 @@ export const MOTIFS: readonly Motif[] = [
   [/^Prix comparés au départ de : (.+)\. Tripora retient le moins cher pour chaque destination\.$/u, (t, lieux) =>
     `Prices compared from: ${lieux!.split(', ').map((lieu) => t(lieu) ?? lieu).join(', ')}. Tripora keeps the cheapest for each destination.`],
   [/^(\d+) aéroports comparés, le moins cher retenu pour chaque destination$/u, '$1 airports compared, the cheapest kept for each destination'],
+  // « Surprends-nous » : les continents choisis, les destinations mises de côté.
+  [/^Tripora vous propose des destinations \((.+)\)$/u, (t, liste) =>
+    `Tripora suggests destinations (${liste!.split(', ').map((continent) => t(continent) ?? continent).join(', ')})`],
+  [/^Tripora cherche seulement là : (.+)\. L’organisateur peut changer ce choix\.$/u, (t, liste) =>
+    `Tripora only searches there: ${liste!.split(', ').map((continent) => t(continent) ?? continent).join(', ')}. The organizer can change this choice.`],
+  [/^Revoir les (\d+) destinations mises de côté$/u, 'Bring back the $1 destinations set aside'],
   // Les noms des destinations dans les phrases qui les portent.
   [/^Le bilan du voyage à (.+), en image$/u, (t, ville) => `The ${t(ville!) ?? ville} trip recap, as an image`],
   [/^(.+) · (\d+) jours? à (\d+) personnes?$/u, (_, ville, j, n) =>

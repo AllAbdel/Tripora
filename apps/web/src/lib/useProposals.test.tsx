@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { normalizeWeights } from '@tripora/core';
-import { useProposals } from './useProposals';
+import { continentDe, findDestination, normalizeWeights } from '@tripora/core';
+import { PRESENTEES, useProposals } from './useProposals';
 import type { TripDetails } from './trips';
 
 /**
@@ -51,7 +51,20 @@ const BASE: TripDetails = {
   lockedDestinationId: 'bali',
   destinationMode: 'fixed',
   shortlist: ['bali'],
+  ecartees: [],
 };
+
+const A_COMPARER: TripDetails = {
+  ...BASE,
+  lockedDestinationId: null,
+  destinationMode: 'suggest',
+  shortlist: [],
+};
+
+function proposees(details: TripDetails): string[] {
+  const { result } = renderHook(() => useProposals(details), { wrapper: enveloppe });
+  return result.current.proposals?.scores.map((score) => score.destinationId) ?? [];
+}
 
 function enveloppe({ children }: { children: ReactNode }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -73,6 +86,34 @@ describe('propositions', () => {
     };
     const { result } = renderHook(() => useProposals(aComparer), { wrapper: enveloppe });
     expect(result.current.proposals?.scores.length).toBeGreaterThan(0);
+  });
+
+  it(`présente ${PRESENTEES} destinations, plus que les six d'avant`, () => {
+    expect(PRESENTEES).toBeGreaterThan(6);
+    expect(proposees(A_COMPARER)).toHaveLength(PRESENTEES);
+  });
+
+  it('« D’autres idées » : les destinations mises de côté ne reviennent pas', () => {
+    const premieres = proposees(A_COMPARER);
+    const suivantes = proposees({ ...A_COMPARER, ecartees: premieres });
+    expect(suivantes).toHaveLength(PRESENTEES);
+    expect(suivantes.filter((id) => premieres.includes(id))).toEqual([]);
+  });
+
+  it('ne cherche que sur les continents choisis', () => {
+    const enAsie = proposees({
+      ...A_COMPARER,
+      constraints: { ...A_COMPARER.constraints, regions: ['asie'] },
+    });
+    expect(enAsie.length).toBeGreaterThan(0);
+    for (const id of enAsie) {
+      expect(continentDe(findDestination(id)?.countryCode)).toBe('asie');
+    }
+  });
+
+  it('un voyage relu depuis un ancien cache, sans liste d’écartées, propose quand même', () => {
+    const { ecartees: _absente, ...ancien } = A_COMPARER;
+    expect(proposees(ancien as TripDetails)).toHaveLength(PRESENTEES);
   });
 
   it('ne propose rien tant qu’il n’y a pas de voyage', () => {

@@ -17,6 +17,7 @@ import {
   targetMonth,
   trajetEnFrance,
   tripReadiness,
+  type Continent,
 } from '@tripora/core';
 import { Banner } from '@/components/ui/Banner';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -57,6 +58,9 @@ import { ProchainGeste } from '@/components/ProchainGeste';
 import { getItinerary } from '@/lib/itinerary';
 import { getTripsOuverts } from '@/lib/tripsOuverts';
 import { EnTeteDesPropositions } from '@/components/EnTeteDesPropositions';
+import { DAutresIdees, OuChercher } from '@/components/ReglagesDesPropositions';
+import { useReglagesDesPropositions } from '@/lib/useReglagesDesPropositions';
+import { ecarteesApres } from '@/lib/autresIdees';
 import { Ligne, ListeFantome } from '@/components/ui/Squelette';
 import { Couverture } from '@/components/Couverture';
 import { TitreDePage } from '@/components/TitreDePage';
@@ -118,6 +122,34 @@ export default function TripDetail() {
   });
 
   const { proposals, prix, prixEnCours, normales } = useProposals(data);
+
+  // Où chercher, et ce qu'on a mis de côté : l'organisateur les règle, la
+  // nouvelle liste s'affiche aussitôt. Un voyage relu depuis un cache d'avant
+  // ces réglages n'en a pas.
+  const reglages = useReglagesDesPropositions(id);
+  const regions: readonly Continent[] = data?.constraints.regions ?? [];
+  const ecartees: readonly string[] = data?.ecartees ?? [];
+  const affichees = useMemo(
+    () => proposals?.scores.map((score) => score.destinationId) ?? [],
+    [proposals],
+  );
+
+  function changerLesContinents(continents: Continent[]) {
+    reglages.mutate({ regions: continents });
+  }
+
+  function dAutresIdees(partantes: string[]) {
+    reglages.mutate({ ecartees: ecarteesApres(ecartees, partantes) });
+    // La nouvelle liste remplace l'ancienne tout de suite : on remonte la lire.
+    document.getElementById('propositions')?.scrollIntoView({
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  }
+
+  function revoirLesEcartees() {
+    reglages.mutate({ ecartees: [] });
+  }
 
   // Ce que « le prochain geste » a besoin de savoir, et que l'écran connaît
   // déjà : ce que j'ai fait, moi, par opposition à ce que le groupe a fait.
@@ -330,10 +362,32 @@ export default function TripDetail() {
           />
 
           {proposals && proposals.scores.length === 0 && (
-            <Banner tone="warning" title="Aucune destination ne colle">
-              Essayez d’élargir le budget, la période ou la durée. Avec très peu de temps
-              et très peu de budget, il ne reste parfois rien d’honnête à proposer.
-            </Banner>
+            <>
+              <Banner tone="warning" title="Aucune destination ne colle">
+                {ecartees.length > 0 && (
+                  <>Celles qui collaient ont toutes été mises de côté. </>
+                )}
+                Essayez d’élargir le budget, la période ou la durée, ou choisissez d’autres
+                continents. Avec très peu de temps et très peu de budget, il ne reste parfois
+                rien d’honnête à proposer.
+                {data.isOwner && ecartees.length > 0 && (
+                  <>
+                    {' '}
+                    <button type="button" onClick={revoirLesEcartees} className="underline">
+                      Revoir les destinations mises de côté
+                    </button>
+                  </>
+                )}
+              </Banner>
+              {!data.lockedDestinationId && (
+                <OuChercher
+                  regions={regions}
+                  estOrganisateur={data.isOwner}
+                  onChange={changerLesContinents}
+                />
+              )}
+              {reglages.isError && <ReglageNonEnregistre />}
+            </>
           )}
 
           <OutilsDuVoyage
@@ -454,6 +508,16 @@ export default function TripDetail() {
                 sourceConfiguree={Boolean(prix?.configured)}
               />
 
+              {!data.lockedDestinationId && (
+                <OuChercher
+                  regions={regions}
+                  estOrganisateur={data.isOwner}
+                  onChange={changerLesContinents}
+                />
+              )}
+
+              {reglages.isError && <ReglageNonEnregistre />}
+
               {prixEnCours && (
                 <Banner tone="info" title="Prix en cours de relevé">
                   Le classement s’affiche avec les estimations, et se corrigera dès que les
@@ -521,6 +585,19 @@ export default function TripDetail() {
               </ul>
 
               {!data.lockedDestinationId && (
+                <DAutresIdees
+                  constraints={data.constraints}
+                  affichees={affichees}
+                  tallies={votes.data?.tallies}
+                  ecartees={ecartees}
+                  estOrganisateur={data.isOwner}
+                  enCours={reglages.isPending}
+                  onEcarter={dAutresIdees}
+                  onRevoir={revoirLesEcartees}
+                />
+              )}
+
+              {!data.lockedDestinationId && (
                 <Card id="trancher" className="scroll-mt-4">
                   <CardBody className="space-y-3">
                     <p className="font-semibold">Trancher</p>
@@ -585,6 +662,15 @@ export default function TripDetail() {
         </>
       )}
     </div>
+  );
+}
+
+/** Un réglage des propositions refusé ou perdu : l'ancienne liste est revenue. */
+function ReglageNonEnregistre() {
+  return (
+    <Banner tone="warning" title="Changement non enregistré">
+      La liste précédente est revenue. Vérifiez votre connexion, puis réessayez.
+    </Banner>
   );
 }
 

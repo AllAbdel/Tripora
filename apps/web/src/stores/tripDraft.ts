@@ -5,6 +5,7 @@ import {
   normalizeWeights,
   type BudgetMode,
   type ComfortLevel,
+  type Continent,
   type DateMode,
   type GroupType,
   type MemberPreference,
@@ -24,6 +25,8 @@ export interface TripDraft {
   origin: Place | null;
   destinationMode: 'fixed' | 'suggest';
   destinationIds: string[];
+  /** « Surprends-nous » : les continents où chercher. Vide : partout. */
+  regions: Continent[];
   dateMode: DateMode;
   startDate: string | null;
   endDate: string | null;
@@ -55,6 +58,7 @@ const EMPTY: TripDraft = {
   origin: null,
   destinationMode: 'suggest',
   destinationIds: [],
+  regions: [],
   dateMode: 'month',
   startDate: null,
   endDate: null,
@@ -139,6 +143,9 @@ export function toConstraints(draft: TripDraft): TripConstraints | null {
     budgetPerPersonCents: draft.budgetPerPersonCents,
     comfortLevel: draft.comfortLevel,
     groupType: draft.groupType,
+    ...(draft.destinationMode === 'suggest' && draft.regions.length > 0
+      ? { regions: draft.regions }
+      : {}),
   };
 }
 

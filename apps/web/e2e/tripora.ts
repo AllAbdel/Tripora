@@ -103,6 +103,21 @@ export const BALI: VoyagePose = {
   draft: brouillon(),
 };
 
+/** Un voyage « Surprends-nous » : le groupe compare des destinations et vote. */
+export const SURPRISE: VoyagePose = {
+  id: 'v-surprise',
+  titre: 'Surprends-nous',
+  cree: '2026-10-10T10:00:00.000Z',
+  draft: brouillon({
+    title: 'Surprends-nous',
+    destinationMode: 'suggest',
+    destinationIds: [],
+    month: 6,
+    durationDays: 7,
+    budgetPerPersonCents: 250_000,
+  }),
+};
+
 /** Un second voyage, pour vérifier les tris et les listes. */
 export const LISBONNE: VoyagePose = {
   id: 'v2',

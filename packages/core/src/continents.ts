@@ -27,6 +27,19 @@ export const NOMS_DES_CONTINENTS: Readonly<Record<Continent, string>> = {
   antarctique: 'Antarctique',
 };
 
+/**
+ * Les continents où chercher une destination, dans l'ordre où on les propose.
+ * Pas l'Antarctique : aucun vol régulier ne s'y pose.
+ */
+export const CONTINENTS_DE_VOYAGE: readonly Continent[] = [
+  'europe',
+  'afrique',
+  'asie',
+  'amerique-du-nord',
+  'amerique-du-sud',
+  'oceanie',
+];
+
 const PAYS: Readonly<Record<Continent, string>> = {
   europe:
     'AD AL AT AX BA BE BG BY CH CY CZ DE DK EE ES FI FO FR GB GG GI GR HR HU IE IM IS IT JE LI LT LU LV MC MD ME MK MT NL NO PL PT RO RS RU SE SI SJ SK SM TR UA VA XK',

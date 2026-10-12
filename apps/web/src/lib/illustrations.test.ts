@@ -3,10 +3,13 @@ import {
   chargerIllustrations,
   enPaquets,
   estAffichable,
+  estServieParWikimedia,
   lireLEtiquette,
   lireLesCredits,
   lireLesImages,
+  PALIERS_WIKIMEDIA,
   texteBrut,
+  vignette,
 } from './illustrations';
 
 describe('illustrations des activités', () => {
@@ -40,6 +43,58 @@ describe('illustrations des activités', () => {
       url: 'https://upload.wikimedia.org/x/batur.jpg',
       fichier: 'Batur.jpg',
     });
+  });
+
+  it('lit les vignettes servies depuis thumb.wikimedia.org, comme l’API les rend désormais', () => {
+    // La réponse réelle de fr.wikipedia.org pour « Dune du Pilat » : l'hôte a
+    // changé, la largeur est arrondie au palier de 960 px. N'accepter que
+    // upload.wikimedia.org écartait toutes les photos des activités.
+    const source =
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/DunePyla.JPG/960px-DunePyla.JPG' +
+      '?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail';
+    const images = lireLesImages({
+      query: {
+        pages: {
+          '4093859': {
+            title: 'Dune du Pilat',
+            thumbnail: { source, width: 640, height: 480 },
+            pageimage: 'DunePyla.JPG',
+          },
+        },
+      },
+    });
+    expect(images.get('Dune du Pilat')).toEqual({ url: source, fichier: 'DunePyla.JPG' });
+  });
+
+  it('n’accepte que Wikimedia, en HTTPS, même déguisé', () => {
+    expect(estServieParWikimedia('https://upload.wikimedia.org/x.jpg')).toBe(true);
+    expect(estServieParWikimedia('https://thumb.wikimedia.org/x.jpg')).toBe(true);
+    for (const autre of [
+      'http://upload.wikimedia.org/x.jpg',
+      'https://wikimedia.org.exemple.test/x.jpg',
+      'https://exemplewikimedia.org/x.jpg',
+      'https://exemple.test/upload.wikimedia.org/x.jpg',
+      'pas une adresse',
+    ]) {
+      expect(estServieParWikimedia(autre), autre).toBe(false);
+    }
+  });
+
+  it('réduit une vignette vers un palier accepté, sans toucher au reste de l’adresse', () => {
+    const grande =
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/DunePyla.JPG/960px-DunePyla.JPG?utm_source=fr.wikipedia.org';
+    expect(vignette(grande, 250)).toBe(
+      'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/DunePyla.JPG/250px-DunePyla.JPG?utm_source=fr.wikipedia.org',
+    );
+    // Un fichier dont le nom commence lui-même par une largeur.
+    expect(
+      vignette('https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/960px-Plan.png/960px-960px-Plan.png', 250),
+    ).toBe('https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/960px-Plan.png/250px-960px-Plan.png');
+    // L'original, ou une vignette déjà plus petite : on n'agrandit jamais.
+    const original = 'https://upload.wikimedia.org/wikipedia/commons/d/d4/DunePyla.JPG';
+    expect(vignette(original, 250)).toBe(original);
+    const petite = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d4/X.jpg/120px-X.jpg';
+    expect(vignette(petite, 250)).toBe(petite);
   });
 
   it('refuse une image servie ailleurs que par Wikimedia', () => {
@@ -170,10 +225,12 @@ describe('illustrations par paquets', () => {
       wikipedia: `pt:Lieu ${i}`,
     }));
     const appels: string[] = [];
+    const adresses: string[] = [];
 
     vi.stubGlobal('fetch', async (entree: string) => {
       const url = new URL(entree);
       appels.push(url.hostname);
+      adresses.push(entree);
       const titres = (url.searchParams.get('titles') ?? '').split('|');
       expect(titres.length).toBeLessThanOrEqual(50);
       const pages = Object.fromEntries(
@@ -208,6 +265,9 @@ describe('illustrations par paquets', () => {
 
     const illustrations = await chargerIllustrations(lieux);
 
+    // Une largeur que Wikimedia accepte : les autres sont refusées.
+    const largeur = Number(new URL(adresses.find((adresse) => adresse.includes('pageimages'))!).searchParams.get('pithumbsize'));
+    expect(PALIERS_WIKIMEDIA).toContain(largeur);
     expect(appels.filter((hote) => hote === 'pt.wikipedia.org')).toHaveLength(2);
     expect(appels.filter((hote) => hote === 'commons.wikimedia.org')).toHaveLength(2);
     expect(Object.keys(illustrations)).toHaveLength(60);

@@ -23,7 +23,7 @@ import { TitreDePage } from '@/components/TitreDePage';
 import { Banner } from '@/components/ui/Banner';
 import { TextInput } from '@/components/ui/Field';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
-import { chargerIllustrations, estAffichable, type Illustration } from '@/lib/illustrations';
+import { CLE_DES_ILLUSTRATIONS, chargerIllustrations, usePhoto, type Illustration } from '@/lib/illustrations';
 import { direLaDuree } from '@/lib/duree';
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/lib/auth-context';
@@ -84,7 +84,7 @@ export default function AFaire() {
   // Une requête par destination, gardée un mois : les images d'un lieu ne
   // changent pas d'un jour à l'autre, et l'API de Wikimedia est un commun.
   const images = useQuery({
-    queryKey: ['illustrations', destinationId],
+    queryKey: [CLE_DES_ILLUSTRATIONS, destinationId],
     queryFn: () => chargerIllustrations(toutes),
     enabled: toutes.length > 0,
     staleTime: 30 * 24 * 60 * 60 * 1000,
@@ -330,7 +330,7 @@ function FicheDActivite({
   avis: AvisSurUneActivite | undefined;
   surAvis: (valeur: Avis | null) => void;
 }) {
-  const montrable = estAffichable(illustration);
+  const { montrable, surErreur } = usePhoto(illustration);
 
   return (
     <article className="surface-raised overflow-hidden rounded-[var(--radius-card)] border filet">
@@ -340,6 +340,7 @@ function FicheDActivite({
             src={illustration.url}
             alt=""
             loading="lazy"
+            onError={surErreur}
             className="h-44 w-full object-cover"
           />
           {/* Le crédit posé sur l'image plutôt qu'en dessous : il doit rester

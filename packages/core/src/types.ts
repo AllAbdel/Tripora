@@ -1,3 +1,4 @@
+import type { Continent } from './continents.js';
 import type { PreferenceAxis, PreferenceWeights } from './preferences.js';
 import type { PriceSource } from './freshness.js';
 
@@ -87,6 +88,11 @@ export interface TripConstraints {
   budgetPerPersonCents: number | null;
   comfortLevel: ComfortLevel;
   groupType: GroupType;
+  /**
+   * Où chercher, en mode « Surprends-nous » : des continents. Absent ou vide,
+   * partout. Choisir loin est un choix assumé : la distance n'est plus bornée.
+   */
+  regions?: readonly Continent[];
 }
 
 /** Ventilation d'un coût de voyage, par personne, en centimes. */

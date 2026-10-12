@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { BALI, poser } from './tripora';
+import { BALI, poser, SURPRISE } from './tripora';
 
 /**
  * Accessibilité : axe passe sur les écrans principaux, en clair et en sombre.
@@ -63,6 +63,14 @@ for (const theme of ['clair', 'sombre'] as const) {
         expect(await manquements(page)).toEqual([]);
       });
     }
+
+    test('les propositions d’un voyage à comparer', async ({ page }) => {
+      await poser(page, [SURPRISE], `/voyages/${SURPRISE.id}`);
+      await page.waitForLoadState('networkidle');
+      await expect(page.getByRole('group', { name: 'Où chercher' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'D’autres idées' })).toBeVisible();
+      expect(await manquements(page)).toEqual([]);
+    });
 
     test('la visite guidée', async ({ page }) => {
       await poser(page, [BALI], '/voyages');
