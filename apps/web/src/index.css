@@ -115,6 +115,9 @@
      fond crème fait un trou ; une encre brune s'y pose. */
   --color-ink-100: #d0c6b4;
   --color-ink-300: #a79c8a;
+  /* Interpolée en OKLab entre 300 et 500 : un repère en retrait qui reste
+     lisible en grand corps (3,9:1 sur le papier clair, 4,1:1 sur le sombre). */
+  --color-ink-400: #887f6f;
   --color-ink-500: #6b6355;
   --color-ink-600: #524b3f;
   --color-ink-700: #3a342b;

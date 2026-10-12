@@ -1,4 +1,4 @@
-import { findDestination, formatCents, localeActive, MONTHS_FR } from '@tripora/core';
+import { findDestination, formatCents, localeActive, MONTHS_FR, NOMS_DES_CONTINENTS } from '@tripora/core';
 import type { TripDraft } from '@/stores/tripDraft';
 
 export interface LigneDuResume {
@@ -26,12 +26,16 @@ export function resumeDuBrouillon(draft: TripDraft): LigneDuResume[] {
   const noms = draft.destinationIds
     .map((id) => findDestination(id)?.name)
     .filter((nom): nom is string => Boolean(nom));
+  // Un brouillon d'avant les continents n'en a pas : partout.
+  const continents = (draft.regions ?? []).map((continent) => NOMS_DES_CONTINENTS[continent]);
   lignes.push({
     terme: 'Destination',
     valeur:
       draft.destinationMode === 'fixed' && noms.length > 0
         ? noms.join(', ')
-        : 'Tripora vous propose des destinations',
+        : continents.length > 0
+          ? `Tripora vous propose des destinations (${continents.join(', ')})`
+          : 'Tripora vous propose des destinations',
   });
 
   lignes.push({ terme: 'Quand', valeur: periode(draft) });

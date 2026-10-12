@@ -17,6 +17,7 @@ const BROUILLON: TripDraft = {
   origin: { name: 'Paris', lat: 48.8566, lng: 2.3522, iata: ['CDG'] },
   destinationMode: 'fixed',
   destinationIds: ['bali', 'lombok'],
+  regions: [],
   dateMode: 'month',
   startDate: null,
   endDate: null,

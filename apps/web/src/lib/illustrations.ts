@@ -21,7 +21,15 @@
  * jamais sans condition : la plupart exigent l'auteur et la licence. C'est la
  * raison du second appel. Une image sans sa mention ne s'affiche pas — il vaut
  * mieux une carte sans photo qu'une réutilisation en infraction.
+ *
+ * **Les vignettes ont changé d'adresse.** Wikipédia les sert désormais depuis
+ * `thumb.wikimedia.org`, et plus depuis `upload.wikimedia.org` ; et Wikimedia
+ * refuse une vignette dont la largeur n'est pas l'un de ses paliers. Le
+ * contrôle n'acceptait que l'ancienne adresse : toutes les photos des
+ * activités étaient écartées, sans le moindre message.
  */
+
+import { useState } from 'react';
 
 export interface Illustration {
   /** L'image elle-même, en HTTPS, servie par Wikimedia. */
@@ -37,8 +45,56 @@ export interface Illustration {
 /** Les illustrations d'une destination, par identifiant d'activité. */
 export type Illustrations = Record<string, Illustration>;
 
-/** Assez large pour un écran de téléphone à densité 3, sans être un poster. */
-const LARGEUR = 640;
+/**
+ * Les largeurs de vignette que Wikimedia accepte (https://w.wiki/GHai). Une
+ * autre largeur, demandée directement, est refusée ; l'API, elle, arrondit au
+ * palier supérieur.
+ */
+export const PALIERS_WIKIMEDIA = [20, 40, 60, 120, 250, 330, 500, 960, 1280, 1920, 3840] as const;
+
+/** Assez large pour une photo plein écran sur un téléphone, et c'est un palier. */
+const LARGEUR = 960;
+
+/**
+ * La clé de cache des illustrations. Versionnée : les listes rangées pendant
+ * que le contrôle refusait `thumb.wikimedia.org` sont vides, et gardées un mois.
+ */
+export const CLE_DES_ILLUSTRATIONS = 'illustrations-v2';
+
+/** Une image servie par Wikimedia, en HTTPS, et rien d'autre. */
+export function estServieParWikimedia(url: string): boolean {
+  try {
+    const adresse = new URL(url);
+    return (
+      adresse.protocol === 'https:' &&
+      (adresse.hostname === 'wikimedia.org' || adresse.hostname.endsWith('.wikimedia.org'))
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * La même photo, à une largeur plus petite : pour une vignette de liste, la
+ * photo plein écran pèserait dix fois trop. Seulement pour une vignette déjà
+ * réduite (son adresse le dit) et vers un palier accepté ; sinon, l'adresse
+ * d'origine. Une vignette plus large que l'original n'existe pas : on ne fait
+ * que réduire.
+ */
+export function vignette(url: string, largeur: (typeof PALIERS_WIKIMEDIA)[number]): string {
+  try {
+    const adresse = new URL(url);
+    const morceaux = adresse.pathname.split('/');
+    const dernier = morceaux.at(-1) ?? '';
+    const actuelle = /^(\d+)px-/u.exec(dernier);
+    if (!morceaux.includes('thumb') || !actuelle || Number(actuelle[1]) <= largeur) return url;
+    morceaux[morceaux.length - 1] = `${largeur}px-${dernier.slice(actuelle[0].length)}`;
+    adresse.pathname = morceaux.join('/');
+    return adresse.toString();
+  } catch {
+    return url;
+  }
+}
 
 /** Format OSM et catalogue : « fr:Mont Batur ». Langue et titre, séparés. */
 export function lireLEtiquette(valeur: string | undefined): { langue: string; titre: string } | null {
@@ -84,7 +140,7 @@ export function lireLesImages(donnees: unknown): Map<string, { url: string; fich
     const url = typeof page.thumbnail?.source === 'string' ? page.thumbnail.source : null;
     const fichier = typeof page.pageimage === 'string' ? page.pageimage : null;
     if (!titre || !url || !fichier) continue;
-    if (!url.startsWith('https://upload.wikimedia.org/')) continue;
+    if (!estServieParWikimedia(url)) continue;
     trouvees.set(titre, { url, fichier });
   }
 
@@ -279,4 +335,20 @@ export async function chargerIllustrations(
  */
 export function estAffichable(illustration: Illustration | undefined): boolean {
   return Boolean(illustration && illustration.licence);
+}
+
+/**
+ * Une photo qui ne se charge pas — Wikimedia saturé, réseau coupé — laisse
+ * place au fond dessiné, et son crédit s'en va avec elle : ni icône d'image
+ * cassée, ni mention pour une photo absente.
+ */
+export function usePhoto(illustration: Illustration | undefined): {
+  montrable: boolean;
+  surErreur: () => void;
+} {
+  const [refusee, setRefusee] = useState<string | null>(null);
+  return {
+    montrable: estAffichable(illustration) && refusee !== illustration?.url,
+    surErreur: () => setRefusee(illustration?.url ?? null),
+  };
 }

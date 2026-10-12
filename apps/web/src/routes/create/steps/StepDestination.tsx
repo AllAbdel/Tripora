@@ -7,12 +7,13 @@ import { TextInput } from '@/components/ui/Field';
 import { chercherVilles, retenirVille } from '@/lib/geocode';
 import { useTripDraft } from '@/stores/tripDraft';
 import { Drapeau } from '@/components/Drapeau';
+import { ChoixDesContinents } from '@/components/ChoixDesContinents';
 
 /** Laisse finir de taper avant d'appeler : sinon c'est un appel par lettre. */
 const ATTENTE_MS = 350;
 
 export function StepDestination() {
-  const { destinationMode, destinationIds, patch, toggleDestination } = useTripDraft();
+  const { destinationMode, destinationIds, regions, patch, toggleDestination } = useTripDraft();
   const [query, setQuery] = useState('');
   // Le résultat porte le terme qui l'a produit : c'est ce qui permet de savoir
   // qu'une recherche est en cours sans avoir à l'annoncer depuis l'effet.
@@ -87,6 +88,22 @@ export function StepDestination() {
           description="Cherchez n’importe quelle ville du monde. Un voyage peut en enchaîner plusieurs."
         />
       </div>
+
+      {destinationMode === 'suggest' && (
+        <div className="animate-rise space-y-2.5">
+          <p className="etiquette">Où chercher</p>
+          {/* Un brouillon d'avant les continents n'en a pas : partout. */}
+          <ChoixDesContinents
+            valeur={regions ?? []}
+            onChange={(continents) => patch({ regions: continents })}
+          />
+          <p className="text-muted text-xs leading-relaxed">
+            {(regions ?? []).length === 0
+              ? 'Partout, Tripora reste à une distance raisonnable pour la durée du séjour. Choisissez un ou plusieurs continents pour aller plus loin.'
+              : 'Tripora ne cherche que là, même loin : c’est vous qui l’avez choisi. L’Amérique du Nord comprend l’Amérique centrale et les Caraïbes.'}
+          </p>
+        </div>
+      )}
 
       {destinationMode === 'fixed' && (
         <div className="animate-rise space-y-3">

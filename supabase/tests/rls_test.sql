@@ -482,6 +482,31 @@ begin
   end;
 end $$;
 
+-- Ni décider où le moteur cherche : c'est la même décision.
+do $$
+begin
+  begin
+    update public.trips
+      set destination_regions = array['asie']
+      where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+    raise exception 'FUITE : un membre a pu choisir les continents à la place de l''organisateur';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Ni mettre des destinations de côté (« D'autres idées ») : tout le groupe
+-- vote sur la même liste.
+do $$
+begin
+  begin
+    update public.trips
+      set destination_ecartees = array['rome', 'porto']
+      where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+    raise exception 'FUITE : un membre a pu écarter des destinations à la place de l''organisateur';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
 -- Il peut en revanche corriger un détail d'organisation.
 update public.trips set title = 'Escapade entre potes'
   where id = 'aaaaaaaa-0000-0000-0000-000000000002';
@@ -499,6 +524,50 @@ reset request.jwt.claims;
 -- L'organisateur, lui, tranche.
 set role authenticated;
 set request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+
+-- Il choisit où chercher ; un continent inconnu est refusé.
+update public.trips
+  set destination_regions = array['europe', 'afrique']
+  where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+
+do $$
+declare r text[];
+begin
+  select destination_regions into r
+  from public.trips where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+  assert r = array['europe', 'afrique'], format('Continents attendus europe, afrique ; obtenus %s', r);
+  begin
+    update public.trips
+      set destination_regions = array['atlantide']
+      where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+    raise exception 'FUITE : un continent inconnu a été accepté';
+  exception when check_violation then null;
+  end;
+end $$;
+
+-- Il met des destinations de côté, puis les fait revenir ; la liste est bornée.
+update public.trips
+  set destination_ecartees = array['rome', 'porto']
+  where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+
+do $$
+declare e text[];
+begin
+  select destination_ecartees into e
+  from public.trips where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+  assert e = array['rome', 'porto'], format('Destinations écartées attendues rome, porto ; obtenues %s', e);
+  begin
+    update public.trips
+      set destination_ecartees = array(select 'ville-' || n from generate_series(1, 1001) as n)
+      where id = 'aaaaaaaa-0000-0000-0000-000000000002';
+    raise exception 'FUITE : une liste de destinations écartées sans limite a été acceptée';
+  exception when check_violation then null;
+  end;
+end $$;
+
+update public.trips
+  set destination_ecartees = '{}'
+  where id = 'aaaaaaaa-0000-0000-0000-000000000002';
 
 update public.trips
   set destination_locked_id = 'barcelone', status = 'planned'

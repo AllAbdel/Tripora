@@ -45,6 +45,13 @@ describe('l’anglais composé par les motifs', () => {
     ],
     ['Encore 3 pays pour devenir', '3 more countries to become'],
     ['Où partir en octobre ?', 'Where to go in October?'],
+    ['Départ de France (tous les aéroports)', 'Leaving from France (all airports)'],
+    ['Tripora vous propose des destinations (Afrique, Asie)', 'Tripora suggests destinations (Africa, Asia)'],
+    [
+      'Tripora cherche seulement là : Amérique du Sud, Océanie. L’organisateur peut changer ce choix.',
+      'Tripora only searches there: South America, Oceania. The organizer can change this choice.',
+    ],
+    ['Revoir les 12 destinations mises de côté', 'Bring back the 12 destinations set aside'],
   ])('%s', (francais, attendu) => {
     expect(anglais(francais)).toBe(attendu);
   });

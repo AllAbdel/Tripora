@@ -250,6 +250,32 @@ les domaines de Wikimedia sont acceptés. Une adresse arbitraire ferait de
 chaque ouverture de voyage une requête vers un serveur tiers, qui apprendrait
 au passage l'adresse IP de tous les membres du groupe.
 
+### Photos des activités — Wikipédia et Commons
+
+Sans clé, depuis le navigateur (`lib/illustrations.ts`) : l'API de Wikimedia
+répond avec `Access-Control-Allow-Origin: *`. Deux appels par destination, pas
+deux par activité : l'image de tête des articles nommés par le carnet
+(`prop=pageimages`, cinquante titres par appel), puis l'auteur et la licence
+sur Commons. Une image sans licence connue ne s'affiche pas. Le résultat est
+gardé un mois par le cache de requêtes.
+
+Deux changements de Wikimedia, relevés le 12 octobre 2026, avaient fait
+disparaître toutes ces photos sans un message :
+
+- **les vignettes viennent de `thumb.wikimedia.org`**, et plus
+  d'`upload.wikimedia.org`. Le contrôle n'acceptait que la seconde adresse ; il
+  accepte désormais tout sous-domaine de `wikimedia.org`, en HTTPS, comme la
+  politique de sécurité (`img-src https://*.wikimedia.org`) ;
+- **seules certaines largeurs sont servies** : 20, 40, 60, 120, 250, 330, 500,
+  960, 1280, 1920 et 3840 px ([liste officielle](https://www.mediawiki.org/wiki/Common_thumbnail_sizes)).
+  Une autre largeur, demandée directement, répond par une erreur (« Use
+  thumbnail sizes listed on https://w.wiki/GHai »). L'API arrondit au palier
+  supérieur ; Tripora demande donc 960 px, et réduit à 250 px les vignettes des
+  listes en changeant la largeur dans l'adresse — jamais au-delà de l'original.
+
+La clé de cache a changé de version (`illustrations-v2`) : les listes vides
+rangées pendant la panne auraient sinon tenu un mois.
+
 ### Devises — Frankfurter
 
 Sans clé, sans quota, taux officiels de la Banque centrale européenne. Le taux

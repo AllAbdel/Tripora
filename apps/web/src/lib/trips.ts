@@ -1,6 +1,7 @@
 import {
   findDestination,
   normalizeWeights,
+  type Continent,
   rememberDestination,
   type MemberPreference,
   type PreferenceAxis,
@@ -66,11 +67,20 @@ export interface TripDetails {
   destinationMode: 'fixed' | 'suggest';
   /** Les étapes choisies à la création, dans l'ordre. Vide en mode `suggest`. */
   shortlist: readonly string[];
+  /**
+   * Les destinations mises de côté par l'organisateur (« D'autres idées ») :
+   * le moteur ne les étudie plus, et le groupe vote sur d'autres. Vide : aucune.
+   */
+  ecartees: readonly string[];
 }
 
 /** Ce qu'on peut corriger après coup, et rien d'autre. */
 export interface ModificationVoyage {
   title?: string;
+  /** Où le moteur cherche (« Surprends-nous ») : réservé à l'organisateur, vérifié en base. */
+  regions?: Continent[];
+  /** Les destinations mises de côté (« D'autres idées ») : réservé à l'organisateur, vérifié en base. */
+  ecartees?: string[];
   durationDays?: number;
   participants?: number;
   budgetPerPersonCents?: number | null;
@@ -120,6 +130,10 @@ function constraintsFromDraft(draft: TripDraft): TripConstraints | null {
     budgetPerPersonCents: draft.budgetPerPersonCents,
     comfortLevel: draft.comfortLevel,
     groupType: draft.groupType,
+    // Un brouillon enregistré avant les continents n'en a pas : partout.
+    ...(draft.destinationMode === 'suggest' && draft.regions?.length
+      ? { regions: draft.regions }
+      : {}),
   };
 }
 
@@ -130,6 +144,8 @@ interface LocalTrip {
   title: string;
   createdAt: string;
   draft: TripDraft;
+  /** Les destinations mises de côté (« D'autres idées »). Absent : aucune. */
+  ecartees?: string[];
 }
 
 function readLocal(): LocalTrip[] {
@@ -213,6 +229,7 @@ export const depotLocal: TripRepository = {
       lockedDestinationId: retenue,
       destinationMode: trip.draft.destinationMode,
       shortlist: choisi,
+      ecartees: trip.ecartees ?? [],
       members: [
         {
           userId: 'moi',
@@ -244,6 +261,7 @@ export const depotLocal: TripRepository = {
               ...trip,
               title: valeurs.title ?? trip.title,
               draft: { ...trip.draft, ...brouillonModifie(valeurs) },
+              ...(valeurs.ecartees !== undefined ? { ecartees: valeurs.ecartees } : {}),
             }
           : trip,
       ),
@@ -279,6 +297,7 @@ function brouillonModifie(valeurs: ModificationVoyage): Partial<TripDraft> {
   if (valeurs.endDate !== undefined) change.endDate = valeurs.endDate ?? undefined;
   if (valeurs.windowStart !== undefined) change.windowStart = valeurs.windowStart ?? undefined;
   if (valeurs.windowEnd !== undefined) change.windowEnd = valeurs.windowEnd ?? undefined;
+  if (valeurs.regions !== undefined) change.regions = valeurs.regions;
   return change;
 }
 
@@ -410,6 +429,7 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
         lockedDestinationId: lockedId,
         destinationMode: mode,
         shortlist: liste,
+        ecartees: (data.destination_ecartees as string[] | null) ?? [],
         summary: {
           id: data.id as string,
           title: titreDuVoyage(data.title as string, {
@@ -445,6 +465,9 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
           budgetPerPersonCents: data.budget_per_person_cents as number | null,
           comfortLevel: data.comfort_level as TripConstraints['comfortLevel'],
           groupType: data.group_type as TripConstraints['groupType'],
+          ...((data.destination_regions as Continent[] | null)?.length
+            ? { regions: data.destination_regions as Continent[] }
+            : {}),
         },
         members: preferences.map((row) => ({
           userId: row.user_id,
@@ -474,6 +497,7 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
           // Toutes les étapes, dans l'ordre : l'écran de création annonce
           // qu'un voyage peut en enchaîner plusieurs, et n'en gardait qu'une.
           destination_shortlist: draft.destinationMode === 'fixed' ? draft.destinationIds : [],
+          destination_regions: draft.destinationMode === 'suggest' ? (draft.regions ?? []) : [],
           destination_locked_id:
             draft.destinationMode === 'fixed' ? (draft.destinationIds[0] ?? null) : null,
           participants: draft.participants,
@@ -524,6 +548,8 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
       if (valeurs.endDate !== undefined) ligne['end_date'] = valeurs.endDate;
       if (valeurs.windowStart !== undefined) ligne['window_start'] = valeurs.windowStart;
       if (valeurs.windowEnd !== undefined) ligne['window_end'] = valeurs.windowEnd;
+      if (valeurs.regions !== undefined) ligne['destination_regions'] = valeurs.regions;
+      if (valeurs.ecartees !== undefined) ligne['destination_ecartees'] = valeurs.ecartees;
       if (Object.keys(ligne).length === 0) return;
 
       const { error } = await client.from('trips').update(ligne).eq('id', id);

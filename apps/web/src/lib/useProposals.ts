@@ -12,9 +12,15 @@ import { chargerPrixVols, moisCible, type PrixVols } from './flightPrices';
 import { chargerNormales, sourceClimat, type NormalesParVille } from './climate';
 import type { TripDetails } from './trips';
 
-/** Nombre de candidates étudiées, et nombre finalement présentées. */
+/**
+ * Nombre de candidates étudiées, et nombre finalement présentées.
+ *
+ * Six, c'était trop peu : un groupe pouvait n'en aimer aucune et n'avoir rien
+ * d'autre à regarder. Dix laissent du choix sans noyer le vote, et
+ * « D'autres idées » en apporte de nouvelles.
+ */
 const ETUDIEES = 20;
-const PRESENTEES = 6;
+export const PRESENTEES = 10;
 
 /**
  * Les propositions d'un voyage, prix relevés compris.
@@ -45,20 +51,28 @@ export function useProposals(details: TripDetails | null | undefined): {
    * les prix ni les normales climatiques pour rien.
    */
   const compare = details?.destinationMode !== 'fixed';
+  // Les destinations mises de côté par « D'autres idées » ne sont plus
+  // étudiées. Un voyage relu depuis un cache d'avant cette liste n'en a pas.
+  const ecartees = details?.ecartees;
 
   const candidates = useMemo(
-    () => (details && compare ? selectCandidates(details.constraints, { limit: ETUDIEES }) : []),
-    [details, compare],
+    () =>
+      details && compare
+        ? selectCandidates(details.constraints, { limit: ETUDIEES, exclude: ecartees ?? [] })
+        : [],
+    [details, compare, ecartees],
   );
 
   const prix = useQuery({
     // La clé ne dépend que de ce qui change le prix : même départ, même mois,
-    // même réponse — y compris d'un voyage à l'autre.
+    // mêmes destinations, même réponse — y compris d'un voyage à l'autre. Les
+    // destinations y figurent : la réponse ne couvre que celles demandées, et
+    // « D'autres idées » en change sans changer leur nombre.
     queryKey: [
       'prix-vols',
       details ? aeroportsAComparer(details.constraints.origin).join(',') : null,
       details ? moisCible(details.constraints) : null,
-      candidates.length,
+      candidates.map((d) => d.id).join(','),
     ],
     queryFn: () => chargerPrixVols(details!.constraints, candidates),
     enabled: Boolean(details) && candidates.length > 0,
@@ -87,9 +101,10 @@ export function useProposals(details: TripDetails | null | undefined): {
     return buildProposals(details.constraints, details.members, {
       limit: ETUDIEES,
       keep: PRESENTEES,
+      exclude: ecartees ?? [],
       ...(Object.keys(sources).length > 0 ? { sources } : {}),
     });
-  }, [details, compare, prix.data, normales.data]);
+  }, [details, compare, ecartees, prix.data, normales.data]);
 
   return {
     proposals,

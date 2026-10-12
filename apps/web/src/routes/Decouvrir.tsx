@@ -25,7 +25,14 @@ import {
 import { CarteQuiGlisse, type CarteQuiGlisseRef, type Decision } from '@/components/decouvrir/CarteQuiGlisse';
 import { Icone } from '@/components/Icone';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
-import { chargerIllustrations, estAffichable, type Illustration } from '@/lib/illustrations';
+import {
+  CLE_DES_ILLUSTRATIONS,
+  chargerIllustrations,
+  estAffichable,
+  usePhoto,
+  vignette,
+  type Illustration,
+} from '@/lib/illustrations';
 import { comptesDesEnvies, requeteDesEnvies, usePoserUneEnvie } from '@/lib/envies';
 import { requeteDesLieux } from '@/lib/places';
 import { chargerLeResume } from '@/lib/resumeWikipedia';
@@ -153,7 +160,7 @@ export default function Decouvrir() {
 
   // La même requête qu'« À faire » : les photos sont déjà là si on en vient.
   const images = useQuery({
-    queryKey: ['illustrations', destinationId],
+    queryKey: [CLE_DES_ILLUSTRATIONS, destinationId],
     queryFn: () => chargerIllustrations(toutes),
     enabled: toutes.length > 0,
     staleTime: 30 * 24 * 60 * 60 * 1000,
@@ -395,7 +402,7 @@ function FaceDeLIdee({
   compte: ComptesDAvis | undefined;
   statique?: boolean;
 }) {
-  const montrable = estAffichable(illustration);
+  const { montrable, surErreur } = usePhoto(illustration);
   const { activite } = idee;
   // Un lieu d'OpenStreetMap n'a pas de phrase écrite pour lui : on prend deux
   // phrases de son article, le temps qu'il est à l'écran.
@@ -423,6 +430,7 @@ function FaceDeLIdee({
           src={illustration.url}
           alt=""
           draggable={false}
+          onError={surErreur}
           className={cn('absolute inset-0 h-full w-full object-cover', !statique && 'plan-de-camera')}
           style={camera}
         />
@@ -537,7 +545,16 @@ function Classement({
               <li key={ligne.idee.id} className="flex items-center gap-3 rounded-2xl bg-white/5 p-2.5">
                 <span className="w-6 shrink-0 text-center text-sm font-bold text-white/60 tabular-nums">{rang + 1}</span>
                 <span className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-white/10">
-                  {estAffichable(image) && image && <img src={image.url} alt="" className="h-full w-full object-cover" />}
+                  {estAffichable(image) && image && (
+                    <img
+                      src={vignette(image.url, 250)}
+                      alt=""
+                      loading="lazy"
+                      // Une vignette qui ne vient pas laisse le fond de la case.
+                      onError={(evenement) => (evenement.currentTarget.hidden = true)}
+                      className="h-full w-full object-cover"
+                    />
+                  )}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{ligne.idee.nom}</span>

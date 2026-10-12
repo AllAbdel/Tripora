@@ -11,7 +11,7 @@ import {
   type Poi,
 } from '@tripora/core';
 import { requeteDesLieux } from '@/lib/places';
-import { chargerIllustrations, estAffichable } from '@/lib/illustrations';
+import { CLE_DES_ILLUSTRATIONS, chargerIllustrations, estAffichable, vignette } from '@/lib/illustrations';
 import { TextInput } from '@/components/ui/Field';
 import { cn } from '@/lib/cn';
 
@@ -55,7 +55,7 @@ export function LieuxSuggeres({
     [lieux.data],
   );
   const images = useQuery({
-    queryKey: ['illustrations', 'lieux', destination.id, aIllustrer.length],
+    queryKey: [CLE_DES_ILLUSTRATIONS, 'lieux', destination.id, aIllustrer.length],
     queryFn: () => chargerIllustrations(aIllustrer),
     enabled: aIllustrer.length > 0,
     staleTime: 30 * 24 * 60 * 60 * 1000,
@@ -126,9 +126,10 @@ export function LieuxSuggeres({
                       et une réutilisation sans crédit est une infraction. */}
                   {photo && estAffichable(photo) ? (
                     <img
-                      src={photo.url}
+                      src={vignette(photo.url, 250)}
                       alt=""
                       loading="lazy"
+                      onError={(evenement) => (evenement.currentTarget.hidden = true)}
                       className="size-11 shrink-0 rounded-lg object-cover"
                     />
                   ) : (

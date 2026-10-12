@@ -167,12 +167,12 @@ export function ProposalCard({
             classée : le rang mérite d'être le repère qu'on suit du pouce en
             descendant, pas une décoration de huit pixels. Il passe donc en
             grand chiffre, en retrait derrière le nom — présent sans disputer
-            la vedette à la ville. */}
+            la vedette à la ville. En retrait, mais lisible : un repère qu'on
+            suit doit passer 3:1, en clair comme en sombre. */}
         <div className="flex items-start gap-3">
           <span
             aria-hidden
-            className="titre chiffres w-8 shrink-0 text-[1.75rem] leading-none
-                       text-[color:var(--color-paper-400)] dark:text-[color:var(--color-ink-500)]"
+            className="titre chiffres text-ink-400 w-8 shrink-0 text-[1.75rem] leading-none"
           >
             {String(rank).padStart(2, '0')}
           </span>
