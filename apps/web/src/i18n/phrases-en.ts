@@ -1852,6 +1852,7 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "Suivant": "Next",
   "Visite guidée": "Guided tour",
   "Passer la visite": "Skip the tour",
+  "Un pays marche aussi (« France ») : Tripora compare alors ses aéroports et retient le moins cher.": "A country works too (“France”): Tripora then compares its airports and keeps the cheapest.",
   // L'accueil de Plumio et la visite de la création d'un voyage (guide, version 3).
   "Bonjour, moi c’est Plumio !": "Hi, I’m Plumio!",
   "Bienvenue sur Tripora. Je vais vous montrer comment préparer un voyage entre amis. Une minute, promis.": "Welcome to Tripora. I’ll show you how to plan a trip with friends. One minute, promise.",
@@ -2732,6 +2733,15 @@ function ligneDeReservation(texte: string): string | null {
 }
 
 export const MOTIFS: readonly Motif[] = [
+  // Le départ par pays, et l'aéroport du vol le moins cher.
+  [/^(.+) \(tous les aéroports\)$/u, (t, pays) => `${t(pays!) ?? pays} (all airports)`],
+  [/^Vol au départ de (.+), le moins cher des aéroports comparés\.$/u, (t, lieu) =>
+    `Flight from ${t(lieu!) ?? lieu}, the cheapest of the airports compared.`],
+  [/^Le vol le moins cher relevé part de (.+) : la recherche de vol part de là\.$/u, (t, lieu) =>
+    `The cheapest flight found leaves from ${t(lieu!) ?? lieu}: the flight search starts there.`],
+  [/^Prix comparés au départ de : (.+)\. Tripora retient le moins cher pour chaque destination\.$/u, (t, lieux) =>
+    `Prices compared from: ${lieux!.split(', ').map((lieu) => t(lieu) ?? lieu).join(', ')}. Tripora keeps the cheapest for each destination.`],
+  [/^(\d+) aéroports comparés, le moins cher retenu pour chaque destination$/u, '$1 airports compared, the cheapest kept for each destination'],
   // Les noms des destinations dans les phrases qui les portent.
   [/^Le bilan du voyage à (.+), en image$/u, (t, ville) => `The ${t(ville!) ?? ville} trip recap, as an image`],
   [/^(.+) · (\d+) jours? à (\d+) personnes?$/u, (_, ville, j, n) =>

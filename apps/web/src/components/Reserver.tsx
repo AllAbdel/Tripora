@@ -1,9 +1,12 @@
-import { ExternalLink } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { ExternalLink, Plane } from 'lucide-react';
 import {
   activityLinks,
+  aeroportsAComparer,
   affilierLiens,
   liensDeRubrique,
   localeActive,
+  nomDeLAeroport,
   sejourDe,
   stayLinks,
   TITRES_DES_RUBRIQUES,
@@ -15,6 +18,7 @@ import {
 } from '@tripora/core';
 import { Card, CardBody } from '@/components/ui/Card';
 import { env } from '@/lib/env';
+import { chargerPrixVols, moisCible } from '@/lib/flightPrices';
 import { TitreDeSection } from '@/components/TitreDePage';
 import type { NomDePastille } from '@/components/Pastille';
 
@@ -37,9 +41,19 @@ export function Reserver({
   destination: Destination;
 }) {
   const sejour = sejourDe(constraints);
+  // Plusieurs aéroports possibles (ceux du pays, ou des villes voisines) : on
+  // relève d'où part le vol le moins cher, et la recherche part de là.
+  const aeroports = aeroportsAComparer(constraints.origin);
+  const meilleur = useQuery({
+    queryKey: ['meilleur-depart', aeroports.join(','), moisCible(constraints), destination.id],
+    queryFn: () => chargerPrixVols(constraints, [destination]),
+    enabled: aeroports.length > 1,
+    staleTime: 60 * 60 * 1000,
+  });
+  const departIata = meilleur.data?.parDestination[destination.id]?.from;
   const dormir = affilierLiens(stayLinks(destination, sejour), env.travelpayouts);
   const aller = affilierLiens(
-    travelLinks(constraints.origin, destination, sejour),
+    travelLinks(constraints.origin, destination, sejour, { departIata }),
     env.travelpayouts,
   );
   const faire = affilierLiens(activityLinks(destination), env.travelpayouts);
@@ -64,6 +78,12 @@ export function Reserver({
         </div>
 
         <Groupe titre="Où dormir" pastille="hebergements" liens={dormir} />
+        {departIata && (
+          <p className="flex items-start gap-2 text-sm">
+            <Plane className="text-brand-600 dark:text-brand-300 mt-0.5 size-4 shrink-0" aria-hidden />
+            <span>{`Le vol le moins cher relevé part de ${nomDeLAeroport(departIata)} : la recherche de vol part de là.`}</span>
+          </p>
+        )}
         <Groupe titre="Comment y aller" pastille="transport" liens={aller} />
         <Groupe titre="Que faire sur place" pastille="decouvrir" liens={faire} />
         <SurPlace groupes={surPlace} />

@@ -1,4 +1,6 @@
-import { render, screen, within } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { render as rendre, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import { findDestination, type TripConstraints } from '@tripora/core';
 
@@ -6,7 +8,24 @@ vi.mock('@/lib/env', () => ({
   env: { travelpayouts: { marker: '774322', projet: '570857' } },
 }));
 
+// Le vol le moins cher relevé vers Lisbonne part de Beauvais.
+vi.mock('@/lib/flightPrices', () => ({
+  moisCible: () => '2027-05',
+  chargerPrixVols: async () => ({
+    parDestination: {
+      lisbonne: { cents: 8_900, source: 'observed', provider: 'Aviasales', fetchedAt: '2027-04-01', from: 'BVA' },
+    },
+    configured: true,
+    quotaExceeded: false,
+  }),
+}));
+
 const { Reserver } = await import('./Reserver');
+
+function render(element: ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return rendre(<QueryClientProvider client={client}>{element}</QueryClientProvider>);
+}
 
 const CONTRAINTES: TripConstraints = {
   participants: 4,
@@ -46,5 +65,13 @@ describe('l’écran Réserver', () => {
       .getAllByRole('link')
       .map((lien) => lien.textContent?.split(' ')[0] ?? '');
     expect(noms).toEqual([...noms].sort((a, b) => a.localeCompare(b, 'fr')));
+  });
+  it('cherche le vol depuis l’aéroport le moins cher, et le dit', async () => {
+    render(<Reserver constraints={CONTRAINTES} destination={findDestination('lisbonne')!} />);
+    expect(
+      await screen.findByText('Le vol le moins cher relevé part de Paris-Beauvais : la recherche de vol part de là.'),
+    ).toBeInTheDocument();
+    const aviasales = screen.getByRole('link', { name: /^Aviasales/u });
+    expect(decodeURIComponent(aviasales.getAttribute('href') ?? '')).toContain('origin_iata=BVA');
   });
 });

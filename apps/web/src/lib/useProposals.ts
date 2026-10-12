@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
+  aeroportsAComparer,
   buildProposals,
   selectCandidates,
   targetMonth,
@@ -55,7 +56,7 @@ export function useProposals(details: TripDetails | null | undefined): {
     // même réponse — y compris d'un voyage à l'autre.
     queryKey: [
       'prix-vols',
-      details?.constraints.origin.iata?.[0] ?? null,
+      details ? aeroportsAComparer(details.constraints.origin).join(',') : null,
       details ? moisCible(details.constraints) : null,
       candidates.length,
     ],

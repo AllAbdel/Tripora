@@ -23,6 +23,7 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProposalCard } from '@/components/ProposalCard';
 import { cleVoyage, getTripRepository } from '@/lib/trips';
+import { estUnTitrePropose, titreDuVoyage } from '@/lib/titreDuVoyage';
 import { requeteDesReservations } from '@/lib/reservations';
 import { requeteDesSondages } from '@/lib/sondages';
 import { requeteDesTaches } from '@/lib/taches';
@@ -95,8 +96,18 @@ export default function TripDetail() {
   });
 
   const verrouiller = useMutation({
-    mutationFn: (destinationId: string | null) =>
-      destinationId ? voting.lockDestination(id!, destinationId) : voting.unlockDestination(id!),
+    mutationFn: async (destinationId: string | null) => {
+      if (!destinationId) return voting.unlockDestination(id!);
+      await voting.lockDestination(id!, destinationId);
+      // Un titre composé par Tripora (« Lisbonne à 4 ») suit la destination
+      // arrêtée : on l'écrit aussi en base, pour les notifications et les
+      // autres appareils. Sans conséquence s'il échoue : l'affichage le corrige.
+      const titre = data?.summary.title;
+      if (titre && estUnTitrePropose(titre)) {
+        const nouveau = titreDuVoyage(titre, { destinationId, participants: data?.summary.participants });
+        if (nouveau !== titre) await getTripRepository().update(id!, { title: nouveau }).catch(() => undefined);
+      }
+    },
     // Trancher la destination est le geste le plus engageant du parcours : il
     // mérite un retour qui se distingue d'un simple appui.
     onSuccess: () => {

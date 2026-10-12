@@ -1,4 +1,4 @@
-import type { Destination, PricedValue, TripConstraints } from '@tripora/core';
+import { aeroportsAComparer, type Destination, type PricedValue, type TripConstraints } from '@tripora/core';
 import { supabase } from './supabase';
 
 /**
@@ -47,7 +47,9 @@ export async function chargerPrixVols(
   candidates: readonly Destination[],
 ): Promise<PrixVols> {
   const client = supabase;
-  const origine = constraints.origin.iata ?? [];
+  // Les aéroports de la ville et de ses voisines, ou ceux de tout le pays :
+  // le serveur retient, pour chaque destination, celui qui revient le moins cher.
+  const origine = aeroportsAComparer(constraints.origin);
   if (!client || origine.length === 0 || candidates.length === 0) return VIDE;
 
   const mois = moisCible(constraints);
@@ -117,6 +119,7 @@ export function lirePrix(data: unknown): PrixVols {
         // « escales inconnues » qu'un chiffre issu d'un champ mal relu.
         ...(Number.isInteger(escales) && escales >= 0 && escales <= 5 ? { stops: escales } : {}),
         ...(revendeurLisible(entree.reseller) ? { reseller: entree.reseller as string } : {}),
+        ...(typeof entree.from === 'string' && /^[A-Z]{3}$/.test(entree.from) ? { from: entree.from } : {}),
         ...(typeof entree.departAt === 'string' ? { departAt: entree.departAt } : {}),
         ...(typeof entree.returnAt === 'string' ? { returnAt: entree.returnAt } : {}),
       };

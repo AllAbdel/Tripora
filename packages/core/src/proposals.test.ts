@@ -111,6 +111,8 @@ describe('construction des propositions', () => {
       source: 'observed' as const,
       provider: 'Aviasales',
       fetchedAt: new Date().toISOString(),
+      // Relevé depuis Beauvais, le moins cher des aéroports comparés.
+      from: 'BVA',
     };
     // Le lot est figé : ce qu'on teste est qu'un prix relevé l'emporte sur une
     // estimation, pas que Lisbonne survive au classement d'un catalogue qui
@@ -125,6 +127,7 @@ describe('construction des propositions', () => {
     expect(lisbonne?.cost.transportCents).toBe(8_900);
     expect(lisbonne?.cost.transportSource).toBe('observed');
     expect(lisbonne?.cost.transportProvider).toBe('Aviasales');
+    expect(lisbonne?.cost.transportFrom).toBe('BVA');
     expect(result.allEstimated).toBe(false);
   });
 

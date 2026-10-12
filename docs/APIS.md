@@ -50,6 +50,21 @@ pas où aller, le moins cher possible ».
 Ce n'est pas du temps réel. Tripora l'affiche toujours (« prix vu le … ») et
 déclasse automatiquement en « prix indicatif » au-delà de 72 heures.
 
+**Plusieurs aéroports de départ se comparent** (octobre 2026). Jusque-là, seul
+le premier code du départ était interrogé : de Paris, Beauvais n'était jamais
+vu, et de Lyon, Genève non plus. Désormais `flight-prices` reçoit la liste des
+aéroports à comparer (`aeroportsAComparer`, dans le cœur) :
+
+- **pour une ville**, ses aéroports puis ceux des villes voisines à moins de
+  150 km, cinq au plus — de Lyon : Lyon, Grenoble, Genève ;
+- **pour un pays** (« France (tous les aéroports) », proposé dès qu'on tape le
+  nom d'un pays), ses principaux aéroports, huit au plus.
+
+Chaque aéroport coûte un appel, gardé 24 h en cache et partagé par tous. Pour
+chaque destination, la fonction retient le vol le moins cher et dit d'où il
+part (`from`) ; la carte de la destination l'affiche, et le lien de recherche
+de vol du bloc « Réserver » part de cet aéroport-là.
+
 ### Hôtels — Hotellook (même compte Travelpayouts)
 
 Gratuit, 60 requêtes par minute. Prix moyens en cache par ville et par période.
@@ -328,6 +343,29 @@ sans dramatiser.
 | **Google Places** | Facturation à l'appel, dès le premier |
 | **OpenWeather** | Offre gratuite réduite, carte demandée pour certaines fonctions |
 | **SerpApi (Google Flights)** | Retenu, mais **en option** : 100 recherches par mois seulement, réservé au bouton « Vérifier le prix » sur la destination finale, plafonné à 3 par jour |
+
+## Pistes repérées dans public-apis (octobre 2026)
+
+Le dépôt [public-apis](https://github.com/public-apis/public-apis) recense
+environ 1 400 API gratuites. Celles qui serviraient vraiment Tripora, vérifiées
+le 12 octobre 2026 (réponse réelle, conditions lues) :
+
+| API | Ce qu'elle apporterait | Conditions | Verdict |
+|---|---|---|---|
+| **OpenVan** (`openvan.camp/api/fuel/prices`) | Prix réels des carburants dans 121 pays, mis à jour chaque semaine : le coût d'un trajet en voiture partagée cesserait d'être un forfait français | Sans clé, 120 requêtes/min, CC BY 4.0, mention « Data: OpenVan.camp » obligatoire | À brancher en premier |
+| **Can I enter** (`api.canienter.com/free/check`) | Visa ou pas, et durée de séjour autorisée, selon le passeport et le pays visité : utile dans les infos pratiques | Sans clé mais **5 requêtes par jour et par adresse IP** ; conditions d'usage non publiées sur la page | Trop limité pour un serveur partagé ; mieux vaut un jeu de données ouvert embarqué |
+| **MET Norway** (hors liste, mais la référence) | Prévisions mondiales, usage commercial permis (CC BY 4.0) | Sans clé, `User-Agent` identifiant l'application exigé | Repli si l'usage d'Open-Meteo devient « commercial » |
+
+Un point de vigilance sur **Open-Meteo**, déjà utilisé : son offre gratuite est
+réservée à un usage non commercial, et ses conditions classent « les sites ou
+applications qui affichent de la publicité » comme commerciaux. Elles ne disent
+rien des liens affiliés ; si Tripora en vit un jour, il faudra trancher, ou
+passer à MET Norway.
+
+Écartées : les API payantes ou à carte bancaire (Calendarific, Amadeus, Sabre,
+la suite APILayer), les sources déjà couvertes (jours fériés : Nager.Date ;
+devises : Frankfurter ; géocodage : Photon et Nominatim), et les gadgets
+(citations, images aléatoires).
 
 ## Ce qu'on fait à la place des prix d'hôtels
 

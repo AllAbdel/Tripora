@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Globe2, Loader2, LocateFixed, MapPin, Search } from 'lucide-react';
 import {
+  aeroportsAComparer,
+  chercherDepartsPays,
+  estUnDepartPays,
   haversineKm,
   nearestAirports,
+  nomDeLAeroport,
   ORIGINS,
   searchOrigins,
   type AeroportsProches,
@@ -22,6 +26,14 @@ export function StepOrigin() {
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const results = useMemo(() => searchOrigins(query, 8), [query]);
+  // Taper un pays propose de partir de tout le pays : Tripora compare ses
+  // aéroports et retient, pour chaque destination, le moins cher.
+  const pays = useMemo(() => chercherDepartsPays(query), [query]);
+  // Ce que le relevé des prix comparera pour le départ choisi.
+  const compares = useMemo(
+    () => (origin ? aeroportsAComparer(origin).map(nomDeLAeroport) : []),
+    [origin],
+  );
 
   const terme = query.trim();
   const actif = terme.length >= 3;
@@ -126,6 +138,17 @@ export function StepOrigin() {
         )}
       </div>
 
+      {compares.length > 1 ? (
+        <p className="text-muted text-xs leading-relaxed">
+          {`Prix comparés au départ de : ${compares.join(', ')}. Tripora retient le moins cher pour chaque destination.`}
+        </p>
+      ) : (
+        <p className="text-muted text-xs leading-relaxed">
+          Un pays marche aussi (« France ») : Tripora compare alors ses aéroports et retient le moins
+          cher.
+        </p>
+      )}
+
       <Button
         variant="secondary"
         block
@@ -139,16 +162,35 @@ export function StepOrigin() {
       {locationError && <Banner tone="warning">{locationError}</Banner>}
 
       <div className="space-y-2" role="radiogroup" aria-label="Ville de départ">
-        {origin && !results.some((place) => place.name === origin.name) && (
+        {origin &&
+          !results.some((place) => place.name === origin.name) &&
+          !pays.some((place) => place.name === origin.name) && (
+            <OptionCard
+              compact
+              selected
+              onSelect={() => undefined}
+              icon={
+                estUnDepartPays(origin) ? (
+                  <Globe2 className="size-4" aria-hidden />
+                ) : (
+                  <MapPin className="size-4" aria-hidden />
+                )
+              }
+              title={origin.name}
+              description={describe(origin)}
+            />
+          )}
+        {pays.map((place) => (
           <OptionCard
+            key={place.name}
             compact
-            selected
-            onSelect={() => undefined}
-            icon={<MapPin className="size-4" aria-hidden />}
-            title={origin.name}
-            description={describe(origin)}
+            selected={origin?.name === place.name}
+            onSelect={() => patch({ origin: place })}
+            icon={<Globe2 className="size-4" aria-hidden />}
+            title={place.name}
+            description={describe(place)}
           />
-        )}
+        ))}
         {results.map((place) => (
           <OptionCard
             key={`${place.name}-${place.lat}`}
@@ -185,7 +227,7 @@ export function StepOrigin() {
       )}
 
       <div className="space-y-2">
-        {!cherche && actif && results.length === 0 && ailleurs.length === 0 && (
+        {!cherche && actif && results.length === 0 && pays.length === 0 && ailleurs.length === 0 && (
           <p className="text-muted px-1 py-6 text-center text-sm">
             Aucune ville ne correspond. Vérifiez l’orthographe.
           </p>
@@ -196,6 +238,9 @@ export function StepOrigin() {
 }
 
 function describe(place: Place): string {
+  if (estUnDepartPays(place)) {
+    return `${place.iata?.length ?? 0} aéroports comparés, le moins cher retenu pour chaque destination`;
+  }
   const airports = place.iata?.slice(0, 2).join(', ');
   return [place.country, airports].filter(Boolean).join(' · ');
 }

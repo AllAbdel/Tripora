@@ -13,9 +13,11 @@ import {
   correspondanceAuxEnvies,
   costLines,
   empreinteDuTrajet,
+  estUnDepartPays,
   formatCents,
   formatTemperature,
   freshnessLabel,
+  nomDeLAeroport,
   phraseDeComparaison,
   type Destination,
   type DestinationScore,
@@ -117,6 +119,11 @@ export function ProposalCard({
     setRedaction(false);
     setTexte(etat.statut === 'ok' && 'texte' in etat ? etat.texte : messageIA(etat));
   }
+  // Le vol relevé le moins cher part d'un autre aéroport que celui de la
+  // ville (une voisine, ou un autre du pays) : on le dit, c'est ce qu'il faudra réserver.
+  const depuis = score.cost.transportFrom;
+  const aeroport =
+    depuis && (estUnDepartPays(depart) || depuis !== depart.iata?.[0]) ? nomDeLAeroport(depuis) : null;
   const label = freshnessLabel({
     cents: score.cost.transportCents,
     source: score.cost.transportSource,
@@ -201,6 +208,12 @@ export function ProposalCard({
             </p>
           )}
         </div>
+
+        {aeroport && (
+          <p className="text-muted -mt-1 text-xs">
+            {`Vol au départ de ${aeroport}, le moins cher des aéroports comparés.`}
+          </p>
+        )}
 
         {/* Ce qui la distingue plutôt que ce qu'elle partage : six cartes qui
             disent « tient dans le budget, forte en gastronomie » ne donnent

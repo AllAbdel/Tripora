@@ -1,7 +1,7 @@
 import { preflight, json } from '../_shared/cors.ts';
 import { serviceClient } from '../_shared/supabase.ts';
 import { QuotaEpuise } from '../_shared/budget.ts';
-import { PROVIDER, premierTarifConnu, tarifsDepuis } from '../_shared/travelpayouts.ts';
+import { PROVIDER, premierTarifConnu, tarifsDepuis, type TarifBrut } from '../_shared/travelpayouts.ts';
 
 /**
  * Prix de vols relevés, via le cache Aviasales de Travelpayouts.
@@ -17,9 +17,18 @@ import { PROVIDER, premierTarifConnu, tarifsDepuis } from '../_shared/travelpayo
  * Le jeton ne quitte jamais cette fonction. Sans lui, on répond poliment que
  * les prix ne sont pas disponibles : l'application retombe alors sur ses
  * estimations, qui sont étiquetées comme telles.
+ *
+ * Plusieurs aéroports de départ se comparent : ceux de la ville et de ses
+ * voisines (de Lyon : Grenoble, Genève), ou ceux de tout un pays. Chacun coûte
+ * un appel, gardé 24 h en cache et partagé par tous ; pour chaque destination,
+ * on retient le moins cher, et on dit d'où il part.
  */
 
+/** Au-delà, le relevé coûterait trop d'appels pour un gain minime. */
+const ORIGINES_MAX = 8;
+
 interface Demande {
+  /** Les aéroports de départ à comparer, du plus naturel au plus lointain. */
   originIata: string[];
   /** Mois visé au format AAAA-MM. Absent : période ouverte. */
   month?: string;
@@ -38,6 +47,8 @@ interface PrixReleve {
   stops?: number;
   /** L'agence qui vendait à ce prix : Aviasales agrège, elle ne vend pas. */
   reseller?: string;
+  /** L'aéroport de départ de ce vol, quand plusieurs ont été comparés. */
+  from?: string;
 }
 
 Deno.serve(async (request) => {
@@ -51,8 +62,12 @@ Deno.serve(async (request) => {
     return json({ error: 'Corps de requête illisible' }, 400);
   }
 
-  const origine = (demande.originIata ?? []).find((code) => /^[A-Z]{3}$/.test(code));
-  if (!origine || !Array.isArray(demande.destinations)) {
+  const origines = [
+    ...new Set((Array.isArray(demande.originIata) ? demande.originIata : []).filter(
+      (code): code is string => typeof code === 'string' && /^[A-Z]{3}$/.test(code),
+    )),
+  ].slice(0, ORIGINES_MAX);
+  if (origines.length === 0 || !Array.isArray(demande.destinations)) {
     return json({ error: 'Origine ou destinations manquantes' }, 400);
   }
 
@@ -67,13 +82,40 @@ Deno.serve(async (request) => {
   const mois = /^\d{4}-\d{2}$/.test(demande.month ?? '') ? demande.month! : null;
 
   try {
-    const { valeur, origine: provenance } = await tarifsDepuis(client, origine, mois, token);
+    // Un aéroport après l'autre : le premier épuisement du quota arrête tout,
+    // et ce qui a déjà été relevé reste valable.
+    const releves: { code: string; valeur: Record<string, TarifBrut> }[] = [];
+    let provenance: string | undefined;
+    let quotaEpuise = false;
+    for (const code of origines) {
+      try {
+        const lecture = await tarifsDepuis(client, code, mois, token);
+        releves.push({ code, valeur: lecture.valeur });
+        provenance ??= lecture.origine;
+      } catch (cause) {
+        if (cause instanceof QuotaEpuise) {
+          quotaEpuise = true;
+          break;
+        }
+        // Un aéroport qui tousse ne prive pas des autres.
+        console.error('flight-prices', code, cause);
+      }
+    }
+    if (releves.length === 0 && quotaEpuise) throw new QuotaEpuise(PROVIDER);
 
     const releve = new Date().toISOString();
     const prices: Record<string, PrixReleve> = {};
 
     for (const destination of demande.destinations) {
-      const tarif = premierTarifConnu(valeur, destination.iata);
+      let tarif: TarifBrut | null = null;
+      let depuis: string | undefined;
+      for (const { code, valeur } of releves) {
+        const ici = premierTarifConnu(valeur, destination.iata);
+        if (ici && (!tarif || ici.prix < tarif.prix)) {
+          tarif = ici;
+          depuis = code;
+        }
+      }
       if (!tarif) continue;
       prices[destination.id] = {
         cents: Math.round(tarif.prix * 100),
@@ -85,10 +127,17 @@ Deno.serve(async (request) => {
         ...(tarif.returnAt ? { returnAt: tarif.returnAt } : {}),
         ...(tarif.escales === undefined ? {} : { stops: tarif.escales }),
         ...(tarif.agence ? { reseller: tarif.agence } : {}),
+        // Le départ n'est précisé que s'il y avait un choix.
+        ...(releves.length > 1 && depuis ? { from: depuis } : {}),
       };
     }
 
-    return json({ prices, configured: true, origine: provenance });
+    return json({
+      prices,
+      configured: true,
+      origine: provenance,
+      ...(quotaEpuise ? { quotaExceeded: true } : {}),
+    });
   } catch (cause) {
     if (cause instanceof QuotaEpuise) {
       return json(

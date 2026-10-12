@@ -78,6 +78,7 @@ export function estimateTripCost(input: CostInput): CostBreakdown {
     transportSource: input.transport.cents === null ? 'unavailable' : input.transport.source,
     transportFetchedAt: input.transport.fetchedAt,
     transportProvider: input.transport.provider,
+    ...(input.transport.from ? { transportFrom: input.transport.from } : {}),
   };
 }
 

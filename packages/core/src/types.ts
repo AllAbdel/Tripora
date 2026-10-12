@@ -103,6 +103,8 @@ export interface CostBreakdown {
   transportSource: PriceSource;
   transportFetchedAt?: string;
   transportProvider?: string;
+  /** L'aéroport de départ du vol relevé, quand plusieurs ont été comparés (code IATA). */
+  transportFrom?: string;
 }
 
 export interface ScoreFactor {
