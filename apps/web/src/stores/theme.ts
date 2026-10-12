@@ -29,9 +29,17 @@ interface ThemeState {
   preference: ThemePreference;
   accent: string;
   retours: Retours;
+  /**
+   * Les bruitages de Plumio (ailes, pépiements, coups de bec). Actifs par
+   * défaut, contrairement aux sons des retours : il apparaît rarement, et un
+   * oiseau muet ne colle pas au personnage. Les retours sur « Rien » le font
+   * taire aussi.
+   */
+  bruitagesPlumio: boolean;
   setPreference: (value: ThemePreference) => void;
   setAccent: (couleur: string) => void;
   setRetours: (value: Retours) => void;
+  setBruitagesPlumio: (actifs: boolean) => void;
 }
 
 /** Applique la classe `dark` sur <html> selon la préférence et le système. */
@@ -77,6 +85,7 @@ export const useTheme = create<ThemeState>()(
       preference: 'system',
       accent: ACCENT_PAR_DEFAUT,
       retours: 'vibrations',
+      bruitagesPlumio: true,
       setPreference: (value) => {
         applyTheme(value);
         set({ preference: value });
@@ -87,6 +96,7 @@ export const useTheme = create<ThemeState>()(
         set({ accent: couleur });
       },
       setRetours: (value) => set({ retours: value }),
+      setBruitagesPlumio: (actifs) => set({ bruitagesPlumio: actifs }),
     }),
     {
       name: 'tripora.theme',

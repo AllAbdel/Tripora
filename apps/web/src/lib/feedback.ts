@@ -1,4 +1,5 @@
 import { useTheme, type Retours } from '@/stores/theme';
+import { contexteAudio } from './audio';
 
 /**
  * Ce que l'application renvoie quand on la touche : une vibration, un son.
@@ -44,27 +45,6 @@ const GRAINS: Readonly<Record<Signal, Grain>> = {
   echec: { hauteurs: [220, 165], duree: 0.09, volume: 0.06, vibration: [26, 60, 26] },
   decision: { hauteurs: [520, 780], duree: 0.07, volume: 0.06, vibration: [12, 30, 18] },
 };
-
-let contexte: AudioContext | null = null;
-
-/**
- * Le contexte audio, créé au premier son et pas avant.
- *
- * Les navigateurs refusent d'en ouvrir un tant que l'utilisateur n'a pas
- * interagi avec la page : le créer au chargement produirait un contexte
- * suspendu et un avertissement dans la console à chaque visite.
- */
-function contexteAudio(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  const Constructeur =
-    window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Constructeur) return null;
-
-  contexte ??= new Constructeur();
-  if (contexte.state === 'suspended') void contexte.resume();
-  return contexte;
-}
 
 function jouer(grain: Grain): void {
   const audio = contexteAudio();

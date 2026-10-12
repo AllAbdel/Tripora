@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { cn } from '@/lib/cn';
+import { bruiter, preparerAuPremierGeste } from './bruitages';
 // La feuille et les poses vivent avec leurs sources de dessin (design/mascotte,
 // régénérées par outils/plumio.py) : l'application les lit telles quelles.
 import '../../../../../design/mascotte/animations.css';
@@ -87,6 +88,9 @@ function mouvementReduit(): boolean {
  *
  * En arabe, il se retourne avec la page : il regarde dans le sens de la
  * lecture.
+ *
+ * Chaque geste joué a ses bruitages (`bruitages.ts`) : battements d'aile,
+ * pépiements, coups de bec, calés sur l'animation. Pas un bruit au repos.
  */
 export function Mascotte({
   pose,
@@ -123,6 +127,9 @@ export function Mascotte({
 }) {
   const conteneur = useRef<HTMLSpanElement | null>(null);
 
+  // Le son se déverrouille au premier appui (Safari) : seulement s'il est là.
+  useEffect(preparerAuPremierGeste, []);
+
   // Les classes d'animation se posent sur le dessin lui-même, après coup : les
   // mettre dans le HTML rejouerait tout à chaque rendu.
   useLayoutEffect(() => {
@@ -134,21 +141,34 @@ export function Mascotte({
   }, [pose, taille, petit, vie]);
 
   // Le geste de la pose, une fois, à l'arrivée : après l'atterrissage s'il y en a un.
+  // Chaque son part avec son geste, et s'arrête si le geste est interrompu.
   useLayoutEffect(() => {
     const svg = conteneur.current?.firstElementChild;
     if (!svg) return;
     if (sortie) {
       svg.classList.add('plumio--sort');
-      return;
+      return bruiter('sort');
     }
-    if (arrivee) svg.classList.add('plumio--atterrit');
-    if (!joue) return;
-    if (!arrivee) {
+    const coupures: (() => void)[] = [];
+    const couper = () => coupures.forEach((coupure) => coupure());
+    if (arrivee) {
+      svg.classList.add('plumio--atterrit');
+      coupures.push(bruiter('atterrit'));
+    }
+    if (!joue) return couper;
+    const jouer = () => {
       svg.classList.add('plumio--joue');
-      return;
+      coupures.push(bruiter(`joue:${pose}`));
+    };
+    if (!arrivee) {
+      jouer();
+      return couper;
     }
-    const minuteur = window.setTimeout(() => svg.classList.add('plumio--joue'), 360);
-    return () => window.clearTimeout(minuteur);
+    const minuteur = window.setTimeout(jouer, 360);
+    return () => {
+      window.clearTimeout(minuteur);
+      couper();
+    };
   }, [pose, joue, arrivee, sortie]);
 
   // Un geste piloté : la classe le temps de le jouer, puis retirée.
@@ -157,10 +177,12 @@ export function Mascotte({
     if (!svg || !geste || mouvementReduit()) return;
     const classe = `plumio--${geste}`;
     svg.classList.add(classe);
+    const couper = bruiter(geste);
     const minuteur = window.setTimeout(() => svg.classList.remove(classe), DUREE_DU_GESTE[geste]);
     return () => {
       window.clearTimeout(minuteur);
       svg.classList.remove(classe);
+      couper();
     };
   }, [pose, geste, fois]);
 
