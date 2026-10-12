@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { estEnVue, LARGEUR_DE_BULLE, MARGE, placerLaBulle, TAILLE_DE_PLUMIO } from './placementDeLaBulle';
+import {
+  estEnVue,
+  LARGEUR_DE_BULLE,
+  MARGE,
+  orienterVers,
+  partVisible,
+  placerLaBulle,
+  TAILLE_DE_PLUMIO,
+} from './placementDeLaBulle';
 
 const TELEPHONE = { largeur: 390, hauteur: 844 };
 const ORDINATEUR = { largeur: 1280, hauteur: 800 };
@@ -34,8 +42,8 @@ describe('où poser la bulle de la visite, et Plumio dessus', () => {
     if (placement.mode !== 'dessus') throw new Error(placement.mode);
     expect(placement.bottom).toBe(TELEPHONE.hauteur - 600 + 22);
     expect(placement.plumio.pose).toBe('pointer-bas');
-    // Il déborde un peu de la bulle, l'aile vers l'élément.
-    expect(placement.plumio.left + placement.plumio.taille).toBe(placement.largeur + 18);
+    // Au bout de la bulle, sans déborder : il s'incline ensuite vers l'élément.
+    expect(placement.plumio.left + placement.plumio.taille).toBe(placement.largeur - 4);
     // Sa place est comptée : la bulle et lui tiennent au-dessus de l'élément.
     expect(placement.maxHauteur).toBe(600 - 22 - MARGE - (64 - 4));
   });
@@ -101,5 +109,35 @@ describe('où poser la bulle de la visite, et Plumio dessus', () => {
     expect(estEnVue({ top: 10, left: 0, width: 10, height: 10 }, TELEPHONE)).toBe(true);
     expect(estEnVue({ top: -5, left: 0, width: 10, height: 10 }, TELEPHONE)).toBe(false);
     expect(estEnVue({ top: 840, left: 0, width: 10, height: 10 }, TELEPHONE)).toBe(false);
+  });
+});
+
+describe('Plumio vise, et s’efface', () => {
+  const telephone = { largeur: 412, hauteur: 915 };
+
+  it('mesure la part de l’élément encore à l’écran', () => {
+    expect(partVisible({ top: 100, left: 0, width: 300, height: 200 }, telephone)).toBe(1);
+    expect(partVisible({ top: -150, left: 0, width: 300, height: 200 }, telephone)).toBe(0.25);
+    expect(partVisible({ top: -400, left: 0, width: 300, height: 200 }, telephone)).toBe(0);
+  });
+
+  it('au coin d’une bulle, il s’incline pour viser « Continuer » tout en bas, plutôt que le bord de l’écran', () => {
+    const continuer = { top: 840, left: 20, width: 372, height: 56 };
+    const { rotation, miroir } = orienterVers('pointer-bas', { x: 380, y: 560 }, continuer);
+    expect(miroir).toBe(false);
+    // Naturellement à 52° : il pivote vers la verticale, sans dépasser 30°.
+    expect(rotation).toBeGreaterThan(20);
+    expect(rotation).toBeLessThanOrEqual(30);
+  });
+
+  it('se retourne quand l’élément est de l’autre côté', () => {
+    const aGauche = { top: 700, left: 16, width: 80, height: 48 };
+    expect(orienterVers('pointer-bas', { x: 380, y: 560 }, aGauche).miroir).toBe(true);
+  });
+
+  it('ne touche à rien quand il vise déjà juste, ni pour une pose qui ne montre pas', () => {
+    const enFace = { top: 640, left: 420, width: 120, height: 60 };
+    expect(Math.abs(orienterVers('pointer-bas', { x: 380, y: 560 }, enFace).rotation)).toBeLessThan(10);
+    expect(orienterVers('attend', { x: 0, y: 0 }, enFace)).toEqual({ rotation: 0, miroir: false });
   });
 });

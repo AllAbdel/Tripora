@@ -126,3 +126,33 @@ test('« Passer » sur l’accueil : Plumio s’en va, et le guide ne revient pl
   await expect(page.getByRole('heading', { name: 'Mes trips' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
+
+test('Plumio s’efface quand on fait défiler la liste des envies, et revient en remontant', async ({ page }) => {
+  await poser(page, [BALI], '/voyages');
+  await page.getByRole('dialog').getByRole('button', { name: 'C’est parti' }).click();
+  await page.getByRole('button', { name: 'Nouveau' }).click();
+
+  await page.getByRole('radio').filter({ hasText: 'Entre amis' }).click();
+  await page.getByRole('button', { name: /^Continuer/ }).click();
+  await page.getByRole('textbox', { name: 'Chercher une ville de départ' }).fill('Paris');
+  await page.getByRole('radio').filter({ hasText: 'Paris' }).first().click();
+  await page.getByRole('button', { name: /^Continuer/ }).click();
+  await page.getByRole('radio').filter({ hasText: 'Surprends-nous' }).click();
+  await page.getByRole('button', { name: /^Continuer/ }).click();
+  await page.getByRole('radio').filter({ hasText: 'Un mois' }).click();
+  await page.getByRole('button', { name: 'juillet', exact: true }).click();
+  await page.getByRole('button', { name: /^Continuer/ }).click();
+  await page.getByRole('textbox', { name: 'Budget par personne' }).fill('400');
+  await page.getByRole('button', { name: /^Continuer/ }).click();
+  await consigne(page, 'Choisissez au moins une envie.');
+
+  // Tout en bas, vers « Insolite » : la bulle ne cache plus rien, la consigne
+  // reste annoncée aux lecteurs d'écran.
+  await page.getByText('Insolite', { exact: true }).last().scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 2000);
+  await expect(bulle(page)).toHaveCount(0);
+  await expect(page.getByRole('status').filter({ hasText: 'Choisissez au moins une envie.' })).toHaveCount(1);
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await consigne(page, 'Choisissez au moins une envie.');
+});

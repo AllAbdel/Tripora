@@ -115,7 +115,7 @@ export default function Confidentialite() {
           Tripora appelle des services extérieurs pour des faits — la météo, une carte, une photo,
           un prix. Voici exactement ce que chacun reçoit.
         </p>
-        <Definition terme="OpenFreeMap, Open-Meteo, Wikipédia, Overpass">
+        <Definition terme="OpenFreeMap, MET Norway, Open-Meteo, Wikipédia, Overpass, OpenVan">
           Le nom ou les coordonnées d’une ville, jamais les vôtres — y compris quand vous
           téléchargez la carte d’une destination : seules les tuiles de la ville sont demandées. Ces appels partent depuis nos
           serveurs quand c’est possible, et le résultat est mis en cache pour tout le groupe :

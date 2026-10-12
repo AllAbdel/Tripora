@@ -1,4 +1,6 @@
 import { haversineKm } from './geo.js';
+import { coutVoitureAuKm } from './carburant.js';
+import { codeDuPays } from './catalog/pays.js';
 import type { PricedValue } from './freshness.js';
 import type { GeoPoint, TransportMode } from './types.js';
 
@@ -17,7 +19,8 @@ import type { GeoPoint, TransportMode } from './types.js';
  *   avion  : 40 € de base + 5,5 c/km — 500 km ≈ 67 €, 2 000 km ≈ 150 €
  *   train  : 17 c/km                 — 500 km ≈ 85 €, 1 000 km ≈ 170 €
  *   bus    : 9 c/km                  — 500 km ≈ 45 €, 1 500 km ≈ 135 €
- *   voiture: carburant et péages partagés entre les occupants
+ *   voiture: 6,5 L/100 km au prix du carburant du pays (OpenVan), plus 3 c/km
+ *            de péages, partagés entre les occupants (`carburant.ts`)
  */
 
 export interface TransportEstimate {
@@ -26,18 +29,32 @@ export interface TransportEstimate {
   durationMin: number;
   /** Pourquoi ce mode est proposé, ou pourquoi il ne l'est pas. */
   note: string;
+  /**
+   * Vrai quand l'estimation repose sur les prix du carburant d'OpenVan : la
+   * licence demande alors d'afficher « Data: OpenVan.camp » à côté.
+   */
+  carburantReleve?: boolean;
 }
 
 const PLANE_BASE_CENTS = 4000;
 const PLANE_PER_KM_CENTS = 5.5;
 const TRAIN_PER_KM_CENTS = 17;
 const BUS_PER_KM_CENTS = 9;
-/** Consommation et péages moyens, par kilomètre et par véhicule. */
-const CAR_PER_KM_CENTS = 14;
 
 /** Détour moyen d'une route par rapport à la ligne droite. */
 export const DETOUR_ROUTIER = 1.25;
 const ROAD_DETOUR = DETOUR_ROUTIER;
+
+/**
+ * Le pays d'un point, quand il le dit : le code d'une destination du
+ * catalogue, ou le nom de pays d'une ville de départ (« France »).
+ */
+function paysDuPoint(point: GeoPoint): string | undefined {
+  const code = (point as { countryCode?: unknown }).countryCode;
+  if (typeof code === 'string' && code) return code;
+  const nom = (point as { country?: unknown }).country;
+  return typeof nom === 'string' ? codeDuPays(nom) : undefined;
+}
 
 const estimated = (cents: number): PricedValue => ({
   cents: Math.round(cents),
@@ -88,9 +105,11 @@ export function estimateTransportOptions(
   if (road <= 2000 && participants >= 1) {
     // Une voiture pour quatre revient à un quart du carburant chacun.
     const occupants = Math.min(5, Math.max(1, participants));
+    const auKm = coutVoitureAuKm(paysDuPoint(origin), paysDuPoint(destination));
     options.push({
       mode: 'car',
-      price: estimated((road * 2 * CAR_PER_KM_CENTS) / occupants),
+      price: estimated((road * 2 * auKm.centimes) / occupants),
+      carburantReleve: auKm.releve,
       durationMin: Math.round((road / 90) * 60 * 2),
       note:
         occupants > 1

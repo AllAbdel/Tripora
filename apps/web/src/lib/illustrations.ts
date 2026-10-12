@@ -57,9 +57,11 @@ const LARGEUR = 960;
 
 /**
  * La clé de cache des illustrations. Versionnée : les listes rangées pendant
- * que le contrôle refusait `thumb.wikimedia.org` sont vides, et gardées un mois.
+ * que le contrôle refusait `thumb.wikimedia.org` (v1), puis tant que les
+ * crédits ne retrouvaient pas leur photo (v2), sont sans images, et gardées
+ * un mois.
  */
-export const CLE_DES_ILLUSTRATIONS = 'illustrations-v2';
+export const CLE_DES_ILLUSTRATIONS = 'illustrations-v3';
 
 /** Une image servie par Wikimedia, en HTTPS, et rien d'autre. */
 export function estServieParWikimedia(url: string): boolean {
@@ -179,6 +181,20 @@ export function texteBrut(valeur: unknown): string | null {
   return nettoye.length > 0 && nettoye.length < 200 ? nettoye : null;
 }
 
+/**
+ * Le nom d'un fichier, tel qu'on le compare.
+ *
+ * Wikipédia rend `Chateau_de_Prague.jpg`, Commons répond pour
+ * `File:Chateau de Prague.jpg` : soulignés et espaces sont le même nom. Sans
+ * cette mise à plat, le crédit ne retrouvait jamais sa photo dès que le nom
+ * contenait une espace — c'est-à-dire presque toujours —, et une photo sans
+ * crédit ne s'affiche pas : seules quelques images au nom d'un seul mot
+ * passaient.
+ */
+export function nomDeFichier(nom: string): string {
+  return nom.replace(/^(?:File|Fichier):/u, '').replace(/_/gu, ' ').trim();
+}
+
 /** Lecture des crédits renvoyés par Commons, par nom de fichier. */
 export function lireLesCredits(
   donnees: unknown,
@@ -193,7 +209,7 @@ export function lireLesCredits(
     const titre = typeof page.title === 'string' ? page.title : null;
     if (!titre) continue;
     const meta = page.imageinfo?.[0]?.extmetadata ?? {};
-    credits.set(titre.replace(/^File:/u, '').replace(/^Fichier:/u, ''), {
+    credits.set(nomDeFichier(titre), {
       auteur: texteBrut(meta['Artist']?.value),
       licence: texteBrut(meta['LicenseShortName']?.value),
     });
@@ -206,6 +222,23 @@ async function interroger(url: string): Promise<unknown> {
   if (!reponse.ok) throw new Error(`Wikimedia HTTP ${reponse.status}`);
   return await reponse.json();
 }
+
+/**
+ * Des articles qui décrivent une chose, pas un lieu.
+ *
+ * Leur image de tête montrait un hammam d'Alep pour Marrakech, une
+ * compétition de Californie pour une plage basque, des capsules de bière pour
+ * une brasserie de Prague : vraie photo, mauvaise ville. L'article reste la
+ * source qu'on peut vérifier ; il n'illustre pas. Mieux vaut le fond dessiné
+ * qu'une image qui ment sur l'endroit.
+ */
+export const ARTICLES_SANS_LIEU: ReadonlySet<string> = new Set([
+  'fr:Hammam',
+  'fr:Surf',
+  'fr:Tapas',
+  'fr:Bière belge',
+  'fr:Bière tchèque',
+]);
 
 /** Ce qu'il faut pour illustrer : un identifiant, et l'article qui le décrit. */
 export interface AIllustrer {
@@ -245,6 +278,7 @@ export async function chargerIllustrations(
   // Wikipédias, et chaque édition a son propre point d'entrée.
   const parLangue = new Map<string, { titre: string; id: string }[]>();
   for (const entree of entrees) {
+    if (entree.wikipedia && ARTICLES_SANS_LIEU.has(entree.wikipedia)) continue;
     const etiquette = lireLEtiquette(entree.wikipedia);
     if (!etiquette) continue;
     const lot = parLangue.get(etiquette.langue) ?? [];
@@ -306,7 +340,7 @@ export async function chargerIllustrations(
           ),
         );
         for (const fichier of paquet) {
-          const credit = credits.get(fichier);
+          const credit = credits.get(nomDeFichier(fichier));
           if (!credit) continue;
           for (const id of fichiers.get(fichier) ?? []) {
             const illustration = illustrations[id];

@@ -51,13 +51,24 @@ export default function MentionsLegales() {
         <Definition terme="Cartes et lieux">
           © les contributeurs d’OpenStreetMap, sous licence ODbL ; fonds de carte OpenFreeMap.
         </Definition>
-        <Definition terme="Climat et météo">Open-Meteo, sous licence CC BY 4.0.</Definition>
+        <Definition terme="Climat et météo">
+          Prévisions : MET Norway (Institut météorologique norvégien), sous licence CC BY 4.0.
+          Normales climatiques : Open-Meteo, sous licence CC BY 4.0.
+        </Definition>
         <Definition terme="Vacances scolaires">
           En France, le calendrier du ministère de l’Éducation nationale ; ailleurs, OpenHolidays,
           sous licence ODbL. Les régions sont situées d’après OpenStreetMap.
         </Definition>
         <Definition terme="Taux de change">
           Banque centrale européenne, par l’intermédiaire de Frankfurter.
+        </Definition>
+        <Definition terme="Prix du carburant">
+          Data: OpenVan.camp, sous licence CC BY 4.0 : prix relevés pays par pays, convertis en
+          euros.
+        </Definition>
+        <Definition terme="Formalités d’entrée">
+          Passport Index Data (d’après passportindex.org), © 2019, sous licence MIT. Une
+          indication, à vérifier auprès des sources officielles.
         </Definition>
         <Definition terme="Prix des vols">
           Travelpayouts (Aviasales) : des prix relevés à une date indiquée, pas des offres.

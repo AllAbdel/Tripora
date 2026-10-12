@@ -228,6 +228,16 @@ intégré.
   nouvelle place. Le geste (tapotement, picorement, contentement) se joue sur
   place, relancé toutes les 6 s, trois fois au plus.
 - Le guide se relance depuis le profil, le pied de page et l'accueil public.
+- **L'aile vise vraiment la cible.** La pose donne une direction (vers le bas,
+  le haut, un côté) ; une fois la bulle posée, on mesure où tombe le bout de
+  l'aile et on incline Plumio pour qu'elle pointe le point le plus proche de
+  la cible, retourné en miroir si la cible est de l'autre côté, sans jamais
+  dépasser 30° (au-delà, il a l'air de tomber). Dans le coin de la bulle, il se
+  pose sur la bulle plutôt qu'au-delà (`orienterVers`, `placementDeLaBulle.ts`).
+- **Il s'efface quand il cacherait ce qu'on lit.** Quand moins de 60 % de la
+  cible reste à l'écran — on fait défiler la liste des envies jusqu'à
+  « Insolite » —, la bulle et Plumio disparaissent ; la consigne reste
+  annoncée aux lecteurs d'écran, et tout revient en remontant (`partVisible`).
 
 **Les bruitages** (`apps/web/src/components/mascotte/`) :
 - Chaque geste joué a les siens : battements d'aile à l'arrivée et à

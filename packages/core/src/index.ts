@@ -23,6 +23,7 @@ export * from './catalog/origins.js';
 // propre chemin, `@tripora/core/activites`, là où on en a besoin — ce qui
 // permet à l'application de ne le charger qu'à ce moment-là.
 export * from './transport.js';
+export * from './carburant.js';
 export * from './carbone.js';
 export * from './conges.js';
 export * from './ticket.js';

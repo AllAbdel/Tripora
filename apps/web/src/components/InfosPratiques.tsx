@@ -1,4 +1,4 @@
-import { Car, Clock, ExternalLink, Phone, Plug, Wallet } from 'lucide-react';
+import { Car, Clock, ExternalLink, Phone, Plug, Stamp, Wallet } from 'lucide-react';
 import {
   besoinDAdaptateur,
   codeDuPays,
@@ -13,6 +13,8 @@ import {
 } from '@tripora/core';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Drapeau } from '@/components/Drapeau';
+import { FormaliteDEntree } from '@/components/FormaliteDEntree';
+import { useFormaliteDEntree } from '@/lib/visas';
 
 /**
  * Ce qu'on cherche la veille du départ, ou sur place : faut-il un adaptateur,
@@ -41,9 +43,10 @@ export function InfosPratiques({
   maintenant?: Date;
 }) {
   const infos = infosPratiques(destination.countryCode);
+  const depart = codeDuPays(paysDeDepart);
+  const visa = useFormaliteDEntree(depart, destination.countryCode);
   if (!infos) return null;
 
-  const depart = codeDuPays(paysDeDepart);
   const memePays = depart === destination.countryCode.toUpperCase();
   const besoin = besoinDAdaptateur(depart, destination.countryCode);
   const departInfos = depart ? infosPratiques(depart) : undefined;
@@ -80,6 +83,12 @@ export function InfosPratiques({
               </span>
             )}
           </Ligne>
+
+          {visa && !memePays && (
+            <Ligne icone={Stamp} titre="Visa">
+              <FormaliteDEntree reponse={visa} />
+            </Ligne>
+          )}
 
           <Ligne icone={Phone} titre="Urgences">
             {infos.urgences.length > 0 ? (

@@ -7,7 +7,9 @@
  * fait mercredi » — et ne vaut que sur une quinzaine de jours. Les deux
  * coexistent, et l'écran choisit selon la distance au départ.
  *
- * Source : Open-Meteo, gratuit et sans clé. Comme partout ailleurs dans
+ * Source : MET Norway (CC BY 4.0, usage commercial permis), ramenée par la
+ * fonction `weather` à la forme d'Open-Meteo que lit `parseForecast`. Comme
+ * partout ailleurs dans
  * Tripora, ces chiffres viennent d'une mesure et jamais d'un modèle de
  * langage : une prévision inventée ferait rater un train.
  */
@@ -23,7 +25,7 @@ export interface DailyWeather {
   /** Cumul de précipitations, en millimètres. */
   rainMm: number;
   windKmh: number;
-  /** Code temps de l'OMM, tel que le fournit Open-Meteo. */
+  /** Code temps de l'OMM (déduit du symbole de MET Norway par la fonction `weather`). */
   code: number;
 }
 
@@ -101,7 +103,7 @@ export function describeDay(jour: DailyWeather): string {
 }
 
 /**
- * Nettoie ce qu'Open-Meteo renvoie.
+ * Nettoie la prévision, au format d'Open-Meteo (celui que rend la fonction `weather`).
  *
  * Le dernier jour de la fenêtre arrive systématiquement à `null` sur tous les
  * champs — la prévision existe pour seize jours mais le seizième n'est pas

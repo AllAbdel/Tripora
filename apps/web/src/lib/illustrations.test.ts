@@ -274,6 +274,52 @@ describe('illustrations par paquets', () => {
     expect(estAffichable(illustrations['osm:node/59'])).toBe(true);
   });
 
+  it('raccroche le crédit à sa photo quand le nom du fichier contient des espaces', async () => {
+    // Les vraies réponses pour le château de Prague : Wikipédia écrit le
+    // fichier avec des soulignés, Commons répond avec des espaces.
+    vi.stubGlobal('fetch', async (entree: string) => {
+      const url = new URL(entree);
+      const json =
+        url.hostname === 'commons.wikimedia.org'
+          ? {
+              query: {
+                normalized: [{ from: 'File:Chateau_de_Prague.jpg', to: 'File:Chateau de Prague.jpg' }],
+                pages: {
+                  '-1': {
+                    title: 'File:Chateau de Prague.jpg',
+                    imageinfo: [{ extmetadata: { LicenseShortName: { value: 'CC BY-SA 4.0' } } }],
+                  },
+                },
+              },
+            }
+          : {
+              query: {
+                pages: {
+                  '1013597': {
+                    title: 'Château de Prague',
+                    pageimage: 'Chateau_de_Prague.jpg',
+                    thumbnail: {
+                      source:
+                        'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Chateau_de_Prague.jpg/960px-Chateau_de_Prague.jpg',
+                    },
+                  },
+                },
+              },
+            };
+      return new Response(JSON.stringify(json));
+    });
+    const illustrations = await chargerIllustrations([{ id: 'prague/chateau', wikipedia: 'fr:Château de Prague' }]);
+    expect(illustrations['prague/chateau']?.licence).toBe('CC BY-SA 4.0');
+    expect(estAffichable(illustrations['prague/chateau'])).toBe(true);
+  });
+
+  it('n’illustre pas une activité par un article qui décrit une chose, pas un lieu', async () => {
+    const espion = vi.fn();
+    vi.stubGlobal('fetch', espion);
+    expect(await chargerIllustrations([{ id: 'marrakech/hammam', wikipedia: 'fr:Hammam' }])).toEqual({});
+    expect(espion).not.toHaveBeenCalled();
+  });
+
   it('ignore les lieux sans article, sans rien demander', async () => {
     const espion = vi.fn();
     vi.stubGlobal('fetch', espion);

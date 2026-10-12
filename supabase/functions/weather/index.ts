@@ -1,11 +1,15 @@
 import { preflight, json } from '../_shared/cors.ts';
 import { serviceClient } from '../_shared/supabase.ts';
 import { avecCacheEtQuota, QuotaEpuise } from '../_shared/budget.ts';
+import { journeesDepuisMet } from './met.ts';
 
 /**
- * La prévision météo d'une destination, sur seize jours.
+ * La prévision météo d'une destination, sur une dizaine de jours.
  *
- * Source : Open-Meteo, gratuit, sans clé, sans compte. Les normales
+ * Source : MET Norway (l'institut météorologique norvégien), gratuit, sans
+ * clé, sous licence CC BY 4.0 qui permet l'usage commercial — l'offre gratuite
+ * d'Open-Meteo, utilisée jusqu'ici, l'interdit, et Tripora vit de liens
+ * partenaires. MET exige un `User-Agent` qui identifie l'application. Les normales
  * climatiques du catalogue répondent à « quel mois partir » ; ceci répond à
  * « qu'est-ce qu'on fait mercredi », et n'a de sens qu'à l'approche du départ.
  *
@@ -14,20 +18,23 @@ import { avecCacheEtQuota, QuotaEpuise } from '../_shared/budget.ts';
  * déclenchent un seul appel, et la prévision ne change pas d'un pâté de
  * maisons à l'autre.
  *
- * La fonction ne renvoie que ce qu'Open-Meteo a dit. Elle ne complète pas, ne
- * lisse pas, n'extrapole pas : une prévision inventée ferait rater un train.
+ * La fonction ne renvoie que ce que MET a dit, regroupé en journées locales
+ * (`met.ts`). Elle ne complète pas, ne lisse pas, n'extrapole pas : une
+ * prévision inventée ferait rater un train.
  */
 
 /** Les modèles tournent quelques fois par jour ; six heures suffisent largement. */
 const TTL_SECONDES = 6 * 60 * 60;
 const LIMITES = { soft: 4_000, hard: 8_000 };
-const SOURCE = 'https://api.open-meteo.com/v1/forecast';
+const SOURCE = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
+/** Ce que MET demande : le nom de l'application et de quoi la joindre. */
+const AGENT = 'Tripora/1.0 (+https://github.com/AllAbdel/Tripora)';
 
 Deno.serve(async (request) => {
   const options = preflight(request);
   if (options) return options;
 
-  let demande: { lat?: unknown; lng?: unknown };
+  let demande: { lat?: unknown; lng?: unknown; fuseau?: unknown };
   try {
     demande = await request.json();
   } catch {
@@ -40,16 +47,21 @@ Deno.serve(async (request) => {
   if (!Number.isFinite(lng) || Math.abs(lng) > 180) return json({ error: 'Longitude invalide' }, 400);
 
   const arrondi = (valeur: number) => Math.round(valeur * 100) / 100;
+  // Le fuseau de la destination, pour couper les journées au bon endroit.
+  const fuseau =
+    typeof demande.fuseau === 'string' && /^[A-Za-z_]+(\/[A-Za-z0-9_+-]+){0,2}$/u.test(demande.fuseau)
+      ? demande.fuseau
+      : 'UTC';
   const client = serviceClient();
 
   try {
     const { valeur, origine } = await avecCacheEtQuota<unknown>({
       client,
-      cle: `weather:${arrondi(lat)},${arrondi(lng)}`,
-      provider: 'open-meteo',
+      cle: `meteo-met:${arrondi(lat)},${arrondi(lng)}:${fuseau}`,
+      provider: 'met-norway',
       ttlSecondes: TTL_SECONDES,
       limites: LIMITES,
-      appel: () => recuperer(arrondi(lat), arrondi(lng)),
+      appel: () => recuperer(arrondi(lat), arrondi(lng), fuseau),
     });
     return json({ forecast: valeur, stale: origine === 'cache-perime' });
   } catch (cause) {
@@ -59,30 +71,20 @@ Deno.serve(async (request) => {
   }
 });
 
-async function recuperer(lat: number, lng: number): Promise<unknown> {
+async function recuperer(lat: number, lng: number, fuseau: string): Promise<unknown> {
   const url = new URL(SOURCE);
-  url.searchParams.set('latitude', String(lat));
-  url.searchParams.set('longitude', String(lng));
-  url.searchParams.set(
-    'daily',
-    'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max',
-  );
-  // Les jours doivent être ceux de la destination, pas ceux du serveur : à
-  // Tokyo, « mercredi » n'est pas le mercredi de Francfort.
-  url.searchParams.set('timezone', 'auto');
-  url.searchParams.set('forecast_days', '16');
+  // MET demande au plus quatre décimales ; on en garde deux, comme la clé de cache.
+  url.searchParams.set('lat', String(lat));
+  url.searchParams.set('lon', String(lng));
 
   const reponse = await fetch(url, {
-    headers: { accept: 'application/json' },
+    headers: { accept: 'application/json', 'user-agent': AGENT },
     signal: AbortSignal.timeout(10_000),
   });
-  if (!reponse.ok) throw new Error(`Open-Meteo ${reponse.status}`);
+  if (!reponse.ok) throw new Error(`MET Norway ${reponse.status}`);
 
-  const brut = (await reponse.json()) as { daily?: { time?: unknown } };
-  if (!brut.daily || !Array.isArray(brut.daily.time)) {
-    throw new Error('Réponse Open-Meteo inattendue');
-  }
-  // On met en cache la réponse telle quelle : c'est `@tripora/core` qui la
-  // lit, et il est testé sur la vraie forme — y compris le dernier jour vide.
-  return { daily: brut.daily };
+  const journees = journeesDepuisMet(await reponse.json(), fuseau);
+  if (journees.daily.time.length === 0) throw new Error('Réponse MET Norway inattendue');
+  // La forme d'Open-Meteo, que `@tripora/core` lit et teste.
+  return journees;
 }

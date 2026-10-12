@@ -15,10 +15,14 @@ import {
   empreinteDuTrajet,
   estUnDepartPays,
   formatCents,
+  formatDate,
   formatTemperature,
   freshnessLabel,
+  LIEN_OPENVAN,
+  MENTION_OPENVAN,
   nomDeLAeroport,
   phraseDeComparaison,
+  RELEVE_DU_CARBURANT,
   type Destination,
   type DestinationScore,
   type LieuNomme,
@@ -338,6 +342,27 @@ export function ProposalCard({
                     </li>
                   ))}
                 </ul>
+                {transport.some((option) => option.carburantReleve) && (
+                  // La licence d'OpenVan (CC BY 4.0) demande la mention à côté du chiffre.
+                  <p className="text-muted text-xs leading-relaxed">
+                    <span>Voiture : carburant au prix du pays, péages estimés.</span>{' '}
+                    {/* Un seul texte, que la traduction reconnaît : « · relevé le … ». */}
+                    <span>
+                      · relevé le{' '}
+                      {formatDate(RELEVE_DU_CARBURANT, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>{' '}
+                    ·{' '}
+                    <a
+                      href={LIEN_OPENVAN}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2"
+                      translate="no"
+                    >
+                      {MENTION_OPENVAN}
+                    </a>
+                  </p>
+                )}
                 {transport.some((option) => option.mode === 'plane') && suiviDuPrix}
               </section>
             )}

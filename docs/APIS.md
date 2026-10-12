@@ -78,25 +78,69 @@ Aucune source gratuite ne donne des **prix**. Tripora fournit des durées réell
 une fourchette de prix estimée au kilomètre, clairement étiquetée comme telle,
 avec des liens vers SNCF Connect, Trainline, Omio, FlixBus et BlaBlaCar.
 
-### Météo — Open-Meteo
+### Carburant — OpenVan
 
-Sans clé, 10 000 requêtes par jour, usage non commercial. Deux usages, deux
-questions différentes :
+La voiture partagée ne coûte plus un forfait français de 14 c/km partout. Les
+prix réels de l'essence et du gazole dans 163 pays viennent d'**OpenVan**
+(`openvan.camp/api/fuel/prices`, sans clé, licence CC BY 4.0), convertis en
+euros avec les taux qu'OpenVan publie le même jour (`/api/currency/rates`) et
+ramenés au litre (gallons américains et impériaux). `scripts/carburant.py` les
+relève et les **embarque** (`carburant-du-monde.ts`) : aucun appel au moment
+du calcul, rien à ajouter à la CSP, et ça marche hors ligne. À relancer tous
+les mois ou deux.
+
+Le calcul (`carburant.ts`) : 6,5 L/100 km au prix moyen du départ et de
+l'arrivée, plus 3 c/km de péages (aucune source gratuite ne les donne pays par
+pays). Un pays absent du relevé garde l'ancien forfait, sans prétendre au
+relevé. Quand le relevé a servi, la carte de la destination affiche la date et
+la mention exigée par la licence, **« Data: OpenVan.camp »**, avec le lien.
+
+### Visas — Passport Index Data
+
+« Faut-il un visa ? » apparaît dans les infos pratiques, pour un passeport du
+pays de départ : sans visa (et combien de jours), visa à l'arrivée,
+autorisation électronique (ESTA, eTA…), visa électronique, visa au consulat.
+La source est le jeu de données [Passport Index Data](https://github.com/imorte/passport-index-data)
+(licence MIT, d'après passportindex.org), relevé par `scripts/visas.py` et
+embarqué (`visas-du-monde.ts`, une lettre par pays et par passeport). Il pèse
+13 Ko compressés : l'application ne le charge qu'à l'ouverture des infos
+pratiques (`@tripora/core/visas`, un morceau à part). Même pays, territoire
+absent de la source, passeport inconnu : la ligne se tait plutôt que de
+deviner. La date du relevé est affichée, et le lien vers les conseils aux
+voyageurs reste juste en dessous : les règles changent.
+
+L'API « Can I enter » a été écartée : cinq requêtes par jour et par adresse.
+
+### Météo — MET Norway (prévision) et Open-Meteo (normales)
+
+Deux usages, deux questions différentes, deux sources :
 
 - **les normales climatiques** répondent à « quel mois partir ». Elles sont
   calculées sur les archives 2023-2025, **embarquées dans le code** pour les 55
   destinations, et servent au score : personne ne connaît la météo de juin
   prochain, mais on sait qu'il fait en moyenne 27 °C à Séville en juin. Aucun
   appel, aucun quota, fonctionne hors ligne ;
-- **la prévision à 16 jours** répond à « qu'est-ce qu'on fait mercredi ». Elle
+- **la prévision à dix jours** répond à « qu'est-ce qu'on fait mercredi ». Elle
   n'apparaît qu'à l'approche du départ, sur la fiche du voyage et sur chaque
-  journée de l'itinéraire.
+  journée de l'itinéraire. Elle vient de **MET Norway** (Institut météorologique
+  norvégien, `api.met.no/weatherapi/locationforecast/2.0/compact`) : sans clé,
+  licence CC BY 4.0, **usage commercial permis** — l'offre gratuite d'Open-Meteo,
+  elle, ne l'est pas, et Tripora vit de liens partenaires. MET exige un
+  `User-Agent` qui identifie l'application (`Tripora/1.0 (+https://github.com/AllAbdel/Tripora)`).
 
-Un détail relevé sur l'API le 6 septembre 2026 : la réponse contient bien seize
-jours, mais **le seizième arrive entièrement à `null`** — il n'est pas encore
-calculé. `parseForecast` l'écarte, et un test le vérifie sur la vraie réponse ;
-sans cela l'écran afficherait « NaN ° » le jour où le séjour tombe pile au bord
-de la fenêtre.
+MET donne une série horaire (puis par tranches de six heures), en UTC, avec un
+symbole par tranche. La fonction `weather` (`met.ts`, testé hors ligne) la
+regroupe par **jour local à destination** — le fuseau de la destination est
+envoyé par l'application — et la ramène à la forme d'Open-Meteo, si bien que
+`parseForecast` n'a pas changé : maximum et minimum, cumul de pluie (la tranche
+d'une heure, sinon celle de six, jamais les deux), vent converti de m/s en km/h,
+et le symbole le plus grave traduit en code de l'OMM, modéré par le cumul (une
+averse d'une heure ne fait pas une journée de pluie). Un jour couvert sur moins
+de six heures est écarté plutôt que deviné.
+
+Un détail relevé sur Open-Meteo le 6 septembre 2026 et toujours couvert :
+`parseForecast` écarte un jour arrivé à `null`, sans quoi l'écran afficherait
+« NaN ° ».
 
 ### Cartes — OpenFreeMap + MapLibre
 
@@ -273,8 +317,14 @@ disparaître toutes ces photos sans un message :
   supérieur ; Tripora demande donc 960 px, et réduit à 250 px les vignettes des
   listes en changeant la largeur dans l'adresse — jamais au-delà de l'original.
 
-La clé de cache a changé de version (`illustrations-v2`) : les listes vides
-rangées pendant la panne auraient sinon tenu un mois.
+La clé de cache a changé de version (`illustrations-v3`) : les listes vides
+rangées pendant la panne auraient sinon tenu un mois. La v3 corrige un second
+piège : Commons écrit les noms de fichier avec des espaces (`File:Chateau de
+Prague.jpg`) quand `pageimages` garde les soulignés (`Chateau_de_Prague.jpg`).
+Sans les rapprocher (`nomDeFichier`), aucune licence n'était trouvée et la photo
+restait cachée — seules s'affichaient celles dont le nom tenait en un mot. Les
+articles génériques (« Bière tchèque », « Hammam »…) sont aussi écartés
+(`ARTICLES_SANS_LIEU`) : leur photo ne montre pas l'endroit proposé.
 
 ### Devises — Frankfurter
 
@@ -378,15 +428,16 @@ le 12 octobre 2026 (réponse réelle, conditions lues) :
 
 | API | Ce qu'elle apporterait | Conditions | Verdict |
 |---|---|---|---|
-| **OpenVan** (`openvan.camp/api/fuel/prices`) | Prix réels des carburants dans 121 pays, mis à jour chaque semaine : le coût d'un trajet en voiture partagée cesserait d'être un forfait français | Sans clé, 120 requêtes/min, CC BY 4.0, mention « Data: OpenVan.camp » obligatoire | À brancher en premier |
-| **Can I enter** (`api.canienter.com/free/check`) | Visa ou pas, et durée de séjour autorisée, selon le passeport et le pays visité : utile dans les infos pratiques | Sans clé mais **5 requêtes par jour et par adresse IP** ; conditions d'usage non publiées sur la page | Trop limité pour un serveur partagé ; mieux vaut un jeu de données ouvert embarqué |
-| **MET Norway** (hors liste, mais la référence) | Prévisions mondiales, usage commercial permis (CC BY 4.0) | Sans clé, `User-Agent` identifiant l'application exigé | Repli si l'usage d'Open-Meteo devient « commercial » |
+| **OpenVan** (`openvan.camp/api/fuel/prices`) | Prix réels des carburants dans 121 pays, mis à jour chaque semaine : le coût d'un trajet en voiture partagée cesserait d'être un forfait français | Sans clé, 120 requêtes/min, CC BY 4.0, mention « Data: OpenVan.camp » obligatoire | **Branché** (relevé embarqué, octobre 2026) |
+| **Can I enter** (`api.canienter.com/free/check`) | Visa ou pas, et durée de séjour autorisée, selon le passeport et le pays visité : utile dans les infos pratiques | Sans clé mais **5 requêtes par jour et par adresse IP** ; conditions d'usage non publiées sur la page | Trop limité : remplacé par Passport Index Data (MIT), embarqué |
+| **MET Norway** (hors liste, mais la référence) | Prévisions mondiales, usage commercial permis (CC BY 4.0) | Sans clé, `User-Agent` identifiant l'application exigé | **Branché** pour la prévision (octobre 2026) |
 
 Un point de vigilance sur **Open-Meteo**, déjà utilisé : son offre gratuite est
 réservée à un usage non commercial, et ses conditions classent « les sites ou
 applications qui affichent de la publicité » comme commerciaux. Elles ne disent
-rien des liens affiliés ; si Tripora en vit un jour, il faudra trancher, ou
-passer à MET Norway.
+rien des liens affiliés : dans le doute, la prévision est passée à MET Norway.
+Open-Meteo ne sert plus qu'au relevé ponctuel des normales climatiques
+(`climate-normals`), rangées une fois pour toutes en base.
 
 Écartées : les API payantes ou à carte bancaire (Calendarific, Amadeus, Sabre,
 la suite APILayer), les sources déjà couvertes (jours fériés : Nager.Date ;
