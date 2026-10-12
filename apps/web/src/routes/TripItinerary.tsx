@@ -98,8 +98,8 @@ export default function TripItinerary() {
   // La même prévision que sur la fiche du voyage, servie par le même cache :
   // ouvrir l'itinéraire ne déclenche pas un second appel.
   const meteo = useQuery({
-    queryKey: cleMeteo(destination?.lat ?? 0, destination?.lng ?? 0),
-    queryFn: () => chargerMeteo(destination!.lat, destination!.lng),
+    queryKey: cleMeteo(destination?.lat ?? 0, destination?.lng ?? 0, destination?.timezone),
+    queryFn: () => chargerMeteo(destination!.lat, destination!.lng, destination?.timezone),
     staleTime: 6 * 60 * 60 * 1000,
     gcTime: 7 * 24 * 60 * 60 * 1000,
     enabled: Boolean(destination),

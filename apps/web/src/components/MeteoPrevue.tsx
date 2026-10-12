@@ -38,8 +38,8 @@ export function MeteoPrevue({
   destination: Destination;
 }) {
   const meteo = useQuery({
-    queryKey: cleMeteo(destination.lat, destination.lng),
-    queryFn: () => chargerMeteo(destination.lat, destination.lng),
+    queryKey: cleMeteo(destination.lat, destination.lng, destination.timezone),
+    queryFn: () => chargerMeteo(destination.lat, destination.lng, destination.timezone),
     staleTime: 6 * 60 * 60 * 1000,
     gcTime: 7 * 24 * 60 * 60 * 1000,
     // Sans date de départ, la prévision n'a rien à recouper : on ne la
@@ -75,7 +75,7 @@ export function MeteoPrevue({
           {aRentrer.length === 0
             ? 'Rien qui empêche de sortir sur la période annoncée.'
             : `${enFrancais(aRentrer)} : prévoyez de quoi faire à l’abri.`}{' '}
-          Prévision Open-Meteo{meteo.data.perime ? ', dernière connue' : ''}, revue
+          Prévision MET Norway{meteo.data.perime ? ', dernière connue' : ''}, revue
           plusieurs fois par jour.
         </p>
       </CardBody>

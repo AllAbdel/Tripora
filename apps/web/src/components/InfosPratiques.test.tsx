@@ -29,4 +29,21 @@ describe('les infos pratiques d’une destination', () => {
     expect(screen.queryByText('Adaptateur nécessaire.')).not.toBeInTheDocument();
     expect(screen.getByText(/Prises de type G/u)).toBeInTheDocument();
   });
+
+  it('le visa, chargé à la demande : une ESTA pour un Français à New York', async () => {
+    render(<InfosPratiques destination={findDestination('new-york')!} paysDeDepart="France" />);
+    expect(await screen.findByText(/Autorisation électronique à demander en ligne/u)).toBeInTheDocument();
+    expect(screen.getByText(/d’après Passport Index/u)).toBeInTheDocument();
+  });
+
+  it('sans visa dans l’espace Schengen, et rien dans son propre pays', async () => {
+    const { unmount } = render(<InfosPratiques destination={findDestination('berlin')!} paysDeDepart="France" />);
+    expect(await screen.findByText('Sans visa.')).toBeInTheDocument();
+    unmount();
+    render(<InfosPratiques destination={findDestination('bordeaux')!} paysDeDepart="France" />);
+    // Laisser au module le temps de se charger avant de conclure à l'absence.
+    await import('@tripora/core/visas');
+    await new Promise((fin) => setTimeout(fin, 0));
+    expect(screen.queryByText('Visa')).not.toBeInTheDocument();
+  });
 });

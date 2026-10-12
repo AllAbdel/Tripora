@@ -2,7 +2,7 @@ import { parseForecast, type DailyWeather } from '@tripora/core';
 import { supabase } from './supabase';
 
 /**
- * La prévision météo d'une destination.
+ * La prévision météo d'une destination (MET Norway, via la fonction serveur).
  *
  * Un appel par destination et par jour, partagé par tout le groupe grâce au
  * cache serveur, et gardé côté navigateur par le cache persistant : la
@@ -18,11 +18,12 @@ export type EtatMeteo =
   | { statut: 'ok'; jours: DailyWeather[]; perime: boolean }
   | { statut: 'indisponible' };
 
-export async function chargerMeteo(lat: number, lng: number): Promise<EtatMeteo> {
+/** `fuseau` : celui de la destination, pour que « mercredi » soit son mercredi. */
+export async function chargerMeteo(lat: number, lng: number, fuseau?: string): Promise<EtatMeteo> {
   if (!supabase) return { statut: 'indisponible' };
   try {
     const { data, error } = await supabase.functions.invoke('weather', {
-      body: { lat, lng },
+      body: { lat, lng, ...(fuseau ? { fuseau } : {}) },
     });
     if (error || !data) return { statut: 'indisponible' };
 
@@ -38,6 +39,7 @@ export async function chargerMeteo(lat: number, lng: number): Promise<EtatMeteo>
 }
 
 /** Une clé par point, arrondie comme côté serveur pour partager le même cache. */
-export function cleMeteo(lat: number, lng: number): [string, number, number] {
-  return ['meteo', Math.round(lat * 100) / 100, Math.round(lng * 100) / 100];
+export function cleMeteo(lat: number, lng: number, fuseau?: string): [string, number, number, string] {
+  // « met » : les prévisions d'Open-Meteo gardées en cache n'ont plus cours.
+  return ['meteo-met', Math.round(lat * 100) / 100, Math.round(lng * 100) / 100, fuseau ?? 'UTC'];
 }

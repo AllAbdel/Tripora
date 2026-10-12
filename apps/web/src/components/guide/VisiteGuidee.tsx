@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { X } from 'lucide-react';
 import { Mascotte, type GesteDePlumio } from '@/components/mascotte/Mascotte';
@@ -20,6 +20,8 @@ import {
   estEnVue,
   LARGEUR_ORDINATEUR,
   MARGE,
+  orienterVers,
+  partVisible,
   placerLaBulle,
   TAILLE_DE_PLUMIO_SUR_UN_CHAMP,
   type Ecran,
@@ -343,6 +345,10 @@ function EtapeAffichee({
 
   const placement = placerLaBulle(visible, ecran, { rtl, surLeChamp: bec, dessusImpose: bec && saisie });
 
+  // On fait défiler et l'élément sort de l'écran : Plumio et sa bulle s'effacent
+  // au lieu de le suivre par-dessus ce qu'on lit. Ils reviennent quand on remonte.
+  if (visible && !etape.fin && partVisible(visible, ecran) < 0.6) return <Annonce texte={texte} />;
+
   // Une ligne au lieu de la bulle : le clavier du téléphone est ouvert sur le
   // champ, ou la saisie a commencé et la liste occupe le dessous sans laisser
   // de place au-dessus. Collée au-dessus du clavier, ou de « Continuer ».
@@ -413,6 +419,8 @@ function EtapeAffichee({
 
       <Bulle
         placement={placement}
+        cible={visible}
+        rtl={rtl}
         etape={etape}
         texte={texte}
         fin={fin}
@@ -472,6 +480,8 @@ function Pointe({ placement }: { placement: Placement }) {
  */
 function Bulle({
   placement,
+  cible,
+  rtl,
   etape,
   texte,
   fin,
@@ -481,6 +491,8 @@ function Bulle({
   surPasser,
 }: {
   placement: Placement;
+  cible: Rectangle | null;
+  rtl: boolean;
   etape: EtapeDeLaVisite;
   texte: string;
   fin: boolean;
@@ -490,6 +502,31 @@ function Bulle({
   surPasser: () => void;
 }) {
   const terminer = useRef<HTMLButtonElement | null>(null);
+  const cadre = useRef<HTMLDivElement | null>(null);
+  const [visee, setVisee] = useState({ rotation: 0, miroir: false });
+
+  // L'aile vise l'élément : on mesure où Plumio se tient vraiment (la hauteur
+  // de la bulle dépend de son texte), puis on l'incline vers l'élément.
+  const { taille, left: gauche, pose } = placement.plumio;
+  useLayoutEffect(() => {
+    const boite = cadre.current?.getBoundingClientRect();
+    const suivante =
+      boite && cible
+        ? orienterVers(
+            pose,
+            {
+              x: boite.left + gauche + taille * (rtl ? 0.22 : 0.78),
+              y: boite.top + 4 - taille + taille * 0.5,
+            },
+            cible,
+            rtl,
+          )
+        : { rotation: 0, miroir: false };
+    setVisee((avant) =>
+      avant.rotation === suivante.rotation && avant.miroir === suivante.miroir ? avant : suivante,
+    );
+    // Le texte change la hauteur de la bulle, donc la place de Plumio.
+  }, [cible, pose, gauche, taille, rtl, texte, placement.mode]);
 
   // À la dernière étape, le clavier arrive sur « Terminer la visite » ; avant,
   // il reste où il est : sur la page, qu'il faut utiliser.
@@ -509,12 +546,18 @@ function Bulle({
   const maxHauteur = placement.mode === 'centre' ? undefined : placement.maxHauteur;
 
   return (
-    <div style={style} className={cn('fixed z-50', placement.mode === 'centre' && 'inset-0 m-auto h-fit')}>
+    <div ref={cadre} style={style} className={cn('fixed z-50', placement.mode === 'centre' && 'inset-0 m-auto h-fit')}>
       {plumioSurLaBulle && (
         <div
           aria-hidden
-          className="absolute bottom-[calc(100%-4px)] leading-none"
-          style={{ left: placement.plumio.left, width: placement.plumio.taille, height: placement.plumio.taille }}
+          className="absolute bottom-[calc(100%-4px)] leading-none transition-transform duration-300"
+          style={{
+            left: gauche,
+            width: taille,
+            height: taille,
+            transformOrigin: '50% 75%',
+            transform: fin ? undefined : `rotate(${visee.rotation}deg)${visee.miroir ? ' scaleX(-1)' : ''}`,
+          }}
         >
           <Mascotte
             pose={fin ? 'au-revoir' : placement.plumio.pose}

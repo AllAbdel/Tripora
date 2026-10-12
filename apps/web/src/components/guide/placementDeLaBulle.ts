@@ -184,8 +184,9 @@ export function placerLaBulle(
     bottom: ecran.hauteur - cible.top + ecartDessus,
     maxHauteur: placeDessus,
     pointe,
-    // Au coin, un peu au-delà : son aile descend le long de la bulle vers l'élément.
-    plumio: { taille, left: rtl ? -18 : largeur + 18 - taille, pose: 'pointer-bas' as const },
+    // Au bout de la bulle, sans dépasser : l'aile s'incline ensuite vers l'élément
+    // (`orienterVers`). Posé au-delà du coin, il visait le bord de l'écran.
+    plumio: { taille, left: rtl ? 4 : largeur - 4 - taille, pose: 'pointer-bas' as const },
   };
 
   // Au-dessus seulement si la bulle y tient lisible ; sinon, à l'appelant de la réduire.
@@ -210,4 +211,67 @@ export function placerLaBulle(
  */
 export function estEnVue(cible: Rectangle, ecran: Ecran): boolean {
   return cible.top >= 0 && cible.top + cible.height <= ecran.hauteur;
+}
+
+/**
+ * Quelle part de l'élément est à l'écran, de 0 à 1 (sur sa hauteur, plafonnée
+ * à celle de l'écran pour un élément plus grand que lui).
+ *
+ * Sert à effacer Plumio et sa bulle quand on fait défiler : l'élément montré
+ * sort par le haut, la bulle le suit et recouvre ce qu'on est justement en
+ * train de lire (« Insolite », tout en bas des envies). Ils reviennent quand on
+ * remonte.
+ */
+export function partVisible(cible: Rectangle, ecran: Ecran): number {
+  const haut = Math.max(cible.top, 0);
+  const bas = Math.min(cible.top + cible.height, ecran.hauteur);
+  const reference = Math.min(cible.height, ecran.hauteur);
+  return reference <= 0 ? 0 : Math.max(0, bas - haut) / reference;
+}
+
+/**
+ * Où l'aile de chaque pose montre, en degrés à l'écran : 0 vers la droite,
+ * 90 vers le bas. Relevé sur les dessins de `design/mascotte/poses`.
+ */
+const ANGLE_DE_L_AILE: Partial<Record<PoseDeLaMascotte, number>> = {
+  'pointer-bas': 52,
+  'pointer-haut': -82,
+  'pointer-droite': -10,
+  'pointer-gauche': 190,
+};
+/** Au-delà, il aurait l'air de tomber : mieux vaut viser un peu à côté. */
+const INCLINAISON_MAX = 30;
+
+function ecartAngulaire(a: number, b: number): number {
+  return ((((a - b) % 360) + 540) % 360) - 180;
+}
+
+/**
+ * Comment incliner Plumio pour que son aile vise vraiment l'élément.
+ *
+ * Posé au coin de sa bulle, l'aile de « pointer-bas » descendait en diagonale
+ * vers le bord de l'écran, pas vers « Continuer », tout en bas sous la bulle.
+ * On calcule la direction de son aile (`aile`, en coordonnées de l'écran) vers
+ * le point le plus proche de l'élément ; s'il est de l'autre côté, Plumio se
+ * retourne ; puis il s'incline de l'écart, sans dépasser 30°.
+ */
+export function orienterVers(
+  pose: PoseDeLaMascotte,
+  aile: { x: number; y: number },
+  cible: Rectangle,
+  rtl = false,
+): { rotation: number; miroir: boolean } {
+  const base = ANGLE_DE_L_AILE[pose];
+  if (base === undefined) return { rotation: 0, miroir: false };
+  const naturel = rtl ? 180 - base : base;
+  // Le point visé : en face de l'aile s'il le peut, sinon le bord le plus proche.
+  const x = borner(aile.x, cible.left + 12, cible.left + Math.max(12, cible.width - 12));
+  const y = borner(aile.y, cible.top + 8, cible.top + Math.max(8, cible.height - 8));
+  if (Math.hypot(x - aile.x, y - aile.y) < 1) return { rotation: 0, miroir: false };
+  const voulu = (Math.atan2(y - aile.y, x - aile.x) * 180) / Math.PI;
+  const droit = ecartAngulaire(voulu, naturel);
+  const retourne = ecartAngulaire(voulu, 180 - naturel);
+  const miroir = Math.abs(retourne) + 10 < Math.abs(droit);
+  const ecart = miroir ? retourne : droit;
+  return { rotation: Math.round(borner(ecart, -INCLINAISON_MAX, INCLINAISON_MAX)), miroir };
 }

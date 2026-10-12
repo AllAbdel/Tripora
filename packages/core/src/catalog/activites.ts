@@ -2374,8 +2374,8 @@ const CATALOGUE: Activite[] = [
       2.5, 20, 'apres-midi', 'Douze mille pierres sur douze couches de tombes, faute de place pendant trois siècles.', 'fr:Josefov'),
     a('vysehrad', 'Vyšehrad', 'offbeat', 'panorama', 50.0640, 14.4180,
       2.5, 0, 'apres-midi', 'La seconde forteresse, celle que les cars ignorent, et la Vltava trente mètres en dessous.', 'fr:Vyšehrad'),
-    a('biere', 'Une pivnice tchèque', 'food', 'detente', 50.0810, 14.4270,
-      2, 15, 'soir', 'La pils est née à cent kilomètres d’ici. Une tanková sortie du réservoir n’a rien à voir.', 'fr:Bière tchèque'),
+    a('biere', 'Une pivnice tchèque, U Fleků', 'food', 'detente', 50.0786, 14.4178,
+      2, 15, 'soir', 'La pils est née à cent kilomètres d’ici. Une tanková sortie du réservoir n’a rien à voir.', 'fr:U Fleků'),
   ]),
   ...ville('budapest', [
     a('szechenyi', 'Les bains Széchenyi', 'relax', 'detente', 47.5186, 19.0832,

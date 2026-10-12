@@ -965,7 +965,7 @@ export const NOMS_ET_RESUMES: Readonly<Record<string, readonly [string, string]>
   "prague/horloge": ["The Astronomical Clock", "Six hundred and fifteen years old, with the apostles parading before the square every hour."],
   "prague/josefov": ["The Jewish Quarter and the Old Cemetery", "Twelve thousand stones over twelve layers of graves, for lack of space over three centuries."],
   "prague/vysehrad": ["Vyšehrad", "The second fortress, the one the tour buses skip, with the Vltava thirty meters below."],
-  "prague/biere": ["A Czech pivnice", "Pilsner was born a hundred kilometers from here. A tanková straight from the tank is something else entirely."],
+  "prague/biere": ["A Czech pivnice, U Fleků", "Pilsner was born a hundred kilometers from here. A tanková straight from the tank is something else entirely."],
   "budapest/szechenyi": ["The Széchenyi Baths", "Eighteen pools fed by a spring at seventy-four degrees, three of them outdoors, all year round."],
   "budapest/parlement": ["The Hungarian Parliament", "Two hundred and sixty-eight meters of neo-Gothic on the Danube, with the Holy Crown of St. Stephen inside."],
   "budapest/bastion": ["Fisherman’s Bastion", "Seven turrets for the seven Magyar tribes, and all of Pest across the water."],
