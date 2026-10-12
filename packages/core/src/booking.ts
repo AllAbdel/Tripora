@@ -142,10 +142,12 @@ export function travelLinks(
   origin: Place,
   destination: Destination,
   sejour: Sejour,
+  /** L'aéroport du vol relevé le moins cher, quand plusieurs ont été comparés. */
+  { departIata: departRetenu }: { departIata?: string | undefined } = {},
 ): BookingLink[] {
   const liens: BookingLink[] = [];
 
-  const departIata = origin.iata?.[0];
+  const departIata = departRetenu ?? origin.iata?.[0];
   const arriveeIata = destination.iata[0];
   if (departIata && arriveeIata) {
     const aviasales = new URL('https://www.aviasales.com/search');

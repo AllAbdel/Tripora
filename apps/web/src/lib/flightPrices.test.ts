@@ -136,6 +136,12 @@ describe('ce que la source dit du vol', () => {
     expect(lire({ reseller: 'Aviasales' })?.reseller).toBeUndefined();
   });
 
+  it('dit de quel aéroport part le vol retenu, quand plusieurs ont été comparés', () => {
+    expect(lire({ from: 'BVA' })?.from).toBe('BVA');
+    // Un code qui n'en est pas un est ignoré.
+    expect(lire({ from: 'beauvais' })?.from).toBeUndefined();
+  });
+
   it('reprend les dates du trajet relevé', () => {
     const prix = lire({ departAt: '2026-11-13', returnAt: '2026-11-16' });
     expect(prix?.departAt).toBe('2026-11-13');

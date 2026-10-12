@@ -35,6 +35,11 @@ export interface PricedValue {
    * plutôt que d'annoncer un vol direct par défaut.
    */
   stops?: number;
+  /**
+   * L'aéroport de départ du vol relevé (code IATA), quand on en a comparé
+   * plusieurs : celui qui revenait le moins cher vers cette destination.
+   */
+  from?: string;
   /** Dates du trajet relevé, en ISO. Un prix sans date ne se compare pas. */
   departAt?: string;
   returnAt?: string;

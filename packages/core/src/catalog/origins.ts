@@ -121,6 +121,110 @@ export const ORIGINS: readonly Place[] = [
   })),
 ].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 
+/**
+ * Partir de tout un pays : « France (tous les aéroports) ».
+ *
+ * Qui part de Lille ne sait pas forcément qu'un vol depuis Beauvais ou
+ * Bruxelles coûte deux fois moins cher ; qui est prêt à prendre un train pour
+ * rejoindre n'importe quel aéroport du pays veut seulement le moins cher. Ce
+ * départ-là porte donc les principaux aéroports du pays, et le relevé des prix
+ * retient, pour chaque destination, celui qui revient le moins cher.
+ *
+ * Les coordonnées sont celles de la première ville de la liste (la plus
+ * grande) : c'est d'elle que le moteur estime distances et durées. Le nom
+ * porte la mention « (tous les aéroports) », ce qui suffit à reconnaître ce
+ * départ une fois enregistré, sans colonne de plus en base.
+ */
+export const MENTION_TOUT_LE_PAYS = ' (tous les aéroports)';
+/** Au-delà, le relevé coûterait trop d'appels pour un gain minime. */
+const AEROPORTS_PAR_PAYS = 6;
+/**
+ * Pour la France, l'ordre est choisi : les grandes plateformes et Beauvais,
+ * d'où partent les compagnies à bas prix — c'est souvent là que le prix tombe.
+ */
+const AEROPORTS_CHOISIS: Readonly<Record<string, readonly string[]>> = {
+  France: ['PAR', 'BVA', 'LYS', 'MRS', 'NCE', 'BOD', 'TLS', 'NTE'],
+};
+
+function premierCodeDe(place: Place): string | undefined {
+  return place.iata?.find((code) => /^[A-Z]{3}$/.test(code));
+}
+
+const DEPARTS_PAYS: readonly Place[] = (() => {
+  // L'ordre écrit à la main d'abord (les grandes villes avant les petites),
+  // puis le reste du catalogue.
+  const sources = [...FRANCE, ...VOISINS, ...AEROPORTS, ...ORIGINS];
+  const parPays = new Map<string, { premier: Place; codes: string[] }>();
+  for (const place of sources) {
+    const code = premierCodeDe(place);
+    if (!place.country || !code) continue;
+    const entree = parPays.get(place.country) ?? { premier: place, codes: [] };
+    if (!entree.codes.includes(code) && entree.codes.length < AEROPORTS_PAR_PAYS) entree.codes.push(code);
+    parPays.set(place.country, entree);
+  }
+  return [...parPays.entries()]
+    .filter(([, { codes }]) => codes.length >= 2)
+    .map(([pays, { premier, codes }]) => ({
+      name: `${pays}${MENTION_TOUT_LE_PAYS}`,
+      country: pays,
+      lat: premier.lat,
+      lng: premier.lng,
+      iata: [...(AEROPORTS_CHOISIS[pays] ?? codes)],
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+})();
+
+/** Vrai pour un départ « tout le pays ». */
+export function estUnDepartPays(place: Pick<Place, 'name'>): boolean {
+  return place.name.endsWith(MENTION_TOUT_LE_PAYS);
+}
+
+/** Les départs « tout le pays » dont le nom du pays commence par la saisie. */
+export function chercherDepartsPays(query: string): Place[] {
+  const needle = fold(query);
+  if (needle.length < 2) return [];
+  return DEPARTS_PAYS.filter((place) => place.country && fold(place.country).startsWith(needle));
+}
+
+/**
+ * Les aéroports à comparer pour un départ, du plus naturel au plus lointain.
+ *
+ * Ceux de la ville d'abord, puis ceux des villes voisines, dans un rayon où
+ * l'on accepte de rouler une heure ou deux : de Lyon, Grenoble et Genève ; de
+ * Lille, Bruxelles et Beauvais. Le relevé des prix les interroge tous et
+ * retient, destination par destination, le moins cher. Un départ « tout le
+ * pays » compare déjà ses aéroports : on n'en ajoute pas.
+ */
+export function aeroportsAComparer(origin: Place, { rayonKm = 150, max = 5 } = {}): string[] {
+  const codes: string[] = [];
+  // Un départ « tout le pays » garde tous ses aéroports (huit au plus).
+  const plafond = estUnDepartPays(origin) ? 8 : max;
+  const ajouter = (code: string | undefined) => {
+    if (code && /^[A-Z]{3}$/.test(code) && !codes.includes(code) && codes.length < plafond) codes.push(code);
+  };
+  for (const code of origin.iata ?? []) ajouter(code);
+  if (estUnDepartPays(origin)) return codes;
+  const voisins = [...FRANCE, ...VOISINS, ...AEROPORTS, ...ORIGINS]
+    .map((place) => ({ code: premierCodeDe(place), km: haversineKm(origin, place) }))
+    .filter((voisin) => voisin.code && voisin.km <= rayonKm)
+    .sort((a, b) => a.km - b.km);
+  for (const voisin of voisins) ajouter(voisin.code);
+  return codes;
+}
+
+/**
+ * Le nom lisible d'un aéroport, d'après son code : « NTE » → « Nantes »,
+ * « BVA » → « Paris-Beauvais ». La ville d'abord ; l'aéroport nommé quand la
+ * ville en a plusieurs. Le code lui-même quand on ne le connaît pas.
+ */
+export function nomDeLAeroport(code: string): string {
+  const ville = [...FRANCE, ...VOISINS, ...ORIGINS].find(
+    (place) => premierCodeDe(place) === code && !AEROPORTS.includes(place),
+  );
+  if (ville) return ville.name;
+  return AEROPORTS.find((aeroport) => premierCodeDe(aeroport) === code)?.name ?? code;
+}
+
 /** Recherche tolérante aux accents et à la casse. */
 export function searchOrigins(query: string, limit = 8): Place[] {
   const needle = fold(query);

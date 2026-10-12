@@ -7,6 +7,7 @@ import {
   type PreferenceWeights,
   type TripConstraints,
 } from '@tripora/core';
+import { titreDuVoyage } from './titreDuVoyage';
 import { supabase } from './supabase';
 import { destinationLocaleRetenue } from './votes';
 import type { TripDraft } from '@/stores/tripDraft';
@@ -169,7 +170,7 @@ function ficheLocale(trip: LocalTrip): TripSummary {
   const destination = retenue ? findDestination(retenue) : undefined;
   return {
     id: trip.id,
-    title: trip.title,
+    title: titreDuVoyage(trip.title, { destinationId: retenue, participants: trip.draft.participants }),
     status: retenue ? 'planned' : 'draft',
     participants: trip.draft.participants,
     destinationName: retenue ? (destination?.name ?? retenue) : null,
@@ -353,7 +354,10 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
         const lockedId = (row.destination_locked_id as string | null) ?? null;
         return {
         id: row.id as string,
-        title: row.title as string,
+        title: titreDuVoyage(row.title as string, {
+          destinationId: lockedId,
+          participants: row.participants as number,
+        }),
         status: row.status as string,
         participants: row.participants as number,
         // La colonne stocke un identifiant technique : on affiche le nom.
@@ -408,7 +412,10 @@ function supabaseRepository(client: NonNullable<typeof supabase>): TripRepositor
         shortlist: liste,
         summary: {
           id: data.id as string,
-          title: data.title as string,
+          title: titreDuVoyage(data.title as string, {
+            destinationId: lockedId,
+            participants: data.participants as number,
+          }),
           status: data.status as string,
           participants: data.participants as number,
           destinationName: lockedId ? (findDestination(lockedId)?.name ?? lockedId) : null,
