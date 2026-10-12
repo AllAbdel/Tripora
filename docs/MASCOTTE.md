@@ -229,6 +229,27 @@ intégré.
   place, relancé toutes les 6 s, trois fois au plus.
 - Le guide se relance depuis le profil, le pied de page et l'accueil public.
 
+**Les bruitages** (`apps/web/src/components/mascotte/`) :
+- Chaque geste joué a les siens : battements d'aile à l'arrivée et à
+  l'envol, froufrou de l'aile qui salue, pépiements quand il parle, trois
+  « toc » quand il picore, une impulsion et un « pof » quand il sautille, un
+  trille quand il est content. Rien au repos.
+- `partitions.ts` dit quel son tombe à quelle milliseconde, calé sur les
+  images clés d'`animations.css` (un test relit les durées dans la feuille) ;
+  `synthese.ts` les fabrique avec l'API Web Audio (bruit filtré, sinusoïdes
+  qui glissent) : aucun fichier, aucune licence, et un son qui varie un peu à
+  chaque fois.
+- Volume bas : mesurés hors ligne, ils restent entre une et deux fois le
+  « toc » des retours sous le doigt.
+- Actifs par défaut (réglage « Bruitages de Plumio » du profil), muets quand
+  les retours sont sur « Rien », quand l'appareil demande moins d'animations,
+  ou dans un onglet caché.
+- Le navigateur refuse tout son avant le premier appui : Plumio n'insiste
+  pas, et se fait entendre dès le premier geste. L'application mobile
+  (Capacitor autorise le son sans geste) et l'application installée jouent
+  dès l'ouverture. Pour Safari, le contexte audio s'ouvre dans le premier
+  appui qui suit l'apparition de Plumio.
+
 Les textes arabes des maquettes ne sont pas repris : les bulles passent par
 la traduction de l'application, comme le reste (voir `docs/TRADUCTIONS.md`).
 À « Découvrir », les gestes ne s'inversent pas en arabe (la carte part à

@@ -2491,7 +2491,12 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "Revoir les destinations mises de côté": "Bring back the destinations set aside",
   "Celles qui collaient ont toutes été mises de côté.": "All the ones that fit have been set aside.",
   "Changement non enregistré": "Change not saved",
-  "La liste précédente est revenue. Vérifiez votre connexion, puis réessayez.": "The previous list is back. Check your connection, then try again."
+  "La liste précédente est revenue. Vérifiez votre connexion, puis réessayez.": "The previous list is back. Check your connection, then try again.",
+  // Les bruitages de Plumio.
+  "Les bruitages de Plumio": "Plumio’s sounds",
+  "Ailes, pépiements et coups de bec quand il bouge, tout doucement.": "Wings, chirps and pecks when he moves, very softly.",
+  "Muets tant que les retours sont sur « Rien ».": "Muted while feedback is set to “Nothing”.",
+  "Cet appareil demande moins d’animations : Plumio ne bouge plus, et ne fait donc plus de bruit.": "This device asks for less motion: Plumio no longer moves, so he makes no sound either."
 };
 
 export const PHRASES: Readonly<Record<string, string>> = { ...PAYS_EN, ...DESTINATIONS_EN, ...PHRASES_FIXES };
