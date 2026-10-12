@@ -17,23 +17,23 @@ def svg(nom, taille, extra=''):
 # Les règles « joue » et « geste », rejouées au survol dans la planche.
 def survol(css):
     out = []
-    sec7 = css.split('/* ── 7.')[1].split('/* ── 8.')[0]
-    for regle in re.findall(r'[^{}]+\{[^{}]*\}', sec7):
+    sec8 = css.split('/* ── 8.')[1].split('/* ── 9.')[0]
+    for regle in re.findall(r'[^{}]+\{[^{}]*\}', sec8):
         sel, corps = regle.split('{', 1)
         if '.plumio--joue' not in sel:
             continue
         sel = sel.strip()
         sel = sel.replace('.plumio--joue', '.pose:is(:hover, :focus-within) .plumio')
         out.append(f'{sel} {{{corps}')
-    sec6 = css.split('/* ── 6.')[1].split('/* ── 7.')[0]
-    for regle in re.findall(r'[^{}]+\{[^{}]*\}', sec6):
+    sec7 = css.split('/* ── 7.')[1].split('/* ── 8.')[0]
+    for regle in re.findall(r'[^{}]+\{[^{}]*\}', sec7):
         sel, corps = regle.split('{', 1)
         m = re.match(r'\s*\.plumio--geste-([a-z]+)\s+(.*)', sel.strip())
         if not m or '@' in sel:
             continue
         out.append(f'.geste-{m.group(1)}:is(:hover, :focus-within) .plumio {m.group(2)} {{{corps}')
-    sec9 = css.split('/* ── 9.')[1].split('/* ── 10.')[0]
-    for regle in re.findall(r'[^{}]+\{[^{}]*\}', sec9):
+    sec11 = css.split('/* ── 11.')[1].split('/* ── 12.')[0]
+    for regle in re.findall(r'[^{}]+\{[^{}]*\}', sec11):
         sel, corps = regle.split('{', 1)
         sel = sel.strip()
         if sel.startswith('@') or 'animation' not in corps:
