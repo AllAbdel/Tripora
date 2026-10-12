@@ -100,78 +100,85 @@ const PIXEL = Buffer.from(
   'base64',
 );
 
-test('chaque idée a sa photo, servie depuis thumb.wikimedia.org, et son crédit', async ({ page }) => {
-  // Les voyages d'abord : le réseau est coupé, puis Wikimedia simulé par-dessus
-  // (la dernière règle posée l'emporte). Les réponses ont la forme réelle de
-  // l'API : vignette sur thumb.wikimedia.org, au palier de 960 px.
-  await poser(page, [BALI], '/voyages');
-  const vignettes: string[] = [];
-  const titres = (url: string) => (new URL(url).searchParams.get('titles') ?? '').split('|');
-  await page.route(/^https:\/\/[a-z]+\.wikipedia\.org\/w\/api\.php/u, (route) =>
-    route.fulfill({
-      headers: { 'access-control-allow-origin': '*' },
-      json: {
-        query: {
-          pages: Object.fromEntries(
-            titres(route.request().url()).map((titre, i) => [
-              String(i),
-              {
-                title: titre,
-                pageimage: `Photo ${i}.jpg`,
-                thumbnail: {
-                  source: `https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Photo_${i}.jpg/960px-Photo_${i}.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail`,
-                  width: 640,
-                  height: 480,
-                },
-              },
-            ]),
-          ),
-        },
-      },
-    }),
-  );
-  await page.route(/^https:\/\/commons\.wikimedia\.org\/w\/api\.php/u, (route) =>
-    route.fulfill({
-      headers: { 'access-control-allow-origin': '*' },
-      json: {
-        query: {
-          pages: Object.fromEntries(
-            titres(route.request().url()).map((titre, i) => [
-              String(i),
-              {
-                title: titre,
-                imageinfo: [
-                  {
-                    extmetadata: {
-                      Artist: { value: 'Une photographe' },
-                      LicenseShortName: { value: 'CC BY-SA 4.0' },
-                    },
+test.describe('les photos', () => {
+  // Le service worker de l'application fait lui-même les requêtes d'images :
+  // elles échapperaient à page.route, et Wikimedia serait appelé pour de vrai.
+  test.use({ serviceWorkers: 'block' });
+
+  test('chaque idée a sa photo, servie depuis thumb.wikimedia.org, et son crédit', async ({ page }) => {
+    // Les voyages d'abord : le réseau est coupé, puis Wikimedia simulé par-dessus
+    // (la dernière règle posée l'emporte). Les réponses ont la forme réelle de
+    // l'API : vignette sur thumb.wikimedia.org, au palier de 960 px.
+    await poser(page, [BALI], '/voyages');
+    const vignettes: string[] = [];
+    const titres = (url: string) => (new URL(url).searchParams.get('titles') ?? '').split('|');
+    await page.route(/^https:\/\/[a-z]+\.wikipedia\.org\/w\/api\.php/u, (route) =>
+      route.fulfill({
+        headers: { 'access-control-allow-origin': '*' },
+        json: {
+          query: {
+            pages: Object.fromEntries(
+              titres(route.request().url()).map((titre, i) => [
+                String(i),
+                {
+                  title: titre,
+                  pageimage: `Photo ${i}.jpg`,
+                  thumbnail: {
+                    source: `https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Photo_${i}.jpg/960px-Photo_${i}.jpg?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail`,
+                    width: 640,
+                    height: 480,
                   },
-                ],
-              },
-            ]),
-          ),
+                },
+              ]),
+            ),
+          },
         },
-      },
-    }),
-  );
-  await page.route(/^https:\/\/thumb\.wikimedia\.org\//u, (route) => {
-    vignettes.push(route.request().url());
-    return route.fulfill({ body: PIXEL, contentType: 'image/png' });
+      }),
+    );
+    await page.route(/^https:\/\/commons\.wikimedia\.org\/w\/api\.php/u, (route) =>
+      route.fulfill({
+        headers: { 'access-control-allow-origin': '*' },
+        json: {
+          query: {
+            pages: Object.fromEntries(
+              titres(route.request().url()).map((titre, i) => [
+                String(i),
+                {
+                  title: titre,
+                  imageinfo: [
+                    {
+                      extmetadata: {
+                        Artist: { value: 'Une photographe' },
+                        LicenseShortName: { value: 'CC BY-SA 4.0' },
+                      },
+                    },
+                  ],
+                },
+              ]),
+            ),
+          },
+        },
+      }),
+    );
+    await page.route(/^https:\/\/thumb\.wikimedia\.org\//u, (route) => {
+      vignettes.push(route.request().url());
+      return route.fulfill({ body: PIXEL, contentType: 'image/png' });
+    });
+
+    await page.goto('/voyages/v1/decouvrir', { waitUntil: 'networkidle' });
+    const photo = carte(page).locator('img').first();
+    await expect(photo).toBeVisible();
+    await expect(photo).toHaveAttribute('src', /^https:\/\/thumb\.wikimedia\.org\/.+\/960px-/u);
+    await expect(carte(page).getByText('Photo : Une photographe · CC BY-SA 4.0')).toBeVisible();
+
+    // Le classement réduit ses vignettes à un palier de 250 px.
+    const gardee = await nomDeLaCarte(page);
+    await page.getByRole('button', { name: 'J’y vais' }).click();
+    await page.getByRole('tab', { name: 'Classement' }).click();
+    const ligne = page.getByRole('listitem').filter({ hasText: gardee });
+    await expect(ligne.locator('img')).toHaveAttribute('src', /\/250px-Photo_/u);
+    // Chargée en différé (loading="lazy") : à l'écran, puis on attend la requête.
+    await ligne.scrollIntoViewIfNeeded();
+    await expect.poll(() => vignettes.some((adresse) => adresse.includes('/250px-'))).toBe(true);
   });
-
-  await page.goto('/voyages/v1/decouvrir', { waitUntil: 'networkidle' });
-  const photo = carte(page).locator('img').first();
-  await expect(photo).toBeVisible();
-  await expect(photo).toHaveAttribute('src', /^https:\/\/thumb\.wikimedia\.org\/.+\/960px-/u);
-  await expect(carte(page).getByText('Photo : Une photographe · CC BY-SA 4.0')).toBeVisible();
-
-  // Le classement réduit ses vignettes à un palier de 250 px.
-  const gardee = await nomDeLaCarte(page);
-  await page.getByRole('button', { name: 'J’y vais' }).click();
-  await page.getByRole('tab', { name: 'Classement' }).click();
-  const ligne = page.getByRole('listitem').filter({ hasText: gardee });
-  await expect(ligne.locator('img')).toHaveAttribute('src', /\/250px-Photo_/u);
-  // Chargée en différé (loading="lazy") : on attend que la requête parte.
-  await expect.poll(() => vignettes.some((adresse) => adresse.includes('/250px-'))).toBe(true);
 });
