@@ -6,12 +6,13 @@ encore branché dans `apps/`.
 
 | Fichier | Contenu |
 |---|---|
-| `poses/<nom>.svg` | Vingt-trois poses, `viewBox` 96 × 96, de 2 à 5,5 Ko chacune (`face` contient aussi sa vue de profil) |
+| `poses/<nom>.svg` | Vingt-trois poses (dessin v3), `viewBox` 96 × 96, de 4,9 à 5,8 Ko chacune ; `face` fait 7 Ko car elle contient aussi sa vue de profil |
 | `animations.css` | Couleurs (clair, sombre, une couleur), pivots, regard, gestes, vie au repos, passages de page, mouvement réduit |
 | `planche.html` | Toutes les poses, en clair et en sombre, à 24, 48, 96 et 160 px. Gestes jouables au survol, case « Mouvement réduit », choix d’accent |
 | `tutoriel/index.html` | Version 1 : les six étapes, téléphone et ordinateur, en clair, en sombre et en arabe |
 | `tutoriel-v2/index.html` | Version 2 : l’accueil en grand, puis la création d’un voyage, faite par la personne (section 7) |
-| `outils/` | Les scripts qui produisent les éléments ci-dessus |
+| `INTEGRATION-V3.md` | Le compte-rendu pour intégrer le dessin v3 dans l’application |
+| `outils/` | Les scripts qui produisent les éléments ci-dessus (`plumio.py` dessine les poses avec `geo.py`) |
 
 Les pages s’ouvrent directement dans un navigateur, sans serveur ni
 JavaScript. Elles chargent Fraunces et Inter Tight depuis
@@ -20,7 +21,7 @@ polices du système.
 
 ## 1. Le personnage
 
-**Plumio**, l’hirondelle à l’encre (direction A).
+**Plumio**, l’hirondelle à l’encre (direction A). Dessin v3 : voir « Le dessin, version 3 » ci-dessous.
 - L’hirondelle part en groupe et revient chaque printemps, comme un groupe d’amis
   qui rouvre Tripora pour le voyage suivant.
 - C’est la seule des trois directions qu’on reconnaît encore à 24 px, grâce à la
@@ -29,12 +30,39 @@ polices du système.
   geste culturellement marqué.
 - Elle vole d’une page à l’autre pendant le tutoriel.
 
-**De face** (pose `face`, pour l’accueil seulement) : deux yeux avec leur
-reflet, le nœud du foulard au milieu, le ventre rond, les deux pointes de la
-queue de part et d’autre des pattes. Même encre, même papier, même bec doré
-que de profil ; on le reconnaît encore à 48 px. Toutes les autres poses sont de
-profil, tournées vers la droite ; les variantes `-gauche` sont les mêmes,
-retournées.
+### Le dessin, version 3
+
+La v2 avait un contour noir de 3 px autour de chaque pièce : un air d’autocollant,
+des jointures visibles dès qu’une pièce tournait. La v3 la remplace, sous les mêmes
+noms de fichiers et de classes.
+- **Une gravure, pas un autocollant.** Aucun contour. Les masses d’encre (tête, dos,
+  ailes, queue) se fondent là où elles se touchent ; quand une pièce passe devant une
+  autre de même couleur (l’aile sur le dos, sur la tête), **une** fine taille de
+  papier les sépare (`p-reserve`), comme une linogravure. Le ventre n’a qu’un liseré
+  d’encre effilé, épais au milieu, fin aux bouts. Les tailles restent dans la
+  silhouette : l’oiseau tient sur n’importe quel fond.
+- **Une vraie hirondelle.** Corps fin penché en avant, calotte qui file dans le dos
+  sans cou, ailes en faux dont les pointes croisent la base de la queue, deux longs
+  filets courbes : une fourche, pas des skis. Pattes fines à trois doigts.
+- **Un visage.** La gorge de papier remonte sous l’œil et descend dans le ventre :
+  la tête n’est plus une boule posée sur une quille. Grand œil bas et en avant, deux
+  reflets, un sourcil gravé (une seule taille) qui donne l’air curieux. Œil fermé :
+  un arc souriant, jamais un disque vide.
+- **Des jointures cachées par construction.** La tête est dessinée sous le corps et
+  pivote sous la bande du foulard ; les ailes sortent de sous la bande « comme une
+  main d’une manche » ; la queue part de sous le croupion ; les pattes remontent
+  derrière le ventre. Testé de -40° à +60° pour la tête, ±25° par filet, buste penché
+  jusqu’à 30° : aucune couture.
+- **Des dessins de remplacement.** L’aile a quatre dessins sur la même épaule
+  (`plumio-aile-pliee`, `-levee`, `-ouverte`, `-pointe`, plus `-battue` en vol),
+  échangés par `opacity` : elle change de dessin au lieu de tourner d’un bloc.
+
+**De face** (pose `face`, pour l’accueil seulement) : de trois-quarts, le corps
+tourné vers nous, la tête face à nous, deux yeux (le lointain raccourci), un bec en
+cône, le nœud du foulard sous la gorge, l’aile proche le long du flanc, les deux
+filets qui partent à gauche. Jamais un pingouin ni une chouette. Toutes les autres
+poses sont de profil, tournées vers la droite ; les variantes `-gauche` sont les
+mêmes, retournées.
 
 Prononciation : *plu-mi-o*. En arabe : بلوميو.
 
@@ -54,8 +82,10 @@ pose `color: var(--accent)` sur `.plumio`.
 
 | Rôle | Clair | Sombre |
 |---|---|---|
-| Trait (`--plumio-trait`) | `ink-800` #2a251f | `paper-300` #e6ddcb |
-| Dos, tête, ailes (`--plumio-dos`) | `ink-700` #3a342b | `ink-600` #524b3f |
+| Pattes, encre fine (`--plumio-trait`) | `ink-800` #2a251f | `paper-300` #e6ddcb |
+| Tête, dos, queue, liseré du ventre (`--plumio-dos`) | `ink-700` #3a342b | #5a5245 |
+| Ailes (`--plumio-aile`) | #2f2a23, un ton sous le dos | #6a6152, plus claire que le dos |
+| Tailles de gravure (`--plumio-fond`, classe `p-reserve`) | le fond derrière l’oiseau ; #fffdf8 par défaut | #1c1915 par défaut |
 | Ventre, blanc de l’œil (`--plumio-ventre`) | `paper-50` #fffdf8 | `paper-200` #f2ece0 |
 | Bec, éclats (`--plumio-or`) | `gold-500` #c08a2e | `gold-400` #d4a656 |
 | Pupille (`--plumio-vis`) | `ink-900` #1a1713 | `ink-900` #1a1713 |
@@ -65,8 +95,13 @@ pose `color: var(--accent)` sur `.plumio`.
 | Foulard | `--accent` (`brand-500`) | `--accent` (`brand-300`) |
 
 - **Mode sombre.** Il s’applique tout seul sous `.dark`. Ailleurs, ajouter
-  `.plumio--sombre`. En sombre, le trait devient clair et le dos s’éclaircit
-  d’une nuance : le dessin reste lisible sur le papier brun très sombre.
+  `.plumio--sombre`. En sombre, les pattes deviennent claires, le dos s’éclaircit
+  et l’aile devient plus claire que le dos : le dessin reste lisible sur le papier
+  brun très sombre. Sous 40 px en sombre, dos et ailes s’éclaircissent encore.
+- **`--plumio-fond`** (facultatif) : la couleur de la surface derrière l’oiseau.
+  Les tailles de gravure la prennent ; sans elle, elles prennent le papier (clair)
+  ou l’encre de nuit (sombre), ce qui suffit partout puisqu’elles restent dans la
+  silhouette.
 - **Une seule couleur.** Avec `.plumio--mono`, tout prend `currentColor`, et le
   ventre et le blanc de l’œil prennent `--plumio-fond` (papier par défaut). À
   utiliser dans une pastille ou un tampon.
@@ -122,6 +157,17 @@ pose `color: var(--accent)` sur `.plumio`.
 
 Les classes se posent sur le `<svg class="plumio …">`. Seuls `transform` et
 `opacity` bougent. La courbe est `cubic-bezier(0.16, 1, 0.3, 1)`, sans rebond.
+
+**Version 3 : mêmes classes, mêmes durées.** Toutes les classes et les durées de
+la v2 sont gardées (arrive 1 100, salue 1 200, parle 1 100, se-tourne 520, tapote
+700, picore 900, sautille 420, content 640 ms ; atterrit 360, envol 320, sort
+600 ms) : l’application n’a rien à changer. Ce qui change, c’est la façon de
+bouger, celle d’un petit oiseau : la tête claque vers un nouvel angle en 80 à
+120 ms puis s’arrête ; il saute au lieu de marcher (accroupi, étiré en l’air,
+écrasé à la réception) ; la queue claque après une petite anticipation et ses
+filets suivent avec un temps de retard ; le foulard suit la tête à 40 % et ses
+pans traînent de 80 ms ; en vol, l’aile change de dessin (haut, mi-course, bas)
+toutes les 90 ms. Le corps ne rebondit jamais.
 
 | Classe | Effet | Quand l’ajouter |
 |---|---|---|
@@ -432,9 +478,13 @@ tutoriel.
 - **Feuille.** Importer `animations.css` une fois, en global. Elle ne dépend
   d’aucune autre feuille et n’utilise que `--accent`, avec un repli.
 - **Piège.** Un groupe qui a un pivot CSS (les classes `plumio-*` de la section
-  2 de la feuille) ne doit pas porter d’attribut `transform` : le pivot
+  3 de la feuille) ne doit pas porter d’attribut `transform` : le pivot
   s’ajouterait à la rotation. Dans les poses, les transformations fixes sont
   sur un élément intérieur.
+- **Une articulation, trois calques.** Chaque articulation est une chaîne de
+  groupes imbriqués : le geste (`plumio-tete`), la vie au repos (`plumio-tete-vie`),
+  le regard (`plumio-tete-regard`). Une animation par calque : un geste piloté ne
+  coupe ni la respiration ni le regard.
 - **Retournement.** `pointer-gauche` est `pointer-droite` dans un groupe
   retourné. En arabe, retourner le `<svg>` entier avec `scaleX(-1)`.
 - **Tests utiles.**
@@ -443,7 +493,8 @@ tutoriel.
   - Le tutoriel passe au clavier de bout en bout.
   - La pose de chaque étape correspond à la position de la bulle.
 - **Régénérer** après une retouche du dessin : modifier `outils/plumio.py`
-  (les pièces du squelette et les poses), puis lancer ces trois commandes
+  (les pièces du squelette et les poses ; `outils/geo.py` fait les courbes, les
+  tailles effilées et l’écriture des tracés), puis lancer ces commandes
   depuis la racine du dépôt :
 
   ```sh
