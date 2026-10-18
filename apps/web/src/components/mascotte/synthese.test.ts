@@ -33,15 +33,15 @@ function fauxContexte(maintenant = 0) {
   return { audio: audio as unknown as BaseAudioContext, departs };
 }
 
-const SONS: Son[] = ['battement', 'pepie', 'piou', 'trille', 'bec', 'saut', 'atterrit', 'froisse', 'tapote', 'chut', 'bulle'];
+const SONS: Son[] = ['apparition', 'repere', 'validation', 'depart', 'signal', 'erreur'];
 
-describe('la synthèse des bruitages', () => {
+describe('la synthèse des sons', () => {
   it.each(SONS)('fabrique « %s » sans erreur, à l’heure dite', (son) => {
     const { audio, departs } = fauxContexte();
     const sortie = {} as AudioNode;
-    expect(programmerLaPartition(audio, sortie, [{ temps: 250, son }], 2, () => 0.5)).toBe(1);
+    expect(programmerLaPartition(audio, sortie, [{ temps: 250, son }], 2)).toBe(1);
     expect(departs.length).toBeGreaterThan(0);
-    // Tout part au moment de la note (le trille égrène ses quatre notes juste après).
+    // Tout part au moment de la note (un accord égrène ses notes juste après).
     for (const depart of departs) {
       expect(depart).toBeGreaterThanOrEqual(2.25);
       expect(depart).toBeLessThan(2.5);
@@ -51,10 +51,10 @@ describe('la synthèse des bruitages', () => {
   it('saute les notes déjà passées : un son en retard sur son geste sonnerait faux', () => {
     const { audio } = fauxContexte(1.2);
     const partition = [
-      { temps: 0, son: 'battement' as const },
-      { temps: 100, son: 'battement' as const },
-      { temps: 400, son: 'atterrit' as const },
+      { temps: 0, son: 'repere' as const },
+      { temps: 100, son: 'repere' as const },
+      { temps: 400, son: 'apparition' as const },
     ];
-    expect(programmerLaPartition(audio, {} as AudioNode, partition, 1.05, () => 0.5)).toBe(1);
+    expect(programmerLaPartition(audio, {} as AudioNode, partition, 1.05)).toBe(1);
   });
 });

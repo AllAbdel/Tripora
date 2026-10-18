@@ -168,7 +168,8 @@ export function Pastille({
   return (
     <span
       aria-hidden
-      className={cn('grid shrink-0 place-items-center', mesures.boite, className)}
+      // `pastille` : l'habit épuré la remplace par une tuile unie (index.css).
+      className={cn('pastille grid shrink-0 place-items-center', mesures.boite, className)}
       style={{
         backgroundImage: `linear-gradient(135deg, ${depart}, ${arrivee})`,
         // L'ombre reprend la teinte sombre du dégradé : une ombre grise sous

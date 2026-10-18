@@ -50,7 +50,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('les bruitages de Plumio', () => {
+describe('les sons du guide', () => {
   it('jouent la partition du geste, calée sur son début', async () => {
     const { bruiter, PARTITIONS } = await chargerBruitages();
     bruiter('picore');
@@ -67,7 +67,7 @@ describe('les bruitages de Plumio', () => {
     expect(bruitagesPermis()).toBe(false);
     useTheme.setState({ bruitagesPlumio: true, retours: 'silencieux' });
     expect(bruitagesPermis()).toBe(false);
-    bruiter('salue');
+    bruiter('arrive');
     expect(programmer).not.toHaveBeenCalled();
   });
 
@@ -94,7 +94,7 @@ describe('les bruitages de Plumio', () => {
       override resume = vi.fn(() => new Promise<void>((resoudre) => (demarrer = resoudre)));
     }
     vi.stubGlobal('AudioContext', ContexteLent);
-    bruiter('parle');
+    bruiter('content');
     vi.advanceTimersByTime(500);
     demarrer();
     await Promise.resolve();
@@ -105,7 +105,7 @@ describe('les bruitages de Plumio', () => {
   it('s’arrêtent avec le geste interrompu, en fondu', async () => {
     vi.useFakeTimers();
     const { bruiter } = await chargerBruitages();
-    const couper = bruiter('salue');
+    const couper = bruiter('arrive');
     const piste = FauxContexte.dernier!.pistes[0]!;
     couper();
     expect(piste.gain.setTargetAtTime).toHaveBeenCalledWith(0, 3, expect.any(Number));
@@ -133,9 +133,11 @@ describe('les bruitages de Plumio', () => {
     expect(FauxContexte.dernier).toBeNull();
   });
 
-  it('ne font rien pour un moment sans partition', async () => {
+  it('ne font rien pour un moment sans partition : parler, sautiller, saluer restent muets', async () => {
     const { bruiter } = await chargerBruitages();
-    expect(() => bruiter('joue:attend')()).not.toThrow();
+    for (const moment of ['joue:attend', 'parle', 'sautille', 'salue', 'se-tourne'] as const) {
+      expect(() => bruiter(moment)()).not.toThrow();
+    }
     expect(programmer).not.toHaveBeenCalled();
   });
 });

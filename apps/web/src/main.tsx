@@ -6,7 +6,7 @@ import App from './App';
 import { AuthProvider } from '@/lib/auth';
 import { PontNatif } from '@/components/PontNatif';
 import { persister, queryClient, VERSION_DU_CACHE } from '@/lib/cache';
-import { applyTheme, useTheme, watchSystemTheme } from '@/stores/theme';
+import { applyStyle, applyTheme, useTheme, watchSystemTheme } from '@/stores/theme';
 import { appliquerLaLangue, useLangue } from '@/stores/langue';
 import { demarrerLaTraductionAuRendu } from '@/i18n/traductionAuRendu';
 import { suivreLaRegion } from '@/stores/region';
@@ -16,6 +16,7 @@ import { surveillerLesErreurs } from '@/lib/remonterLesErreurs';
 import './index.css';
 
 applyTheme(useTheme.getState().preference);
+applyStyle(useTheme.getState().style);
 watchSystemTheme();
 // Avant le premier rendu : `lang` et `dir` sur <html>. Poser `dir="rtl"` après
 // coup ferait sauter toute la page d'un côté à l'autre sous les yeux.

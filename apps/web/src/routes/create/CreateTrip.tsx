@@ -58,6 +58,10 @@ export default function CreateTrip() {
   // Repère hors rendu : un effet peut être rejoué, la création ne doit
   // partir qu'une fois.
   const creationLancee = useRef(false);
+  // Le verrou d'une création en cours. `saving` ne désactive le bouton qu'au
+  // rendu suivant : deux appuis dans la même image partaient tous les deux, et
+  // le voyage existait en double (deux trips créés à la même milliseconde).
+  const enVol = useRef(false);
 
   const step = STEPS[index]!;
   const Content = CONTENT[step];
@@ -76,6 +80,8 @@ export default function CreateTrip() {
   }
 
   async function creer() {
+    if (enVol.current) return;
+    enVol.current = true;
     setError(null);
     setSaving(true);
     try {
@@ -106,6 +112,7 @@ export default function CreateTrip() {
           : [failure.message, failure.hint].filter(Boolean).join(' '),
       );
     } finally {
+      enVol.current = false;
       setSaving(false);
     }
   }

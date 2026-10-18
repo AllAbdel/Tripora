@@ -5,6 +5,19 @@ import { NUANCES, paletteDepuis, texteSur } from '@tripora/core';
 export type ThemePreference = 'system' | 'light' | 'dark';
 
 /**
+ * L'habit de l'application.
+ *
+ * — `epure` : des gris neutres, une seule police sans empattements, ni grain
+ *   ni filet appuyé. Le style par défaut : ce qui se lit sans se remarquer.
+ * — `carnet` : le carnet de voyage d'origine — papier crème, encre brune,
+ *   titres en Fraunces, grain léger. Gardé tel quel, au choix dans le profil.
+ *
+ * Les deux partagent tout le reste : composants, accent, clair ou sombre.
+ * Seuls les jetons de `index.css` changent (`html[data-style]`).
+ */
+export type StyleVisuel = 'epure' | 'carnet';
+
+/**
  * Ce que l'application renvoie quand on la touche.
  *
  * Par défaut les vibrations seules : un retour qu'on sent sans déranger
@@ -27,16 +40,19 @@ export const ACCENT_PAR_DEFAUT = '#1a5fb4';
 
 interface ThemeState {
   preference: ThemePreference;
+  style: StyleVisuel;
   accent: string;
   retours: Retours;
   /**
-   * Les bruitages de Plumio (ailes, pépiements, coups de bec). Actifs par
-   * défaut, contrairement aux sons des retours : il apparaît rarement, et un
-   * oiseau muet ne colle pas au personnage. Les retours sur « Rien » le font
+   * Les sons discrets du guide : une note d'interface quand il apparaît,
+   * montre, valide ou s'en va (le nom du champ est resté, pour garder le
+   * réglage de chacun). Actifs par défaut, contrairement aux sons des
+   * retours : le guide apparaît rarement. Les retours sur « Rien » les font
    * taire aussi.
    */
   bruitagesPlumio: boolean;
   setPreference: (value: ThemePreference) => void;
+  setStyle: (style: StyleVisuel) => void;
   setAccent: (couleur: string) => void;
   setRetours: (value: Retours) => void;
   setBruitagesPlumio: (actifs: boolean) => void;
@@ -50,6 +66,16 @@ export function applyTheme(preference: ThemePreference): void {
     (preference === 'system' &&
       window.matchMedia?.('(prefers-color-scheme: dark)').matches === true);
   document.documentElement.classList.toggle('dark', prefersDark);
+}
+
+/**
+ * Pose le style sur <html>. L'épuré est aussi ce que montre la page avant
+ * que le réglage soit lu : la feuille de style le prend pour défaut, et seul
+ * `data-style="carnet"` la fait changer d'habit.
+ */
+export function applyStyle(style: StyleVisuel): void {
+  if (typeof document === 'undefined') return;
+  document.documentElement.dataset.style = style;
 }
 
 /**
@@ -69,7 +95,9 @@ export function applyAccent(couleur: string): void {
   for (const nuance of NUANCES) racine.setProperty(`--color-brand-${nuance}`, palette[nuance]);
   // Le texte posé sur la couleur principale : calculé, jamais supposé blanc.
   racine.setProperty('--accent-contrast', texteSur(palette[500]));
-  racine.setProperty('--shadow-float', `0 8px 32px -8px ${palette[500]}73`);
+  // Le halo teinté des boutons flottants. Le carnet s'en sert ; l'épuré,
+  // qui n'a pas de halo, garde sa propre ombre (`--shadow-float` dans index.css).
+  racine.setProperty('--shadow-float-accent', `0 8px 32px -8px ${palette[500]}73`);
 
   // La barre système du téléphone suit la teinte, sinon l'application installée
   // garde un liseré bleu autour d'une interface devenue verte. Seule la
@@ -83,12 +111,17 @@ export const useTheme = create<ThemeState>()(
   persist(
     (set) => ({
       preference: 'system',
+      style: 'epure',
       accent: ACCENT_PAR_DEFAUT,
       retours: 'vibrations',
       bruitagesPlumio: true,
       setPreference: (value) => {
         applyTheme(value);
         set({ preference: value });
+      },
+      setStyle: (style) => {
+        applyStyle(style);
+        set({ style });
       },
       setAccent: (couleur) => {
         if (!paletteDepuis(couleur)) return;
@@ -102,6 +135,7 @@ export const useTheme = create<ThemeState>()(
       name: 'tripora.theme',
       onRehydrateStorage: () => (state) => {
         applyTheme(state?.preference ?? 'system');
+        applyStyle(state?.style ?? 'epure');
         applyAccent(state?.accent ?? ACCENT_PAR_DEFAUT);
       },
     },

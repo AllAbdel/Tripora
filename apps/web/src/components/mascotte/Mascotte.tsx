@@ -89,8 +89,8 @@ function mouvementReduit(): boolean {
  * En arabe, il se retourne avec la page : il regarde dans le sens de la
  * lecture.
  *
- * Chaque geste joué a ses bruitages (`bruitages.ts`) : battements d'aile,
- * pépiements, coups de bec, calés sur l'animation. Pas un bruit au repos.
+ * Quelques gestes ont une note d'interface (`bruitages.ts`) : il apparaît,
+ * montre, valide, s'en va. Rien quand il parle ou sautille, rien au repos.
  */
 export function Mascotte({
   pose,

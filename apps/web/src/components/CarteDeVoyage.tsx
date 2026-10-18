@@ -137,7 +137,8 @@ function Face({ trip, epingle }: { trip: TripSummary; epingle: boolean }) {
         )}
         <span
           className={cn(
-            'etiquette -rotate-3 rounded-[3px] border px-1.5 py-0.5 text-[0.625rem]',
+            // `tampon` : l'habit épuré le redresse (index.css).
+            'etiquette tampon -rotate-3 rounded-[3px] border px-1.5 py-0.5 text-[0.625rem]',
             photo
               ? 'border-[#fffdf8]/55 text-[#fffdf8]/90 backdrop-blur-[2px]'
               : 'border-[color:var(--border-fort)] text-[color:var(--text-muted)]',

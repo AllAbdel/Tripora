@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { Bird } from 'lucide-react';
+import { Volume2 } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { ecouterPlumio } from '@/components/mascotte/bruitages';
 import { cn } from '@/lib/cn';
@@ -10,10 +10,10 @@ function mouvementReduit(): boolean {
 }
 
 /**
- * Les bruitages de Plumio : un interrupteur, et on l'entend en l'allumant.
+ * Les sons discrets du guide : un interrupteur, et on les entend en l'allumant.
  *
  * À part des retours sous le doigt : ceux-là répondent à chaque geste et
- * restent muets par défaut ; Plumio, lui, n'apparaît que de temps en temps.
+ * restent muets par défaut ; le guide, lui, n'apparaît que de temps en temps.
  * L'écran dit aussi quand il se taira quoi qu'on choisisse — retours sur
  * « Rien », ou moins d'animations demandé à l'appareil.
  */
@@ -25,8 +25,8 @@ export function BruitagesDePlumio() {
     retours === 'silencieux'
       ? 'Muets tant que les retours sont sur « Rien ».'
       : mouvementReduit()
-        ? 'Cet appareil demande moins d’animations : Plumio ne bouge plus, et ne fait donc plus de bruit.'
-        : 'Ailes, pépiements et coups de bec quand il bouge, tout doucement.';
+        ? 'Cet appareil demande moins d’animations : le guide ne bouge plus, et reste donc silencieux.'
+        : 'Une note douce quand le guide apparaît, montre une étape ou s’en va.';
 
   return (
     <Card>
@@ -44,10 +44,10 @@ export function BruitagesDePlumio() {
           }}
           className="flex min-h-11 w-full items-center gap-3 text-start"
         >
-          <Bird className="text-muted size-5 shrink-0" aria-hidden />
+          <Volume2 className="text-muted size-5 shrink-0" aria-hidden />
           <span className="min-w-0 flex-1">
             <span id={idNom} className="block text-sm font-semibold">
-              Les bruitages de Plumio
+              Sons discrets
             </span>
             <span id={idDetail} className="text-muted block text-xs leading-relaxed">
               {raison}
