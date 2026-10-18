@@ -239,22 +239,26 @@ intégré.
   « Insolite » —, la bulle et Plumio disparaissent ; la consigne reste
   annoncée aux lecteurs d'écran, et tout revient en remontant (`partVisible`).
 
-**Les bruitages** (`apps/web/src/components/mascotte/`) :
-- Chaque geste joué a les siens : battements d'aile à l'arrivée et à
-  l'envol, froufrou de l'aile qui salue, pépiements quand il parle, trois
-  « toc » quand il picore, une impulsion et un « pof » quand il sautille, un
-  trille quand il est content. Rien au repos.
-- `partitions.ts` dit quel son tombe à quelle milliseconde, calé sur les
+**Les sons** (`apps/web/src/components/mascotte/`) :
+- Les premiers bruitages imitaient un oiseau (ailes, pépiements, coups de
+  bec) : jugés trop enfantins, ils ont été remplacés par quelques notes
+  d'interface sobres. **Un son par moment au plus**, et la plupart des gestes
+  n'en ont aucun :
+  - une quinte douce qui monte quand il se pose (arrivée, atterrissage) ;
+  - un tic feutré quand il montre une étape (pointer, tapoter, picorer) ;
+  - trois notes d'un accord majeur quand c'est fait (content, célèbre) ;
+  - deux notes qui descendent quand il s'en va ;
+  - deux notes égales pour une notification, une tierce mineure pour « oups ».
+  Rien quand il parle, salue, sautille, se retourne ou réfléchit ; rien au repos.
+- `partitions.ts` dit quelle note tombe à quelle milliseconde, calée sur les
   images clés d'`animations.css` (un test relit les durées dans la feuille) ;
-  `synthese.ts` les fabrique avec l'API Web Audio (bruit filtré, sinusoïdes
-  qui glissent) : aucun fichier, aucune licence, et un son qui varie un peu à
-  chaque fois.
-- Volume bas : mesurés hors ligne, ils restent entre une et deux fois le
-  « toc » des retours sous le doigt.
-- Actifs par défaut (réglage « Bruitages de Plumio » du profil), muets quand
-  les retours sont sur « Rien », quand l'appareil demande moins d'animations,
-  ou dans un onglet caché.
-- Le navigateur refuse tout son avant le premier appui : Plumio n'insiste
+  `synthese.ts` les fabrique avec l'API Web Audio : des sinusoïdes douces et
+  un partiel de verre discret, dans le médium (500 à 1 000 Hz). Aucun
+  fichier, aucune licence.
+- Actifs par défaut (réglage « Sons discrets » du profil), muets quand les
+  retours sont sur « Rien », quand l'appareil demande moins d'animations, ou
+  dans un onglet caché.
+- Le navigateur refuse tout son avant le premier appui : le guide n'insiste
   pas, et se fait entendre dès le premier geste. L'application mobile
   (Capacitor autorise le son sans geste) et l'application installée jouent
   dès l'ouverture. Pour Safari, le contexte audio s'ouvre dans le premier

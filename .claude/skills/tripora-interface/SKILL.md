@@ -1,13 +1,22 @@
 ---
 name: tripora-interface
-description: Style maison de Tripora — identité « carnet », jetons de couleur, composants ui/, typographie française, mouvement, plateformes (web, Android, iOS). À charger avant de créer ou modifier un écran, un composant ou une page publique de Tripora, et avant toute revue d'interface ; il l'emporte sur les skills génériques (web-interface-guidelines, redesign-existing-projects…).
+description: Style maison de Tripora — deux habits (« épuré » par défaut, « carnet » en option), jetons de couleur, composants ui/, typographie française, mouvement, plateformes (web, Android, iOS). À charger avant de créer ou modifier un écran, un composant ou une page publique de Tripora, et avant toute revue d'interface ; il l'emporte sur les skills génériques (web-interface-guidelines, redesign-existing-projects…).
 ---
 
 # Interface de Tripora
 
 Tripora aide un groupe d'amis à choisir une destination, s'organiser et faire ses comptes. Une seule base de code sert le web (PWA), Android et iOS (Capacitor). Ce skill décrit ce qui existe déjà : on le **prolonge**, on ne le réinvente pas écran par écran.
 
-## 1. L'identité : un carnet de voyage
+## 1. Deux habits : épuré (par défaut) et carnet
+
+Le même code porte deux styles, choisis dans Profil › Apparence › Style (`useTheme().style`, posé en `data-style` sur `<html>`). Seuls les **jetons** de `index.css` changent : un composant qui cite `--surface`, `ink-*`, `paper-*`, `gold-*` ou `--font-display` prend l'un ou l'autre habit sans le savoir. D'où la règle : **jamais de couleur ni de police en dur**, toujours un jeton.
+
+- **Épuré** (défaut, `html:not([data-style='carnet'])`) : gris neutres (zinc), fond de page `#f5f5f6`, cartes blanches, une seule police (Inter Tight, titres en 700 et crénage serré), aucun grain, ombres courtes et neutres, aucun halo coloré sous les boutons, ambre franc pour les mises en garde. Les pastilles d'outils perdent leurs dégradés (tuile teintée de l'accent, classe `.pastille`) et le tampon des cartes se redresse (`.tampon`). L'écran arrive en simple fondu.
+- **Carnet** (`data-style='carnet'`) : l'identité d'origine, décrite ci-dessous.
+
+Un nouvel écran doit être vérifié **dans les deux habits**, en clair et en sombre.
+
+### Le carnet de voyage
 
 - **Papier crème, encre brune, filets, grain.** Le fond n'est pas gris mais papier (`--surface-muted`), les textes ne sont pas noirs mais encre chaude (`--text-strong`), les blocs se séparent par un **filet** (bordure `--border-subtle`) plutôt que par une ombre. Un grain SVG très léger couvre tout (`body::after`).
 - **Deux voix.** *Fraunces* (romane à caractère, axe WONK) pour les grands titres uniquement : `h1`, `.titre`, `.titre-lieu` (noms de villes et de pays). *Inter Tight* pour tout le reste. Les deux sont auto-hébergées et sous-ensemblées (`/polices/`) : **ne jamais charger une police depuis un tiers** (hors-ligne, CSP).
@@ -82,7 +91,7 @@ Toujours partir de ces briques avant d'écrire des classes à la main :
 
 ## 8. Avant de livrer un écran
 
-1. Clair **et** sombre, téléphone **et** PC (`lg`), français **et** une langue RTL si le texte bouge.
+1. Épuré **et** carnet, clair **et** sombre, téléphone **et** PC (`lg`), français **et** une langue RTL si le texte bouge.
 2. États : chargement (squelette), vide (`EmptyState`), erreur, hors ligne (`Banner tone="offline"`).
 3. `pnpm lint` (vérifier le code de sortie : `--max-warnings 0`, et `react-refresh/only-export-components` impose un module à part pour tout ce qui n'est pas un composant), `pnpm --filter @tripora/web typecheck`, `pnpm --filter @tripora/web test`.
 4. Un parcours nouveau mérite un test Playwright (`apps/web/e2e/`).

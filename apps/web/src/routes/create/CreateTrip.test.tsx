@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -125,5 +125,27 @@ describe('créer un trip sans compte', () => {
     // Première étape, comme toujours.
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Avec qui partez-vous ?');
     expect(screen.queryByText('Votre trip est prêt')).not.toBeInTheDocument();
+  });
+
+  it('un double appui sur « Créer le voyage » ne crée qu’un seul trip', async () => {
+    // La création reste en cours : le second appui arrive pendant le premier.
+    creer.mockReset().mockReturnValue(new Promise(() => undefined));
+    const client = new QueryClient();
+    render(arbre(authFactice({ identity: INVITE }), client, '/voyages/nouveau'));
+    for (let etape = 0; etape < 12; etape += 1) {
+      const bouton = screen.getByRole('button', { name: /^(Continuer|Créer le voyage)/u });
+      if (/Créer le voyage/u.test(bouton.textContent ?? '')) {
+        // Deux appuis dans la même image, avant que React ait redessiné le
+        // bouton désactivé : c'est ce qui créait le voyage en double.
+        act(() => {
+          bouton.click();
+          bouton.click();
+        });
+        break;
+      }
+      await userEvent.click(bouton);
+    }
+    await waitFor(() => expect(creer).toHaveBeenCalled());
+    expect(creer).toHaveBeenCalledOnce();
   });
 });

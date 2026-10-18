@@ -12,11 +12,11 @@ beforeEach(() => {
   useTheme.setState({ bruitagesPlumio: true, retours: 'vibrations' });
 });
 
-describe('le réglage des bruitages de Plumio', () => {
+describe('le réglage des sons discrets', () => {
   it('actifs par défaut ; on les coupe, puis on les rallume en l’entendant', async () => {
     render(<BruitagesDePlumio />);
-    const interrupteur = screen.getByRole('switch', { name: 'Les bruitages de Plumio' });
-    expect(interrupteur).toHaveAccessibleDescription(/pépiements/u);
+    const interrupteur = screen.getByRole('switch', { name: 'Sons discrets' });
+    expect(interrupteur).toHaveAccessibleDescription(/note douce/u);
     expect(interrupteur).toHaveAttribute('aria-checked', 'true');
 
     await userEvent.click(interrupteur);

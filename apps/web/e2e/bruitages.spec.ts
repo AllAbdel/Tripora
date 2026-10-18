@@ -2,12 +2,12 @@ import { expect, test, type Page } from '@playwright/test';
 import { BALI, poser } from './tripora';
 
 /**
- * Les bruitages de Plumio, dans un vrai navigateur.
+ * Les sons discrets du guide, dans un vrai navigateur.
  *
- * Avant tout geste de la personne, le navigateur refuse le son : Plumio n'ouvre
- * alors aucun contexte audio (ce serait un avertissement dans la console à
- * chaque visite). Dès le premier appui, ses gestes se font entendre — sauf si
- * on a coupé ses bruitages dans le profil.
+ * Avant tout geste de la personne, le navigateur refuse le son : le guide
+ * n'ouvre alors aucun contexte audio (ce serait un avertissement dans la
+ * console à chaque visite). Dès le premier appui, ses étapes se font entendre —
+ * sauf si on a coupé les sons dans le profil.
  */
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -54,7 +54,7 @@ async function ecouter(page: Page) {
   });
 }
 
-test('Plumio se tait avant le premier geste, puis se fait entendre', async ({ page }) => {
+test('le guide se tait avant le premier geste, puis se fait entendre', async ({ page }) => {
   const plantages: string[] = [];
   const avertissements: string[] = [];
   page.on('pageerror', (erreur) => plantages.push(erreur.message));
@@ -70,7 +70,7 @@ test('Plumio se tait avant le premier geste, puis se fait entendre', async ({ pa
   await page.waitForTimeout(1500);
   expect(await page.evaluate(() => window.__bruitages)).toEqual({ contextes: 0, sons: 0 });
 
-  // Un appui : son demi-tour, puis ses gestes dans la visite, se font entendre.
+  // Un appui : les étapes de la visite se font entendre (un repère à chaque cible).
   await accueil.getByRole('button', { name: 'C’est parti' }).click();
   await expect.poll(() => page.evaluate(() => window.__bruitages.sons)).toBeGreaterThan(0);
   expect(await page.evaluate(() => window.__bruitages.contextes)).toBe(1);

@@ -34,6 +34,7 @@ import { NotificationsDuGroupe } from '@/components/NotificationsDuGroupe';
 import { SupprimerMonCompte } from '@/components/SupprimerMonCompte';
 import { GarderMesVoyages } from '@/components/GarderMesVoyages';
 import { BruitagesDePlumio } from '@/components/BruitagesDePlumio';
+import { ChoixDuStyle } from '@/components/ChoixDuStyle';
 import { rappelsPossibles } from '@/lib/rappels';
 import { alertesPossibles } from '@/lib/alertesDePrix';
 import { requeteDesReglages } from '@/lib/notificationsDuGroupe';
@@ -177,6 +178,7 @@ export default function Profile() {
         </Section>
 
         <Section titre="Apparence">
+          <ChoixDuStyle />
           <ChoixDeTheme />
           <ChoixDeCouleur />
         </Section>

@@ -159,7 +159,7 @@
   --shadow-lift: 0 1px 2px rgb(58 52 43 / 0.06), 0 12px 28px -18px rgb(58 52 43 / 0.5);
   /* Assez pour décoller un bouton flottant, pas assez pour l'auréoler : sur
      le fond sombre, un halo coloré transforme une touche en néon. */
-  --shadow-float: 0 8px 20px -12px rgb(26 95 180 / 0.35);
+  --shadow-float: var(--shadow-float-accent, 0 8px 20px -12px rgb(26 95 180 / 0.35));
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
   /* La courbe d'une feuille qui se pose : vive au départ, arrêt net à
@@ -196,6 +196,91 @@
   --accent: var(--color-brand-300);
   --accent-contrast: #131110;
   --grain: 0.03;
+}
+
+/* ---------------------------------------------------------------------------
+   L'habit épuré — le style par défaut.
+
+   Le carnet a du caractère, et c'est aussi sa limite : du papier, une encre
+   brune et une romane à chaque titre, ça se remarque à chaque écran. L'épuré
+   fait l'inverse : des gris neutres, une seule voix, pas de grain, des filets
+   à peine visibles et des cartes blanches posées sur un fond à peine gris.
+   L'information passe devant la matière.
+
+   Rien n'est réécrit : on redéfinit les mêmes jetons. Les composants citent
+   `--surface`, `ink-*`, `paper-*`, `--font-display` ; ils prennent l'un ou
+   l'autre habit sans le savoir. Le carnet reste au choix dans le profil
+   (`data-style="carnet"`) ; tout le reste — y compris la page servie avant
+   que le réglage soit lu — porte celui-ci.
+   --------------------------------------------------------------------------- */
+html:not([data-style='carnet']) {
+  --surface: #ffffff;
+  --surface-muted: #f5f5f6;
+  --surface-raised: #ffffff;
+  --border-subtle: #e6e6e9;
+  --border-fort: #d1d1d6;
+  --text-strong: #111113;
+  /* 4,9:1 sur le fond de page, 5,3:1 sur les cartes. */
+  --text-muted: #65656d;
+  --accent-contrast: #ffffff;
+  --grain: 0;
+
+  /* Les gris remplacent l'encre et le papier : même rôle, sans la teinte. */
+  --color-ink-100: #e4e4e7;
+  --color-ink-300: #a1a1aa;
+  --color-ink-400: #85858e;
+  --color-ink-500: #6b6b74;
+  --color-ink-600: #52525b;
+  /* Plus sombre que le zinc 700 : le texte en retrait du sombre (#a1a1aa) doit y
+     tenir 4,5:1 — c'est le fond des cartes de voyage sans photo. */
+  --color-ink-700: #2e2e33;
+  --color-ink-800: #27272a;
+  --color-ink-900: #18181b;
+  --color-paper-50: #ffffff;
+  --color-paper-100: #fafafa;
+  --color-paper-200: #f4f4f5;
+  --color-paper-300: #e4e4e7;
+  --color-paper-400: #d4d4d8;
+
+  /* L'or du carnet devient un ambre franc : il ne sert plus qu'aux mises en
+     garde et aux épingles. 600 tient 5:1 sur une carte blanche. */
+  --color-gold-50: #fffbeb;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #fcd34d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #b45309;
+  --color-gold-700: #92400e;
+  --color-gold-800: #78350f;
+  --color-gold-900: #451a03;
+
+  /* Une seule voix : les titres parlent comme le reste, en plus gras. */
+  --font-display:
+    'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+
+  --radius-card: 0.875rem;
+  --radius-sheet: 1.25rem;
+
+  /* Des ombres neutres et courtes : une carte se détache du fond, sans halo. */
+  --shadow-card: 0 1px 2px rgb(17 17 19 / 0.04), 0 1px 3px rgb(17 17 19 / 0.03);
+  --shadow-lift: 0 1px 2px rgb(17 17 19 / 0.05), 0 10px 30px -12px rgb(17 17 19 / 0.22);
+  --shadow-float: 0 1px 2px rgb(17 17 19 / 0.08);
+}
+
+html.dark:not([data-style='carnet']) {
+  --surface: #161618;
+  --surface-muted: #0d0d0f;
+  --surface-raised: #1b1b1e;
+  --border-subtle: #29292d;
+  --border-fort: #3a3a40;
+  --text-strong: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --accent-contrast: #0d0d0f;
+  --grain: 0;
+  --shadow-card: 0 0 0 0 transparent;
+  --shadow-lift: 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --shadow-float: 0 0 0 0 transparent;
 }
 
 @layer base {
@@ -237,6 +322,13 @@
     font-family: var(--font-display);
     letter-spacing: -0.022em;
     font-weight: 600;
+  }
+
+  /* En épuré, les titres tiennent par la graisse et un crénage serré, pas par
+     le dessin d'une romane. */
+  html:not([data-style='carnet']) h1 {
+    font-weight: 700;
+    letter-spacing: -0.03em;
   }
 
   /* Les chiffres d'une interface se lisent en colonne — un prix, une durée, un
@@ -402,6 +494,19 @@
     transform-origin: 50% 0;
   }
 
+  /* L'épuré ne joue pas la feuille de papier : l'écran arrive en fondu, de
+     quelques pixels, sans rotation ni ombre de contact. */
+  html:not([data-style='carnet']) .animate-page {
+    animation-name: arrivee;
+    animation-duration: 0.24s;
+  }
+
+  /* Le nom d'une ville en épuré : gras et serré, sans la fantaisie WONK. */
+  html:not([data-style='carnet']) :is(.titre-lieu, .titre) {
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
   /* Un indicateur qui n'apparaît qu'au-delà d'un quart de seconde. En
      dessous, l'œil ne perçoit pas l'attente — mais il perçoit très bien un
      indicateur qui s'allume et s'éteint aussitôt. */
@@ -474,6 +579,17 @@
   }
 }
 
+@keyframes arrivee {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes apparaitre {
   from {
     opacity: 0;
@@ -507,7 +623,9 @@
    --------------------------------------------------------------------------- */
 @media print {
   :root,
-  .dark {
+  .dark,
+  html:not([data-style='carnet']),
+  html.dark:not([data-style='carnet']) {
     --surface: #ffffff;
     --surface-muted: #ffffff;
     --surface-raised: #ffffff;
@@ -619,3 +737,25 @@
     animation: coeur-qui-jaillit 380ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   L'épuré, composant par composant — hors couche, pour passer devant les
+   utilitaires et les styles posés en ligne.
+
+   Les pastilles perdent leurs dégradés multicolores : une tuile à peine
+   teintée de l'accent, le pictogramme dans l'accent. Le nom est toujours écrit
+   à côté ; la couleur n'était qu'un repère, et seize couleurs sur un écran
+   font une boîte de bonbons. Le tampon des cartes de voyage se redresse.
+   --------------------------------------------------------------------------- */
+html:not([data-style='carnet']) .pastille {
+  background-image: none !important;
+  background-color: color-mix(in oklab, var(--accent) 11%, var(--surface-raised)) !important;
+  box-shadow: none !important;
+}
+html:not([data-style='carnet']) .pastille > svg {
+  color: var(--accent) !important;
+}
+html:not([data-style='carnet']) .tampon {
+  rotate: none;
+}
+

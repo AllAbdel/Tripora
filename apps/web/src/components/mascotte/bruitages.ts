@@ -5,13 +5,13 @@ import { PARTITIONS, type MomentDePlumio } from './partitions';
 import { programmerLaPartition } from './synthese';
 
 /**
- * Les bruitages de Plumio : quand il arrive, salue, parle, picore, sautille.
+ * Les sons du guide : une note quand il apparaît, montre, valide ou s'en va.
  *
- * Ce qui décide s'il fait du bruit, dans l'ordre :
+ * Ce qui décide s'il y a du son, dans l'ordre :
  *
- * - **le réglage** « Bruitages de Plumio » du profil, actif par défaut — il
- *   n'apparaît pas souvent, et un oiseau muet ne colle pas au personnage. Les
- *   retours réglés sur « Rien » le font taire aussi ;
+ * - **le réglage** « Sons discrets » du profil, actif par défaut — le guide
+ *   n'apparaît pas souvent, et ses notes sont à peine audibles. Les retours
+ *   réglés sur « Rien » le font taire aussi ;
  * - **le mouvement** : sans animation (mouvement réduit), pas de bruitage —
  *   le son accompagne le geste, il ne le remplace pas ;
  * - **la page visible** : rien dans un onglet en arrière-plan ;
@@ -20,11 +20,11 @@ import { programmerLaPartition } from './synthese';
  *   console à chaque visite) ; l'application installée et l'application
  *   mobile, elles, ont le droit de jouer dès l'ouverture.
  *
- * Un son qui ne peut pas partir à l'heure ne part pas : un battement d'aile
- * une seconde après le geste sonnerait faux.
+ * Un son qui ne peut pas partir à l'heure ne part pas : une note une seconde
+ * après le geste sonnerait faux.
  */
 
-/** Le volume d'ensemble : bas. C'est un petit oiseau. */
+/** Le volume d'ensemble : bas. Une interface qu'on entend à peine. */
 const VOLUME = 0.5;
 /** Au-delà de ce retard, on renonce : le son ne collerait plus au geste. */
 const RETARD_MAX = 200;
@@ -106,8 +106,8 @@ let prepare = false;
  *
  * Safari ne démarre un contexte audio que pendant un geste de la personne :
  * créé plus tard, au moment où Plumio bouge, il resterait suspendu, et Plumio
- * muet. On l'ouvre donc dans le premier appui venu — seulement si ses
- * bruitages sont actifs, et seulement une fois.
+ * muet. On l'ouvre donc dans le premier appui venu — seulement si les sons
+ * sont actifs, et seulement une fois.
  */
 export function preparerAuPremierGeste(): void {
   if (prepare || typeof window === 'undefined') return;
@@ -122,8 +122,8 @@ export function preparerAuPremierGeste(): void {
 }
 
 /**
- * Pour le profil : faire entendre Plumio au moment où l'on active ses
- * bruitages. Appelé depuis un clic, donc toujours permis par le navigateur.
+ * Pour le profil : faire entendre les sons au moment où on les active.
+ * Appelé depuis un clic, donc toujours permis par le navigateur.
  */
 export function ecouterPlumio(): void {
   bruiter('content');
