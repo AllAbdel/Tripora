@@ -1,5 +1,6 @@
 import { useTheme, type Retours } from '@/stores/theme';
 import { contexteAudio } from './audio';
+import { celebrer, secouer } from './mouvement';
 
 /**
  * Ce que l'application renvoie quand on la touche : une vibration, un son.
@@ -98,6 +99,11 @@ function mouvementReduit(): boolean {
  * jamais interrompre l'action qu'il accompagne.
  */
 export function signaler(signal: Signal, reglage: Retours = useTheme.getState().retours): void {
+  // Ce qu'on voit ne dépend pas du réglage des retours (vibration, son) : une
+  // coche qui jaillit, un bouton qui fait « non ». Le mouvement réduit, lui,
+  // les coupe (`mouvement.ts`).
+  if (signal === 'reussite') celebrer();
+  if (signal === 'echec') secouer();
   if (reglage === 'silencieux') return;
   const grain = GRAINS[signal];
 

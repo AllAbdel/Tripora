@@ -13,6 +13,7 @@ import { suivreLaRegion } from '@/stores/region';
 import { SuitLaRegion } from '@/components/SuitLaRegion';
 import { FiletDeSecurite } from '@/components/FiletDeSecurite';
 import { surveillerLesErreurs } from '@/lib/remonterLesErreurs';
+import { demarrerLeMouvement } from '@/lib/mouvement';
 import './index.css';
 
 applyTheme(useTheme.getState().preference);
@@ -27,6 +28,8 @@ demarrerLaTraductionAuRendu();
 suivreLaRegion();
 // Les erreurs que personne ne rattrape partent au serveur, nettoyées (en production seulement).
 surveillerLesErreurs();
+// L'onde sous le doigt, l'éclat d'une réussite, la secousse d'un refus.
+demarrerLeMouvement();
 
 
 const container = document.getElementById('root');

@@ -126,7 +126,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       <span
                         aria-hidden
                         className={cn(
-                          'absolute inset-x-4 top-0 h-px transition-opacity',
+                          'filet-onglet absolute inset-x-4 top-0 h-px transition-opacity',
                           active ? 'bg-current opacity-100' : 'opacity-0',
                         )}
                       />

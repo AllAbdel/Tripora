@@ -42,7 +42,10 @@ export function NumberStepper({
           aria-live="polite"
           className="min-w-14 text-center text-lg font-bold tabular-nums"
         >
-          {value}
+          {/* La clé change avec la valeur : le chiffre glisse à chaque pas. */}
+          <span key={value} className="chiffre-qui-change">
+            {value}
+          </span>
           {suffix && <span className="text-muted ml-1 text-sm font-medium">{suffix}</span>}
         </output>
         <StepperButton onClick={() => step(1)} disabled={value >= max} label={`Plus`}>

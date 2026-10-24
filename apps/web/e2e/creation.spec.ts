@@ -69,8 +69,14 @@ test('on crée un voyage de bout en bout, et il apparaît sur l’accueil', asyn
   await expect(suivant(page)).toBeEnabled();
   await suivant(page).click();
 
+  // Le passage animé : le trajet se trace, puis une coche, « Trip créé ».
+  const passage = page.getByRole('status').filter({ hasText: /Composition du trip|Calcul du budget|Préparation des propositions|Trip créé/ });
+  await expect(passage).toBeVisible();
+  await expect(passage.getByText('Trip créé')).toBeVisible();
+
   // On arrive sur le voyage, et il existe vraiment.
   await expect(page).toHaveURL(/\/voyages\/[^/]+$/, { timeout: 15_000 });
+  await expect(passage).toHaveCount(0);
   const enregistres = await page.evaluate(
     () => JSON.parse(localStorage.getItem('tripora.local-trips') ?? '[]') as unknown[],
   );

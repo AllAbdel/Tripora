@@ -17,7 +17,7 @@ export function Progress({ current, total }: { current: number; total: number })
           key={index}
           className={cn(
             'h-1.5 flex-1 rounded-full transition-colors duration-300',
-            index <= current ? 'bg-brand-500' : 'bg-[color:var(--border-subtle)]',
+            index <= current ? 'segment-rempli bg-brand-500' : 'bg-[color:var(--border-subtle)]',
           )}
         />
       ))}

@@ -1,0 +1,468 @@
+/* ---------------------------------------------------------------------------
+   Le mouvement des interactions.
+
+   Une règle : **le mouvement répond à un geste**. Rien ne bouge pour attirer
+   l'œil ; tout bouge pour dire « c'est pris », « c'est fait », « non ». Des
+   durées courtes (80 à 600 ms), seulement `transform` et `opacity` — ce que le
+   navigateur anime sans recalculer la page —, et deux courbes :
+
+   - `--ease-sortie` : vive au départ, posée à l'arrivée. Pour ce qui se
+     déplace : un soulèvement, un fondu, une onde ;
+   - `--ease-ressort` : un léger dépassement, puis retour. Pour ce qui
+     acquiesce : une sélection, une coche, une icône active. Le dépassement
+     reste sous les 6 % : un ressort, pas un rebond de dessin animé.
+
+   Les appuis s'enfoncent vite (80 ms) et se relâchent doucement (180 ms) :
+   la matière cède sous le doigt et revient sans hâte.
+
+   `prefers-reduced-motion` coupe tout (règle globale de `index.css`), et
+   `mouvement.ts` ne pose alors ni onde ni éclat.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --ease-sortie: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-ressort: cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* Accélère, file, ralentit : le trajet d'un avion, pas d'un objet lancé. */
+  --ease-vol: cubic-bezier(0.45, 0, 0.25, 1);
+}
+
+/* ----------------------------------------------------------------- boutons */
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform 0.18s var(--ease-sortie),
+    box-shadow 0.22s var(--ease-sortie),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .btn:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+  .btn-primaire:not(:disabled):hover {
+    box-shadow: 0 8px 20px -10px color-mix(in oklab, var(--color-brand-500) 70%, transparent);
+  }
+}
+
+.btn:not(:disabled):active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 0.08s;
+}
+
+/* Le reflet du bouton principal : une lumière qui passe au survol, une fois. */
+.btn-primaire::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0s;
+}
+@media (hover: hover) {
+  .btn-primaire:not(:disabled):hover::after {
+    transform: translateX(120%);
+    transition: transform 0.7s var(--ease-sortie);
+  }
+}
+
+/* Les icônes répondent au survol de leur bouton : la flèche avance, le plus
+   tourne d'un quart, la poubelle se penche. Un détail qui dit « ça va bouger
+   par là ». */
+.btn svg,
+.pressable svg,
+a svg {
+  transition: transform 0.24s var(--ease-ressort);
+}
+@media (hover: hover) {
+  :is(.btn, a, .pressable):hover > svg:is(.lucide-arrow-right, .lucide-chevron-right, .lucide-move-right) {
+    transform: translateX(3px);
+  }
+  :is(.btn, a, .pressable):hover > svg:is(.lucide-arrow-left, .lucide-chevron-left) {
+    transform: translateX(-3px);
+  }
+  :is(.btn, a):hover > svg.lucide-plus {
+    transform: rotate(90deg);
+  }
+  :is(.btn, button):hover > svg:is(.lucide-trash, .lucide-trash-2) {
+    transform: rotate(-12deg);
+  }
+  :is(.btn, button, a):hover > svg:is(.lucide-share, .lucide-share-2, .lucide-send) {
+    transform: translate(2px, -2px);
+  }
+  :is(.btn, button, a):hover > svg.lucide-refresh-cw {
+    transform: rotate(180deg);
+  }
+}
+
+/* L'onde : posée par `mouvement.ts` au point touché. */
+.onde {
+  position: absolute;
+  z-index: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: currentColor;
+  opacity: 0.16;
+  transform: translate(-50%, -50%) scale(0);
+  animation: onde 0.6s var(--ease-sortie) forwards;
+}
+@keyframes onde {
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+/* ----------------------------------------------------- cartes cliquables */
+
+.pressable {
+  transition:
+    transform 0.18s var(--ease-sortie),
+    box-shadow 0.24s var(--ease-sortie),
+    border-color 0.2s ease;
+}
+@media (hover: hover) {
+  .pressable:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+  }
+}
+.pressable:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.08s;
+}
+
+/* ----------------------------------------------------------------- choix */
+
+/* Une sélection acquiesce : un petit creux, puis un léger dépassement. Les
+   puces (`aria-pressed`), les tuiles et les cases (`role="radio"`), les
+   interrupteurs. L'animation joue au moment où l'état change. */
+:is(button[aria-pressed='true'], [role='radio'][aria-checked='true'], [role='checkbox'][aria-checked='true']) {
+  animation: acquiesce 0.34s var(--ease-ressort);
+}
+@keyframes acquiesce {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* La coche d'une tuile choisie arrive en tournant, comme tracée d'un geste. */
+[aria-checked='true'] svg.lucide-check,
+[aria-pressed='true'] svg.lucide-check {
+  animation: coche-qui-arrive 0.42s var(--ease-ressort);
+}
+@keyframes coche-qui-arrive {
+  from {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Le pouce d'un interrupteur glisse avec un ressort, et s'étire en partant. */
+[role='switch'] .pouce {
+  transition:
+    transform 0.32s var(--ease-ressort),
+    width 0.18s var(--ease-sortie);
+}
+[role='switch']:active .pouce {
+  width: 1.625rem;
+}
+
+/* ------------------------------------------------------------ navigation */
+
+/* L'onglet qu'on vient d'ouvrir : l'icône saute légèrement, le filet s'étire. */
+nav a[aria-current='page'] > svg {
+  animation: onglet-actif 0.42s var(--ease-ressort);
+}
+@keyframes onglet-actif {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-3px) scale(1.12);
+  }
+  100% {
+    transform: none;
+  }
+}
+nav a[aria-current='page'] > .filet-onglet {
+  animation: filet-qui-s-etire 0.36s var(--ease-sortie);
+  transform-origin: 50% 50%;
+}
+@keyframes filet-qui-s-etire {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ---------------------------------------------------------------- champs */
+
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file']),
+textarea,
+select {
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.22s var(--ease-sortie),
+    background-color 0.18s ease;
+}
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file']):focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 16%, transparent);
+}
+
+/* Un nombre qui change glisse vers le haut (`key` qui change côté React). */
+.chiffre-qui-change {
+  display: inline-block;
+  animation: chiffre-qui-change 0.26s var(--ease-sortie);
+}
+@keyframes chiffre-qui-change {
+  from {
+    opacity: 0;
+    transform: translateY(45%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Une barre d'avancement se remplit par la gauche. */
+.segment-rempli {
+  animation: segment-qui-se-remplit 0.42s var(--ease-sortie);
+  transform-origin: 0 50%;
+}
+[dir='rtl'] .segment-rempli {
+  transform-origin: 100% 50%;
+}
+@keyframes segment-qui-se-remplit {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ------------------------------------------------- réussite et échec */
+
+/* L'éclat : une pastille cochée qui jaillit au point du geste, un anneau
+   qui s'étend, puis tout s'envole et disparaît. */
+.eclat {
+  position: fixed;
+  z-index: 10000;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.eclat-anneau,
+.eclat-pastille {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 9999px;
+  translate: -50% -50%;
+}
+.eclat-anneau {
+  width: 64px;
+  height: 64px;
+  border: 2px solid var(--color-lagoon-500);
+  animation: eclat-anneau 0.6s var(--ease-sortie) forwards;
+}
+.eclat-pastille {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: #fff;
+  background: var(--color-lagoon-500);
+  box-shadow: 0 6px 16px -6px color-mix(in oklab, var(--color-lagoon-500) 80%, transparent);
+  animation: eclat-pastille 1s var(--ease-sortie) forwards;
+}
+.eclat-trait {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: trait-qui-se-dessine 0.32s 0.12s var(--ease-sortie) forwards;
+}
+@keyframes eclat-anneau {
+  from {
+    transform: scale(0.3);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+@keyframes eclat-pastille {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  22% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  34% {
+    transform: scale(1);
+  }
+  72% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-18px) scale(0.85);
+    opacity: 0;
+  }
+}
+@keyframes trait-qui-se-dessine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* « Non » : trois petits mouvements de tête, de moins en moins amples. */
+.secoue {
+  animation: secoue 0.42s var(--ease-sortie);
+}
+@keyframes secoue {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(1px);
+  }
+}
+
+/* ------------------------------------------------ la création d'un trip */
+
+.creation-voile {
+  animation: apparaitre 0.22s ease-out both;
+}
+.creation-carte {
+  animation: arrivee 0.36s var(--ease-sortie) both;
+}
+
+/* Le trajet se trace, l'avion le suit. */
+.creation-trajet {
+  stroke-dasharray: 4 6;
+  animation: trajet-qui-defile 0.9s linear infinite;
+}
+.creation-trace {
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+  animation: trace-qui-avance 1.2s var(--ease-vol) forwards;
+}
+.creation-avion {
+  offset-path: path('M 22 70 C 70 6, 150 6, 198 54');
+  offset-rotate: auto;
+  offset-distance: 0%;
+  animation: avion-qui-vole 1.2s var(--ease-vol) forwards;
+}
+.creation-point {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: point-qui-bat 1.2s ease-in-out infinite;
+}
+.creation-point-arrivee {
+  animation-delay: 0.6s;
+}
+@keyframes trajet-qui-defile {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+@keyframes trace-qui-avance {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+/* Il décolle, file, puis se pose : il rapetisse et s'efface sur le point
+   d'arrivée, qui prend le relais. */
+@keyframes avion-qui-vole {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+    scale: 0.7;
+  }
+  12% {
+    opacity: 1;
+    scale: 1;
+  }
+  85% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+@keyframes point-qui-bat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.35);
+  }
+}
+
+/* Les étapes défilent une à une : la nouvelle monte, l'ancienne s'efface. */
+.creation-etape {
+  animation: etape-qui-monte 0.32s var(--ease-sortie) both;
+}
+@keyframes etape-qui-monte {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* La fin : un cercle se ferme, la coche se dessine. */
+.creation-cercle {
+  stroke-dasharray: 164;
+  stroke-dashoffset: 164;
+  animation: trace-qui-avance 0.5s var(--ease-sortie) forwards;
+}
+.creation-coche {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: trace-qui-avance 0.34s 0.32s var(--ease-sortie) forwards;
+}
+.creation-reussie {
+  animation: acquiesce 0.5s 0.5s var(--ease-ressort) both;
+}

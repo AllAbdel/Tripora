@@ -80,6 +80,13 @@ Toujours partir de ces briques avant d'écrire des classes à la main :
 - N'animer que `transform` et `opacity` ; lister les propriétés de `transition` (jamais `all`).
 - `prefers-reduced-motion` coupe tout, globalement : ne pas le contourner.
 - Pas de défilement détourné, pas d'effet qui retarde la lecture.
+- **Le mouvement répond à un geste** (`src/mouvement.css`, `lib/mouvement.ts`) — on s'en sert, on ne le réinvente pas :
+  - un bouton porte `classesDeBouton` (classe `btn`) : soulèvement au survol, enfoncement et onde à l'appui, reflet sur le principal, icône qui réagit (flèche qui avance, plus qui tourne) ;
+  - une carte cliquable porte `.pressable` : se soulève au survol, s'enfonce à l'appui ;
+  - une sélection (`aria-pressed`, `role="radio"` coché) acquiesce d'elle-même ; un compteur glisse (`.chiffre-qui-change` avec `key={valeur}`) ;
+  - une action qui aboutit appelle `signaler('reussite')` : la coche jaillit au point du geste ; un refus, `signaler('echec')` : le bouton fait « non » ;
+  - une attente courte et voulue (création d'un trip) : `laisserJouer(ms)`, immédiat sans mouvement. Jamais plus d'une seconde et demie.
+  - Deux courbes en plus de `--ease-pose` : `--ease-sortie` (ce qui se déplace) et `--ease-ressort` (ce qui acquiesce, dépassement < 6 %).
 
 ## 7. Plateformes et accessibilité
 

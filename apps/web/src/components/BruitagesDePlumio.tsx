@@ -64,7 +64,8 @@ export function BruitagesDePlumio() {
           >
             <span
               className={cn(
-                'absolute start-0.5 size-6 rounded-full bg-white shadow-sm transition-transform duration-200',
+                // `pouce` : glisse avec un ressort, s'étire à l'appui (mouvement.css).
+                'pouce absolute start-0.5 h-6 w-6 rounded-full bg-white shadow-sm',
                 bruitagesPlumio && 'translate-x-5 rtl:-translate-x-5',
               )}
             />
