@@ -47,9 +47,11 @@ export function classesDeBouton({
     // Un rectangle à peine adouci, pas une pilule. La pilule est la forme
     // par défaut de toutes les interfaces générées : elle n'appartient à
     // personne. Le même rayon que les cartes fait, lui, une famille.
-    'inline-flex items-center justify-center rounded-[var(--radius-card)] font-semibold',
-    'transition-[background-color,transform,box-shadow] duration-200',
-    'active:scale-[0.98] disabled:pointer-events-none disabled:opacity-55',
+    // `btn` : soulèvement au survol, enfoncement et onde à l'appui, reflet sur
+    // le principal (`mouvement.css`, `lib/mouvement.ts`).
+    'btn inline-flex items-center justify-center rounded-[var(--radius-card)] font-semibold',
+    'disabled:pointer-events-none disabled:opacity-55',
+    variant === 'primary' && 'btn-primaire',
     VARIANTS[variant],
     SIZES[size],
     block && 'w-full',

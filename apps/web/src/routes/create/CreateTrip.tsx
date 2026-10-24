@@ -21,6 +21,8 @@ import { useAuth } from '@/lib/auth-context';
 import { resumeDuBrouillon } from '@/lib/resumeDuBrouillon';
 import { EnregistrerLeTrip } from '@/components/EnregistrerLeTrip';
 import { traduireDansLaLangueActive } from '@/i18n/traductionAuRendu';
+import { CreationDuVoyage } from '@/components/CreationDuVoyage';
+import { laisserJouer, mouvementPermis, oublierLeDernierAppui } from '@/lib/mouvement';
 
 const TITLES: Record<StepId, { question: string; help: string }> = {
   groupe: { question: 'Avec qui partez-vous ?', help: 'On pourra inviter les autres juste après.' },
@@ -62,6 +64,8 @@ export default function CreateTrip() {
   // rendu suivant : deux appuis dans la même image partaient tous les deux, et
   // le voyage existait en double (deux trips créés à la même milliseconde).
   const enVol = useRef(false);
+  /** Le court passage animé entre l'appui et l'écran du voyage. */
+  const [miseEnScene, setMiseEnScene] = useState<null | 'en-cours' | 'reussie'>(null);
 
   const step = STEPS[index]!;
   const Content = CONTENT[step];
@@ -84,6 +88,8 @@ export default function CreateTrip() {
     enVol.current = true;
     setError(null);
     setSaving(true);
+    const debut = performance.now();
+    if (mouvementPermis()) setMiseEnScene('en-cours');
     try {
       const firstDestination = draft.destinationIds[0];
       const suggere = suggestTitle(
@@ -97,11 +103,19 @@ export default function CreateTrip() {
       // Sans cette invalidation, la liste et l'écran du voyage afficheraient
       // encore le cache d'avant la création : le voyage semblerait introuvable.
       await queryClient.invalidateQueries({ queryKey: ['trips'] });
+      // Le trajet a le temps de se tracer (1,3 s au plus, depuis l'appui), puis
+      // la coche se dessine. Sans mouvement, on passe tout de suite.
+      await laisserJouer(1300 - (performance.now() - debut));
+      setMiseEnScene((etat) => (etat ? 'reussie' : etat));
+      // L'écran a sa propre coche : pas d'éclat en plus au point d'appui.
+      oublierLeDernierAppui();
       signaler('reussite');
+      await laisserJouer(850);
       draft.reset();
       navigate(`/voyages/${id}`, { replace: aEnregistrer });
     } catch (cause) {
       creationLancee.current = false;
+      setMiseEnScene(null);
       signaler('echec');
       const failure = toFailure(cause);
       // Un message métier explicite vaut mieux que la traduction générique ;
@@ -191,6 +205,7 @@ export default function CreateTrip() {
               )}
             </Banner>
           )}
+          {miseEnScene && <CreationDuVoyage reussie={miseEnScene === 'reussie'} />}
           {identity ? (
             <div role="status" className="grid place-items-center gap-3 py-16 text-center">
               {saving && <Check className="text-lagoon-500 size-8" aria-hidden />}
@@ -242,6 +257,8 @@ export default function CreateTrip() {
       <main key={step} data-question={step} className="animate-rise flex-1 px-5 pt-5 pb-40">
         <Content />
       </main>
+
+      {miseEnScene && <CreationDuVoyage reussie={miseEnScene === 'reussie'} />}
 
       <div className="pb-safe fixed inset-x-0 bottom-0 mx-auto w-full max-w-2xl border-t border-[color:var(--border-subtle)] bg-[color:var(--surface)]/90 px-5 pt-3 backdrop-blur-xl">
         {error && (

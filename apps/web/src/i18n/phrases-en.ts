@@ -2509,6 +2509,10 @@ const PHRASES_FIXES: Readonly<Record<string, string>> = {
   "La liste précédente est revenue. Vérifiez votre connexion, puis réessayez.": "The previous list is back. Check your connection, then try again.",
   // Les sons discrets du guide.
   "Sons discrets": "Subtle sounds",
+  "Composition du trip…": "Putting the trip together…",
+  "Calcul du budget…": "Working out the budget…",
+  "Préparation des propositions…": "Preparing destination ideas…",
+  "Trip créé": "Trip created",
   "Style": "Style",
   "Épuré": "Clean",
   "Gris neutres, une seule police. L’information d’abord.": "Neutral greys, a single typeface. Information first.",

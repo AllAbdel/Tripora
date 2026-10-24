@@ -16,6 +16,11 @@ on:
     - cron: '17 6 */3 * *'
   workflow_dispatch:
 
+# Le jeton GitHub de ces travaux ne fait que lire le dépôt : un script ou une
+# dépendance compromise ne pourrait rien pousser ni rien publier.
+permissions:
+  contents: read
+
 jobs:
   ping:
     name: Lecture d'entretien

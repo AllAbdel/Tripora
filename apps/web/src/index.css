@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* Le mouvement des interactions : boutons, choix, réussite, création d'un trip. */
+@import './mouvement.css';
 
 /* ---------------------------------------------------------------------------
    Les deux voix de Tripora, servies depuis nos propres fichiers.
