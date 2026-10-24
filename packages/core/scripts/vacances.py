@@ -39,6 +39,7 @@ façon de le refaire.
 import datetime
 import json
 import os
+import re
 import sys
 import time
 import urllib.parse
@@ -416,6 +417,13 @@ def ecrire(sortie):
         reperes = ';'.join(f'{r},{p[0]:g},{p[1]:g}' for r, p in donnees['points'])
         noms = ', '.join(f'[{chaine(f)}, {chaine(a)}]' for f, a in donnees['noms'])
         periodes = ';'.join(f'{d}-{f}:{n}:{r}' for d, f, n, r in donnees['lignes'])
+        # Ces valeurs viennent d'OpenHolidays et sont recopiées sans guillemets
+        # échappés dans du TypeScript : seuls les caractères attendus passent.
+        brutes = [(pays, r'[A-Z]{2}'), (donnees['jusquau'], r'\d{4}-\d{2}-\d{2}'),
+                  (reperes, r'[A-Za-z0-9,.;\-]*'), (periodes, r'[A-Za-z0-9,.;:*\-]*')]
+        for valeur, motif in brutes:
+            if not re.fullmatch(motif, valeur):
+                raise SystemExit(f'{pays} : valeur inattendue dans la source ({valeur[:60]!r})')
         lignes.append(f'  {pays}: {{')
         lignes.append(f"    jusquau: '{donnees['jusquau']}',")
         lignes.append(f'    regions: [{regions}],')

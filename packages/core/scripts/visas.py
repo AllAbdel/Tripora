@@ -53,9 +53,17 @@ def main():
     trouve = re.search(r'Last updated: \*\*(\d{1,2}) (\w+) (\d{4})\*\*', lisezmoi)
     mois = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
             'October', 'November', 'December']
+    if not trouve or trouve.group(2) not in mois:
+        raise SystemExit('Date de mise à jour introuvable dans le README de la source.')
     releve = f'{trouve.group(3)}-{mois.index(trouve.group(2)) + 1:02d}-{int(trouve.group(1)):02d}'
 
     pays = sorted(donnees)
+    # Codes et lignes sont recopiés tels quels dans du TypeScript : on refuse
+    # tout ce qui n'est pas deux lettres, plutôt que d'écrire ce qu'une source
+    # piégée y aurait glissé.
+    inattendus = [code for code in pays if not re.fullmatch(r'[A-Z]{2}', code)]
+    if inattendus:
+        raise SystemExit(f'Codes pays inattendus dans la source : {inattendus[:5]!r}')
     lignes = []
     for passeport in pays:
         jetons = []
@@ -66,7 +74,10 @@ def main():
                 continue
             jours = entree.get('days')
             jetons.append(LETTRES[entree['status']] + (str(jours) if isinstance(jours, int) and jours > 0 else ''))
-        lignes.append(f"  {passeport}: '{''.join(jetons)}',")
+        ligne = ''.join(jetons)
+        if not re.fullmatch(r'[LAEVRN\-0-9]*', ligne):
+            raise SystemExit(f'Ligne inattendue pour le passeport {passeport}')
+        lignes.append(f"  {passeport}: '{ligne}',")
 
     commentaire = '\n'.join('// ' + ligne if ligne else '//' for ligne in licence.splitlines())
     SORTIE.write_text(

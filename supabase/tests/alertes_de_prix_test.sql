@@ -153,6 +153,17 @@ begin
   end if;
 end $$;
 
+-- Un visiteur anonyme n'appelle pas la fonction de la clé publique : seul
+-- quelqu'un de connecté s'abonne aux notifications.
+set role anon;
+do $$
+begin
+  perform public.cle_publique_push();
+  raise exception 'La clé publique des notifications ne doit pas être ouverte aux visiteurs anonymes';
+exception when insufficient_privilege then null;
+end $$;
+reset role;
+
 -- Nettoyage : les tests suivants comptent les lignes de ces comptes.
 delete from public.push_subscriptions;
 delete from public.price_watches;

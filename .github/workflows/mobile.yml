@@ -21,6 +21,11 @@ on:
       - '.github/workflows/mobile.yml'
   workflow_dispatch:
 
+# Le jeton GitHub de ces travaux ne fait que lire le dépôt : un script ou une
+# dépendance compromise ne pourrait rien pousser ni rien publier.
+permissions:
+  contents: read
+
 concurrency:
   group: mobile-${{ github.ref }}
   cancel-in-progress: true

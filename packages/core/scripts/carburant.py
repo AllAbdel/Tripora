@@ -30,6 +30,7 @@ l'application et son dépôt.
 import datetime
 import json
 import pathlib
+import re
 import urllib.request
 
 AGENT = 'Tripora/1.0 (+https://github.com/AllAbdel/Tripora)'
@@ -64,6 +65,10 @@ def main():
     taux = lire('https://openvan.camp/api/currency/rates')['rates']
     lignes = []
     for code, entree in sorted(prix['data'].items()):
+        # Le code est recopié tel quel dans du TypeScript : une source piégée
+        # ne doit pas pouvoir y glisser autre chose que deux lettres.
+        if not re.fullmatch(r'[A-Z]{2}', code):
+            raise SystemExit(f'Code pays inattendu dans la réponse d\'OpenVan : {code!r}')
         if entree.get('is_excluded'):
             continue
         essence = centimes_par_litre(entree, 'gasoline', taux)
@@ -75,6 +80,8 @@ def main():
 
     releve = prix['meta']['updated_at'][:10]
     datetime.date.fromisoformat(releve)
+    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', releve):
+        raise SystemExit(f'Date de relevé inattendue : {releve!r}')
     SORTIE.write_text(
         '// Généré par scripts/carburant.py — ne pas modifier à la main.\n'
         '// Source : OpenVan.camp (https://openvan.camp), licence CC BY 4.0.\n'

@@ -5,6 +5,11 @@ on:
     branches: ['**']
   pull_request:
 
+# Le jeton GitHub de ces travaux ne fait que lire le dépôt : un script ou une
+# dépendance compromise ne pourrait rien pousser ni rien publier.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

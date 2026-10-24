@@ -21,10 +21,10 @@
     "seed:sql": "tsx scripts/generate-seed.ts"
   },
   "dependencies": {
-    "zod": "^4.1.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "tsx": "^4.23.13",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.12"
   }
 }
