@@ -14,6 +14,7 @@ import { SuitLaRegion } from '@/components/SuitLaRegion';
 import { FiletDeSecurite } from '@/components/FiletDeSecurite';
 import { surveillerLesErreurs } from '@/lib/remonterLesErreurs';
 import { demarrerLeMouvement } from '@/lib/mouvement';
+import { surveillerLesNouvellesVersions } from '@/lib/nouvelleVersion';
 import './index.css';
 
 applyTheme(useTheme.getState().preference);
@@ -30,6 +31,8 @@ suivreLaRegion();
 surveillerLesErreurs();
 // L'onde sous le doigt, l'éclat d'une réussite, la secousse d'un refus.
 demarrerLeMouvement();
+// Une version publiée pendant que la page était ouverte : recharger une fois.
+surveillerLesNouvellesVersions();
 
 
 const container = document.getElementById('root');

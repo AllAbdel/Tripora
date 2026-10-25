@@ -13,7 +13,11 @@ const greffon = vi.hoisted(() => ({
 
 vi.mock('./natif', () => ({ estNatif: true }));
 vi.mock('@capacitor/local-notifications', () => ({
-  LocalNotifications: {
+  // Comme le vrai greffon de Capacitor : un proxy qui lève une erreur pour
+  // toute méthode qu'il n'a pas, `then` compris. Renvoyé tel quel par une
+  // fonction `async`, il passait pour une promesse et cassait sur Android
+  // (« "LocalNotifications.then()" is not implemented on android »).
+  LocalNotifications: commeUnGreffon({
     getPending: async () => ({ notifications: greffon.enAttente }),
     schedule: greffon.schedule,
     cancel: greffon.cancel,
@@ -22,8 +26,17 @@ vi.mock('@capacitor/local-notifications', () => ({
       greffon.ecouteur = ecouter;
       return { remove: vi.fn() };
     },
-  },
+  }),
 }));
+
+function commeUnGreffon<T extends object>(methodes: T): T {
+  return new Proxy(methodes, {
+    get(cible, nom, receveur) {
+      if (nom === 'then') throw new Error('"LocalNotifications.then()" is not implemented on android');
+      return Reflect.get(cible, nom, receveur);
+    },
+  });
+}
 
 const { activerLesRappels, desactiverLesRappels, oublierLesAutresVoyages, poserLesRappels, suivreLesAppuis } =
   await import('./rappels');
