@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Mascotte } from '@/components/mascotte/Mascotte';
 import { remonterUneErreur } from '@/lib/remonterLesErreurs';
+import { estUnMorceauPerdu, rechargerPourLaNouvelleVersion } from '@/lib/nouvelleVersion';
 
 /**
  * Le filet sous toute l'application : un écran qui plante n'emporte plus la
@@ -21,6 +22,9 @@ export class FiletDeSecurite extends Component<{ children: ReactNode }, { erreur
   }
 
   override componentDidCatch(erreur: Error, info: ErrorInfo): void {
+    // Une nouvelle version publiée pendant que la page était ouverte : on la
+    // prend en rechargeant, ce n'est pas un plantage (`nouvelleVersion.ts`).
+    if (estUnMorceauPerdu(erreur) && rechargerPourLaNouvelleVersion()) return;
     // La pile des composants dit lequel est tombé : plus utile que la pile JavaScript seule.
     if (info.componentStack) erreur.stack = `${erreur.stack ?? ''}\n${info.componentStack}`;
     remonterUneErreur(erreur);

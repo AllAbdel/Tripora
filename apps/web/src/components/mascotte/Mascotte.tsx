@@ -1,15 +1,12 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/cn';
 import { bruiter, preparerAuPremierGeste } from './bruitages';
+import { chargerLaPose, poseChargee, prechargerLaMascotte } from './poses';
 // La feuille et les poses vivent avec leurs sources de dessin (design/mascotte,
 // régénérées par outils/plumio.py) : l'application les lit telles quelles.
 import '../../../../../design/mascotte/animations.css';
 
-const DESSINS = import.meta.glob<string>('../../../../../design/mascotte/poses/*.svg', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
+
 
 /** Les vingt-trois poses de Plumio (voir `design/mascotte/NOTES.md`). */
 export type PoseDeLaMascotte =
@@ -62,11 +59,7 @@ const DUREE_DU_GESTE: Record<GesteDePlumio, number> = {
   content: 640,
 };
 
-function dessin(pose: PoseDeLaMascotte): string {
-  const brut = DESSINS[`../../../../../design/mascotte/poses/${pose}.svg`] ?? '';
-  // La taille vient du conteneur ; le `xmlns` ne sert à rien dans du HTML.
-  return brut.replace(' xmlns="http://www.w3.org/2000/svg"', '').replace('<svg ', '<svg width="100%" height="100%" ');
-}
+
 
 function mouvementReduit(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -126,6 +119,23 @@ export function Mascotte({
   className?: string;
 }) {
   const conteneur = useRef<HTMLSpanElement | null>(null);
+  // Le dessin chargé pour la dernière pose demandée, quand il ne l'était pas déjà.
+  const [charge, setCharge] = useState<{ pose: PoseDeLaMascotte; svg: string } | null>(null);
+  const svgDeLaPose = poseChargee(pose) ?? (charge?.pose === pose ? charge.svg : null);
+
+  useEffect(() => {
+    prechargerLaMascotte();
+    if (poseChargee(pose) !== undefined) return;
+    let actif = true;
+    void chargerLaPose(pose)
+      .then((svg) => {
+        if (actif) setCharge({ pose, svg });
+      })
+      .catch(() => undefined);
+    return () => {
+      actif = false;
+    };
+  }, [pose]);
 
   // Le son se déverrouille au premier appui (Safari) : seulement s'il est là.
   useEffect(preparerAuPremierGeste, []);
@@ -138,7 +148,7 @@ export function Mascotte({
     svg.classList.toggle('plumio--petit', petit ?? taille < 40);
     svg.classList.toggle('plumio--calme', vie === 'calme');
     svg.classList.toggle('plumio--vie', vie === 'vie');
-  }, [pose, taille, petit, vie]);
+  }, [pose, taille, petit, vie, svgDeLaPose]);
 
   // Le geste de la pose, une fois, à l'arrivée : après l'atterrissage s'il y en a un.
   // Chaque son part avec son geste, et s'arrête si le geste est interrompu.
@@ -169,7 +179,8 @@ export function Mascotte({
       window.clearTimeout(minuteur);
       couper();
     };
-  }, [pose, joue, arrivee, sortie]);
+    // `svgDeLaPose` : le dessin arrive parfois après le premier rendu ; le geste part alors avec lui.
+  }, [pose, joue, arrivee, sortie, svgDeLaPose]);
 
   // Un geste piloté : la classe le temps de le jouer, puis retirée.
   useLayoutEffect(() => {
@@ -184,7 +195,7 @@ export function Mascotte({
       svg.classList.remove(classe);
       couper();
     };
-  }, [pose, geste, fois]);
+  }, [pose, geste, fois, svgDeLaPose]);
 
   useRegardQuiSuit(conteneur, regard, pose.endsWith('-gauche'));
 
@@ -196,7 +207,8 @@ export function Mascotte({
       style={{ width: taille, height: taille }}
       // Un dessin du dépôt, sans script ni lien : le SVG doit être dans la page
       // pour que la feuille l'anime et lui donne la couleur d'accent.
-      dangerouslySetInnerHTML={{ __html: dessin(pose) }}
+      // Tant que le dessin n'est pas là, la place reste réservée : rien ne bouge.
+      dangerouslySetInnerHTML={{ __html: svgDeLaPose ?? '' }}
     />
   );
 }

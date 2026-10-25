@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { Mascotte } from './Mascotte';
+import { chargerLaPose } from './poses';
 
 const couper = vi.hoisted(() => vi.fn());
 const bruiter = vi.hoisted(() => vi.fn(() => couper));
@@ -10,6 +11,11 @@ vi.mock('./bruitages', () => ({ bruiter, preparerAuPremierGeste: () => undefined
  * Chaque geste joué part avec ses bruitages, et les emporte s'il est
  * interrompu : un nouveau geste, une fenêtre qui se ferme.
  */
+// Les dessins se chargent à la demande ; déjà chargés, ils s'affichent aussitôt.
+beforeAll(async () => {
+  await Promise.all((['face', 'oups', 'celebre', 'attend'] as const).map(chargerLaPose));
+});
+
 beforeEach(() => {
   bruiter.mockClear();
   couper.mockClear();
@@ -51,5 +57,13 @@ describe('les bruitages suivent les gestes de Plumio', () => {
     const { unmount } = render(<Mascotte pose="face" taille={100} geste="parle" fois={1} />);
     unmount();
     expect(couper).toHaveBeenCalled();
+  });
+
+  it('une pose pas encore chargée arrive un instant plus tard, à la place réservée', async () => {
+    const { container, findByText } = render(<Mascotte pose="vol" taille={80} />);
+    const boite = container.firstElementChild as HTMLElement;
+    expect(boite.style.width).toBe('80px');
+    await vi.waitFor(() => expect(boite.querySelector('svg')).not.toBeNull());
+    void findByText;
   });
 });

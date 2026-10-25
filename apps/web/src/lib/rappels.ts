@@ -64,9 +64,18 @@ export function useChoixDesRappels(): ChoixDesRappels {
 /** Les rappels n'existent que dans l'application. */
 export const rappelsPossibles: boolean = estNatif;
 
+/**
+ * Le greffon, rangé dans un objet.
+ *
+ * Renvoyé tel quel par une fonction `async`, il passait pour une promesse :
+ * le moteur JavaScript cherche une méthode `then`, et le greffon de Capacitor
+ * — un proxy qui répond à tout nom de méthode — lève alors « "LocalNotifications.then()"
+ * is not implemented on android ». Les rappels ne marchaient pas du tout sur
+ * Android (erreur remontée huit fois en production).
+ */
 async function greffon() {
   const { LocalNotifications } = await import('@capacitor/local-notifications');
-  return LocalNotifications;
+  return { notifications: LocalNotifications };
 }
 
 /**
@@ -76,7 +85,7 @@ async function greffon() {
 export async function activerLesRappels(): Promise<boolean> {
   if (!rappelsPossibles) return false;
   try {
-    const notifications = await greffon();
+    const { notifications } = await greffon();
     const { display } = await notifications.requestPermissions();
     const accorde = display === 'granted';
     retenir(accorde ? 'actifs' : 'refuses');
@@ -101,7 +110,7 @@ export async function desactiverLesRappels(): Promise<void> {
 export async function retirerTousLesRappels(): Promise<void> {
   if (!rappelsPossibles) return;
   try {
-    const notifications = await greffon();
+    const { notifications } = await greffon();
     const { notifications: enAttente } = await notifications.getPending();
     if (enAttente.length > 0) {
       await notifications.cancel({ notifications: enAttente.map(({ id }) => ({ id })) });
@@ -131,7 +140,7 @@ export async function poserLesRappels(
 ): Promise<void> {
   if (!rappelsPossibles || lire() !== 'actifs') return;
   try {
-    const notifications = await greffon();
+    const { notifications } = await greffon();
     const { notifications: enAttente } = await notifications.getPending();
     const perimes = enAttente.filter((notification) => {
       const supplement = (notification.extra ?? {}) as Supplement;
@@ -164,7 +173,7 @@ export async function poserLesRappels(
 export async function oublierLesAutresVoyages(voyagesConnus: ReadonlySet<string>): Promise<void> {
   if (!rappelsPossibles || lire() !== 'actifs') return;
   try {
-    const notifications = await greffon();
+    const { notifications } = await greffon();
     const { notifications: enAttente } = await notifications.getPending();
     const orphelins = enAttente.filter((notification) => {
       const { tripId } = (notification.extra ?? {}) as Supplement;
@@ -187,7 +196,7 @@ export function suivreLesAppuis(ouvrir: (lien: string) => void): () => void {
   let retrait: (() => void) | null = null;
   let actif = true;
   void greffon()
-    .then((notifications) =>
+    .then(({ notifications }) =>
       notifications.addListener('localNotificationActionPerformed', ({ notification }) => {
         const { lien } = (notification.extra ?? {}) as Supplement;
         // Seulement un chemin de l'application : jamais une adresse extérieure.
