@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Globe2, Loader2, Search, Sparkles, Target } from 'lucide-react';
-import { findDestination, searchDestinations, type Destination } from '@tripora/core';
+import { findDestination, fold, searchDestinations, type Destination } from '@tripora/core';
 import { OptionCard } from '@/components/ui/OptionCard';
 import { Chip } from '@/components/ui/Chip';
 import { TextInput } from '@/components/ui/Field';
@@ -65,6 +65,30 @@ export function StepDestination() {
     // n'a pas à remplir le catalogue de tout le monde.
     if (ajout && destination.discovered) void retenirVille(destination);
   }
+
+  /**
+   * Un nom tapé en entier vaut un choix.
+   *
+   * Taper « Bogota » ne suffisait pas : il fallait encore toucher la pastille
+   * « Bogotá » en dessous. Sans ce geste, « Continuer » restait grisé, et le
+   * réflexe était de repasser sur « Surprends-nous » pour avancer — le voyage
+   * partait alors sur des propositions proches du départ (Lyon, Marseille…),
+   * sans rapport avec la ville voulue. Quand le texte désigne exactement une
+   * ville (accents et majuscules mis à part) et que rien n'est encore choisi,
+   * on la choisit. Une fois par saisie : la retirer reste possible.
+   */
+  const choixAutomatique = useRef('');
+  useEffect(() => {
+    if (destinationMode !== 'fixed' || destinationIds.length > 0 || !actif) return;
+    if (choixAutomatique.current === terme) return;
+    const cle = fold(terme);
+    const exacte = [...catalogue, ...villes].find((ville) => fold(ville.name) === cle);
+    if (!exacte) return;
+    choixAutomatique.current = terme;
+    choisir(exacte);
+    // `choisir` lit l'état du rendu courant ; seuls ces changements comptent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destinationMode, destinationIds.length, actif, terme, catalogue, villes]);
 
   const choisies = destinationIds
     .map((id) => findDestination(id))
@@ -149,9 +173,10 @@ export function StepDestination() {
             </div>
           )}
 
-          {catalogue.length > 0 && (
+          {/* Une ville déjà choisie ne se répète pas dans les résultats : elle est juste au-dessus. */}
+          {catalogue.some((destination) => !destinationIds.includes(destination.id)) && (
             <div className="flex flex-wrap gap-2">
-              {catalogue.map((destination) => (
+              {catalogue.filter((destination) => !destinationIds.includes(destination.id)).map((destination) => (
                 <Chip
                   key={destination.id}
                   selected={destinationIds.includes(destination.id)}
@@ -163,14 +188,14 @@ export function StepDestination() {
             </div>
           )}
 
-          {villes.length > 0 && (
+          {villes.some((ville) => !destinationIds.includes(ville.id)) && (
             <div className="space-y-2 pt-1">
               <p className="text-muted flex items-center gap-1.5 text-xs">
                 <Globe2 className="size-3.5" aria-hidden />
                 Trouvées sur la carte du monde
               </p>
               <div className="flex flex-wrap gap-2">
-                {villes.map((ville) => (
+                {villes.filter((ville) => !destinationIds.includes(ville.id)).map((ville) => (
                   <Chip
                     key={ville.id}
                     selected={destinationIds.includes(ville.id)}

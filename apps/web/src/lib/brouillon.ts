@@ -66,7 +66,15 @@ export interface CibleBrouillon {
   setWeight: (axis: PreferenceAxis, value: number) => void;
 }
 
-export function appliquerBrouillon(brouillon: AiDraft, cible: CibleBrouillon): void {
+/**
+ * Reporte le brouillon. Renvoie le nom de la destination quand le catalogue ne
+ * la connaît pas : l'appelant la cherche alors sur la carte du monde
+ * (`chercherVilles`). Le voyage passe de toute façon en « on sait déjà où
+ * aller » : une ville nommée ne doit jamais retomber en « Surprends-nous »,
+ * qui proposerait des destinations sans rapport avec elle.
+ */
+export function appliquerBrouillon(brouillon: AiDraft, cible: CibleBrouillon): { destinationInconnue?: string } {
+  let destinationInconnue: string | undefined;
   const changements: Partial<StoreTripDraft> = {};
 
   if (brouillon.participants !== undefined) changements.participants = brouillon.participants;
@@ -91,9 +99,11 @@ export function appliquerBrouillon(brouillon: AiDraft, cible: CibleBrouillon): v
 
   if (brouillon.destination !== undefined) {
     const trouvee = searchDestinations(brouillon.destination, 1)[0];
-    if (trouvee) {
-      changements.destinationMode = 'fixed';
-      changements.destinationIds = [trouvee.id];
+    changements.destinationMode = 'fixed';
+    if (trouvee) changements.destinationIds = [trouvee.id];
+    else {
+      changements.destinationIds = [];
+      destinationInconnue = brouillon.destination;
     }
   }
 
@@ -101,4 +111,5 @@ export function appliquerBrouillon(brouillon: AiDraft, cible: CibleBrouillon): v
   for (const [axe, valeur] of Object.entries(brouillon.weights ?? {})) {
     cible.setWeight(axe as PreferenceAxis, valeur);
   }
+  return destinationInconnue === undefined ? {} : { destinationInconnue };
 }

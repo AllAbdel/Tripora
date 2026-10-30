@@ -40,3 +40,28 @@ describe('« Surprends-nous », mais par où ?', () => {
     expect(destination?.valeur).toBe('Tripora vous propose des destinations (Afrique, Asie)');
   });
 });
+
+describe('« On sait déjà où aller »', () => {
+  it('taper le nom entier d’une ville la choisit : plus besoin de toucher la pastille', async () => {
+    render(<StepDestination />);
+    await userEvent.click(screen.getByRole('radio', { name: /On sait déjà où aller/u }));
+    // Sans accent, comme on le tape au téléphone.
+    await userEvent.type(screen.getByRole('textbox', { name: 'Chercher une destination' }), 'Bogota');
+    expect(useTripDraft.getState().destinationMode).toBe('fixed');
+    expect(useTripDraft.getState().destinationIds).toEqual(['bogota']);
+    expect(screen.getByText('1 destination choisie')).toBeInTheDocument();
+  });
+
+  it('un début de nom ne choisit rien, et une ville retirée n’est pas reprise d’office', async () => {
+    render(<StepDestination />);
+    await userEvent.click(screen.getByRole('radio', { name: /On sait déjà où aller/u }));
+    const champ = screen.getByRole('textbox', { name: 'Chercher une destination' });
+    await userEvent.type(champ, 'Bogo');
+    expect(useTripDraft.getState().destinationIds).toEqual([]);
+    await userEvent.type(champ, 'ta');
+    expect(useTripDraft.getState().destinationIds).toEqual(['bogota']);
+    // On la retire : elle reste retirée tant qu'on ne retape pas.
+    await userEvent.click(screen.getAllByRole('button', { name: 'Bogotá' })[0]!);
+    expect(useTripDraft.getState().destinationIds).toEqual([]);
+  });
+});
