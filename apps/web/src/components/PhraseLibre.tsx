@@ -6,6 +6,8 @@ import { appliquerBrouillon, resumer } from '@/lib/brouillon';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { useTripDraft } from '@/stores/tripDraft';
+import { fold } from '@tripora/core';
+import { chercherVilles, retenirVille } from '@/lib/geocode';
 
 const EXEMPLE = 'On part à 5 depuis Lyon, une semaine en octobre, 400 € max, plutôt fête et bonne bouffe';
 
@@ -55,10 +57,24 @@ export function PhraseLibre() {
 
   function appliquer() {
     if (!compris) return;
-    appliquerBrouillon(compris, draft);
+    const { destinationInconnue } = appliquerBrouillon(compris, draft);
     setCompris(null);
     setPhrase('');
     setMessage('C’est repris ci-dessous. Vérifiez, puis continuez.');
+    if (destinationInconnue) void chercherSurLaCarte(destinationInconnue);
+  }
+
+  /**
+   * Une ville que le catalogue ne connaît pas : on la cherche sur la carte du
+   * monde, et on ne la retient que si le nom correspond. Sinon, l'étape « Où ? »
+   * demandera de la choisir — le voyage reste en « on sait déjà où aller ».
+   */
+  async function chercherSurLaCarte(nom: string) {
+    const villes = await chercherVilles(nom);
+    const ville = villes.find((candidate) => fold(candidate.name) === fold(nom));
+    if (!ville || useTripDraft.getState().destinationIds.length > 0) return;
+    useTripDraft.getState().patch({ destinationMode: 'fixed', destinationIds: [ville.id] });
+    if (ville.discovered) void retenirVille(ville);
   }
 
   return (

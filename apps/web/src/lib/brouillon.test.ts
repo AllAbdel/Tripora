@@ -29,14 +29,19 @@ describe('report d’un brouillon dans le formulaire', () => {
     expect(applique({ destination: 'seville' }).destinationIds).toEqual(['seville']);
   });
 
-  it('ignore une ville qu’aucun catalogue ne connaît', () => {
-    const { applique } = cible();
-    const valeurs = applique({ destination: 'Vulcania', origin: 'Atlantide' });
+  it('une ville que le catalogue ne connaît pas : à chercher sur la carte, jamais « Surprends-nous »', () => {
+    const patch = vi.fn<(values: Partial<StoreTripDraft>) => void>();
+    const retour = appliquerBrouillon({ destination: 'Vulcania', origin: 'Atlantide' }, { patch, setWeight: vi.fn() });
+    const valeurs = Object.assign({}, ...patch.mock.calls.map(([v]) => v)) as Partial<StoreTripDraft>;
     expect(valeurs.origin).toBeUndefined();
-    expect(valeurs.destinationIds).toBeUndefined();
-    // Et surtout, le mode ne bascule pas sur « destination fixée » à vide :
-    // l'écran proposerait alors un voyage vers nulle part.
-    expect(valeurs.destinationMode).toBeUndefined();
+    // Restée en « Surprends-nous », la ville nommée était perdue et le voyage
+    // partait sur des propositions proches du départ (Lyon depuis Alger…).
+    // En « on sait déjà où aller », l'étape « Où ? » demande de la choisir :
+    // elle refuse d'avancer sans ville, donc pas de voyage vers nulle part.
+    expect(valeurs.destinationMode).toBe('fixed');
+    expect(valeurs.destinationIds).toEqual([]);
+    // L'écran la cherche alors sur la carte du monde.
+    expect(retour.destinationInconnue).toBe('Vulcania');
   });
 
   it('passe en mode « destination fixée » quand une ville est reconnue', () => {
