@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PAYS_DES_VISAS, VISAS_DU_MONDE } from './visas-du-monde.js';
-import { RELEVE_DES_VISAS, exigenceDeVisa } from './visas.js';
+import { RELEVE_DES_VISAS, exigenceDeVisa, meilleureExigence, passeportsConnus } from './visas.js';
 
 describe('les formalités d’entrée (Passport Index Data)', () => {
   it('une ligne par passeport, une lettre par pays', () => {
@@ -26,5 +26,21 @@ describe('les formalités d’entrée (Passport Index Data)', () => {
     expect(exigenceDeVisa('FR', 'RE')).toBeUndefined();
     expect(exigenceDeVisa('XX', 'MA')).toBeUndefined();
     expect(exigenceDeVisa(undefined, 'MA')).toBeUndefined();
+  });
+
+  it('avec deux passeports, prend celui qui ouvre la porte le plus facilement', () => {
+    // Franco-marocain : le passeport français évite le visa pour l'Espagne.
+    expect(meilleureExigence(['MA', 'FR'], 'ES')).toMatchObject({ formalite: 'sans-visa', passeport: 'FR' });
+    // Un passeport du pays visité : rien à dire.
+    expect(meilleureExigence(['FR', 'MA'], 'ma')).toBeUndefined();
+    expect(meilleureExigence([], 'MA')).toBeUndefined();
+    expect(meilleureExigence(['XX'], 'MA')).toBeUndefined();
+  });
+
+  it('propose les passeports que la source connaît', () => {
+    const connus = passeportsConnus();
+    expect(connus).toContain('DZ');
+    expect(connus).toContain('FR');
+    expect(connus.length).toBeGreaterThan(190);
   });
 });

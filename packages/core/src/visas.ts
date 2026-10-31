@@ -74,3 +74,50 @@ export function exigenceDeVisa(
   if (rang === undefined) return undefined;
   return lireLigne(depuis)?.[rang] ?? undefined;
 }
+
+/** Les passeports que la source connaît (codes ISO), pour les proposer au choix. */
+export function passeportsConnus(): string[] {
+  return Object.keys(VISAS_DU_MONDE).sort();
+}
+
+/** De la plus simple à la plus lourde : c'est l'ordre qui départage deux passeports. */
+const LOURDEUR: readonly Formalite[] = [
+  'sans-visa',
+  'visa-a-l-arrivee',
+  'autorisation-electronique',
+  'visa-electronique',
+  'visa',
+  'entree-refusee',
+];
+
+export interface ExigencePourUnPasseport extends ExigenceDeVisa {
+  /** Le passeport qui donne cette réponse. */
+  passeport: string;
+}
+
+/**
+ * Avec plusieurs nationalités, on voyage avec le passeport qui ouvre le plus
+ * facilement la porte : la formalité la plus légère, puis le séjour le plus
+ * long. Un passeport du pays visité suffit à tout : la réponse se tait alors,
+ * comme pour un voyage chez soi.
+ */
+export function meilleureExigence(
+  passeports: readonly string[],
+  destination: string | null | undefined,
+): ExigencePourUnPasseport | undefined {
+  const vers = destination?.toUpperCase();
+  if (!vers || passeports.some((passeport) => passeport.toUpperCase() === vers)) return undefined;
+  let meilleure: ExigencePourUnPasseport | undefined;
+  for (const passeport of passeports) {
+    const exigence = exigenceDeVisa(passeport, vers);
+    if (!exigence) continue;
+    const candidate = { ...exigence, passeport: passeport.toUpperCase() };
+    if (!meilleure) {
+      meilleure = candidate;
+      continue;
+    }
+    const ecart = LOURDEUR.indexOf(candidate.formalite) - LOURDEUR.indexOf(meilleure.formalite);
+    if (ecart < 0 || (ecart === 0 && (candidate.jours ?? 0) > (meilleure.jours ?? 0))) meilleure = candidate;
+  }
+  return meilleure;
+}
