@@ -97,8 +97,11 @@ la mention exigée par la licence, **« Data: OpenVan.camp »**, avec le lien.
 
 ### Visas — Passport Index Data
 
-« Faut-il un visa ? » apparaît dans les infos pratiques, pour un passeport du
-pays de départ : sans visa (et combien de jours), visa à l'arrivée,
+« Faut-il un visa ? » apparaît dans les infos pratiques, pour les passeports
+déclarés dans le profil (« Passeport et visas », trois au plus, gardés sur
+l'appareil ; avec plusieurs, celui qui demande le moins de démarches), ou à
+défaut pour un passeport du pays de départ, avec un lien pour indiquer le
+sien. Une démarche avant le départ s'affiche en « Attention ». Réponses : sans visa (et combien de jours), visa à l'arrivée,
 autorisation électronique (ESTA, eTA…), visa électronique, visa au consulat.
 La source est le jeu de données [Passport Index Data](https://github.com/imorte/passport-index-data)
 (licence MIT, d'après passportindex.org), relevé par `scripts/visas.py` et

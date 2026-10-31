@@ -15,11 +15,13 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Drapeau } from '@/components/Drapeau';
 import { FormaliteDEntree } from '@/components/FormaliteDEntree';
 import { useFormaliteDEntree } from '@/lib/visas';
+import { usePasseports } from '@/stores/passeports';
 
 /**
  * Ce qu'on cherche la veille du départ, ou sur place : faut-il un adaptateur,
  * quel est le numéro des secours, de quel côté roule-t-on, quelle heure est-il
- * là-bas. Sans réseau, calculé depuis la destination et la ville de départ.
+ * là-bas. Sans réseau, calculé depuis la destination et la ville de départ
+ * (le visa, depuis les passeports du profil quand la personne les a donnés).
  */
 
 const CONSEILS_AUX_VOYAGEURS =
@@ -44,7 +46,8 @@ export function InfosPratiques({
 }) {
   const infos = infosPratiques(destination.countryCode);
   const depart = codeDuPays(paysDeDepart);
-  const visa = useFormaliteDEntree(depart, destination.countryCode);
+  const passeports = usePasseports((etat) => etat.passeports);
+  const visa = useFormaliteDEntree(depart, destination.countryCode, passeports);
   if (!infos) return null;
 
   const memePays = depart === destination.countryCode.toUpperCase();

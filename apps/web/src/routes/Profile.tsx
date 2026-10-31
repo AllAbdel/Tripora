@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import {
   BellOff,
@@ -29,6 +29,7 @@ import { ChoixDeLangue } from '@/components/ChoixDeLangue';
 import { ChoixDesUnites } from '@/components/ChoixDesUnites';
 import { ApercuDuPasseport } from '@/components/ApercuDuPasseport';
 import { MesMoyensDePaiement } from '@/components/MesMoyensDePaiement';
+import { MesPasseports } from '@/components/MesPasseports';
 import { ReglageDesRappels } from '@/components/ReglageDesRappels';
 import { NotificationsDuGroupe } from '@/components/NotificationsDuGroupe';
 import { SupprimerMonCompte } from '@/components/SupprimerMonCompte';
@@ -86,6 +87,14 @@ export default function Profile() {
   const { identity, signOut, backendReady } = useAuth();
   const ouvrirLeGuide = useGuide((etat) => etat.ouvrir);
   const apps = getApps();
+  const { hash } = useLocation();
+
+  // Arrivé depuis un lien vers une rubrique (« Indiquer mon passeport ») : on
+  // y descend, le routeur ne le fait pas de lui-même.
+  useEffect(() => {
+    if (!hash) return;
+    document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ block: 'start' });
+  }, [hash]);
 
   // Les notifications du groupe n'apparaissent que si le serveur les connaît.
   const reglagesDesNotifications = useQuery(requeteDesReglages(identity?.mode === 'supabase'));
@@ -123,6 +132,10 @@ export default function Profile() {
         {identity?.isAnonymous && identity.mode === 'supabase' && <GarderMesVoyages />}
 
         <ApercuDuPasseport />
+
+        <Section titre="Passeport et visas" id="passeports">
+          <MesPasseports />
+        </Section>
 
         <Section titre="Pour être remboursé">
           <MesMoyensDePaiement />
@@ -316,9 +329,10 @@ function LigneAPropos({
   );
 }
 
-function Section({ titre, children }: { titre: string; children: React.ReactNode }) {
+function Section({ titre, id, children }: { titre: string; id?: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-2">
+    // `scroll-mt` : arrivé par « Indiquer mon passeport », le titre ne passe pas sous l'en-tête.
+    <section id={id} className="scroll-mt-20 space-y-2">
       <h2 className="text-muted px-1 text-xs font-semibold tracking-wide uppercase">{titre}</h2>
       <div className="space-y-3">{children}</div>
     </section>
